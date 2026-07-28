@@ -1,0 +1,160 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { dateLongue } from '../../../lib/format';
+import { editionsDe, libelleEvent, listeMeets } from '../../../lib/meets';
+
+/**
+ * Page de regroupement des éditions d'une même compétition.
+ *
+ * Elle existe pour que retirer la date d'une adresse mène quelque part d'utile.
+ * Sans elle, /competitions/open-de-la-fournaise/ renverrait une erreur 404, ce
+ * qui est le premier réflexe d'un visiteur curieux comme d'un robot
+ * d'indexation.
+ */
+export async function getStaticPaths() {
+  const parNom = new Map<string, string>();
+  for (const meet of listeMeets()) parNom.set(meet.nomSlug, meet.meetName);
+
+  return [...parNom.entries()].map(([nom, meetName]) => ({
+    params: { nom },
+    props: { nom, meetName },
+  }));
+}
+
+const { nom, meetName } = Astro.props;
+const editions = editionsDe(nom);
+const totalAthletes = editions.reduce((n, e) => n + e.athletes, 0);
+const villes = [...new Set(editions.map((e) => e.meetTown).filter(Boolean))];
+---
+
+<BaseLayout
+  titre={meetName}
+  description={`Toutes les éditions de ${meetName} à La Réunion : ${editions.length} édition${editions.length > 1 ? 's' : ''}, résultats complets et podiums.`}
+>
+  <div class="wrap">
+    <p class="fil"><a href="/competitions/">Toutes les compétitions</a></p>
+
+    <header class="entete-page">
+      <h1>{meetName}</h1>
+      <p class="chapeau">
+        {editions.length} édition{editions.length > 1 ? 's' : ''} recensée{editions.length > 1 ? 's' : ''},
+        {' '}
+        {totalAthletes} participation{totalAthletes > 1 ? 's' : ''} au total
+        {villes.length === 1 && <> à {villes[0]}</>}.
+      </p>
+    </header>
+
+    <ul class="editions">
+      {
+        editions.map((e) => (
+          <li>
+            <a class="carte lien-nu" href={`/competitions/${e.chemin}/`}>
+              <span class="annee num">{e.date.slice(0, 4)}</span>
+              <span class="corps">
+                <span class="date">{dateLongue(e.date)}</span>
+                {e.meetTown && <span class="ville">{e.meetTown}</span>}
+                <span class="formats">
+                  {e.events.map((ev) => (
+                    <span class="format">{libelleEvent(ev)}</span>
+                  ))}
+                </span>
+              </span>
+              <span class="effectif">
+                <span class="num">{e.athletes}</span>
+                <span class="libelle">athlète{e.athletes > 1 ? 's' : ''}</span>
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</BaseLayout>
+
+<style>
+  .fil {
+    font-size: var(--step--1);
+    margin-bottom: var(--space-4);
+  }
+
+  .entete-page {
+    margin-bottom: var(--space-8);
+  }
+
+  .chapeau {
+    color: var(--muted);
+    font-size: var(--step-1);
+    max-width: 60ch;
+  }
+
+  .editions {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .carte {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    padding: var(--space-4) var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  .carte:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  .annee {
+    font-size: var(--step-2);
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .corps {
+    flex: 1;
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .date {
+    font-weight: 600;
+  }
+
+  .ville,
+  .libelle {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .formats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-1);
+  }
+
+  .format {
+    font-size: var(--step--1);
+    padding: 2px var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--muted);
+  }
+
+  .effectif {
+    display: grid;
+    justify-items: end;
+    text-align: right;
+  }
+
+  .effectif .num {
+    font-size: var(--step-1);
+  }
+</style>

@@ -68,7 +68,7 @@ const annees = [...new Set(meets.map((m) => m.date.slice(0, 4)))].sort().reverse
                     {dateCourte(meet.date)}
                   </td>
                   <th scope="row" class="nom">
-                    <a href={`/competitions/${meet.slug}/`}>{meet.meetName}</a>
+                    <a href={`/competitions/${meet.chemin}/`}>{meet.meetName}</a>
                   </th>
                   <td data-libelle="Commune">{meet.meetTown || '—'}</td>
                   <td data-libelle="Format">

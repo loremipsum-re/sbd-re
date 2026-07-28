@@ -7,13 +7,15 @@
  */
 
 import { results } from './data';
-import { meetKey, meetSlug } from './slug';
+import { meetKey, meetNameSlug, meetPath } from './slug';
 import type { EventCode, Result } from './types';
 
 export interface Meet {
   key: string;
-  /** Identifiant d'URL, de la forme « 2025-07-19-reunion-island-meet ». */
-  slug: string;
+  /** Segment de nom, commun à toutes les éditions : « reunion-island-meet ». */
+  nomSlug: string;
+  /** Chemin complet de l'édition : « reunion-island-meet/2025-07-19 ». */
+  chemin: string;
   date: string;
   meetName: string;
   meetTown: string;
@@ -33,7 +35,8 @@ export function listeMeets(source: Result[] = results): Meet[] {
       entree = {
         meet: {
           key: cle,
-          slug: meetSlug(r.date, r.meetName),
+          nomSlug: meetNameSlug(r.meetName),
+          chemin: meetPath(r.date, r.meetName),
           date: r.date,
           meetName: r.meetName,
           meetTown: r.meetTown,
@@ -93,6 +96,19 @@ export function resultatsDuMeet(cle: string, source: Result[] = results): Result
         (a.bodyweightKg ?? 0) - (b.bodyweightKg ?? 0)
       );
     });
+}
+
+/**
+ * Éditions successives d'une même compétition, de la plus récente à la plus
+ * ancienne. Alimente la page qui regroupe les éditions.
+ */
+export function editionsDe(nomSlug: string, source: Result[] = results): Meet[] {
+  return listeMeets(source).filter((m) => m.nomSlug === nomSlug);
+}
+
+/** Les N compétitions les plus récentes. */
+export function meetsRecents(n = 6, source: Result[] = results): Meet[] {
+  return listeMeets(source).slice(0, n);
 }
 
 /** Compétitions groupées par année, pour un affichage en sections. */

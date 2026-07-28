@@ -1,17 +1,19 @@
 ---
-import InteractiveTable from '../../components/InteractiveTable.astro';
-import VerifiedBadge from '../../components/VerifiedBadge.astro';
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import { equipmentGroup, equipmentLabel, parseWeightClass, sexLabel } from '../../lib/categories';
-import { dateLongue, nombre, place, points } from '../../lib/format';
-import { libelleEvent, listeMeets, resultatsDuMeet } from '../../lib/meets';
-import { cleRecord, clesRecords } from '../../lib/records';
-import { athleteSlug } from '../../lib/slug';
-import type { LiftKey, Result } from '../../lib/types';
+import BadgeOfficiel from '../../../components/BadgeOfficiel.astro';
+import Coupe from '../../../components/Coupe.astro';
+import InteractiveTable from '../../../components/InteractiveTable.astro';
+import Medaille from '../../../components/Medaille.astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { equipmentGroup, equipmentLabel, parseWeightClass, sexLabel } from '../../../lib/categories';
+import { dateLongue, nombre, place, points } from '../../../lib/format';
+import { editionsDe, libelleEvent, listeMeets, resultatsDuMeet } from '../../../lib/meets';
+import { cleRecord, clesRecords } from '../../../lib/records';
+import { athleteSlug } from '../../../lib/slug';
+import type { LiftKey, Metal, Result } from '../../../lib/types';
 
 export async function getStaticPaths() {
   return listeMeets().map((meet) => ({
-    params: { slug: meet.slug },
+    params: { nom: meet.nomSlug, date: meet.date },
     props: { meet },
   }));
 }
@@ -19,14 +21,27 @@ export async function getStaticPaths() {
 const { meet } = Astro.props;
 const resultats = resultatsDuMeet(meet.key);
 const records = clesRecords();
+const autresEditions = editionsDe(meet.nomSlug).filter((e) => e.date !== meet.date);
 
 const aDuFullPower = meet.events.includes('SBD');
 const hommes = resultats.filter((r) => r.sex === 'M').length;
 const femmes = resultats.filter((r) => r.sex === 'F').length;
 
-/** Une barre est-elle le record en cours de sa catégorie ? */
 const estRecord = (r: Result, lift: LiftKey) =>
   records.has(cleRecord(lift, r.name, r.date, r.meetName));
+
+/**
+ * Médaille du podium, décernée par CATÉGORIE et non sur l'ensemble du plateau.
+ *
+ * Une compétition de force athlétique se dispute catégorie par catégorie : il y
+ * a autant de premières places que de catégories engagées. Attribuer une seule
+ * médaille d'or au meilleur total de la journée serait un contresens sportif.
+ */
+const METAUX: Metal[] = ['or', 'argent', 'bronze'];
+const medailleDe = (r: Result): Metal | null => {
+  const rang = Number.parseInt(r.place, 10);
+  return Number.isFinite(rang) && rang >= 1 && rang <= 3 ? METAUX[rang - 1] : null;
+};
 
 const description =
   `${meet.meetName}, ${dateLongue(meet.date)}` +
@@ -48,6 +63,17 @@ const description =
         {meet.events.map((e) => <span class="format">{libelleEvent(e)}</span>)}
       </p>
     </header>
+
+    {
+      autresEditions.length > 0 && (
+        <nav class="editions" aria-label="Autres éditions">
+          <span>Autres éditions :</span>
+          {autresEditions.map((e) => (
+            <a href={`/competitions/${e.chemin}/`}>{e.date.slice(0, 4)}</a>
+          ))}
+        </nav>
+      )
+    }
 
     <dl class="stats">
       <div>
@@ -71,7 +97,7 @@ const description =
     <h2>Résultats</h2>
 
     <InteractiveTable
-      recherche="Nom, catégorie, club…"
+      recherche="Nom, catégorie, division…"
       singulier="résultat"
       pluriel="résultats"
       total={resultats.length}
@@ -106,13 +132,21 @@ const description =
             {
               resultats.map((r) => {
                 const classe = parseWeightClass(r.weightClassKg);
+                const metal = medailleDe(r);
                 return (
-                  <tr data-sexe={r.sex}>
+                  <tr data-sexe={r.sex} data-podium={metal ?? undefined}>
                     <td class="place" data-valeur={Number.parseInt(r.place, 10) || 999}>
-                      {place(r.place)}
+                      {metal ? (
+                        <Medaille metal={metal} detail={`${place(r.place)} de sa catégorie`} taille={20} />
+                      ) : (
+                        place(r.place)
+                      )}
                     </td>
                     <th scope="row" class="athlete">
-                      <a href={`/athlete/${athleteSlug(r.name)}/`}>{r.name}</a>
+                      <span class="nom-ligne">
+                        <a href={`/athlete/${athleteSlug(r.name)}/`}>{r.name}</a>
+                        <BadgeOfficiel taille={13} />
+                      </span>
                       <span class="meta">
                         {sexLabel(r.sex)} · {equipmentLabel(equipmentGroup(r.equipment))}
                         {r.division && <> · {r.division}</>}
@@ -127,25 +161,25 @@ const description =
                     <td class="nombre num-tab" data-libelle="Squat" data-valeur={r.bestSquatKg ?? ''}>
                       <span class="v">
                         {nombre(r.bestSquatKg)}
-                        {r.bestSquatKg && estRecord(r, 'squat') && <VerifiedBadge detail="Record du squat" taille={13} />}
+                        {r.bestSquatKg && estRecord(r, 'squat') && <Coupe detail="Record du squat" taille={14} />}
                       </span>
                     </td>
                     <td class="nombre num-tab" data-libelle="Développé couché" data-valeur={r.bestBenchKg ?? ''}>
                       <span class="v">
                         {nombre(r.bestBenchKg)}
-                        {r.bestBenchKg && estRecord(r, 'bench') && <VerifiedBadge detail="Record du développé couché" taille={13} />}
+                        {r.bestBenchKg && estRecord(r, 'bench') && <Coupe detail="Record du développé couché" taille={14} />}
                       </span>
                     </td>
                     <td class="nombre num-tab" data-libelle="Soulevé de terre" data-valeur={r.bestDeadliftKg ?? ''}>
                       <span class="v">
                         {nombre(r.bestDeadliftKg)}
-                        {r.bestDeadliftKg && estRecord(r, 'deadlift') && <VerifiedBadge detail="Record du soulevé de terre" taille={13} />}
+                        {r.bestDeadliftKg && estRecord(r, 'deadlift') && <Coupe detail="Record du soulevé de terre" taille={14} />}
                       </span>
                     </td>
                     <td class="nombre num-tab" data-libelle="Total" data-valeur={r.event === 'SBD' ? (r.totalKg ?? '') : ''}>
                       <span class="v">
                         {r.event === 'SBD' ? nombre(r.totalKg) : '—'}
-                        {r.event === 'SBD' && estRecord(r, 'total') && <VerifiedBadge detail="Record au total" taille={13} />}
+                        {r.event === 'SBD' && estRecord(r, 'total') && <Coupe detail="Record au total" taille={14} />}
                       </span>
                     </td>
                     <td class="nombre" data-libelle="Dots" data-valeur={r.event === 'SBD' ? (r.dots ?? '') : ''}>
@@ -161,13 +195,14 @@ const description =
     </InteractiveTable>
 
     <p class="note">
+      Les médailles distinguent le podium <strong>de chaque catégorie</strong>,
+      puisqu'une compétition se dispute catégorie par catégorie. La coupe
+      signale une barre qui constitue aujourd'hui un record à La Réunion.
       {
         aDuFullPower
-          ? 'Le total et les points Dots concernent le full power. Sur un format à un seul mouvement, ils reprendraient simplement la barre disputée, ce qui les rendrait incomparables.'
-          : 'Cette compétition portait sur un seul mouvement : le total et les points Dots ne s\'appliquent pas.'
+          ? ' Le total et les points Dots concernent le full power.'
+          : ' Cette compétition portait sur un seul mouvement, le total et les points Dots ne s’y appliquent pas.'
       }
-      Le pictogramme bleu signale une barre qui constitue aujourd'hui le record
-      de sa catégorie à La Réunion.
     </p>
   </div>
 </BaseLayout>
@@ -179,7 +214,7 @@ const description =
   }
 
   .entete-page {
-    margin-bottom: var(--space-6);
+    margin-bottom: var(--space-4);
   }
 
   h1 {
@@ -206,6 +241,16 @@ const description =
     border: 1px solid var(--accent);
     border-radius: 999px;
     color: var(--accent);
+  }
+
+  .editions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+    font-size: var(--step--1);
+    color: var(--muted);
   }
 
   .stats {
@@ -265,6 +310,12 @@ const description =
   .athlete {
     font-weight: 600;
   }
+
+  .nom-ligne {
+    display: inline-flex;
+    align-items: center;
+  }
+
   .athlete a {
     color: var(--text);
   }
@@ -279,13 +330,8 @@ const description =
     color: var(--muted);
   }
 
-  /*
-   * Regroupe la valeur et son badge en un seul élément.
-   *
-   * Sans ce conteneur, la cellule en `space-between` distribuerait trois
-   * éléments (libellé, chiffre, badge) sur toute la largeur : le chiffre se
-   * retrouverait flottant au milieu de la ligne, loin de sa colonne.
-   */
+  /* Regroupe la valeur et sa coupe : sans ce conteneur, la cellule en
+     `space-between` éparpillerait libellé, chiffre et pictogramme. */
   .v {
     display: inline-flex;
     align-items: center;
@@ -293,17 +339,25 @@ const description =
 
   /*
    * La cellule de place occupe la colonne de gauche sur toute la hauteur de la
-   * carte, à la manière du rang dans le classement.
-   *
-   * Elle ne porte SURTOUT PAS la classe `.nombre` : celle-ci force
-   * `grid-column: 2`, ce qui entrerait en conflit direct avec le placement
-   * ci-dessous et ferait exploser la hauteur des lignes.
+   * carte. Elle ne porte SURTOUT PAS la classe `.nombre`, qui forcerait
+   * `grid-column: 2` et entrerait en conflit avec ce placement.
    */
   .place {
     font-family: var(--font-display);
     font-weight: 700;
-    color: var(--accent);
+    color: var(--muted);
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Une ligne de podium se remarque discrètement, sans écraser le tableau. */
+  tr[data-podium='or'] {
+    background: color-mix(in srgb, var(--or) 8%, transparent);
+  }
+  tr[data-podium='argent'] {
+    background: color-mix(in srgb, var(--argent) 7%, transparent);
+  }
+  tr[data-podium='bronze'] {
+    background: color-mix(in srgb, var(--bronze) 7%, transparent);
   }
 
   /* ---------- Mobile : une carte par athlète ---------- */

@@ -48,20 +48,38 @@ export function meetKey(date: string, meetName: string): string {
 }
 
 /**
- * Identifiant d'URL d'une compétition.
+ * Identifiant d'URL du NOM d'une compétition, sans sa date.
  *
- * La date préfixe le nom pour deux raisons : les éditions successives d'une
- * même compétition portent le même intitulé (« Open de la Fournaise » revient
- * en 2024, 2025 et 2026), et le tri alphabétique des URL devient chronologique.
- *
- * « 2025-07-19 », « Reunion Island Meet » donne « 2025-07-19-reunion-island-meet ».
+ * « Reunion Island Meet » donne « reunion-island-meet ».
  */
-export function meetSlug(date: string, meetName: string): string {
-  const nom = meetName
+export function meetNameSlug(meetName: string): string {
+  return meetName
     .normalize('NFD')
     .replace(/\p{Mn}/gu, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
-  return `${date}-${nom}`;
+}
+
+/**
+ * Chemin d'une édition, sous la forme « nom/date ».
+ *
+ * Cette arborescence regroupe les éditions successives d'une même compétition :
+ * « Open de la Fournaise » revient en 2024, 2025 et 2026, et ses trois éditions
+ * partagent désormais un dossier commun. Retirer la date de l'adresse mène à la
+ * liste des éditions plutôt qu'à une page inexistante.
+ *
+ * Donne « reunion-island-meet/2025-07-19 ».
+ */
+export function meetPath(date: string, meetName: string): string {
+  return `${meetNameSlug(meetName)}/${date}`;
+}
+
+/**
+ * Ancienne forme « date-nom », conservée uniquement pour générer les
+ * redirections vers la nouvelle arborescence. À supprimer quand les moteurs de
+ * recherche auront pris en compte le changement, disons dans un an.
+ */
+export function ancienMeetSlug(date: string, meetName: string): string {
+  return `${date}-${meetNameSlug(meetName)}`;
 }
