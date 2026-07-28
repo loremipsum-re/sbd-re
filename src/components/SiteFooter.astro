@@ -30,6 +30,7 @@ const { debut, fin } = periode();
           <li><a href="/classement/">Classement</a></li>
           <li><a href="/records/">Records</a></li>
           <li><a href="/competitions/">Compétitions</a></li>
+          <li><a href="/exterieur/">Extérieur</a></li>
           <li><a href="/a-propos/">À propos</a></li>
         </ul>
       </nav>
@@ -43,6 +44,27 @@ const { debut, fin } = periode();
       </div>
     </div>
 
+    <div class="soutien">
+      <div>
+        <p class="titre">Soutenir le projet</p>
+        <p class="fin">
+          Le site est gratuit, sans publicité et sans traceur. Un café aide à
+          couvrir le nom de domaine et l'hébergement.
+        </p>
+      </div>
+      {/*
+        Bouton « fait maison » plutôt que le script officiel de Buy Me a Coffee.
+        Ce script se charge depuis un serveur tiers sur chacune des pages du
+        site, ce qui transmet l'adresse IP de chaque visiteur avant même le
+        moindre clic. Le lien ci-dessous produit le même rendu et ne contacte
+        Buy Me a Coffee qu'au moment où l'on clique.
+      */}
+      <a class="bmc lien-nu" href="https://www.buymeacoffee.com/nathanlannes" rel="noopener">
+        <span class="tasse" aria-hidden="true">☕</span>
+        <span>Soutenir ce projet</span>
+      </a>
+    </div>
+
     <div class="mentions">
       <p>
         Données issues du projet OpenPowerlifting :{' '}
@@ -52,6 +74,10 @@ const { debut, fin } = periode();
       </p>
       <p>
         Site indépendant, non affilié à la FFForce ni à SBD Apparel.
+      </p>
+      <p class="realisation">
+        Une réalisation de Nathan Lannes,{' '}
+        <a href="https://loremipsum.re" rel="noopener">loremipsum.re</a>.
       </p>
     </div>
   </div>
@@ -115,11 +141,57 @@ const { debut, fin } = periode();
     color: var(--accent);
   }
 
+  .soutien {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-top: var(--space-8);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border);
+  }
+
+  .soutien .fin {
+    max-width: 46ch;
+  }
+
+  /*
+   * Reprend l'apparence du bouton officiel Buy Me a Coffee : violet #7628ff,
+   * texte blanc, police Lato remplacée par la police du site, tasse en emoji.
+   */
+  .bmc {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--radius);
+    background: #7628ff;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: var(--step-0);
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+  }
+
+  .bmc:hover {
+    background: #6a20e8;
+    color: #ffffff;
+  }
+
+  .tasse {
+    font-size: 1.15em;
+  }
+
   .mentions {
     margin-top: var(--space-8);
     padding-top: var(--space-6);
     border-top: 1px solid var(--border);
     color: var(--muted);
+  }
+
+  .realisation {
+    margin-top: var(--space-3);
   }
 
   .mentions p {
