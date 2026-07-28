@@ -1,0 +1,291 @@
+# SBD.re — classements et records du powerlifting réunionnais
+
+Site statique publiant les classements et records de force athlétique (squat,
+développé couché, soulevé de terre) de La Réunion, à partir des seuls résultats
+officiels de compétition.
+
+- **Techno** : [Astro](https://astro.build) en sortie statique, TypeScript, CSS écrit à la main.
+- **Données** : le jeu public d'[OpenPowerlifting](https://www.openpowerlifting.org), régénéré chaque mois.
+- **Hébergement** : mutualisé OVH, alimenté par GitHub Actions en FTPS.
+
+---
+
+## Comment ça marche, en une image
+
+```
+   Dump OpenPowerlifting (168 Mo, 4 millions de lignes)
+                    │
+                    │  cron mensuel : 1er du mois, 8 h à La Réunion
+                    ▼
+        GitHub Actions ── update-data.mjs ──> src/data/results.json
+                    │                                │
+                    │                         commit SI changement
+                    ▼                                │
+        GitHub Actions ── astro build ──> dist/ ─────┘
+                    │
+                    │  FTPS
+                    ▼
+             OVH /www/  ──>  https://sbd.re
+```
+
+Point important : **OVH ne fait que servir des fichiers HTML**. Aucun code ne
+s'exécute sur le serveur. Le mutualisé ne sait faire tourner que du PHP, jamais
+du Node — c'est GitHub qui fait tout le travail, gratuitement.
+
+---
+
+## Démarrer en local
+
+### Prérequis
+
+- [Node.js](https://nodejs.org) 20 ou plus (le projet a été développé sur la 24).
+- Git.
+
+### Installation
+
+```bash
+npm install
+```
+
+### Lancer le site
+
+```bash
+npm run dev
+```
+
+Le site est alors sur <http://localhost:4321>. Toute modification de fichier se
+répercute immédiatement dans le navigateur.
+
+### Toutes les commandes
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `npm run dev` | Serveur de développement, rechargement automatique |
+| `npm run build` | Génère le site final dans `dist/` |
+| `npm run preview` | Sert `dist/` comme le ferait OVH — à faire avant tout déploiement |
+| `npm run check` | Vérifie les types TypeScript et les composants Astro |
+| `npm run data:update` | Régénère `src/data/results.json` depuis OpenPowerlifting |
+| `npm run data:explore` | Analyse le dump sans rien produire (outil de diagnostic) |
+
+---
+
+## Les données
+
+### D'où elles viennent
+
+Un unique fichier CSV public, téléchargé depuis OpenPowerlifting : environ
+168 Mo compressés, 815 Mo une fois décompressé, 4 millions de lignes. Le script
+le lit **en flux**, ligne par ligne : la mémoire du processus reste autour de
+100 Mo quelle que soit la taille du fichier. Le charger entièrement ferait
+saturer la machine.
+
+Le dump est mis en cache dans `.cache/` (ignoré par git) et n'est retéléchargé
+qu'au bout de 20 jours, ou avec `--force` :
+
+```bash
+node scripts/update-data.mjs --force
+```
+
+### Comment une compétition est reconnue comme réunionnaise
+
+**C'est le cœur du projet, et il n'y a pas de solution automatique.** Le jeu de
+données ne contient aucune information de région : le champ `MeetState` est
+vide sur la totalité des 45 697 résultats de la fédération française. Vérifié,
+pas supposé — c'est exactement ce que `npm run data:explore` a servi à établir.
+
+Deux règles, dans cet ordre :
+
+1. **Le nom contient « Réunion »** (sans tenir compte des accents ni de la
+   casse). Couvre la majorité des championnats départementaux et régionaux.
+2. **La compétition figure dans `data/meets-include.json`**, liste tenue à la
+   main. Indispensable : *Open de la Fournaise*, *Bench Cup 974* ou
+   *Fanm Kapab Contest* sont incontestablement réunionnais sans jamais nommer
+   l'île. Sans cette liste, le site perdrait 14 compétitions sur 61.
+
+**La ville n'inclut jamais une compétition à elle seule.** Saint-Denis,
+Saint-Louis, Saint-Paul et Saint-Pierre existent aussi en métropole. Une
+compétition organisée dans une commune réunionnaise mais dont le nom ne le dit
+pas est simplement *signalée* dans `data/meets-candidates.json`, pour que tu
+tranches.
+
+### Les trois fichiers de `data/`
+
+| Fichier | Qui l'écrit | Rôle |
+|---|---|---|
+| `meets-include.json` | **toi** | Compétitions à inclure que la règle du nom ne trouve pas |
+| `meets-exclude.json` | **toi** | Compétitions à écarter, quoi qu'il arrive. A toujours le dernier mot |
+| `meets-candidates.json` | le script | Compétitions à examiner. **Ne pas modifier** : réécrit à chaque exécution |
+
+### Routine mensuelle
+
+Le workflow s'occupe de tout. Ta seule tâche, occasionnelle : ouvrir
+`data/meets-candidates.json` après une mise à jour. S'il contient des
+compétitions, décide pour chacune :
+
+- **réunionnaise** → recopie l'entrée dans `meets-include.json` ;
+- **métropolitaine** → recopie-la dans `meets-exclude.json` pour ne plus la revoir ;
+- **doute** → laisse-la, elle n'est pas publiée.
+
+Puis relance `npm run data:update` et envoie sur GitHub.
+
+### Périmètre retenu
+
+- **Classement au total** : full power uniquement (`SBD`).
+- **Records de développé couché** : toutes les compétitions, y compris celles de
+  développé couché seul — elles représentent 26 des 61 compétitions de l'île.
+- **Records de squat, soulevé de terre et total** : full power uniquement.
+- **Écartés** : disqualifications (dont dopage) et forfaits.
+- **Non retenus aujourd'hui** : les formats squat seul et soulevé de terre seul
+  (48 résultats). Pour les inclure, ajoute `'S'` et `'D'` à la constante
+  `EVENTS_RETENUS` en tête de `scripts/update-data.mjs`.
+
+### Annoncer la prochaine compétition
+
+Édite `src/data/next-meet.json` et passe `"annonce": true`. Le bloc disparaît
+tout seul une fois la date passée. Ce fichier n'est jamais touché par le script :
+les compétitions à venir n'existent pas dans OpenPowerlifting, qui ne publie que
+des résultats passés.
+
+---
+
+## Déployer sur OVH
+
+À faire une seule fois. Les étapes 1 à 3 sont de ton ressort : elles touchent à
+ton compte OVH et à tes identifiants.
+
+### 1. Créer un utilisateur FTP dédié chez OVH
+
+Espace client OVH → **Hébergements** → ton hébergement → onglet **FTP - SSH** →
+**Ajouter un utilisateur**.
+
+Crée un utilisateur *dédié à ce déploiement*, avec pour racine `/www`. N'utilise
+pas ton compte FTP principal : si le mot de passe fuite un jour, tu ne révoques
+que cet accès-là, sans rien casser d'autre.
+
+Note trois informations : **serveur** (`ftp.cluster0XX.hosting.ovh.net`),
+**identifiant**, **mot de passe**.
+
+### 2. Enregistrer les secrets sur GitHub
+
+Dépôt GitHub → **Settings** → **Secrets and variables** → **Actions** →
+**New repository secret**. Trois secrets à créer :
+
+| Nom | Valeur |
+|---|---|
+| `FTP_SERVER` | l'adresse du serveur FTP OVH |
+| `FTP_USERNAME` | l'identifiant de l'utilisateur dédié |
+| `FTP_PASSWORD` | son mot de passe |
+
+Un secret GitHub n'est jamais réaffichable : garde-les aussi dans ton
+gestionnaire de mots de passe.
+
+### 3. Brancher le domaine et activer HTTPS
+
+Le domaine `sbd.re` étant déjà chez OVH, tout se passe au même endroit.
+
+1. Espace client → **Hébergements** → ton hébergement → onglet **Multisite** →
+   **Ajouter un domaine**.
+2. Domaine `sbd.re`, dossier racine `www`, et coche **« Le domaine est-il un
+   alias ? » : non**.
+3. Ajoute également `www.sbd.re` sur le même dossier — le `.htaccess` le
+   redirigera vers `sbd.re`.
+4. Toujours dans **Multisite**, active le **certificat SSL** (Let's Encrypt,
+   gratuit). Comptez jusqu'à une heure avant qu'il soit délivré.
+
+La propagation DNS peut prendre jusqu'à 24 h. Tant qu'elle n'est pas terminée,
+le site peut sembler injoignable — c'est normal, ce n'est pas un problème de
+déploiement.
+
+### 4. Premier déploiement
+
+Avant de brancher le DNS, lance le déploiement à la main pour vérifier que les
+fichiers arrivent bien : onglet **Actions** → **Construire et déployer sur OVH**
+→ **Run workflow**. Puis vérifie par FTP que `/www/` contient bien `index.html`,
+`.htaccess` et le dossier `_astro/`.
+
+Ensuite, chaque envoi sur `main` déclenche un déploiement automatique.
+
+---
+
+## Structure du projet
+
+```
+├── .github/workflows/     Automatisation : mise à jour des données, déploiement
+├── data/                  Listes de compétitions (include / exclude / candidates)
+├── scripts/
+│   ├── lib/opl.mjs        Téléchargement, cache, lecture en flux du dump
+│   ├── explore-meets.mjs  Diagnostic : ce que contient vraiment le dump
+│   └── update-data.mjs    Pipeline de production
+├── public/                Copié tel quel dans dist/ : .htaccess, robots.txt
+└── src/
+    ├── data/              results.json (généré) et next-meet.json (à la main)
+    ├── lib/               Logique métier : classements, records, catégories
+    ├── components/        Composants d'affichage
+    ├── layouts/           Gabarit commun
+    ├── styles/tokens.css  TOUTES les couleurs et espacements du site
+    └── pages/             Une page = un fichier
+```
+
+### Changer l'apparence
+
+Tout est dans `src/styles/tokens.css`. Les couleurs y sont déclarées **une seule
+fois** en haut du fichier, puis référencées partout ailleurs. Changer l'accent
+orange du site, c'est modifier deux lignes (`--p-light-accent` et
+`--p-dark-accent`), pas chercher dans quinze composants.
+
+---
+
+## Choix techniques, et pourquoi
+
+**Pas de Tailwind.** Six pages et un système visuel qui tient en quinze
+variables CSS. Le thème clair/sombre se fait en deux lignes avec des variables,
+là où Tailwind impose sa mécanique `dark:` sur chaque classe.
+
+**Presque pas de JavaScript.** Le classement envoie ses 266 lignes directement
+dans le HTML, et les filtres tiennent en une trentaine de lignes de JavaScript
+natif. Conséquences : les athlètes sont indexables par les moteurs de recherche,
+et aucun framework n'est téléchargé.
+
+**Les graphiques sont du SVG calculé au build.** Une courbe de progression, ce
+sont des coordonnées — pas une raison d'embarquer une librairie de plusieurs
+dizaines de kilo-octets.
+
+**Le thème est appliqué avant le premier rendu**, par un court script inline dans
+`<head>`. Un fichier externe serait chargé trop tard et la page clignoterait en
+blanc avant de basculer en sombre.
+
+**Le script de données est idempotent.** Deux exécutions sur le même dump
+produisent un fichier rigoureusement identique, à l'octet près. C'est ce qui
+permet au workflow mensuel de ne commiter que s'il y a réellement du nouveau.
+
+---
+
+## Limites connues
+
+- **Pas de lien direct vers la fiche d'une compétition** sur OpenPowerlifting :
+  leur jeu de données téléchargeable ne contient pas d'identifiant de meet.
+  Fabriquer une URL reviendrait à inventer un lien mort. Les fiches *athlètes*,
+  elles, sont bien liées.
+- **La date d'aujourd'hui est celle du build.** Sur un site reconstruit une fois
+  par mois, une compétition passée peut rester annoncée quelques semaines.
+- **Les corrections de données passent par OpenPowerlifting.** Une performance
+  fausse ou manquante doit leur être signalée : elle sera reprise ici à la mise
+  à jour suivante.
+
+---
+
+## À venir
+
+Le **classement communauté** (performances déclarées en salle et compétitions
+non homologuées), avec comptes Google et e-mail via Supabase, modération avant
+publication, et catégorisation par tranches de poids et de taille. Il vivra
+strictement séparé du classement officiel, qui restera en lecture seule.
+
+---
+
+## Crédits
+
+Données issues du projet [OpenPowerlifting](https://www.openpowerlifting.org),
+librement téléchargeables sur [data.openpowerlifting.org](https://data.openpowerlifting.org).
+
+Site indépendant, non affilié à la FFForce ni à SBD Apparel.
