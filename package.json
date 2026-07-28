@@ -1,0 +1,28 @@
+{
+  "name": "sbd-re",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Classements et records du powerlifting réunionnais",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "data:explore": "node scripts/explore-meets.mjs",
+    "data:update": "node scripts/update-data.mjs"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@astrojs/svelte": "^9.0.1",
+    "astro": "^7.1.4",
+    "svelte": "^5.56.8"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "typescript": "^6.0.3",
+    "unzipper": "^0.12.5"
+  }
+}

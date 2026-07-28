@@ -1,0 +1,22 @@
+# Dépendances
+node_modules/
+
+# Sortie de build Astro
+dist/
+.astro/
+
+# Cache local du dump OpenPowerlifting (~160 Mo, jamais versionné)
+.cache/
+
+# Variables d'environnement : contiennent des URL et clés propres à ton projet
+.env
+.env.local
+.env.*.local
+
+# État de synchronisation déposé par l'action FTP sur le serveur
+.ftp-deploy-sync-state.json
+
+# Divers
+*.log
+.DS_Store
+Thumbs.db
