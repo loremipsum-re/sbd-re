@@ -1,0 +1,331 @@
+---
+import Coupe from '../../../components/Coupe.astro';
+import InteractiveTable from '../../../components/InteractiveTable.astro';
+import RankingTable from '../../../components/RankingTable.astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { EQUIPMENT_GROUPS, LIFTS, type EquipmentGroup } from '../../../lib/categories';
+import {
+  athletesDeCategorie,
+  equipementsDeCategorie,
+  listeCategories,
+} from '../../../lib/categoriesPages';
+import { dateLongue, kg, nombre } from '../../../lib/format';
+import { progressionRecord, recordsPour } from '../../../lib/records';
+import { meetPath } from '../../../lib/slug';
+import type { LiftKey } from '../../../lib/types';
+
+export async function getStaticPaths() {
+  return listeCategories().map((cat) => ({
+    params: { sexe: cat.sexeSlug, classe: cat.classeSlug },
+    props: { cat },
+  }));
+}
+
+const { cat } = Astro.props;
+const classement = athletesDeCategorie(cat.sex, cat.classe.id);
+const equipements = equipementsDeCategorie(cat.sex, cat.classe.id);
+
+/** Records actuels de la catégorie, par mouvement et par équipement. */
+const recordActuel = (lift: LiftKey, equipement: EquipmentGroup) =>
+  recordsPour(lift).find(
+    (r) =>
+      r.sex === cat.sex && r.weightClass.id === cat.classe.id && r.equipment === equipement,
+  );
+
+/*
+ * Chronologie du record au total, en Raw.
+ *
+ * On la limite à un seul mouvement et à un seul type d'équipement : afficher
+ * les quatre mouvements pour chaque équipement donnerait huit chronologies sur
+ * une même page, et l'histoire se perdrait dans le tableau. Le total en Raw est
+ * la marque de référence, celle que tout le monde cite.
+ */
+const chronologie = progressionRecord('total', cat.sex, cat.classe.id, 'raw');
+
+const libelleEquipement = (id: EquipmentGroup) =>
+  EQUIPMENT_GROUPS.find((e) => e.id === id)?.label ?? id;
+
+const titre = `${cat.sexeLabel} ${cat.classe.label}`;
+const description =
+  `Classement et records de la catégorie ${cat.sexeLabel.toLowerCase()} ${cat.classe.label} ` +
+  `en force athlétique à La Réunion. ${cat.athletes} athlètes classés, ` +
+  `historique des records depuis 2017.`;
+---
+
+<BaseLayout titre={titre} description={description}>
+  <div class="wrap">
+    <p class="fil"><a href="/categories/">Toutes les catégories</a></p>
+
+    <header class="entete-page">
+      <h1>{titre}</h1>
+      <p class="chapeau">
+        {cat.athletes} athlètes classés dans cette catégorie, pour
+        {' '}{cat.resultats} performances en full power lors de compétitions
+        réunionnaises.
+      </p>
+    </header>
+
+    <section class="bloc">
+      <h2>Records de la catégorie</h2>
+
+      {
+        equipements.map((equipement) => (
+          <div class="groupe">
+            <h3>{libelleEquipement(equipement)}</h3>
+            <dl class="records">
+              {LIFTS.map((l) => {
+                const rec = recordActuel(l.id, equipement);
+                return (
+                  <div>
+                    <dt>{l.label}</dt>
+                    <dd>
+                      {rec ? (
+                        <>
+                          <span class="valeur num">
+                            {kg(rec.valueKg)}
+                            <Coupe metal="or" detail={`Record ${l.label}`} taille={14} />
+                          </span>
+                          <a class="detenteur" href={`/athlete/${rec.slug}/`}>
+                            {rec.holder}
+                          </a>
+                          <a
+                            class="quand"
+                            href={`/competitions/${meetPath(rec.date, rec.meetName)}/`}
+                          >
+                            {dateLongue(rec.date)}
+                          </a>
+                        </>
+                      ) : (
+                        <span class="absent">Place libre</span>
+                      )}
+                    </dd>
+                  </div>
+                );
+              })}
+            </dl>
+          </div>
+        ))
+      }
+    </section>
+
+    {
+      chronologie.length > 1 && (
+        <section class="bloc">
+          <h2>Histoire du record au total</h2>
+          <p class="fin">
+            Les {chronologie.length} marques qui se sont succédé en Raw depuis que
+            la catégorie est suivie. Seule une amélioration réelle figure ici : à
+            performance égale, la marque la plus ancienne conserve le record.
+          </p>
+
+          <ol class="chrono">
+            {chronologie.map((etape, i) => (
+              <li data-actuel={i === chronologie.length - 1 ? '' : undefined}>
+                <span class="chrono-valeur num">{kg(etape.valueKg)}</span>
+                <span class="chrono-corps">
+                  <a class="chrono-nom" href={`/athlete/${etape.slug}/`}>
+                    {etape.holder}
+                  </a>
+                  <span class="chrono-meta">
+                    <a href={`/competitions/${meetPath(etape.date, etape.meetName)}/`}>
+                      {dateLongue(etape.date)}
+                    </a>
+                    {etape.gainKg > 0 && <span class="gain">+{nombre(etape.gainKg)} kg</span>}
+                    {etape.jours !== null && (
+                      <span>
+                        a tenu {etape.jours < 365
+                          ? `${etape.jours} jours`
+                          : `${Math.round(etape.jours / 365.25)} an${Math.round(etape.jours / 365.25) > 1 ? 's' : ''}`}
+                      </span>
+                    )}
+                    {i === chronologie.length - 1 && <span class="encours">record actuel</span>}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )
+    }
+
+    <section class="bloc">
+      <h2>Classement de la catégorie</h2>
+
+      <InteractiveTable
+        recherche="Nom d'un athlète"
+        singulier="athlète"
+        pluriel="athlètes"
+        total={classement.length}
+        barreDeTri
+      >
+        <RankingTable entries={classement} />
+      </InteractiveTable>
+
+      <p class="note">
+        Voir ces athlètes dans le
+        {' '}<a href={`/classement/?sexe=${cat.sex}&categorie=${encodeURIComponent(cat.classe.id)}`}>
+          classement général filtré
+        </a>.
+      </p>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .fil {
+    font-size: var(--step--1);
+    margin-bottom: var(--space-4);
+  }
+
+  .entete-page {
+    margin-bottom: var(--space-8);
+  }
+
+  .chapeau {
+    color: var(--muted);
+    font-size: var(--step-1);
+    max-width: 62ch;
+  }
+
+  .bloc {
+    margin-bottom: var(--space-12);
+  }
+
+  .fin {
+    color: var(--muted);
+    font-size: var(--step--1);
+    max-width: 68ch;
+    margin-bottom: var(--space-4);
+  }
+
+  .groupe {
+    margin-bottom: var(--space-6);
+  }
+
+  .groupe h3 {
+    font-family: var(--font-body);
+    font-size: var(--step--1);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin-bottom: var(--space-3);
+  }
+
+  .records {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: var(--space-4);
+    margin: 0;
+    padding: var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .records dt {
+    font-size: var(--step--1);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: var(--space-1);
+  }
+
+  .records dd {
+    margin: 0;
+  }
+
+  .valeur {
+    display: block;
+    font-size: var(--step-1);
+    line-height: 1.1;
+  }
+
+  .detenteur,
+  .quand {
+    display: block;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .detenteur:hover,
+  .quand:hover {
+    color: var(--accent);
+  }
+
+  .absent {
+    color: var(--muted);
+  }
+
+  /* ---------- Chronologie ---------- */
+  .chrono {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .chrono li {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-6);
+    border-bottom: 1px solid var(--border);
+  }
+  .chrono li:last-child {
+    border-bottom: 0;
+  }
+
+  /* La marque en cours se distingue : c'est celle qu'on vient chercher. */
+  .chrono li[data-actuel] {
+    background: color-mix(in srgb, var(--or) 8%, transparent);
+  }
+
+  .chrono-valeur {
+    min-width: 6rem;
+    font-size: var(--step-1);
+    color: var(--muted);
+  }
+  .chrono li[data-actuel] .chrono-valeur {
+    color: var(--or);
+  }
+
+  .chrono-corps {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .chrono-nom {
+    font-weight: 600;
+    color: var(--text);
+  }
+  .chrono-nom:hover {
+    color: var(--accent);
+  }
+
+  .chrono-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .gain {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .encours {
+    font-weight: 600;
+    color: var(--or);
+  }
+
+  .note {
+    margin-top: var(--space-4);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+</style>

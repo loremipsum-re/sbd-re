@@ -1,0 +1,152 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { SEXE_LABEL, SEXE_SLUG, listeCategories } from '../../../lib/categoriesPages';
+import { kg } from '../../../lib/format';
+import { recordsPour } from '../../../lib/records';
+import type { Sex } from '../../../lib/types';
+
+/**
+ * Liste des catégories d'un sexe.
+ *
+ * Cette page existe pour que retirer la dernière partie d'une adresse mène
+ * quelque part d'utile. Sans elle, /categories/hommes/ renverrait une erreur,
+ * ce qui est le premier réflexe d'un visiteur curieux comme d'un robot.
+ */
+export async function getStaticPaths() {
+  return (['M', 'F'] as Sex[]).map((sex) => ({
+    params: { sexe: SEXE_SLUG[sex] },
+    props: { sex },
+  }));
+}
+
+const { sex } = Astro.props;
+const categories = listeCategories().filter((c) => c.sex === sex);
+const totalRecords = recordsPour('total');
+const label = SEXE_LABEL[sex];
+
+const recordDe = (classeId: string) =>
+  totalRecords.find(
+    (r) => r.sex === sex && r.weightClass.id === classeId && r.equipment === 'raw',
+  );
+
+const totalAthletes = categories.reduce((n, c) => n + c.athletes, 0);
+---
+
+<BaseLayout
+  titre={`Catégories ${label.toLowerCase()}`}
+  description={`Les ${categories.length} catégories de poids ${label.toLowerCase()} en force athlétique à La Réunion, avec le classement et les records de chacune.`}
+>
+  <div class="wrap">
+    <p class="fil"><a href="/categories/">Toutes les catégories</a></p>
+
+    <header class="entete-page">
+      <h1>Catégories {label.toLowerCase()}</h1>
+      <p class="chapeau">
+        {categories.length} catégories disputées à La Réunion, pour
+        {' '}{totalAthletes} places au classement.
+      </p>
+    </header>
+
+    <ul class="grille">
+      {
+        categories.map((cat) => {
+          const rec = recordDe(cat.classe.id);
+          return (
+            <li>
+              <a class="carte lien-nu" href={`/categories/${cat.chemin}/`}>
+                <span class="poids num">{cat.classe.label}</span>
+                <span class="corps">
+                  <span class="effectif">
+                    {cat.athletes} athlète{cat.athletes > 1 ? 's' : ''}
+                  </span>
+                  {rec ? (
+                    <span class="record">
+                      Record {kg(rec.valueKg)}
+                      <span class="detenteur">{rec.holder}</span>
+                    </span>
+                  ) : (
+                    <span class="record">Aucun record en Raw</span>
+                  )}
+                </span>
+              </a>
+            </li>
+          );
+        })
+      }
+    </ul>
+  </div>
+</BaseLayout>
+
+<style>
+  .fil {
+    font-size: var(--step--1);
+    margin-bottom: var(--space-4);
+  }
+
+  .entete-page {
+    margin-bottom: var(--space-8);
+  }
+
+  .chapeau {
+    color: var(--muted);
+    font-size: var(--step-1);
+    max-width: 62ch;
+  }
+
+  .grille {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: var(--space-3);
+  }
+
+  .carte {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    height: 100%;
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    color: var(--text);
+  }
+  .carte:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  .poids {
+    font-size: var(--step-2);
+    line-height: 1;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .corps {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  .effectif {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .record {
+    font-size: var(--step--1);
+    font-weight: 600;
+  }
+
+  .detenteur {
+    display: block;
+    font-weight: 400;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+</style>
