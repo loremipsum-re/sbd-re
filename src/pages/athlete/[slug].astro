@@ -6,6 +6,7 @@ import ProgressChart from '../../components/ProgressChart.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { equipmentGroup, equipmentLabel, sexLabel } from '../../lib/categories';
 import { results } from '../../lib/data';
+import { exterieurDe, paysFr } from '../../lib/exterieur';
 import { dateLongue, kg, nombre, place, points } from '../../lib/format';
 import { liensAthlete } from '../../lib/liens';
 import { libelleEvent } from '../../lib/meets';
@@ -87,6 +88,28 @@ const nbRecords = (['squat', 'bench', 'deadlift', 'total'] as LiftKey[]).reduce(
  * moins que « parmi les 7 % meilleurs ». Les deux sont affichés.
  */
 const rang = rangDots(name);
+
+/**
+ * Compétitions disputées hors de l'île.
+ *
+ * Volontairement présentées à part, et après l'historique réunionnais : elles
+ * n'entrent ni dans le classement ni dans les records, qui récompensent des
+ * barres soulevées sur un plateau réunionnais. Elles font pourtant partie du
+ * parcours de l'athlète, et les passer sous silence l'amputerait.
+ */
+const exterieur = exterieurDe(name);
+const paysVisites = [...new Set(exterieur.map((r) => r.meetCountry).filter(Boolean))];
+
+/*
+ * Phrase construite ici plutôt que cousue dans le gabarit : intercaler des
+ * conditions au milieu d'un texte produit des espaces parasites avant les
+ * virgules et les points.
+ */
+const phraseExterieur =
+  `${exterieur.length} compétition${exterieur.length > 1 ? 's' : ''} ` +
+  `disputée${exterieur.length > 1 ? 's' : ''} ailleurs` +
+  (paysVisites.length > 0 ? `, en ${paysVisites.map(paysFr).join(', ')}` : '') +
+  '.';
 
 /** Seuil de mise en avant : le podium, ou à défaut les dix pour cent de tête. */
 const seuilDistinction = rang ? Math.max(3, Math.ceil(rang.total * 0.1)) : 0;
@@ -213,7 +236,7 @@ const description =
       <h2>Historique</h2>
 
       <InteractiveTable
-        recherche="Compétition, commune, année…"
+        recherche="Nom d'une compétition"
         singulier="compétition"
         pluriel="compétitions"
         total={historique.length}
@@ -236,7 +259,7 @@ const description =
             <tbody>
               {
                 [...historique].reverse().map((r) => (
-                  <tr>
+                  <tr data-recherche={r.meetName}>
                     <th scope="row" class="date" data-valeur={r.date.replace(/-/g, '')}>
                       {dateLongue(r.date)}
                     </th>
@@ -292,6 +315,72 @@ const description =
         simplement la barre disputée.
       </p>
     </section>
+
+    {
+      exterieur.length > 0 && (
+        <section class="bloc">
+          <h2>Hors de La Réunion</h2>
+          <p class="intro-ext">
+            {phraseExterieur} Ces résultats complètent le parcours de l'athlète.
+            Le classement et les records restent réservés aux plateaux
+            réunionnais.
+          </p>
+
+          <div class="cadre">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">Compétition</th>
+                  <th scope="col">Pays</th>
+                  <th scope="col" class="nombre">Squat</th>
+                  <th scope="col" class="nombre">DC</th>
+                  <th scope="col" class="nombre">SDT</th>
+                  <th scope="col" class="nombre">Total</th>
+                  <th scope="col" class="nombre">Place</th>
+                </tr>
+              </thead>
+              <tbody>
+                {exterieur.map((r) => (
+                  <tr>
+                    <th scope="row" class="date">
+                      {dateLongue(r.date)}
+                    </th>
+                    <td data-libelle="Compétition" class="competition">
+                      {r.meetName}
+                      <span class="ville">
+                        {r.federation}
+                        {r.meetTown && <> · {r.meetTown}</>}
+                      </span>
+                    </td>
+                    <td data-libelle="Pays">{paysFr(r.meetCountry)}</td>
+                    <td class="nombre num-tab" data-libelle="Squat">
+                      {nombre(r.bestSquatKg)}
+                    </td>
+                    <td class="nombre num-tab" data-libelle="Développé couché">
+                      {nombre(r.bestBenchKg)}
+                    </td>
+                    <td class="nombre num-tab" data-libelle="Soulevé de terre">
+                      {nombre(r.bestDeadliftKg)}
+                    </td>
+                    <td class="nombre num-tab" data-libelle="Total">
+                      {r.event === 'SBD' ? nombre(r.totalKg) : '—'}
+                    </td>
+                    <td class="nombre" data-libelle="Place">
+                      {place(r.place)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p class="note">
+            Voir <a href="/exterieur/">tous les résultats hors de La Réunion</a>.
+          </p>
+        </section>
+      )
+    }
   </div>
 </BaseLayout>
 
@@ -587,5 +676,11 @@ const description =
     font-size: var(--step--1);
     color: var(--muted);
     max-width: 68ch;
+  }
+
+  .intro-ext {
+    color: var(--muted);
+    max-width: 68ch;
+    margin-bottom: var(--space-4);
   }
 </style>
