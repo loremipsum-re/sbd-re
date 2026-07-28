@@ -2,3 +2,5 @@ User-agent: *
 Allow: /
 
 # Rien à cacher : le site est entièrement public et statique.
+
+Sitemap: https://sbd.re/sitemap-index.xml

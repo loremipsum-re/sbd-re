@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import sitemap from '@astrojs/sitemap';
 import svelte from '@astrojs/svelte';
 
 // https://astro.build/config
@@ -22,8 +23,15 @@ export default defineConfig({
   // pareil, et on découvre l'écart au pire moment : après la mise en ligne.
   trailingSlash: 'always',
 
-  // Svelte sert uniquement aux « îlots » : les rares zones réellement interactives
-  // (filtres, connexion, formulaire de soumission). Le reste du site est du HTML
-  // pur, sans JavaScript envoyé au navigateur.
-  integrations: [svelte()],
+  integrations: [
+    // Génère sitemap-index.xml : la liste des 300 et quelques pages du site,
+    // à destination des moteurs de recherche. Sans lui, les fiches athlètes
+    // ne seraient découvertes qu'au fil des liens, très lentement.
+    sitemap(),
+
+    // Svelte sert uniquement aux « îlots » : les rares zones réellement
+    // interactives de la future partie communauté. Les pages officielles sont
+    // du HTML pur — le classement filtre ses 266 lignes en JavaScript natif.
+    svelte(),
+  ],
 });
