@@ -6,7 +6,7 @@ officiels de compétition.
 
 - **Techno** : [Astro](https://astro.build) en sortie statique, TypeScript, CSS écrit à la main.
 - **Données** : le jeu public d'[OpenPowerlifting](https://www.openpowerlifting.org), régénéré chaque mois.
-- **Hébergement** : mutualisé OVH, alimenté par GitHub Actions en FTPS.
+- **Hébergement** : mutualisé OVH, alimenté par GitHub Actions en SFTP (rsync sur SSH).
 
 ---
 
@@ -23,9 +23,9 @@ officiels de compétition.
                     ▼                                │
         GitHub Actions ── astro build ──> dist/ ─────┘
                     │
-                    │  FTPS
+                    │  rsync sur SSH (port 22)
                     ▼
-             OVH /www/  ──>  https://sbd.re
+          OVH /sbd-re/  ──>  https://sbd.re
 ```
 
 Point important : **OVH ne fait que servir des fichiers HTML**. Aucun code ne
@@ -187,9 +187,18 @@ Dépôt GitHub → **Settings** → **Secrets and variables** → **Actions** �
 
 | Nom | Valeur |
 |---|---|
-| `FTP_SERVER` | l'adresse du serveur FTP OVH |
+| `FTP_SERVER` | `ftp.cluster0XX.hosting.ovh.net` — le même hôte pour le FTP et le SSH |
 | `FTP_USERNAME` | l'identifiant de l'utilisateur dédié |
 | `FTP_PASSWORD` | son mot de passe |
+
+**Pourquoi SFTP et non FTPS.** Le mutualisé OVH n'implémente pas le FTPS : le
+serveur répond `500 This security scheme is not implemented` à la commande
+`AUTH TLS`. Le SSH est en revanche disponible sur le même hôte, port 22. Le
+déploiement passe donc par `rsync` à travers SSH — chiffré, incrémental, et il
+transfère correctement les fichiers commençant par un point. Ce dernier point
+n'est pas un détail : beaucoup d'outils SFTP ignorent silencieusement
+`.htaccess`, et le site fonctionnerait alors « presque », sans redirection HTTPS
+ni page 404.
 
 Un secret GitHub n'est jamais réaffichable : garde-les aussi dans ton
 gestionnaire de mots de passe.

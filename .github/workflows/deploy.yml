@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   deployer:
-    name: Build Astro puis dépôt FTPS
+    name: Build Astro puis dépôt SFTP
     runs-on: ubuntu-latest
 
     steps:
@@ -45,71 +45,103 @@ jobs:
           PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
           PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
 
-      # Étape de diagnostic. Le journal détaillé d'une exécution n'est lisible que
-      # par un administrateur du dépôt ; le RÉSUMÉ de job, lui, est public. On y
-      # écrit donc l'essentiel pour pouvoir comprendre un échec de connexion sans
-      # avoir à ouvrir l'interface GitHub.
+      # ---------------------------------------------------------------------
+      # Dépôt par SFTP (SSH), et non par FTPS.
       #
-      # `continue-on-error` : ce test ne doit jamais faire échouer le
-      # déploiement, il ne fait qu'observer.
-      - name: Diagnostic de la connexion FTPS
-        continue-on-error: true
+      # L'hébergement mutualisé OVH n'implémente pas le FTPS : le serveur
+      # répond « 500 This security scheme is not implemented » à la commande
+      # AUTH TLS. Le SSH, lui, est bien disponible sur le même hôte, port 22.
+      #
+      # On utilise rsync plutôt qu'un outil SFTP classique pour deux raisons :
+      # il transfère uniquement les fichiers réellement modifiés, et surtout il
+      # gère les fichiers commençant par un point. Beaucoup d'outils les
+      # ignorent silencieusement — or `.htaccess` porte la redirection HTTPS,
+      # la page 404 et les en-têtes de cache. Le site fonctionnerait « presque »,
+      # ce qui est la pire des situations à diagnostiquer.
+      # ---------------------------------------------------------------------
+      - name: Installer rsync et sshpass
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq rsync sshpass
+
+      - name: Repérer le dossier cible sur le serveur
+        id: cible
         env:
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          SSH_HOST: ${{ secrets.FTP_SERVER }}
+          SSH_USER: ${{ secrets.FTP_USERNAME }}
+          SSH_PASS: ${{ secrets.FTP_PASSWORD }}
         run: |
-          {
-            echo "## Diagnostic de la connexion FTPS"
-            echo ""
-            # On vérifie la PRÉSENCE des secrets, jamais leur contenu : ce résumé
-            # est public.
-            for cle in FTP_SERVER FTP_USERNAME FTP_PASSWORD; do
-              if [ -z "${!cle}" ]; then
-                echo "- \`$cle\` : **absent ou vide**"
-              else
-                echo "- \`$cle\` : renseigné"
-              fi
-            done
-            echo ""
-          } >> "$GITHUB_STEP_SUMMARY"
+          set -u
+          SSH_OPTS="-p 22 -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20"
 
-          # Simple listing de la racine, avec le même protocole que le
-          # déploiement : FTPS explicite sur le port 21.
-          SORTIE=$(curl --silent --show-error --ssl-reqd --list-only \
-                        --connect-timeout 20 --max-time 60 \
-                        --user "$FTP_USERNAME:$FTP_PASSWORD" \
-                        "ftp://$FTP_SERVER/" 2>&1)
-          CODE=$?
+          # On regarde d'abord OÙ l'on atterrit. Selon que le compte est
+          # cloisonné ou non, le dossier de connexion est soit le dossier du
+          # site lui-même, soit la racine de l'hébergement qui le contient.
+          LISTING=$(sshpass -p "$SSH_PASS" ssh $SSH_OPTS "$SSH_USER@$SSH_HOST" \
+                    'echo "PWD=$(pwd)"; ls -A' 2>&1) || {
+            echo "Connexion SSH impossible." >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "$LISTING" | tail -20 >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
+
+          if printf '%s' "$LISTING" | grep -qx 'sbd-re'; then
+            # Compte non cloisonné : le dossier du site est un sous-dossier.
+            CIBLE="./sbd-re"
+          else
+            # Compte cloisonné : on est déjà dans le dossier du site.
+            CIBLE="."
+          fi
+          echo "cible=$CIBLE" >> "$GITHUB_OUTPUT"
 
           {
-            echo "### Listing de la racine FTP"
+            echo "## Dossier cible"
             echo ""
-            echo "Code de sortie curl : \`$CODE\` ($( [ $CODE -eq 0 ] && echo 'succès' || echo 'échec' ))"
+            echo "Destination retenue : \`$CIBLE\`"
+            echo ""
+            echo "<details><summary>Contenu du dossier de connexion</summary>"
             echo ""
             echo '```'
-            echo "$SORTIE" | head -40
+            echo "$LISTING"
             echo '```'
+            echo ""
+            echo "</details>"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Déposer sur OVH
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          # FTPS et jamais FTP simple : en FTP, identifiant et mot de passe
-          # transitent en clair sur le réseau.
-          protocol: ftps
-          local-dir: ./dist/
-          # L'utilisateur FTP est restreint (« chrooté ») au dossier du site :
-          # la racine qu'il voit EST ce dossier. On dépose donc à la racine, et
-          # surtout pas dans un sous-dossier `www/`, qui créerait un niveau
-          # d'imbrication de trop sans provoquer la moindre erreur.
-          server-dir: ./
-          # L'action garde un état de synchronisation sur le serveur et ne
-          # renvoie que les fichiers réellement modifiés.
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
+      - name: Déposer le site
+        env:
+          SSH_HOST: ${{ secrets.FTP_SERVER }}
+          SSH_USER: ${{ secrets.FTP_USERNAME }}
+          SSH_PASS: ${{ secrets.FTP_PASSWORD }}
+          CIBLE: ${{ steps.cible.outputs.cible }}
+        run: |
+          set -u
+          # Volontairement SANS --delete tant que la destination n'est pas
+          # confirmée par un premier déploiement réussi : une erreur de chemin
+          # combinée à --delete effacerait l'hébergement.
+          sshpass -p "$SSH_PASS" rsync -rlptz --human-readable --stats \
+            -e "ssh -p 22 -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20" \
+            ./dist/ "$SSH_USER@$SSH_HOST:$CIBLE/"
+
+      - name: Vérifier ce qui est arrivé
+        if: always()
+        env:
+          SSH_HOST: ${{ secrets.FTP_SERVER }}
+          SSH_USER: ${{ secrets.FTP_USERNAME }}
+          SSH_PASS: ${{ secrets.FTP_PASSWORD }}
+          CIBLE: ${{ steps.cible.outputs.cible }}
+        run: |
+          set -u
+          SSH_OPTS="-p 22 -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20"
+          VERIF=$(sshpass -p "$SSH_PASS" ssh $SSH_OPTS "$SSH_USER@$SSH_HOST" \
+            "cd '$CIBLE' 2>/dev/null && echo \"PWD=\$(pwd)\" && \
+             echo \"index.html : \$( [ -f index.html ] && echo present || echo ABSENT )\" && \
+             echo \".htaccess  : \$( [ -f .htaccess ] && echo present || echo ABSENT )\" && \
+             echo \"fichiers   : \$(find . -type f | wc -l)\" && \
+             echo \"pages ath. : \$(find ./athlete -maxdepth 1 -type d 2>/dev/null | wc -l)\"" 2>&1) || true
+          {
+            echo "## Vérification après dépôt"
+            echo ""
+            echo '```'
+            echo "$VERIF"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
