@@ -41,6 +41,10 @@
   --p-light-accent: #a8410a;
   --p-light-accent-hover: #8f3406;
   --p-light-on-accent: #ffffff;
+  /* Bleu de vérification. Seule couleur du site en dehors de l'accent orange :
+     c'est un pictogramme au code universellement compris, pas une couleur de
+     thème. Il n'apparaît jamais sur autre chose qu'un badge de record. */
+  --p-light-verified: #0b6bb5;
 
   /* Thème sombre : noir cassé chaud, jamais du noir pur.
      Le noir pur crée un contraste trop violent avec le texte clair et fait
@@ -53,6 +57,7 @@
   --p-dark-accent: #ff7a1a; /* orange plein : il peut être vif sur fond sombre */
   --p-dark-accent-hover: #ff9448;
   --p-dark-on-accent: #1a1005;
+  --p-dark-verified: #4da3f5;
 
   /* ----------------------------------------------------------------------
    * 2. RÔLES — thème clair par défaut.
@@ -66,9 +71,10 @@
   --accent: var(--p-light-accent);
   --accent-hover: var(--p-light-accent-hover);
   --on-accent: var(--p-light-on-accent);
+  --verified: var(--p-light-verified);
 
   /* ----------------------------------------------------------------------
-   * 3. Typographie, espacements, rayons — communs aux deux thèmes.
+   * 3. Typographie, espacements, rayons, communs aux deux thèmes.
    * -------------------------------------------------------------------- */
 
   /*
@@ -128,6 +134,7 @@
     --accent: var(--p-dark-accent);
     --accent-hover: var(--p-dark-accent-hover);
     --on-accent: var(--p-dark-on-accent);
+    --verified: var(--p-dark-verified);
   }
 }
 
@@ -142,6 +149,7 @@
   --accent: var(--p-dark-accent);
   --accent-hover: var(--p-dark-accent-hover);
   --on-accent: var(--p-dark-on-accent);
+  --verified: var(--p-dark-verified);
 }
 
 /* ------------------------------------------------------------------------
@@ -194,12 +202,33 @@ p {
   text-wrap: pretty;
 }
 
+/*
+ * Tout lien textuel est souligné, en permanence.
+ *
+ * Le soulignement est le seul indice de cliquabilité qui fonctionne
+ * indépendamment de la couleur : une personne daltonienne ou un écran mal
+ * calibré ne distinguent pas un mot orange d'un mot noir. Réserver le
+ * soulignement au survol le rend inutile au tactile, où il n'y a pas de survol.
+ *
+ * Les rares éléments qui échappent à la règle portent la classe `.lien-nu` :
+ * boutons et onglets de navigation, dont la forme signale déjà l'interactivité.
+ */
 a {
   color: var(--accent);
-  text-underline-offset: 0.2em;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
 }
 a:hover {
   color: var(--accent-hover);
+  text-decoration-thickness: 2px;
+}
+
+.lien-nu {
+  text-decoration: none;
+}
+.lien-nu:hover {
+  text-decoration: none;
 }
 
 img,
