@@ -158,14 +158,24 @@ des résultats passés.
 À faire une seule fois. Les étapes 1 à 3 sont de ton ressort : elles touchent à
 ton compte OVH et à tes identifiants.
 
-### 1. Créer un utilisateur FTP dédié chez OVH
+### 1. Créer un dossier et un utilisateur FTP dédiés chez OVH
 
-Espace client OVH → **Hébergements** → ton hébergement → onglet **FTP - SSH** →
-**Ajouter un utilisateur**.
+Le site vit dans **son propre dossier** (`sbd-re`), pas à la racine de
+l'hébergement. Deux avantages : il reste isolé de tout autre site hébergé sur le
+même compte, et l'utilisateur FTP peut être enfermé dedans.
 
-Crée un utilisateur *dédié à ce déploiement*, avec pour racine `/www`. N'utilise
-pas ton compte FTP principal : si le mot de passe fuite un jour, tu ne révoques
-que cet accès-là, sans rien casser d'autre.
+1. Crée le dossier `sbd-re` à la racine de ton espace FTP.
+2. Espace client OVH → **Hébergements** → ton hébergement → onglet
+   **FTP - SSH** → **Ajouter un utilisateur**, avec pour racine ce dossier.
+
+L'utilisateur est alors *chrooté* : quand le déploiement se connecte, la racine
+qu'il voit **est** le dossier `sbd-re`. C'est pourquoi `deploy.yml` dépose dans
+`./` et non dans `./www/`. Se tromper ici ne provoque aucune erreur — les
+fichiers atterrissent simplement dans un sous-dossier fantôme et le site reste
+introuvable.
+
+N'utilise pas ton compte FTP principal : si ce mot de passe fuite un jour, tu ne
+révoques que cet accès-là, sans rien casser d'autre.
 
 Note trois informations : **serveur** (`ftp.cluster0XX.hosting.ovh.net`),
 **identifiant**, **mot de passe**.
@@ -190,8 +200,9 @@ Le domaine `sbd.re` étant déjà chez OVH, tout se passe au même endroit.
 
 1. Espace client → **Hébergements** → ton hébergement → onglet **Multisite** →
    **Ajouter un domaine**.
-2. Domaine `sbd.re`, dossier racine `www`, et coche **« Le domaine est-il un
-   alias ? » : non**.
+2. Domaine `sbd.re`, **dossier racine `sbd-re`** — le même que celui du
+   déploiement, sinon le domaine servirait un dossier vide. Réponds **non** à
+   « Le domaine est-il un alias ? ».
 3. Ajoute également `www.sbd.re` sur le même dossier — le `.htaccess` le
    redirigera vers `sbd.re`.
 4. Toujours dans **Multisite**, active le **certificat SSL** (Let's Encrypt,

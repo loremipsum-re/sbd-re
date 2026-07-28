@@ -45,6 +45,53 @@ jobs:
           PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
           PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
 
+      # Étape de diagnostic. Le journal détaillé d'une exécution n'est lisible que
+      # par un administrateur du dépôt ; le RÉSUMÉ de job, lui, est public. On y
+      # écrit donc l'essentiel pour pouvoir comprendre un échec de connexion sans
+      # avoir à ouvrir l'interface GitHub.
+      #
+      # `continue-on-error` : ce test ne doit jamais faire échouer le
+      # déploiement, il ne fait qu'observer.
+      - name: Diagnostic de la connexion FTPS
+        continue-on-error: true
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          {
+            echo "## Diagnostic de la connexion FTPS"
+            echo ""
+            # On vérifie la PRÉSENCE des secrets, jamais leur contenu : ce résumé
+            # est public.
+            for cle in FTP_SERVER FTP_USERNAME FTP_PASSWORD; do
+              if [ -z "${!cle}" ]; then
+                echo "- \`$cle\` : **absent ou vide**"
+              else
+                echo "- \`$cle\` : renseigné"
+              fi
+            done
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Simple listing de la racine, avec le même protocole que le
+          # déploiement : FTPS explicite sur le port 21.
+          SORTIE=$(curl --silent --show-error --ssl-reqd --list-only \
+                        --connect-timeout 20 --max-time 60 \
+                        --user "$FTP_USERNAME:$FTP_PASSWORD" \
+                        "ftp://$FTP_SERVER/" 2>&1)
+          CODE=$?
+
+          {
+            echo "### Listing de la racine FTP"
+            echo ""
+            echo "Code de sortie curl : \`$CODE\` ($( [ $CODE -eq 0 ] && echo 'succès' || echo 'échec' ))"
+            echo ""
+            echo '```'
+            echo "$SORTIE" | head -40
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Déposer sur OVH
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
