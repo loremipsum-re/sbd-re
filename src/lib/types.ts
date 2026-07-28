@@ -1,0 +1,49 @@
+/**
+ * Formes des données officielles, telles que produites par
+ * scripts/update-data.mjs. Ce fichier est le contrat entre le script de données
+ * et le site : si l'un change, l'autre doit suivre.
+ */
+
+export type Sex = 'M' | 'F';
+
+/**
+ * Format de la compétition.
+ *  SBD = squat + développé couché + soulevé de terre (« full power »)
+ *  B   = développé couché seul
+ */
+export type EventCode = 'SBD' | 'B';
+
+export interface Result {
+  /** Nom canonique OpenPowerlifting. Peut porter un suffixe « #2 » en cas d'homonymie. */
+  name: string;
+  sex: Sex;
+  event: EventCode;
+  equipment: string;
+  division: string;
+  ageClass: string;
+  /** Date de début du meet, au format ISO (AAAA-MM-JJ). */
+  date: string;
+  meetName: string;
+  meetTown: string;
+  bodyweightKg: number | null;
+  /** Catégorie de poids telle qu'annoncée par la fédération : « 93 », « 120+ »… */
+  weightClassKg: string;
+  bestSquatKg: number | null;
+  bestBenchKg: number | null;
+  bestDeadliftKg: number | null;
+  /**
+   * ATTENTION — renseigné même pour les compétitions de développé couché seul,
+   * où il vaut simplement la meilleure barre au bench. Il n'est donc comparable
+   * qu'entre lignes de même `event`. Tout classement au total doit filtrer sur
+   * event === 'SBD'.
+   */
+  totalKg: number | null;
+  /** Score relatif au poids de corps. Même réserve que totalKg. */
+  dots: number | null;
+  goodlift: number | null;
+  /** Place, ou « G » pour un athlète invité. */
+  place: string;
+}
+
+/** Un des quatre classements proposés par le site. */
+export type LiftKey = 'squat' | 'bench' | 'deadlift' | 'total';
