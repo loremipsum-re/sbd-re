@@ -1,0 +1,33 @@
+{
+  "_lisezmoi": [
+    "Faux appariements à écarter des résultats hors de La Réunion.",
+    "",
+    "POURQUOI CE FICHIER EXISTE",
+    "",
+    "Les compétitions disputées hors de l'île sont rattachées à un athlète par",
+    "son NOM exact, tel qu'OpenPowerlifting l'écrit. Le projet distingue en",
+    "principe les homonymes par un suffixe « #2 », mais il lui arrive de ne pas",
+    "les avoir repérés. Deux personnes différentes se retrouvent alors fusionnées",
+    "sous un même nom, et les compétitions de l'une apparaissent sur la fiche de",
+    "l'autre.",
+    "",
+    "Ce fichier permet de corriger ces cas à la main. Une entrée peut viser :",
+    "  - un nom seul                  → tous ses résultats extérieurs sont écartés",
+    "  - un nom + une fédération      → seuls ceux de cette fédération",
+    "  - un nom + une date            → seule cette compétition",
+    "",
+    "Les résultats obtenus À La Réunion ne sont jamais concernés : ils viennent",
+    "de compétitions dont on a vérifié le lieu.",
+    "",
+    "Si un athlète te signale un résultat qui n'est pas le sien, ajoute-le ici,",
+    "et signale aussi le doublon à OpenPowerlifting pour qu'il soit corrigé à la",
+    "source."
+  ],
+  "athletes": [
+    {
+      "name": "Kobe Washington",
+      "federations": ["THSPA"],
+      "raison": "Tournois lycéens au Texas en 2020, sans rapport avec l'athlète présent à La Réunion en 2023 et 2024. Homonymie non détectée par OpenPowerlifting."
+    }
+  ]
+}

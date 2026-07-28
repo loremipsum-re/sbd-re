@@ -55,3 +55,18 @@ export type LiftKey = 'squat' | 'bench' | 'deadlift' | 'total';
 
 /** Métal d'une distinction : coupe de classement ou médaille de podium. */
 export type Metal = 'or' | 'argent' | 'bronze';
+
+/**
+ * Résultat obtenu hors de La Réunion par un athlète du site.
+ *
+ * Ces lignes ne comptent NI pour le classement NI pour les records : ce sont
+ * des records de l'île, décernés sur un plateau réunionnais. Elles figurent
+ * uniquement sur la fiche de l'athlète et sur la page qui leur est consacrée,
+ * pour que son parcours soit complet.
+ */
+export interface ResultExterieur extends Result {
+  meetCountry: string;
+  meetState: string;
+  /** Fédération organisatrice : FFForce, EPF, IPF… */
+  federation: string;
+}

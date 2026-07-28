@@ -186,6 +186,127 @@ for await (const row of rows) {
 process.stdout.write('\n');
 const duree = ((Date.now() - debut) / 1000).toFixed(1);
 
+// ---------------------------------------------------------------------------
+// Deuxième passe : les compétitions disputées HORS de La Réunion.
+//
+// Les athlètes réunionnais se déplacent, en métropole comme à l'étranger, et
+// ces résultats disparaissaient jusqu'ici du site. Ils comptent pourtant dans
+// leur parcours.
+//
+// Deux passes sont nécessaires, et non une seule : on ne connaît la liste des
+// athlètes réunionnais qu'APRÈS avoir parcouru tout le dump. Garder en mémoire
+// les 4 millions de lignes en attendant serait évidemment exclu.
+//
+// L'identité repose sur le nom exact tel qu'OpenPowerlifting l'écrit. Ce n'est
+// pas une approximation : le projet distingue lui-même les homonymes par un
+// suffixe « #2 », donc deux lignes portant la même chaîne désignent bien la
+// même personne.
+// ---------------------------------------------------------------------------
+const athletesReunion = new Set(resultats.map((r) => r.name));
+const exterieur = [];
+const federationsExterieur = new Map();
+const paysExterieur = new Map();
+let ecarteesHomonymie = 0;
+
+/**
+ * Faux appariements écartés à la main.
+ *
+ * L'identité repose sur le nom exact, et OpenPowerlifting ne repère pas
+ * toujours les homonymes. Sans cette liste, les tournois lycéens texans d'un
+ * « Kobe Washington » atterriraient sur la fiche d'un athlète réunionnais du
+ * même nom.
+ */
+const exclusionsExterieur = JSON.parse(
+  readFileSync(path.join(DATA_DIR, 'exterieur-exclude.json'), 'utf8'),
+).athletes ?? [];
+
+const estFauxAppariement = (name, federation, date) =>
+  exclusionsExterieur.some(
+    (e) =>
+      e.name === name &&
+      (!e.federations || e.federations.includes(federation)) &&
+      (!e.dates || e.dates.includes(date)),
+  );
+
+console.log('\nDeuxième passe : résultats hors de La Réunion…');
+const debut2 = Date.now();
+let lignesLues2 = 0;
+
+const { index: index2, rows: rows2 } = await openRows();
+/** Résout une colonne par son nom, en échouant bruyamment si elle manque. */
+const c2 = (nom) => {
+  const i = index2[nom];
+  if (i === undefined) throw new Error(`Colonne « ${nom} » absente du dump.`);
+  return i;
+};
+
+for await (const row of rows2) {
+  lignesLues2++;
+  if (lignesLues2 % 500_000 === 0) {
+    process.stdout.write(
+      `  ${(lignesLues2 / 1_000_000).toFixed(1)} M lignes — mémoire ${memoryUsageMb()} Mo\r`,
+    );
+  }
+
+  const name = row[c2('Name')] ?? '';
+  if (!athletesReunion.has(name)) continue;
+
+  const date = row[c2('Date')] ?? '';
+  const meetName = row[c2('MeetName')] ?? '';
+  // Les compétitions réunionnaises sont déjà dans le fichier principal.
+  if (meetsRetenus.has(`${date}|${meetName}`)) continue;
+
+  const event = row[c2('Event')] ?? '';
+  if (!EVENTS_RETENUS.has(event)) continue;
+  if (PLACES_ECARTEES.has(row[c2('Place')] ?? '')) continue;
+
+  const federation = row[c2('Federation')] ?? '';
+  const meetCountry = row[c2('MeetCountry')] ?? '';
+
+  if (estFauxAppariement(name, federation, date)) {
+    ecarteesHomonymie++;
+    continue;
+  }
+
+  federationsExterieur.set(federation, (federationsExterieur.get(federation) ?? 0) + 1);
+  paysExterieur.set(meetCountry, (paysExterieur.get(meetCountry) ?? 0) + 1);
+
+  exterieur.push({
+    name,
+    sex: row[c2('Sex')] ?? '',
+    event,
+    equipment: row[c2('Equipment')] ?? '',
+    division: row[c2('Division')] ?? '',
+    ageClass: row[c2('AgeClass')] ?? '',
+    date,
+    meetName,
+    meetTown: row[c2('MeetTown')] ?? '',
+    meetCountry,
+    meetState: row[c2('MeetState')] ?? '',
+    federation,
+    bodyweightKg: nombre(row[c2('BodyweightKg')]),
+    weightClassKg: row[c2('WeightClassKg')] ?? '',
+    bestSquatKg: nombre(row[c2('Best3SquatKg')]),
+    bestBenchKg: nombre(row[c2('Best3BenchKg')]),
+    bestDeadliftKg: nombre(row[c2('Best3DeadliftKg')]),
+    totalKg: nombre(row[c2('TotalKg')]),
+    dots: nombre(row[c2('Dots')]),
+    goodlift: nombre(row[c2('Goodlift')]),
+    place: row[c2('Place')] ?? '',
+  });
+}
+
+process.stdout.write('\n');
+const duree2 = ((Date.now() - debut2) / 1000).toFixed(1);
+
+exterieur.sort(
+  (a, b) =>
+    a.date.localeCompare(b.date) ||
+    a.meetName.localeCompare(b.meetName) ||
+    a.name.localeCompare(b.name) ||
+    a.event.localeCompare(b.event),
+);
+
 // Tri déterministe : c'est lui qui garantit l'idempotence. Sans ordre stable,
 // deux exécutions identiques produiraient des fichiers différents et le
 // workflow mensuel créerait un commit à chaque passage, pour rien.
@@ -201,6 +322,11 @@ mkdirSync(OUT_DIR, { recursive: true });
 writeFileSync(
   path.join(OUT_DIR, 'results.json'),
   JSON.stringify(resultats, null, 2) + '\n',
+  'utf8',
+);
+writeFileSync(
+  path.join(OUT_DIR, 'results-exterieur.json'),
+  JSON.stringify(exterieur, null, 2) + '\n',
   'utf8',
 );
 
@@ -271,7 +397,31 @@ if (listeCandidats.length > 0) {
   console.log('  Aucun meet en attente de tri.');
 }
 
-console.log('\nÉcrit : src/data/results.json');
+// ---------------------------------------------------------------------------
+// Bilan de la deuxième passe
+// ---------------------------------------------------------------------------
+const athletesVoyageurs = new Set(exterieur.map((r) => r.name));
+const datesExt = exterieur.map((r) => r.date).sort();
+
+console.log('');
+console.log(`Hors de La Réunion (lu en ${duree2} s)`);
+console.log(`  Résultats ............. ${exterieur.length}`);
+console.log(
+  `  Athlètes concernés .... ${athletesVoyageurs.size} sur ${athletesReunion.size}`,
+);
+console.log(`  Écartés (homonymie) ... ${ecarteesHomonymie}`);
+console.log(
+  `  Période ............... ${datesExt[0] ?? '—'} → ${datesExt[datesExt.length - 1] ?? '—'}`,
+);
+for (const [pays, n] of [...paysExterieur].sort((a, b) => b[1] - a[1]).slice(0, 6)) {
+  console.log(`      ${(pays || '(inconnu)').padEnd(16)} ${n}`);
+}
+console.log('  Fédérations :');
+for (const [fed, n] of [...federationsExterieur].sort((a, b) => b[1] - a[1]).slice(0, 6)) {
+  console.log(`      ${(fed || '(inconnue)').padEnd(16)} ${n}`);
+}
+
+console.log('\nÉcrit : src/data/results.json et src/data/results-exterieur.json');
 
 // ---------------------------------------------------------------------------
 
