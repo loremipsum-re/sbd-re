@@ -55,8 +55,11 @@ jobs:
           # transitent en clair sur le réseau.
           protocol: ftps
           local-dir: ./dist/
-          # Racine du site chez OVH en mutualisé.
-          server-dir: ./www/
+          # L'utilisateur FTP est restreint (« chrooté ») au dossier du site :
+          # la racine qu'il voit EST ce dossier. On dépose donc à la racine, et
+          # surtout pas dans un sous-dossier `www/`, qui créerait un niveau
+          # d'imbrication de trop sans provoquer la moindre erreur.
+          server-dir: ./
           # L'action garde un état de synchronisation sur le serveur et ne
           # renvoie que les fichiers réellement modifiés.
           exclude: |
