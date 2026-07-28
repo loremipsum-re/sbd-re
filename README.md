@@ -131,14 +131,18 @@ Puis relance `npm run data:update` et envoie sur GitHub.
 
 ### Périmètre retenu
 
-- **Classement au total** : full power uniquement (`SBD`).
-- **Records de développé couché** : toutes les compétitions, y compris celles de
-  développé couché seul — elles représentent 26 des 61 compétitions de l'île.
-- **Records de squat, soulevé de terre et total** : full power uniquement.
+- **Classement au total** : full power uniquement (`SBD`). Sur une compétition
+  d'un seul mouvement, le « total » publié par OpenPowerlifting n'est que cette
+  barre-là — le retenir mettrait un développé couché de 130 kg en concurrence
+  avec un vrai total de 700 kg.
+- **Records par mouvement** : tous les formats (`SBD`, `B`, `S`, `D`). Une barre
+  compte dès lors qu'elle a été soulevée devant des juges. Le développé couché
+  seul représente 26 des 61 compétitions de l'île.
+- **Record au total** : full power uniquement, pour la raison ci-dessus.
 - **Écartés** : disqualifications (dont dopage) et forfaits.
-- **Non retenus aujourd'hui** : les formats squat seul et soulevé de terre seul
-  (48 résultats). Pour les inclure, ajoute `'S'` et `'D'` à la constante
-  `EVENTS_RETENUS` en tête de `scripts/update-data.mjs`.
+
+Le périmètre se règle en une ligne : la constante `EVENTS_RETENUS`, en tête de
+`scripts/update-data.mjs`.
 
 ### Annoncer la prochaine compétition
 
