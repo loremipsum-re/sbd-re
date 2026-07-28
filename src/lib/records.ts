@@ -169,6 +169,78 @@ export function cleRecord(
   return `${lift}|${nom}|${date}|${meetName}`;
 }
 
+export interface EtapeRecord {
+  date: string;
+  meetName: string;
+  meetTown: string;
+  holder: string;
+  slug: string;
+  valueKg: number;
+  /** Kilos gagnés sur le record précédent. Zéro pour la première marque. */
+  gainKg: number;
+  /** Nombre de jours pendant lesquels cette marque a tenu, ou null si elle tient encore. */
+  jours: number | null;
+}
+
+/**
+ * Histoire d'un record : qui l'a détenu, quand, et de combien il l'a amélioré.
+ *
+ * On parcourt les performances dans l'ordre chronologique en ne retenant que
+ * celles qui dépassent la meilleure marque connue à cet instant. C'est bien
+ * une succession de records, et non la liste des meilleures performances : une
+ * barre supérieure réalisée plus tard efface les suivantes, jamais l'inverse.
+ *
+ * Nuance : à égalité stricte, la marque la plus ancienne reste le record. On ne
+ * retient donc qu'une amélioration réelle.
+ */
+export function progressionRecord(
+  lift: LiftKey,
+  sex: Sex,
+  weightClassId: string,
+  equipement: EquipmentGroup,
+  source: Result[] = results,
+): EtapeRecord[] {
+  const eligibles = source
+    .filter(
+      (r) =>
+        r.sex === sex &&
+        r.weightClassKg === weightClassId &&
+        equipmentGroup(r.equipment) === equipement &&
+        (valeurPour(r, lift) ?? 0) > 0,
+    )
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const etapes: EtapeRecord[] = [];
+  let meilleure = 0;
+
+  for (const r of eligibles) {
+    const valeur = valeurPour(r, lift) as number;
+    if (valeur <= meilleure) continue;
+
+    etapes.push({
+      date: r.date,
+      meetName: r.meetName,
+      meetTown: r.meetTown,
+      holder: r.name,
+      slug: athleteSlug(r.name),
+      valueKg: valeur,
+      gainKg: meilleure === 0 ? 0 : Math.round((valeur - meilleure) * 100) / 100,
+      jours: null,
+    });
+    meilleure = valeur;
+  }
+
+  // Durée de règne de chaque marque, la dernière étant toujours en cours.
+  const JOUR = 86_400_000;
+  for (let i = 0; i < etapes.length - 1; i++) {
+    const debut = new Date(`${etapes[i].date}T12:00:00Z`).getTime();
+    const fin = new Date(`${etapes[i + 1].date}T12:00:00Z`).getTime();
+    etapes[i].jours = Math.round((fin - debut) / JOUR);
+  }
+
+  return etapes;
+}
+
 /** Types d'équipement réellement présents dans les données, pour ne pas afficher de sections vides. */
 export function equipementsPresents(source: Result[] = results): EquipmentGroup[] {
   const vus = new Set<EquipmentGroup>();
