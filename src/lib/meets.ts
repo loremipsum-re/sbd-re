@@ -7,11 +7,13 @@
  */
 
 import { results } from './data';
-import { meetKey } from './slug';
+import { meetKey, meetSlug } from './slug';
 import type { EventCode, Result } from './types';
 
 export interface Meet {
   key: string;
+  /** Identifiant d'URL, de la forme « 2025-07-19-reunion-island-meet ». */
+  slug: string;
   date: string;
   meetName: string;
   meetTown: string;
@@ -31,6 +33,7 @@ export function listeMeets(source: Result[] = results): Meet[] {
       entree = {
         meet: {
           key: cle,
+          slug: meetSlug(r.date, r.meetName),
           date: r.date,
           meetName: r.meetName,
           meetTown: r.meetTown,
@@ -69,6 +72,27 @@ export function libelleEvent(event: EventCode): string {
     D: 'Soulevé de terre',
   };
   return libelles[event] ?? event;
+}
+
+/**
+ * Résultats d'une compétition, classés comme sur le plateau : les places
+ * numérotées d'abord, puis les athlètes invités, et à total égal le plus léger
+ * devant, comme le veut la règle en force athlétique.
+ */
+export function resultatsDuMeet(cle: string, source: Result[] = results): Result[] {
+  return source
+    .filter((r) => meetKey(r.date, r.meetName) === cle)
+    .sort((a, b) => {
+      const pa = Number.parseInt(a.place, 10);
+      const pb = Number.parseInt(b.place, 10);
+      const va = Number.isFinite(pa) ? pa : 999;
+      const vb = Number.isFinite(pb) ? pb : 999;
+      return (
+        va - vb ||
+        (b.totalKg ?? 0) - (a.totalKg ?? 0) ||
+        (a.bodyweightKg ?? 0) - (b.bodyweightKg ?? 0)
+      );
+    });
 }
 
 /** Compétitions groupées par année, pour un affichage en sections. */

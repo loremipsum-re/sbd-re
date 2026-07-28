@@ -1,0 +1,392 @@
+---
+import InteractiveTable from '../../components/InteractiveTable.astro';
+import VerifiedBadge from '../../components/VerifiedBadge.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { equipmentGroup, equipmentLabel, parseWeightClass, sexLabel } from '../../lib/categories';
+import { dateLongue, nombre, place, points } from '../../lib/format';
+import { libelleEvent, listeMeets, resultatsDuMeet } from '../../lib/meets';
+import { cleRecord, clesRecords } from '../../lib/records';
+import { athleteSlug } from '../../lib/slug';
+import type { LiftKey, Result } from '../../lib/types';
+
+export async function getStaticPaths() {
+  return listeMeets().map((meet) => ({
+    params: { slug: meet.slug },
+    props: { meet },
+  }));
+}
+
+const { meet } = Astro.props;
+const resultats = resultatsDuMeet(meet.key);
+const records = clesRecords();
+
+const aDuFullPower = meet.events.includes('SBD');
+const hommes = resultats.filter((r) => r.sex === 'M').length;
+const femmes = resultats.filter((r) => r.sex === 'F').length;
+
+/** Une barre est-elle le record en cours de sa catégorie ? */
+const estRecord = (r: Result, lift: LiftKey) =>
+  records.has(cleRecord(lift, r.name, r.date, r.meetName));
+
+const description =
+  `${meet.meetName}, ${dateLongue(meet.date)}` +
+  (meet.meetTown ? ` à ${meet.meetTown}` : '') +
+  `. Résultats complets des ${meet.athletes} powerlifters engagés.`;
+---
+
+<BaseLayout titre={meet.meetName} description={description}>
+  <div class="wrap">
+    <p class="fil"><a href="/competitions/">Toutes les compétitions</a></p>
+
+    <header class="entete-page">
+      <h1>{meet.meetName}</h1>
+      <p class="lieu">
+        {dateLongue(meet.date)}
+        {meet.meetTown && <> à {meet.meetTown}</>}
+      </p>
+      <p class="formats">
+        {meet.events.map((e) => <span class="format">{libelleEvent(e)}</span>)}
+      </p>
+    </header>
+
+    <dl class="stats">
+      <div>
+        <dt>Athlètes</dt>
+        <dd class="num">{meet.athletes}</dd>
+      </div>
+      <div>
+        <dt>Résultats</dt>
+        <dd class="num">{meet.resultats}</dd>
+      </div>
+      <div>
+        <dt>Hommes</dt>
+        <dd class="num">{hommes}</dd>
+      </div>
+      <div>
+        <dt>Femmes</dt>
+        <dd class="num">{femmes}</dd>
+      </div>
+    </dl>
+
+    <h2>Résultats</h2>
+
+    <InteractiveTable
+      recherche="Nom, catégorie, club…"
+      singulier="résultat"
+      pluriel="résultats"
+      total={resultats.length}
+    >
+      <Fragment slot="filtres">
+        <div class="champ">
+          <label for="f-sexe">Sexe</label>
+          <select id="f-sexe" data-filtre="sexe">
+            <option value="">Tous</option>
+            <option value="M">Hommes</option>
+            <option value="F">Femmes</option>
+          </select>
+        </div>
+      </Fragment>
+
+      <div class="cadre">
+        <table data-tableau>
+          <thead>
+            <tr>
+              <th scope="col" class="col-place" data-tri data-type="nombre">Place</th>
+              <th scope="col" data-tri>Athlète</th>
+              <th scope="col" class="nombre" data-tri data-type="nombre">Cat.</th>
+              <th scope="col" class="nombre" data-tri data-type="nombre">Poids</th>
+              <th scope="col" class="nombre" data-tri data-type="nombre">Squat</th>
+              <th scope="col" class="nombre" data-tri data-type="nombre">DC</th>
+              <th scope="col" class="nombre" data-tri data-type="nombre">SDT</th>
+              <th scope="col" class="nombre" data-tri data-type="nombre">Total</th>
+              <th scope="col" class="nombre" data-tri data-type="nombre">Dots</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              resultats.map((r) => {
+                const classe = parseWeightClass(r.weightClassKg);
+                return (
+                  <tr data-sexe={r.sex}>
+                    <td class="place" data-valeur={Number.parseInt(r.place, 10) || 999}>
+                      {place(r.place)}
+                    </td>
+                    <th scope="row" class="athlete">
+                      <a href={`/athlete/${athleteSlug(r.name)}/`}>{r.name}</a>
+                      <span class="meta">
+                        {sexLabel(r.sex)} · {equipmentLabel(equipmentGroup(r.equipment))}
+                        {r.division && <> · {r.division}</>}
+                      </span>
+                    </th>
+                    <td class="nombre" data-libelle="Catégorie" data-valeur={classe?.kg ?? ''}>
+                      {r.weightClassKg ? `${r.weightClassKg} kg` : '—'}
+                    </td>
+                    <td class="nombre" data-libelle="Poids de corps" data-valeur={r.bodyweightKg ?? ''}>
+                      {nombre(r.bodyweightKg)}
+                    </td>
+                    <td class="nombre num-tab" data-libelle="Squat" data-valeur={r.bestSquatKg ?? ''}>
+                      <span class="v">
+                        {nombre(r.bestSquatKg)}
+                        {r.bestSquatKg && estRecord(r, 'squat') && <VerifiedBadge detail="Record du squat" taille={13} />}
+                      </span>
+                    </td>
+                    <td class="nombre num-tab" data-libelle="Développé couché" data-valeur={r.bestBenchKg ?? ''}>
+                      <span class="v">
+                        {nombre(r.bestBenchKg)}
+                        {r.bestBenchKg && estRecord(r, 'bench') && <VerifiedBadge detail="Record du développé couché" taille={13} />}
+                      </span>
+                    </td>
+                    <td class="nombre num-tab" data-libelle="Soulevé de terre" data-valeur={r.bestDeadliftKg ?? ''}>
+                      <span class="v">
+                        {nombre(r.bestDeadliftKg)}
+                        {r.bestDeadliftKg && estRecord(r, 'deadlift') && <VerifiedBadge detail="Record du soulevé de terre" taille={13} />}
+                      </span>
+                    </td>
+                    <td class="nombre num-tab" data-libelle="Total" data-valeur={r.event === 'SBD' ? (r.totalKg ?? '') : ''}>
+                      <span class="v">
+                        {r.event === 'SBD' ? nombre(r.totalKg) : '—'}
+                        {r.event === 'SBD' && estRecord(r, 'total') && <VerifiedBadge detail="Record au total" taille={13} />}
+                      </span>
+                    </td>
+                    <td class="nombre" data-libelle="Dots" data-valeur={r.event === 'SBD' ? (r.dots ?? '') : ''}>
+                      {r.event === 'SBD' ? points(r.dots) : '—'}
+                    </td>
+                  </tr>
+                );
+              })
+            }
+          </tbody>
+        </table>
+      </div>
+    </InteractiveTable>
+
+    <p class="note">
+      {
+        aDuFullPower
+          ? 'Le total et les points Dots concernent le full power. Sur un format à un seul mouvement, ils reprendraient simplement la barre disputée, ce qui les rendrait incomparables.'
+          : 'Cette compétition portait sur un seul mouvement : le total et les points Dots ne s\'appliquent pas.'
+      }
+      Le pictogramme bleu signale une barre qui constitue aujourd'hui le record
+      de sa catégorie à La Réunion.
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  .fil {
+    font-size: var(--step--1);
+    margin-bottom: var(--space-4);
+  }
+
+  .entete-page {
+    margin-bottom: var(--space-6);
+  }
+
+  h1 {
+    margin-bottom: var(--space-2);
+  }
+
+  .lieu {
+    color: var(--muted);
+    font-size: var(--step-1);
+    margin-bottom: var(--space-3);
+  }
+
+  .formats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+  }
+
+  .format {
+    font-size: var(--step--1);
+    font-weight: 600;
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    color: var(--accent);
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+    margin: 0 0 var(--space-12);
+    padding: var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  @media (min-width: 48rem) {
+    .stats {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .stats dt {
+    font-size: var(--step--1);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: var(--space-1);
+  }
+
+  .stats dd {
+    margin: 0;
+    font-size: var(--step-2);
+    line-height: 1;
+  }
+
+  .cadre {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--step--1);
+  }
+
+  th,
+  td {
+    text-align: left;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  thead {
+    display: none;
+  }
+
+  .athlete {
+    font-weight: 600;
+  }
+  .athlete a {
+    color: var(--text);
+  }
+  .athlete a:hover {
+    color: var(--accent);
+  }
+
+  .meta {
+    display: block;
+    font-size: var(--step--1);
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  /*
+   * Regroupe la valeur et son badge en un seul élément.
+   *
+   * Sans ce conteneur, la cellule en `space-between` distribuerait trois
+   * éléments (libellé, chiffre, badge) sur toute la largeur : le chiffre se
+   * retrouverait flottant au milieu de la ligne, loin de sa colonne.
+   */
+  .v {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /*
+   * La cellule de place occupe la colonne de gauche sur toute la hauteur de la
+   * carte, à la manière du rang dans le classement.
+   *
+   * Elle ne porte SURTOUT PAS la classe `.nombre` : celle-ci force
+   * `grid-column: 2`, ce qui entrerait en conflit direct avec le placement
+   * ci-dessous et ferait exploser la hauteur des lignes.
+   */
+  .place {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- Mobile : une carte par athlète ---------- */
+  @media (max-width: 61.999rem) {
+    tbody tr {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: var(--space-1) var(--space-3);
+      padding: var(--space-3);
+      border-bottom: 1px solid var(--border);
+    }
+
+    td.place {
+      grid-row: 1 / 3;
+      grid-column: 1;
+      align-self: center;
+      font-size: var(--step-1);
+      padding: 0;
+    }
+
+    .athlete {
+      padding: 0;
+    }
+
+    td.nombre {
+      display: flex;
+      justify-content: space-between;
+      grid-column: 2;
+      padding: 0;
+      color: var(--muted);
+    }
+
+    td.nombre::before {
+      content: attr(data-libelle);
+    }
+  }
+
+  /* ---------- Desktop ---------- */
+  @media (min-width: 62rem) {
+    thead {
+      display: table-header-group;
+    }
+
+    thead th {
+      font-size: var(--step--1);
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    td.nombre,
+    th.nombre {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    th.col-place,
+    td.place {
+      text-align: left;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr:last-child {
+      border-bottom: 0;
+    }
+    tbody tr:hover {
+      background: color-mix(in srgb, var(--accent) 6%, transparent);
+    }
+
+    td::before {
+      display: none;
+    }
+  }
+
+  .note {
+    margin-top: var(--space-4);
+    font-size: var(--step--1);
+    color: var(--muted);
+    max-width: 68ch;
+  }
+</style>

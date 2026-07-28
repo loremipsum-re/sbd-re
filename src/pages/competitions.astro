@@ -1,71 +1,98 @@
 ---
+import InteractiveTable from '../components/InteractiveTable.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { dateLongue } from '../lib/format';
-import { libelleEvent, listeMeets, meetsParAnnee } from '../lib/meets';
+import { dateCourte } from '../lib/format';
+import { libelleEvent, listeMeets } from '../lib/meets';
 
-const annees = meetsParAnnee();
-const total = listeMeets().length;
+const meets = listeMeets();
+const villes = [...new Set(meets.map((m) => m.meetTown).filter(Boolean))].sort((a, b) =>
+  a.localeCompare(b, 'fr'),
+);
+const annees = [...new Set(meets.map((m) => m.date.slice(0, 4)))].sort().reverse();
 ---
 
 <BaseLayout
   titre="Compétitions"
-  description="Toutes les compétitions de force athlétique organisées à La Réunion et enregistrées par OpenPowerlifting, depuis 2017."
+  description="Toutes les compétitions de force athlétique organisées à La Réunion et enregistrées officiellement depuis 2017. Résultats complets par compétition."
 >
   <div class="wrap">
     <header class="entete-page">
       <h1>Compétitions</h1>
       <p class="chapeau">
-        Les {total} compétitions réunionnaises présentes dans les données
-        officielles, de la plus récente à la plus ancienne. Full power et
-        développé couché seul.
-      </p>
-      <p class="note">
-        OpenPowerlifting ne publie pas d'identifiant de compétition dans son
-        jeu de données téléchargeable : impossible de créer un lien direct vers
-        la fiche de chaque meet sans inventer une adresse qui ne fonctionnerait
-        pas. Les compétitions restent consultables depuis{' '}
-        <a href="https://www.openpowerlifting.org/mlist" rel="noopener">
-          la liste des meets
-        </a>, et chaque athlète a un lien direct sur sa page.
+        Les {meets.length} compétitions organisées à La Réunion et présentes dans
+        les données officielles. Ouvrez une compétition pour consulter le
+        détail des barres de chaque athlète engagé.
       </p>
     </header>
 
-    {
-      annees.map(({ annee, meets }) => (
-        <section class="annee">
-          <h2>
-            {annee}
-            <span class="compte">
-              {meets.length} compétition{meets.length > 1 ? 's' : ''}
-            </span>
-          </h2>
+    <InteractiveTable
+      recherche="Compétition, commune…"
+      singulier="compétition"
+      pluriel="compétitions"
+      total={meets.length}
+    >
+      <Fragment slot="filtres">
+        <div class="champ">
+          <label for="f-annee">Année</label>
+          <select id="f-annee" data-filtre="annee">
+            <option value="">Toutes</option>
+            {annees.map((a) => <option value={a}>{a}</option>)}
+          </select>
+        </div>
 
-          <ul class="liste">
-            {meets.map((meet) => (
-              <li>
-                <div class="principal">
-                  <p class="nom">{meet.meetName}</p>
-                  <p class="lieu">
-                    {dateLongue(meet.date)}
-                    {meet.meetTown && <> · {meet.meetTown}</>}
-                  </p>
-                </div>
+        <div class="champ">
+          <label for="f-ville">Commune</label>
+          <select id="f-ville" data-filtre="ville">
+            <option value="">Toutes</option>
+            {villes.map((v) => <option value={v}>{v}</option>)}
+          </select>
+        </div>
+      </Fragment>
 
-                <div class="secondaire">
-                  {meet.events.map((e) => (
-                    <span class="format">{libelleEvent(e)}</span>
-                  ))}
-                  <span class="athletes">
-                    <span class="num">{meet.athletes}</span> athlète
-                    {meet.athletes > 1 ? 's' : ''}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))
-    }
+      <div class="cadre">
+        <table data-tableau>
+          <thead>
+            <tr>
+              <th scope="col" data-tri data-type="nombre">Date</th>
+              <th scope="col" data-tri>Compétition</th>
+              <th scope="col" data-tri>Commune</th>
+              <th scope="col">Format</th>
+              <th scope="col" class="nombre" data-tri data-type="nombre">Athlètes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              meets.map((meet) => (
+                <tr data-annee={meet.date.slice(0, 4)} data-ville={meet.meetTown}>
+                  <td class="date" data-libelle="Date" data-valeur={meet.date.replace(/-/g, '')}>
+                    {dateCourte(meet.date)}
+                  </td>
+                  <th scope="row" class="nom">
+                    <a href={`/competitions/${meet.slug}/`}>{meet.meetName}</a>
+                  </th>
+                  <td data-libelle="Commune">{meet.meetTown || '—'}</td>
+                  <td data-libelle="Format">
+                    {meet.events.map((e) => (
+                      <span class="format">{libelleEvent(e)}</span>
+                    ))}
+                  </td>
+                  <td class="nombre num-tab" data-libelle="Athlètes" data-valeur={meet.athletes}>
+                    {meet.athletes}
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </InteractiveTable>
+
+    <p class="note">
+      Les données proviennent du projet OpenPowerlifting, qui recense les
+      résultats homologués. Chaque fiche d'athlète renvoie vers sa page sur ce
+      même projet, où figure l'intégralité de son parcours, y compris hors de
+      La Réunion.
+    </p>
   </div>
 </BaseLayout>
 
@@ -79,90 +106,147 @@ const total = listeMeets().length;
     max-width: 68ch;
   }
 
-  .note {
+  .champ {
+    display: grid;
+    gap: var(--space-1);
+    flex: 1 1 9rem;
+  }
+
+  label {
     font-size: var(--step--1);
+    font-weight: 600;
     color: var(--muted);
-    max-width: 68ch;
-    padding: var(--space-3) var(--space-4);
-    border-left: 3px solid var(--border);
+  }
+
+  select {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: var(--step--1);
+  }
+
+  .cadre {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
     background: var(--surface);
-    border-radius: 0 var(--radius) var(--radius) 0;
+    overflow: hidden;
   }
 
-  .annee {
-    margin-bottom: var(--space-8);
-  }
-
-  .annee h2 {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-3);
-    padding-bottom: var(--space-2);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .compte {
-    font-family: var(--font-body);
+  table {
+    width: 100%;
+    border-collapse: collapse;
     font-size: var(--step--1);
-    font-weight: 400;
-    color: var(--muted);
   }
 
-  .liste {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  th,
+  td {
+    text-align: left;
+    padding: var(--space-3);
   }
 
-  .liste li {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-    padding: var(--space-4) 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .liste li:last-child {
-    border-bottom: 0;
+  thead {
+    display: none;
   }
 
   .nom {
     font-weight: 600;
-    margin: 0 0 var(--space-1);
+  }
+  .nom a {
+    color: var(--text);
+  }
+  .nom a:hover {
+    color: var(--accent);
   }
 
-  .lieu {
-    margin: 0;
-    font-size: var(--step--1);
+  .date {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
     color: var(--muted);
-  }
-
-  .secondaire {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    flex-wrap: wrap;
   }
 
   .format {
+    display: inline-block;
     font-size: var(--step--1);
-    font-weight: 600;
-    padding: var(--space-1) var(--space-3);
+    padding: 2px var(--space-2);
+    margin-right: var(--space-1);
     border: 1px solid var(--border);
-    border-radius: 999px;
+    border-radius: var(--radius);
     color: var(--muted);
     white-space: nowrap;
   }
 
-  .athletes {
+  /* ---------- Mobile : une carte par compétition ---------- */
+  @media (max-width: 47.999rem) {
+    tbody tr {
+      display: block;
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nom {
+      display: block;
+      padding: 0 0 var(--space-2);
+      font-size: var(--step-0);
+    }
+
+    td {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--space-3);
+      padding: var(--space-1) 0;
+    }
+
+    td::before {
+      content: attr(data-libelle);
+      color: var(--muted);
+      font-weight: 600;
+    }
+  }
+
+  /* ---------- Desktop ---------- */
+  @media (min-width: 48rem) {
+    thead {
+      display: table-header-group;
+    }
+
+    thead th {
+      font-size: var(--step--1);
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    td.nombre,
+    th.nombre {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr:last-child {
+      border-bottom: 0;
+    }
+    tbody tr:hover {
+      background: color-mix(in srgb, var(--accent) 6%, transparent);
+    }
+
+    td::before {
+      display: none;
+    }
+  }
+
+  .note {
+    margin-top: var(--space-4);
     font-size: var(--step--1);
     color: var(--muted);
-    white-space: nowrap;
-  }
-
-  .athletes .num {
-    color: var(--accent);
-    font-size: var(--step-0);
+    max-width: 68ch;
   }
 </style>

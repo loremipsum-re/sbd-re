@@ -46,3 +46,22 @@ export function openpowerliftingUrl(name: string): string {
 export function meetKey(date: string, meetName: string): string {
   return `${date}|${meetName}`;
 }
+
+/**
+ * Identifiant d'URL d'une compétition.
+ *
+ * La date préfixe le nom pour deux raisons : les éditions successives d'une
+ * même compétition portent le même intitulé (« Open de la Fournaise » revient
+ * en 2024, 2025 et 2026), et le tri alphabétique des URL devient chronologique.
+ *
+ * « 2025-07-19 », « Reunion Island Meet » donne « 2025-07-19-reunion-island-meet ».
+ */
+export function meetSlug(date: string, meetName: string): string {
+  const nom = meetName
+    .normalize('NFD')
+    .replace(/\p{Mn}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return `${date}-${nom}`;
+}
