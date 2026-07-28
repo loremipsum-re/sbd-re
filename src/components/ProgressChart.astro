@@ -2,43 +2,58 @@
 /**
  * Courbe de progression, en SVG calculé au build.
  *
- * Aucune librairie de graphiques : pour une simple ligne brisée, Chart.js ou
- * D3 représenteraient des dizaines de kilo-octets de JavaScript et un temps
- * d'exécution, là où quelques calculs de coordonnées suffisent. Le SVG produit
- * ici est du HTML : il s'affiche instantanément, se met à l'échelle sans
- * pixelliser, et suit le thème clair/sombre via `currentColor`.
+ * Aucune librairie de graphiques : pour une ligne brisée, Chart.js ou D3
+ * représenteraient des dizaines de kilo-octets de JavaScript, là où quelques
+ * calculs de coordonnées suffisent. Le SVG produit ici est du HTML : il
+ * s'affiche instantanément, se met à l'échelle sans pixelliser, et suit le
+ * thème clair ou sombre par `currentColor`.
+ *
+ * Deux séries cohabitent : les compétitions réunionnaises, en couleur
+ * d'accent, et celles disputées ailleurs, en gris. Le gris n'est pas un choix
+ * esthétique, il dit quelque chose : ces performances ne comptent ni pour le
+ * classement ni pour les records de l'île.
+ *
+ * Les deux séries partagent LA MÊME échelle verticale, y compris quand l'une
+ * est masquée. Recalculer l'échelle à chaque bascule ferait bondir la courbe
+ * et donnerait l'illusion d'une progression qui n'existe pas.
  */
 import { dateCourte, kg, nombre } from '../lib/format';
 
-interface Point {
+export interface PointGraphe {
   date: string;
   value: number;
-  label?: string;
+  meetName?: string;
+  weightClassKg?: string;
+  bodyweightKg?: number | null;
+  division?: string;
+  place?: string;
+  /** true pour une compétition disputée hors de La Réunion. */
+  exterieur?: boolean;
 }
 
 interface Props {
-  points: Point[];
+  points: PointGraphe[];
   legende?: string;
 }
 
 const { points, legende = 'Progression du total' } = Astro.props;
 
 // Repère interne du SVG. Les unités n'ont pas d'importance : le viewBox se met
-// à l'échelle de son conteneur. On raisonne donc en coordonnées « confortables ».
-const L = 600;
-const H = 240;
-// Marge haute généreuse : les étiquettes de valeur se posent au-dessus des
-// points, et sans place elles sortiraient du cadre.
-const MARGE = { haut: 34, bas: 38, gauche: 52, droite: 22 };
+// à l'échelle de son conteneur.
+const L = 640;
+const H = 250;
+const MARGE = { haut: 34, bas: 38, gauche: 54, droite: 24 };
 
 const tries = [...points].sort((a, b) => a.date.localeCompare(b.date));
+const locaux = tries.filter((p) => !p.exterieur);
+const exterieurs = tries.filter((p) => p.exterieur);
 
 const valeurs = tries.map((p) => p.value);
 const min = Math.min(...valeurs);
 const max = Math.max(...valeurs);
 
-// Une marge de 8 % évite que le meilleur point ne colle au bord haut. Si toutes
-// les valeurs sont identiques, on force une amplitude pour ne pas diviser par 0.
+// Marge de 15 % pour que le meilleur point ne colle pas au bord. Si toutes les
+// valeurs sont identiques, on force une amplitude pour ne pas diviser par zéro.
 const amplitude = max - min || Math.max(max * 0.1, 10);
 const basse = min - amplitude * 0.15;
 const haute = max + amplitude * 0.15;
@@ -46,51 +61,93 @@ const haute = max + amplitude * 0.15;
 const largeurUtile = L - MARGE.gauche - MARGE.droite;
 const hauteurUtile = H - MARGE.haut - MARGE.bas;
 
-const x = (i: number) =>
+// L'axe horizontal est chronologique : deux compétitions espacées de trois ans
+// doivent être espacées à l'écran, sinon la courbe ment sur le rythme.
+const premier = new Date(`${tries[0]?.date ?? '2000-01-01'}T12:00:00Z`).getTime();
+const dernier = new Date(
+  `${tries[tries.length - 1]?.date ?? '2000-01-01'}T12:00:00Z`,
+).getTime();
+const etendue = dernier - premier || 1;
+
+const x = (date: string) =>
   tries.length === 1
     ? MARGE.gauche + largeurUtile / 2
-    : MARGE.gauche + (i / (tries.length - 1)) * largeurUtile;
+    : MARGE.gauche +
+      ((new Date(`${date}T12:00:00Z`).getTime() - premier) / etendue) * largeurUtile;
 
 const y = (v: number) =>
   MARGE.haut + hauteurUtile - ((v - basse) / (haute - basse)) * hauteurUtile;
 
-const coordonnees = tries.map((p, i) => ({ ...p, cx: x(i), cy: y(p.value) }));
-const ligne = coordonnees.map((p) => `${p.cx.toFixed(1)},${p.cy.toFixed(1)}`).join(' ');
+interface Coord extends PointGraphe {
+  cx: number;
+  cy: number;
+}
 
-// Aire sous la courbe, pour donner du corps au graphe.
-const aire =
-  coordonnees.length > 1
-    ? `M ${coordonnees[0].cx.toFixed(1)},${(H - MARGE.bas).toFixed(1)} ` +
-      `L ${ligne.split(' ').join(' L ')} ` +
-      `L ${coordonnees[coordonnees.length - 1].cx.toFixed(1)},${(H - MARGE.bas).toFixed(1)} Z`
-    : '';
+const placer = (liste: PointGraphe[]): Coord[] =>
+  liste.map((p) => ({ ...p, cx: x(p.date), cy: y(p.value) }));
+
+const coordLocaux = placer(locaux);
+const coordExt = placer(exterieurs);
+const toutes = placer(tries);
+
+const ligneDe = (c: Coord[]) =>
+  c.map((p) => `${p.cx.toFixed(1)},${p.cy.toFixed(1)}`).join(' ');
 
 const graduations = [min, (min + max) / 2, max];
-const meilleur = coordonnees.reduce((a, b) => (b.value > a.value ? b : a), coordonnees[0]);
+const meilleur = toutes.reduce((a, b) => (b.value > a.value ? b : a), toutes[0]);
 
 /*
- * Étiquettes de valeur au-dessus de chaque point.
- *
- * Au-delà d'une dizaine de compétitions, les points se resserrent au point que
- * les étiquettes se chevaucheraient. On les alterne alors au-dessus et en
- * dessous de la courbe, ce qui double l'espace disponible pour chacune.
+ * Étiquettes de valeur. Au-delà d'une dizaine de points, elles se
+ * chevaucheraient : on les alterne alors au-dessus et en dessous de la courbe,
+ * ce qui double l'espace disponible pour chacune.
  */
-const dense = coordonnees.length > 9;
-const etiquettes = coordonnees.map((p, i) => {
-  const dessous = dense && i % 2 === 1;
-  return {
-    ...p,
-    ty: dessous ? p.cy + 17 : p.cy - 11,
-    dessous,
-  };
-});
+const dense = toutes.length > 9;
+const etiquettes = toutes.map((p, i) => ({
+  ...p,
+  ty: dense && i % 2 === 1 ? p.cy + 17 : p.cy - 11,
+}));
+
+/** Infobulle détaillée : tout ce qui situe la performance ce jour-là. */
+function infobulle(p: PointGraphe): string {
+  const morceaux = [dateCourte(p.date), kg(p.value)];
+  if (p.meetName) morceaux.push(p.meetName);
+  if (p.weightClassKg) morceaux.push(`catégorie ${p.weightClassKg} kg`);
+  if (p.bodyweightKg) morceaux.push(`${nombre(p.bodyweightKg)} kg de poids de corps`);
+  if (p.division) morceaux.push(p.division);
+  if (p.place) {
+    const rang = Number.parseInt(p.place, 10);
+    if (Number.isFinite(rang)) {
+      morceaux.push(`${rang === 1 ? '1er' : `${rang}e`} de sa catégorie`);
+    } else if (p.place === 'G') {
+      morceaux.push('athlète invité');
+    }
+  }
+  if (p.exterieur) morceaux.push('hors de La Réunion');
+  return morceaux.join(' · ');
+}
+
+const aDeuxSeries = coordLocaux.length > 0 && coordExt.length > 0;
 ---
 
 {
   tries.length === 0 ? (
     <p class="vide">Aucune donnée de progression.</p>
   ) : (
-    <figure class="graphe">
+    <figure class="graphe" data-vue="tout">
+      {aDeuxSeries && (
+        <div class="controles" role="group" aria-label="Compétitions affichées">
+          <button type="button" data-vue-cible="tout" aria-pressed="true">
+            Tout
+          </button>
+          <button type="button" data-vue-cible="locaux" aria-pressed="false">
+            La Réunion
+          </button>
+          <button type="button" data-vue-cible="exterieur" aria-pressed="false">
+            Hors de l'île
+          </button>
+        </div>
+      )}
+
       <svg viewBox={`0 0 ${L} ${H}`} role="img" aria-labelledby="titre-graphe">
         <title id="titre-graphe">
           {legende} : {tries.length} points, de {kg(min)} à {kg(max)}.
@@ -98,40 +155,39 @@ const etiquettes = coordonnees.map((p, i) => {
 
         {graduations.map((v) => (
           <>
-            <line
-              class="grille"
-              x1={MARGE.gauche}
-              x2={L - MARGE.droite}
-              y1={y(v)}
-              y2={y(v)}
-            />
+            <line class="grille" x1={MARGE.gauche} x2={L - MARGE.droite} y1={y(v)} y2={y(v)} />
             <text class="axe" x={MARGE.gauche - 8} y={y(v)} text-anchor="end" dy="0.32em">
               {Math.round(v)}
             </text>
           </>
         ))}
 
-        {aire && <path class="aire" d={aire} />}
+        <g class="serie serie-ext">
+          {coordExt.length > 1 && <polyline class="ligne" points={ligneDe(coordExt)} />}
+          {coordExt.map((p) => (
+            <circle class="point" cx={p.cx} cy={p.cy} r="3.5">
+              <title>{infobulle(p)}</title>
+            </circle>
+          ))}
+        </g>
 
-        {coordonnees.length > 1 && <polyline class="ligne" points={ligne} />}
-
-        {coordonnees.map((p) => (
-          <circle
-            class={p === meilleur ? 'point meilleur' : 'point'}
-            cx={p.cx}
-            cy={p.cy}
-            r={p === meilleur ? 5 : 3.5}
-          >
-            <title>
-              {dateCourte(p.date)} · {kg(p.value)}
-              {p.label ? ` · ${p.label}` : ''}
-            </title>
-          </circle>
-        ))}
+        <g class="serie serie-loc">
+          {coordLocaux.length > 1 && <polyline class="ligne" points={ligneDe(coordLocaux)} />}
+          {coordLocaux.map((p) => (
+            <circle
+              class={p === meilleur ? 'point meilleur' : 'point'}
+              cx={p.cx}
+              cy={p.cy}
+              r={p === meilleur ? 5 : 3.5}
+            >
+              <title>{infobulle(p)}</title>
+            </circle>
+          ))}
+        </g>
 
         {etiquettes.map((p) => (
           <text
-            class={p.value === meilleur.value ? 'valeur record' : 'valeur'}
+            class={`valeur ${p.exterieur ? 'ext' : 'loc'}${p.value === meilleur.value ? ' record' : ''}`}
             x={p.cx}
             y={p.ty}
             text-anchor="middle"
@@ -149,17 +205,74 @@ const etiquettes = coordonnees.map((p, i) => {
           </text>
         )}
       </svg>
+
       <figcaption>
         {legende} sur {tries.length} compétition{tries.length > 1 ? 's' : ''}. Meilleure
         marque {kg(max)}.
+        {aDeuxSeries && (
+          <>
+            {' '}Les points gris désignent des compétitions disputées hors de La Réunion,
+            qui n'entrent ni dans le classement ni dans les records.
+          </>
+        )}
       </figcaption>
     </figure>
   )
 }
 
+<script>
+  document.querySelectorAll<HTMLElement>('.graphe .controles').forEach((groupe) => {
+    const figure = groupe.closest<HTMLElement>('.graphe');
+    if (!figure) return;
+
+    const boutons = Array.from(groupe.querySelectorAll<HTMLButtonElement>('[data-vue-cible]'));
+    for (const bouton of boutons) {
+      bouton.addEventListener('click', () => {
+        const cible = bouton.dataset.vueCible!;
+        figure.dataset.vue = cible;
+        // `aria-pressed` plutôt qu'une simple classe : c'est ce qui annonce
+        // l'état à un lecteur d'écran.
+        for (const autre of boutons) {
+          autre.setAttribute('aria-pressed', String(autre === bouton));
+        }
+      });
+    }
+  });
+</script>
+
 <style>
   .graphe {
     margin: 0;
+  }
+
+  .controles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin-bottom: var(--space-3);
+  }
+
+  .controles button {
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--muted);
+    font: inherit;
+    font-size: var(--step--1);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .controles button:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .controles button[aria-pressed='true'] {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
   }
 
   svg {
@@ -179,42 +292,62 @@ const etiquettes = coordonnees.map((p, i) => {
     font-family: var(--font-body);
   }
 
-  .aire {
-    fill: var(--accent);
-    opacity: 0.12;
-  }
-
   .ligne {
     fill: none;
-    stroke: var(--accent);
     stroke-width: 2.5;
     stroke-linejoin: round;
     stroke-linecap: round;
   }
 
-  .point {
+  /* Série réunionnaise : couleur d'accent, celle du site. */
+  .serie-loc .ligne {
+    stroke: var(--accent);
+  }
+  .serie-loc .point {
     fill: var(--surface);
     stroke: var(--accent);
     stroke-width: 2.5;
   }
-
-  .meilleur {
+  .serie-loc .meilleur {
     fill: var(--accent);
   }
 
-  /* Chiffre exact au-dessus de chaque point. Les chiffres tabulaires évitent
-     que les étiquettes ne dansent d'un point à l'autre. */
+  /* Série extérieure : gris, et trait discontinu. La couleur seule ne suffit
+     pas à distinguer deux séries pour qui perçoit mal les couleurs. */
+  .serie-ext .ligne {
+    stroke: var(--muted);
+    stroke-dasharray: 5 4;
+    opacity: 0.85;
+  }
+  .serie-ext .point {
+    fill: var(--surface);
+    stroke: var(--muted);
+    stroke-width: 2;
+  }
+
   .valeur {
-    fill: var(--text);
     font-family: var(--font-body);
     font-size: 11px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
-
+  .valeur.loc {
+    fill: var(--text);
+  }
+  .valeur.ext {
+    fill: var(--muted);
+  }
   .valeur.record {
     fill: var(--accent);
     font-weight: 700;
+  }
+
+  /* Bascule d'affichage, pilotée par un attribut sur la figure. */
+  .graphe[data-vue='locaux'] .serie-ext,
+  .graphe[data-vue='locaux'] .valeur.ext,
+  .graphe[data-vue='exterieur'] .serie-loc,
+  .graphe[data-vue='exterieur'] .valeur.loc {
+    display: none;
   }
 
   figcaption {
