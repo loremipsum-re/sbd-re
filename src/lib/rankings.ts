@@ -90,6 +90,43 @@ export function topDots(n = 10, source?: Result[]): AthleteRanking[] {
     .slice(0, n);
 }
 
+export interface RangDots {
+  /** Position au classement Dots, 1 étant le meilleur. */
+  rang: number;
+  /** Nombre d'athlètes classés. */
+  total: number;
+  /** Meilleurs X pour cent, arrondi vers le haut. 5 signifie « top 5 % ». */
+  centile: number;
+  dots: number;
+}
+
+/**
+ * Position d'un athlète au classement général aux points Dots.
+ *
+ * Calculé une fois puis mémorisé : la fonction est appelée pour chacune des
+ * 312 fiches, et retrier le classement à chaque appel multiplierait le temps
+ * de build sans rien apporter.
+ */
+let cacheRangs: Map<string, RangDots> | null = null;
+
+export function rangDots(name: string): RangDots | null {
+  if (!cacheRangs) {
+    const classement = [...meilleurTotalParAthlete()].sort(
+      (a, b) => b.dots - a.dots || b.totalKg - a.totalKg,
+    );
+    cacheRangs = new Map();
+    classement.forEach((e, i) => {
+      cacheRangs!.set(e.name, {
+        rang: i + 1,
+        total: classement.length,
+        centile: Math.max(1, Math.ceil(((i + 1) / classement.length) * 100)),
+        dots: e.dots,
+      });
+    });
+  }
+  return cacheRangs.get(name) ?? null;
+}
+
 /** Historique complet d'un athlète, de la compétition la plus ancienne à la plus récente. */
 export function historiqueAthlete(name: string, source: Result[]): Result[] {
   return source

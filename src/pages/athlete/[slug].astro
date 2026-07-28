@@ -1,16 +1,18 @@
 ---
+import BadgeOfficiel from '../../components/BadgeOfficiel.astro';
+import Coupe from '../../components/Coupe.astro';
 import InteractiveTable from '../../components/InteractiveTable.astro';
 import ProgressChart from '../../components/ProgressChart.astro';
-import VerifiedBadge from '../../components/VerifiedBadge.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { equipmentGroup, equipmentLabel, sexLabel } from '../../lib/categories';
 import { results } from '../../lib/data';
 import { dateLongue, kg, nombre, place, points } from '../../lib/format';
 import { liensAthlete } from '../../lib/liens';
 import { libelleEvent } from '../../lib/meets';
+import { rangDots } from '../../lib/rankings';
 import { cleRecord, clesRecords } from '../../lib/records';
-import { athleteSlug, meetSlug, openpowerliftingUrl } from '../../lib/slug';
-import type { LiftKey, Result } from '../../lib/types';
+import { athleteSlug, meetPath, openpowerliftingUrl } from '../../lib/slug';
+import type { LiftKey, Metal, Result } from '../../lib/types';
 
 export async function getStaticPaths() {
   const parSlug = new Map<string, { name: string; lignes: Result[] }>();
@@ -78,6 +80,23 @@ const nbRecords = (['squat', 'bench', 'deadlift', 'total'] as LiftKey[]).reduce(
   0,
 );
 
+/**
+ * Position au classement général aux points Dots.
+ *
+ * Le centile situe l'athlète bien mieux qu'un rang brut : « 18e sur 266 » parle
+ * moins que « parmi les 7 % meilleurs ». Les deux sont affichés.
+ */
+const rang = rangDots(name);
+
+/** Seuil de mise en avant : le podium, ou à défaut les dix pour cent de tête. */
+const seuilDistinction = rang ? Math.max(3, Math.ceil(rang.total * 0.1)) : 0;
+const estDistingue = rang !== null && rang.rang <= seuilDistinction;
+const metalDuRang: Metal | undefined =
+  rang?.rang === 1 ? 'or' : rang?.rang === 2 ? 'argent' : rang?.rang === 3 ? 'bronze' : undefined;
+
+/** « 1er » puis « 2e », « 3e »… La première place fait exception en français. */
+const ordinal = (n: number) => (n === 1 ? '1er' : `${n}e`);
+
 const pointsGraphe = fullPower.map((r) => ({
   date: r.date,
   value: r.totalKg as number,
@@ -100,7 +119,7 @@ const description =
       <div>
         <h1>
           {name}
-          {nbRecords > 0 && <VerifiedBadge detail={`Détient ${nbRecords} record${nbRecords > 1 ? 's' : ''} à La Réunion`} taille={22} />}
+          <BadgeOfficiel taille={22} />
         </h1>
         <p class="badges">
           <span class="badge">{sexLabel(dernier.sex)}</span>
@@ -124,7 +143,29 @@ const description =
       </div>
     </header>
 
-    <dl class="stats">
+    {
+      estDistingue && rang && (
+        <div class="distinction" data-metal={metalDuRang ?? 'top'}>
+          <Coupe
+            metal={metalDuRang}
+            taille={34}
+            detail={`${ordinal(rang.rang)} du classement Dots`}
+          />
+          <div>
+            <p class="rang-titre">
+              {rang.rang}
+              <sup>{rang.rang === 1 ? 'er' : 'e'}</sup> au classement Dots de La Réunion
+            </p>
+            <p class="rang-detail">
+              Parmi les {rang.centile} % meilleurs des {rang.total} athlètes classés,
+              avec {points(rang.dots)} points.
+            </p>
+          </div>
+        </div>
+      )
+    }
+
+    <dl class="stats" data-distingue={estDistingue ? '' : undefined}>
       <div>
         <dt>Meilleur total</dt>
         <dd class="num">{meilleurTotal ? kg(meilleurTotal.totalKg) : '—'}</dd>
@@ -134,15 +175,27 @@ const description =
         <dd class="num">{meilleurDots ? points(meilleurDots.dots) : '—'}</dd>
       </div>
       <div>
+        <dt>Classement Dots</dt>
+        <dd class="num">
+          {rang ? <>{rang.rang}<span class="sur">/{rang.total}</span></> : '—'}
+        </dd>
+      </div>
+      <div>
+        <dt>Records détenus</dt>
+        <dd class="num">
+          {nbRecords > 0 ? <>{nbRecords}<Coupe metal="or" taille={18} detail="Records en cours" /></> : '0'}
+        </dd>
+      </div>
+      <div>
         <dt>Compétitions</dt>
         <dd class="num">{meets}</dd>
       </div>
       <div>
         <dt>Squat / DC / SDT</dt>
         <dd class="triptyque">
-          <span class="num">{meilleures.squat || '—'}</span>
-          <span class="num">{meilleures.bench || '—'}</span>
-          <span class="num">{meilleures.deadlift || '—'}</span>
+          <span class="num">{meilleures.squat ? nombre(meilleures.squat) : '—'}</span>
+          <span class="num">{meilleures.bench ? nombre(meilleures.bench) : '—'}</span>
+          <span class="num">{meilleures.deadlift ? nombre(meilleures.deadlift) : '—'}</span>
         </dd>
       </div>
     </dl>
@@ -188,7 +241,7 @@ const description =
                       {dateLongue(r.date)}
                     </th>
                     <td data-libelle="Compétition" class="competition">
-                      <a href={`/competitions/${meetSlug(r.date, r.meetName)}/`}>{r.meetName}</a>
+                      <a href={`/competitions/${meetPath(r.date, r.meetName)}/`}>{r.meetName}</a>
                       <span class="ville">{r.meetTown}</span>
                     </td>
                     <td data-libelle="Format">
@@ -197,25 +250,25 @@ const description =
                     <td class="nombre num-tab" data-libelle="Squat" data-valeur={r.bestSquatKg ?? ''}>
                       <span class="v">
                         {nombre(r.bestSquatKg)}
-                        {r.bestSquatKg && estRecord(r, 'squat') && <VerifiedBadge detail="Record du squat dans sa catégorie" taille={13} />}
+                        {r.bestSquatKg && estRecord(r, 'squat') && <Coupe metal="or" detail="Record du squat dans sa catégorie" taille={14} />}
                       </span>
                     </td>
                     <td class="nombre num-tab" data-libelle="Développé couché" data-valeur={r.bestBenchKg ?? ''}>
                       <span class="v">
                         {nombre(r.bestBenchKg)}
-                        {r.bestBenchKg && estRecord(r, 'bench') && <VerifiedBadge detail="Record du développé couché dans sa catégorie" taille={13} />}
+                        {r.bestBenchKg && estRecord(r, 'bench') && <Coupe metal="or" detail="Record du développé couché dans sa catégorie" taille={14} />}
                       </span>
                     </td>
                     <td class="nombre num-tab" data-libelle="Soulevé de terre" data-valeur={r.bestDeadliftKg ?? ''}>
                       <span class="v">
                         {nombre(r.bestDeadliftKg)}
-                        {r.bestDeadliftKg && estRecord(r, 'deadlift') && <VerifiedBadge detail="Record du soulevé de terre dans sa catégorie" taille={13} />}
+                        {r.bestDeadliftKg && estRecord(r, 'deadlift') && <Coupe metal="or" detail="Record du soulevé de terre dans sa catégorie" taille={14} />}
                       </span>
                     </td>
                     <td class="nombre num-tab" data-libelle="Total" data-valeur={r.event === 'SBD' ? (r.totalKg ?? '') : ''}>
                       <span class="v">
                         {r.event === 'SBD' ? nombre(r.totalKg) : '—'}
-                        {r.event === 'SBD' && estRecord(r, 'total') && <VerifiedBadge detail="Record au total dans sa catégorie" taille={13} />}
+                        {r.event === 'SBD' && estRecord(r, 'total') && <Coupe metal="or" detail="Record au total dans sa catégorie" taille={14} />}
                       </span>
                     </td>
                     <td class="nombre" data-libelle="Dots" data-valeur={r.event === 'SBD' ? (r.dots ?? '') : ''}>
@@ -233,10 +286,10 @@ const description =
       </InteractiveTable>
 
       <p class="note">
-        Le pictogramme bleu signale une barre qui constitue aujourd'hui le
-        record de sa catégorie à La Réunion. Le total et les points Dots
-        concernent le full power : sur une compétition à un seul mouvement, ils
-        reprendraient simplement la barre disputée.
+        La coupe signale une barre qui constitue aujourd'hui le record de sa
+        catégorie à La Réunion. Le total et les points Dots concernent le full
+        power : sur une compétition à un seul mouvement, ils reprendraient
+        simplement la barre disputée.
       </p>
     </section>
   </div>
@@ -285,6 +338,59 @@ const description =
     text-align: right;
   }
 
+  /*
+   * Bandeau de distinction, réservé au podium et aux dix pour cent de tête.
+   *
+   * Volontairement sobre : un liseré coloré et un fond très légèrement teinté.
+   * Un site de records tire sa crédibilité de sa retenue, et une page trop
+   * décorée ferait douter des chiffres qu'elle présente.
+   */
+  .distinction {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-6);
+    margin-bottom: var(--space-4);
+    border: 1px solid var(--border);
+    border-left-width: 4px;
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .distinction[data-metal='or'] {
+    border-left-color: var(--or);
+    background: color-mix(in srgb, var(--or) 8%, var(--surface));
+  }
+  .distinction[data-metal='argent'] {
+    border-left-color: var(--argent);
+    background: color-mix(in srgb, var(--argent) 8%, var(--surface));
+  }
+  .distinction[data-metal='bronze'] {
+    border-left-color: var(--bronze);
+    background: color-mix(in srgb, var(--bronze) 8%, var(--surface));
+  }
+  .distinction[data-metal='top'] {
+    border-left-color: var(--accent);
+  }
+
+  .rang-titre {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--step-1);
+    margin: 0;
+    line-height: 1.15;
+  }
+
+  .rang-titre sup {
+    font-size: 0.55em;
+  }
+
+  .rang-detail {
+    margin: var(--space-1) 0 0;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
   .stats {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -298,8 +404,21 @@ const description =
 
   @media (min-width: 48rem) {
     .stats {
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
     }
+  }
+
+  @media (min-width: 62rem) {
+    .stats {
+      grid-template-columns: repeat(6, 1fr);
+    }
+  }
+
+  .sur {
+    font-family: var(--font-body);
+    font-size: 0.5em;
+    font-weight: 400;
+    color: var(--muted);
   }
 
   .stats dt {
