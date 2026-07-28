@@ -122,9 +122,16 @@ jobs:
           CIBLE: ${{ steps.cible.outputs.cible }}
         run: |
           set -u
-          # Volontairement SANS --delete tant que la destination n'est pas
-          # confirmée par un premier déploiement réussi : une erreur de chemin
-          # combinée à une suppression récursive effacerait l'hébergement.
+          # --delete efface côté serveur ce qui n'existe plus localement. Sans
+          # lui, une fiche athlète disparue des données resterait en ligne pour
+          # toujours. Il n'a été activé qu'APRÈS un premier déploiement réussi :
+          # combiné à une erreur de chemin, il aurait vidé l'hébergement.
+          #
+          # Deux exclusions indispensables, car ces fichiers appartiennent à OVH
+          # et ne sont pas produits par notre build :
+          #   .well-known/ — validation des certificats Let's Encrypt. Le
+          #                  supprimer casserait le renouvellement du HTTPS.
+          #   .ovhconfig   — configuration de l'environnement d'exécution OVH.
           #
           # Le script lftp passe par un FICHIER, pas par la ligne de commande.
           # Deux raisons : les arguments d'un processus sont lisibles par tout
@@ -140,7 +147,7 @@ jobs:
             printf '%s\n' 'set net:timeout 20'
             printf '%s\n' 'set net:max-retries 3'
             printf '%s\n' "open -u \"$SSH_USER\",\"$SSH_PASS\" sftp://$SSH_HOST"
-            printf '%s\n' "mirror --reverse --verbose --no-perms --parallel=4 ./dist/ \"$CIBLE/\""
+            printf '%s\n' "mirror --reverse --delete --verbose --no-perms --parallel=4 --exclude-glob .well-known/ --exclude-glob .ovhconfig ./dist/ \"$CIBLE/\""
             printf '%s\n' 'bye'
           } > /tmp/deploy.lftp
 

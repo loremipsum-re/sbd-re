@@ -35,16 +35,6 @@ DirectoryIndex index.html
 
 ErrorDocument 404 /404.html
 
-# L'action de déploiement dépose sur le serveur un fichier d'état qui liste
-# l'intégralité des fichiers du site avec leur empreinte. Il n'est pas sensible
-# en soi, mais il n'a aucune raison d'être public : servi tel quel, il offrirait
-# à un curieux la cartographie complète de l'hébergement.
-<IfModule mod_authz_core.c>
-  <Files ".ftp-deploy-sync-state.json">
-    Require all denied
-  </Files>
-</IfModule>
-
 <IfModule mod_headers.c>
   # Empêche le navigateur de « deviner » un type de fichier différent de celui
   # annoncé — une porte d'entrée classique pour faire exécuter un script.
