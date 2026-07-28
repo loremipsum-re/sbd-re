@@ -1,0 +1,203 @@
+---
+/**
+ * Gabarit commun à toutes les pages : en-tête, navigation, pied de page, méta.
+ */
+import SiteFooter from '../components/SiteFooter.astro';
+import ThemeToggle from '../components/ThemeToggle.astro';
+import '../styles/tokens.css';
+
+interface Props {
+  titre: string;
+  description: string;
+  /** Titre affiché dans l'onglet ; par défaut « <titre> — SBD.re ». */
+  titreOnglet?: string;
+}
+
+const { titre, description, titreOnglet } = Astro.props;
+
+const canonique = new URL(Astro.url.pathname, Astro.site);
+const chemin = Astro.url.pathname;
+
+const liens = [
+  { href: '/classement/', label: 'Classement' },
+  { href: '/records/', label: 'Records' },
+  { href: '/competitions/', label: 'Compétitions' },
+  { href: '/communaute/', label: 'Communauté' },
+  { href: '/a-propos/', label: 'À propos' },
+];
+
+const estActif = (href: string) => chemin === href || chemin.startsWith(href);
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{titreOnglet ?? `${titre} — SBD.re`}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonique.href} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SBD.re" />
+    <meta property="og:title" content={titre} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonique.href} />
+    <meta property="og:locale" content="fr_FR" />
+    <meta name="twitter:card" content="summary" />
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%8F%8B%EF%B8%8F%3C/text%3E%3C/svg%3E"
+    />
+
+    <!--
+      Applique le thème AVANT le premier rendu.
+
+      `is:inline` demande à Astro de laisser ce script tel quel, sans le
+      regrouper dans un fichier externe : un fichier séparé serait chargé trop
+      tard, et la page apparaîtrait en blanc une fraction de seconde avant de
+      basculer en sombre. C'est le fameux « flash » — visible, désagréable, et
+      la première chose qu'on remarque sur un site mal fait.
+    -->
+    <script is:inline>
+      (function () {
+        try {
+          var choix = localStorage.getItem('sbd-theme');
+          var systeme = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          document.documentElement.dataset.theme = choix || (systeme ? 'dark' : 'light');
+        } catch (e) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
+  </head>
+
+  <body>
+    <a class="evitement" href="#contenu">Aller au contenu</a>
+
+    <header class="entete">
+      <div class="wrap barre">
+        <a class="marque" href="/">SBD<span>.re</span></a>
+
+        <nav aria-label="Navigation principale">
+          <ul>
+            {
+              liens.map((lien) => (
+                <li>
+                  <a
+                    href={lien.href}
+                    aria-current={estActif(lien.href) ? 'page' : undefined}
+                  >
+                    {lien.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+
+        <ThemeToggle />
+      </div>
+    </header>
+
+    <main id="contenu">
+      <slot />
+    </main>
+
+    <SiteFooter />
+  </body>
+</html>
+
+<style>
+  .evitement {
+    position: absolute;
+    left: -9999px;
+    z-index: 10;
+    padding: var(--space-3) var(--space-4);
+    background: var(--accent);
+    color: var(--on-accent);
+    border-radius: 0 0 var(--radius) 0;
+  }
+  /* Le lien d'évitement n'apparaît qu'au clavier : il fait gagner un temps
+     considérable à qui navigue sans souris, sans encombrer l'écran des autres. */
+  .evitement:focus {
+    left: 0;
+    top: 0;
+  }
+
+  .entete {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .barre {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding-block: var(--space-3);
+  }
+
+  .marque {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--step-1);
+    letter-spacing: -0.03em;
+    color: var(--text);
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+  .marque span {
+    color: var(--accent);
+  }
+
+  nav {
+    flex: 1;
+    min-width: 0;
+  }
+
+  nav ul {
+    display: flex;
+    gap: var(--space-1);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    /* En mobile la navigation défile horizontalement plutôt que de se replier
+       dans un menu « hamburger » : pas de JavaScript, pas de piège au clavier,
+       et les rubriques restent visibles. */
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  nav ul::-webkit-scrollbar {
+    display: none;
+  }
+
+  nav a {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius);
+    color: var(--muted);
+    text-decoration: none;
+    white-space: nowrap;
+    font-size: var(--step--1);
+    font-weight: 600;
+  }
+
+  nav a:hover {
+    color: var(--text);
+    background: var(--surface);
+  }
+
+  nav a[aria-current='page'] {
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
+  main {
+    padding-top: var(--space-8);
+  }
+</style>

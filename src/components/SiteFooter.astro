@@ -1,0 +1,130 @@
+---
+/**
+ * Pied de page — obligatoire sur TOUTES les pages.
+ *
+ * Les deux mentions ci-dessous ne sont pas décoratives :
+ *  - le crédit OpenPowerlifting est la contrepartie de l'usage de leurs données ;
+ *  - la mention de non-affiliation évite toute confusion avec la FFForce
+ *    (la fédération) et avec SBD Apparel (la marque d'équipement), dont le nom
+ *    ressemble à celui du site.
+ */
+import { periode, nombreAthletes, results } from '../lib/data';
+import { dateLongue } from '../lib/format';
+
+const { debut, fin } = periode();
+---
+
+<footer class="pied">
+  <div class="wrap">
+    <div class="grille">
+      <div>
+        <p class="marque">SBD<span>.re</span></p>
+        <p class="fin">
+          Classements et records de force athlétique de La Réunion.
+        </p>
+      </div>
+
+      <nav aria-label="Pied de page">
+        <p class="titre">Le site</p>
+        <ul>
+          <li><a href="/classement/">Classement</a></li>
+          <li><a href="/records/">Records</a></li>
+          <li><a href="/competitions/">Compétitions</a></li>
+          <li><a href="/a-propos/">À propos</a></li>
+        </ul>
+      </nav>
+
+      <div>
+        <p class="titre">Données</p>
+        <p class="fin">
+          {results.length.toLocaleString('fr-FR')} résultats, {nombreAthletes()} athlètes.{' '}
+          {debut && <>De {dateLongue(debut)} à {dateLongue(fin)}.</>}
+        </p>
+      </div>
+    </div>
+
+    <div class="mentions">
+      <p>
+        Données issues du projet OpenPowerlifting :{' '}
+        <a href="https://www.openpowerlifting.org" rel="noopener">openpowerlifting.org</a>. Jeu
+        de données téléchargeable sur{' '}
+        <a href="https://data.openpowerlifting.org" rel="noopener">data.openpowerlifting.org</a>.
+      </p>
+      <p>
+        Site indépendant, non affilié à la FFForce ni à SBD Apparel.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .pied {
+    margin-top: var(--space-16);
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    padding-block: var(--space-12) var(--space-8);
+    font-size: var(--step--1);
+  }
+
+  .grille {
+    display: grid;
+    gap: var(--space-8);
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 48rem) {
+    .grille {
+      grid-template-columns: 2fr 1fr 1.5fr;
+      gap: var(--space-12);
+    }
+  }
+
+  .marque {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--step-1);
+    letter-spacing: -0.03em;
+    margin-bottom: var(--space-2);
+  }
+  .marque span {
+    color: var(--accent);
+  }
+
+  .titre {
+    font-weight: 700;
+    margin-bottom: var(--space-2);
+  }
+
+  .fin {
+    color: var(--muted);
+    margin: 0;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  ul a {
+    color: var(--muted);
+    text-decoration: none;
+  }
+  ul a:hover {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+
+  .mentions {
+    margin-top: var(--space-8);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  .mentions p {
+    margin: 0 0 var(--space-2);
+  }
+</style>

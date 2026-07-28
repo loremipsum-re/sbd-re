@@ -1,0 +1,101 @@
+---
+/**
+ * Bascule clair / sombre.
+ *
+ * Écrit en JavaScript natif plutôt qu'en îlot Svelte : le composant se résume à
+ * un clic qui change un attribut. Embarquer un framework pour ça coûterait
+ * plusieurs kilo-octets et du temps d'hydratation, pour zéro gain.
+ *
+ * Le thème initial est appliqué par un script inline dans BaseLayout, AVANT le
+ * premier rendu. Ce composant ne gère que le changement d'avis du visiteur.
+ */
+---
+
+<button
+  type="button"
+  class="bascule"
+  data-bascule-theme
+  aria-live="polite"
+  title="Changer de thème"
+>
+  <span class="sr-only">Changer de thème</span>
+  <svg class="soleil" viewBox="0 0 24 24" aria-hidden="true" width="18" height="18">
+    <circle cx="12" cy="12" r="4.5" fill="currentColor"></circle>
+    <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"></path>
+    </g>
+  </svg>
+  <svg class="lune" viewBox="0 0 24 24" aria-hidden="true" width="18" height="18">
+    <path
+      d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"
+      fill="currentColor"></path>
+  </svg>
+</button>
+
+<script>
+  const bouton = document.querySelector<HTMLButtonElement>('[data-bascule-theme]');
+
+  function actualiserEtiquette() {
+    const actuel = document.documentElement.dataset.theme ?? 'light';
+    // L'étiquette annonce l'ACTION à venir, pas l'état courant : c'est ce
+    // qu'attend une personne qui navigue au lecteur d'écran.
+    bouton?.setAttribute(
+      'aria-label',
+      actuel === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre',
+    );
+  }
+
+  bouton?.addEventListener('click', () => {
+    const actuel = document.documentElement.dataset.theme ?? 'light';
+    const suivant = actuel === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = suivant;
+    try {
+      localStorage.setItem('sbd-theme', suivant);
+    } catch {
+      // Navigation privée ou stockage refusé : le thème s'applique quand même
+      // pour la session en cours, il ne sera simplement pas mémorisé.
+    }
+    actualiserEtiquette();
+  });
+
+  actualiserEtiquette();
+</script>
+
+<style>
+  .bascule {
+    display: inline-grid;
+    place-items: center;
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .bascule:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .bascule svg {
+    grid-area: 1 / 1;
+  }
+
+  /* On affiche l'icône de la destination, pas celle de l'état courant. */
+  :global(:root[data-theme='dark']) .soleil {
+    display: block;
+  }
+  :global(:root[data-theme='dark']) .lune {
+    display: none;
+  }
+  .soleil {
+    display: none;
+  }
+  .lune {
+    display: block;
+  }
+</style>

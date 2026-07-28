@@ -1,0 +1,228 @@
+/*
+ * Jetons de design (« design tokens ») — la source unique de vérité visuelle.
+ *
+ * Tout le site lit ses couleurs, espacements et tailles ici. Changer l'accent du
+ * site, c'est changer une ligne de ce fichier, pas chercher dans quinze
+ * composants.
+ *
+ * Organisation en deux temps, pour ne jamais écrire une couleur deux fois :
+ *   1. La PALETTE : les valeurs réelles, déclarées une seule fois.
+ *   2. Les RÔLES  : --bg, --text, --accent… qui pointent vers la palette selon
+ *      le thème actif. Le reste du CSS n'utilise QUE des rôles.
+ */
+
+:root {
+  /* ----------------------------------------------------------------------
+   * 1. PALETTE — les valeurs brutes, déclarées une fois pour toutes.
+   * -------------------------------------------------------------------- */
+
+  /* Thème clair : blanc cassé légèrement chaud, jamais du blanc pur.
+     Le blanc pur (#FFF) sur un écran fatigue en lecture prolongée et donne un
+     rendu clinique qui jure avec l'ambiance salle de force. */
+  --p-light-bg: #faf7f3;
+  --p-light-surface: #ffffff;
+  --p-light-border: #e7ded3;
+  --p-light-text: #1b1714;
+  --p-light-muted: #6d635a;
+  --p-light-accent: #c8540a; /* orange assombri : contraste AA sur fond clair */
+  --p-light-accent-hover: #a94406;
+  --p-light-on-accent: #ffffff;
+
+  /* Thème sombre : noir cassé chaud, jamais du noir pur.
+     Le noir pur crée un contraste trop violent avec le texte clair et fait
+     « baver » les caractères (halation) sur les écrans OLED. */
+  --p-dark-bg: #15120f;
+  --p-dark-surface: #1f1a16;
+  --p-dark-border: #322a23;
+  --p-dark-text: #f4efe9;
+  --p-dark-muted: #a2968a;
+  --p-dark-accent: #ff7a1a; /* orange plein : il peut être vif sur fond sombre */
+  --p-dark-accent-hover: #ff9448;
+  --p-dark-on-accent: #1a1005;
+
+  /* ----------------------------------------------------------------------
+   * 2. RÔLES — thème clair par défaut.
+   * -------------------------------------------------------------------- */
+  color-scheme: light;
+  --bg: var(--p-light-bg);
+  --surface: var(--p-light-surface);
+  --border: var(--p-light-border);
+  --text: var(--p-light-text);
+  --muted: var(--p-light-muted);
+  --accent: var(--p-light-accent);
+  --accent-hover: var(--p-light-accent-hover);
+  --on-accent: var(--p-light-on-accent);
+
+  /* ----------------------------------------------------------------------
+   * 3. Typographie, espacements, rayons — communs aux deux thèmes.
+   * -------------------------------------------------------------------- */
+
+  /* Polices système : aucun téléchargement, donc aucun décalage de mise en page
+     au chargement et aucune requête réseau supplémentaire. L'impact visuel vient
+     du poids et du resserrement, pas d'une police exotique. */
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-display: 'Segoe UI Variable Display', system-ui, -apple-system, 'Segoe UI',
+    Roboto, sans-serif;
+
+  --step--1: clamp(0.83rem, 0.8rem + 0.15vw, 0.9rem);
+  --step-0: clamp(1rem, 0.96rem + 0.2vw, 1.09rem);
+  --step-1: clamp(1.2rem, 1.13rem + 0.36vw, 1.45rem);
+  --step-2: clamp(1.44rem, 1.32rem + 0.6vw, 1.94rem);
+  --step-3: clamp(1.73rem, 1.53rem + 0.98vw, 2.58rem);
+  --step-4: clamp(2.07rem, 1.76rem + 1.56vw, 3.44rem);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  --radius: 0.5rem;
+  --radius-lg: 0.875rem;
+
+  --width-content: 68rem;
+}
+
+/*
+ * Thème sombre automatique : appliqué si le système est en sombre ET que le
+ * visiteur n'a pas explicitement demandé le thème clair.
+ * Ce cas couvre aussi la navigation sans JavaScript.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --bg: var(--p-dark-bg);
+    --surface: var(--p-dark-surface);
+    --border: var(--p-dark-border);
+    --text: var(--p-dark-text);
+    --muted: var(--p-dark-muted);
+    --accent: var(--p-dark-accent);
+    --accent-hover: var(--p-dark-accent-hover);
+    --on-accent: var(--p-dark-on-accent);
+  }
+}
+
+/* Choix explicite du visiteur via le bouton : il l'emporte sur le système. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: var(--p-dark-bg);
+  --surface: var(--p-dark-surface);
+  --border: var(--p-dark-border);
+  --text: var(--p-dark-text);
+  --muted: var(--p-dark-muted);
+  --accent: var(--p-dark-accent);
+  --accent-hover: var(--p-dark-accent-hover);
+  --on-accent: var(--p-dark-on-accent);
+}
+
+/* ------------------------------------------------------------------------
+ * Base
+ * ---------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  margin: 0 0 var(--space-4);
+}
+
+h1 {
+  font-size: var(--step-4);
+  font-weight: 800;
+}
+h2 {
+  font-size: var(--step-2);
+  font-weight: 700;
+}
+h3 {
+  font-size: var(--step-1);
+  font-weight: 700;
+}
+
+p {
+  margin: 0 0 var(--space-4);
+  text-wrap: pretty;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 0.2em;
+}
+a:hover {
+  color: var(--accent-hover);
+}
+
+img,
+svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/*
+ * Les chiffres sont le contenu principal du site. `tabular-nums` force tous les
+ * chiffres à la même largeur : les colonnes de charges s'alignent verticalement
+ * au lieu de tressauter d'une ligne à l'autre.
+ */
+.num {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* Visible uniquement pour les lecteurs d'écran. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Le focus clavier doit rester parfaitement visible : c'est la seule façon de
+   naviguer pour qui n'utilise pas de souris. */
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.wrap {
+  width: min(100% - 2 * var(--space-4), var(--width-content));
+  margin-inline: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
