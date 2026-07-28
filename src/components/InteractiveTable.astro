@@ -213,12 +213,24 @@ const aFiltres = Astro.slots.has('filtres');
           ligne.hidden = false;
           const rang = ligne.querySelector<HTMLElement>('.rang');
           if (rang) {
-            // Le rang suit toujours l'affichage courant : filtrer les femmes
-            // doit donner un classement de 1 à N, et non conserver les rangs
-            // du classement général.
-            rang.textContent = String(i + 1);
-            if (i < 3) rang.dataset.podium = String(i + 1);
+            /*
+             * Le rang suit toujours l'affichage courant : filtrer les femmes
+             * doit donner un classement de 1 à N, et non conserver les rangs du
+             * classement général.
+             *
+             * On écrit dans `.rang-num` et JAMAIS dans la cellule elle-même :
+             * celle-ci contient aussi le pictogramme de podium, qu'un
+             * `textContent = ...` effacerait purement et simplement.
+             */
+            const numero = rang.querySelector<HTMLElement>('.rang-num') ?? rang;
+            numero.textContent = String(i + 1);
+
+            const metaux = ['or', 'argent', 'bronze'];
+            if (i < 3) rang.dataset.podium = metaux[i];
             else delete rang.dataset.podium;
+
+            // Les cinquante premiers ressortent en doré, les suivants en gris.
+            rang.dataset.niveau = i < 50 ? 'haut' : 'bas';
           }
           fragment.appendChild(ligne);
         });

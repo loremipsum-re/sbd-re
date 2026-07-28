@@ -4,18 +4,19 @@
  *
  * Deux mises en forme pour le même balisage : cartes empilées en mobile,
  * tableau à partir de 48rem. Le balisage reste un <table> dans les deux cas.
- * Un tableau de résultats est un tableau : le transformer en <div> ferait
- * perdre au lecteur d'écran le lien entre une valeur et son en-tête.
  *
- * Les attributs `data-valeur` portent la valeur exacte pour le tri : sans eux,
- * « 782,5 kg » serait comparé comme du texte et 90 passerait après 1000.
+ * La colonne de rang mérite une attention particulière. Elle contient à la
+ * fois un numéro et une coupe, et le script de tri recalcule le podium à
+ * chaque interaction. Le numéro vit donc dans son propre `.rang-num`, et la
+ * couleur passe par des attributs sur la cellule, jamais par un remplacement
+ * du pictogramme.
  */
 import { equipmentLabel, parseWeightClass } from '../lib/categories';
 import { kg, nombre, points } from '../lib/format';
 import type { AthleteRanking } from '../lib/rankings';
-import { cleRecord, clesRecords } from '../lib/records';
-import { meetSlug } from '../lib/slug';
-import VerifiedBadge from './VerifiedBadge.astro';
+import { meetPath } from '../lib/slug';
+import BadgeOfficiel from './BadgeOfficiel.astro';
+import Coupe from './Coupe.astro';
 
 interface Props {
   entries: AthleteRanking[];
@@ -24,7 +25,7 @@ interface Props {
 }
 
 const { entries, miseEnAvant = 'total', id } = Astro.props;
-const records = clesRecords();
+const METAUX = ['or', 'argent', 'bronze'] as const;
 ---
 
 <div class="cadre">
@@ -44,19 +45,25 @@ const records = clesRecords();
       {
         entries.map((e, i) => {
           const classe = parseWeightClass(e.weightClassKg);
-          const estRecord = records.has(cleRecord('total', e.name, e.date, e.meetName));
           return (
             <tr
               data-sexe={e.sex}
               data-categorie={e.weightClassKg}
               data-equipement={e.equipmentGroup}
             >
-              <td class="rang" data-podium={i < 3 ? i + 1 : undefined}>
-                {i + 1}
+              <td
+                class="rang"
+                data-podium={i < 3 ? METAUX[i] : undefined}
+                data-niveau={i < 50 ? 'haut' : 'bas'}
+              >
+                <span class="rang-num">{i + 1}</span>
+                <Coupe detail={`${i + 1}e du classement`} taille={19} />
               </td>
               <th scope="row" class="athlete">
-                <a href={`/athlete/${e.slug}/`}>{e.name}</a>
-                {estRecord && <VerifiedBadge detail="Record de sa catégorie" />}
+                <span class="nom-ligne">
+                  <a href={`/athlete/${e.slug}/`}>{e.name}</a>
+                  <BadgeOfficiel taille={13} />
+                </span>
                 <span class="meta">
                   {equipmentLabel(e.equipmentGroup)} · {e.competitions} compét.
                 </span>
@@ -84,7 +91,7 @@ const records = clesRecords();
                 {points(e.dots)}
               </td>
               <td class="masquer-mobile competition">
-                <a href={`/competitions/${meetSlug(e.date, e.meetName)}/`}>{e.meetName}</a>
+                <a href={`/competitions/${meetPath(e.date, e.meetName)}/`}>{e.meetName}</a>
                 <span class="meta">{e.date.slice(0, 4)}</span>
               </td>
             </tr>
@@ -126,6 +133,44 @@ const records = clesRecords();
     text-align: center;
     color: var(--muted);
     margin: 0;
+  }
+
+  /* ---------- Colonne de rang ---------- */
+  .rang {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* Les cinquante premiers en doré, les suivants en gris. */
+  .rang[data-niveau='haut'] {
+    color: var(--or);
+  }
+  .rang[data-niveau='bas'] {
+    color: var(--muted);
+  }
+
+  /* Sur le podium, la coupe remplace le chiffre et prend le métal de la place.
+     La coupe hérite de `color`, ce qui suffit à la teinter. */
+  .rang :global(.coupe) {
+    display: none;
+  }
+  .rang[data-podium] :global(.coupe) {
+    display: inline-flex;
+    margin-left: 0;
+  }
+  .rang[data-podium] .rang-num {
+    display: none;
+  }
+  .rang[data-podium='or'] {
+    color: var(--or);
+  }
+  .rang[data-podium='argent'] {
+    color: var(--argent);
+  }
+  .rang[data-podium='bronze'] {
+    color: var(--bronze);
   }
 
   /* ---------- Mobile : une carte par athlète ---------- */
@@ -207,25 +252,15 @@ const records = clesRecords();
     }
   }
 
-  .rang {
-    font-family: var(--font-display);
-    font-weight: 700;
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Les trois premiers ressortent : c'est ce qu'on vient chercher sur un
-     classement, et ça donne au tableau son air de podium. */
-  .rang[data-podium] {
-    color: var(--accent);
-  }
-  .rang[data-podium='1'] {
-    font-size: var(--step-1);
-  }
-
   .athlete {
     font-weight: 600;
   }
+
+  .nom-ligne {
+    display: inline-flex;
+    align-items: center;
+  }
+
   .athlete a {
     color: var(--text);
   }

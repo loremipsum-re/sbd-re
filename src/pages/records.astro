@@ -1,6 +1,6 @@
 ---
+import Coupe from '../components/Coupe.astro';
 import InteractiveTable from '../components/InteractiveTable.astro';
-import VerifiedBadge from '../components/VerifiedBadge.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import {
   EQUIPMENT_GROUPS,
@@ -11,7 +11,7 @@ import {
 } from '../lib/categories';
 import { annee, kg } from '../lib/format';
 import { equipementsPresents, recordsPour, type RecordEntry } from '../lib/records';
-import { meetSlug } from '../lib/slug';
+import { meetPath } from '../lib/slug';
 import type { LiftKey, Sex } from '../lib/types';
 
 /**
@@ -136,12 +136,12 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
                               <>
                                 <span class="valeur num">
                                   {kg(rec.valueKg)}
-                                  <VerifiedBadge detail={`Record officiel, ${l.label}`} taille={14} />
+                                  <Coupe metal="or" detail={`Record de La Réunion, ${l.label}`} taille={15} />
                                 </span>
                                 <a class="detenteur" href={`/athlete/${rec.slug}/`}>
                                   {rec.holder}
                                 </a>
-                                <a class="quand" href={`/competitions/${meetSlug(rec.date, rec.meetName)}/`}>
+                                <a class="quand" href={`/competitions/${meetPath(rec.date, rec.meetName)}/`}>
                                   {annee(rec.date)}
                                 </a>
                               </>
@@ -163,9 +163,9 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
 
     <p class="note">
       Un tiret signale une catégorie où aucune performance n'a encore été
-      enregistrée lors d'une compétition réunionnaise : la place est libre. Le
-      pictogramme bleu confirme qu'il s'agit d'un résultat officiel, validé en
-      compétition.
+      enregistrée lors d'une compétition réunionnaise : la place est libre. La
+      coupe marque la meilleure barre de la catégorie, celle qui fait référence
+      aujourd'hui.
     </p>
   </div>
 </BaseLayout>
