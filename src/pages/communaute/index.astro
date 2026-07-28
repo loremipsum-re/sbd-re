@@ -1,0 +1,223 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  COMMUNITY_HEIGHT_BRACKETS,
+  COMMUNITY_WEIGHT_BRACKETS,
+} from '../../lib/categories';
+
+/**
+ * Page d'attente du classement communauté.
+ *
+ * Elle existe dès maintenant plutôt que d'être un lien mort dans la
+ * navigation : elle explique la distinction officiel / non-officiel, qui est
+ * le point le plus important à faire comprendre au visiteur.
+ */
+---
+
+<BaseLayout
+  titre="Classement communauté"
+  description="Le classement non-officiel de SBD.re : performances déclarées en salle et compétitions non homologuées, strictement séparées des records officiels."
+>
+  <div class="wrap texte">
+    <p class="etiquette">Bientôt</p>
+    <h1>Classement communauté</h1>
+
+    <p class="chapeau">
+      Un second classement, ouvert à tous : les performances réalisées en salle
+      et les compétitions non homologuées. Il arrive prochainement.
+    </p>
+
+    <div class="comparaison">
+      <div class="carte officiel">
+        <h2>Officiel</h2>
+        <p class="fin">Ce que le site publie aujourd'hui.</p>
+        <ul>
+          <li>Uniquement des résultats de compétition homologués</li>
+          <li>Issus des données publiques d'OpenPowerlifting</li>
+          <li>Personne ne peut y écrire</li>
+          <li>Fait autorité pour les records de l'île</li>
+        </ul>
+        <a class="bouton" href="/records/">Voir les records officiels</a>
+      </div>
+
+      <div class="carte">
+        <h2>Communauté</h2>
+        <p class="fin">En préparation.</p>
+        <ul>
+          <li>Performances déclarées en salle</li>
+          <li>Compétitions locales non homologuées</li>
+          <li>Soumission par les athlètes, avec un compte</li>
+          <li>Chaque performance vérifiée avant publication</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>Pourquoi deux classements séparés</h2>
+    <p>
+      Parce qu'une barre chargée à la salle et une barre validée par trois
+      juges en compétition ne racontent pas la même chose. Les mélanger
+      dévaluerait les secondes sans rendre justice aux premières. Une
+      performance déclarée n'apparaîtra donc jamais dans un record officiel.
+    </p>
+
+    <h2>Des catégories, pas des chiffres précis</h2>
+    <p>
+      Le classement communauté raisonnera en tranches plutôt qu'au kilo et au
+      centimètre près. C'est volontaire : déclarer « entre 80 et 90 kg » est
+      nettement moins intrusif qu'un poids exact, et personne ne devrait avoir
+      à publier ses mensurations pour figurer dans un classement.
+    </p>
+
+    <div class="tranches">
+      <div>
+        <h3>Poids de corps</h3>
+        <ul class="puces">
+          {COMMUNITY_WEIGHT_BRACKETS.map((b) => <li>{b.label}</li>)}
+        </ul>
+      </div>
+      <div>
+        <h3>Taille</h3>
+        <ul class="puces">
+          {COMMUNITY_HEIGHT_BRACKETS.map((b) => <li>{b.label}</li>)}
+        </ul>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .texte {
+    max-width: 52rem;
+    padding-bottom: var(--space-8);
+  }
+
+  .etiquette {
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: var(--space-2);
+  }
+
+  .chapeau {
+    font-size: var(--step-1);
+    color: var(--muted);
+    max-width: 60ch;
+    margin-bottom: var(--space-8);
+  }
+
+  .comparaison {
+    display: grid;
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+  }
+
+  @media (min-width: 48rem) {
+    .comparaison {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .carte {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    padding: var(--space-6);
+  }
+
+  .carte.officiel {
+    border-color: var(--accent);
+  }
+
+  .carte h2 {
+    margin: 0 0 var(--space-1);
+    padding: 0;
+    border: 0;
+    font-size: var(--step-1);
+  }
+
+  .fin {
+    color: var(--muted);
+    font-size: var(--step--1);
+  }
+
+  .carte ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 var(--space-6);
+  }
+
+  .carte li {
+    position: relative;
+    padding-left: var(--space-6);
+    margin-bottom: var(--space-2);
+    font-size: var(--step--1);
+  }
+
+  .carte li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .bouton {
+    display: inline-block;
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: var(--step--1);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .bouton:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  h2 {
+    margin-top: var(--space-12);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+  }
+
+  .tranches {
+    display: grid;
+    gap: var(--space-6);
+    margin-top: var(--space-6);
+  }
+
+  @media (min-width: 40rem) {
+    .tranches {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .tranches h3 {
+    font-size: var(--step-0);
+    margin-bottom: var(--space-2);
+  }
+
+  .puces {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .puces li {
+    font-size: var(--step--1);
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--muted);
+  }
+</style>

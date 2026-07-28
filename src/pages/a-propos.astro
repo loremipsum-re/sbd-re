@@ -1,0 +1,170 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { nombreAthletes, periode, results } from '../lib/data';
+import { dateLongue } from '../lib/format';
+import { listeMeets } from '../lib/meets';
+
+const { debut, fin } = periode();
+const meets = listeMeets();
+---
+
+<BaseLayout
+  titre="À propos"
+  description="Méthodologie, sources et fonctionnement de SBD.re : comment les compétitions réunionnaises sont identifiées et les records calculés."
+>
+  <div class="wrap texte">
+    <h1>À propos</h1>
+
+    <p class="chapeau">
+      SBD.re recense les classements et records de force athlétique de
+      La Réunion à partir des seuls résultats officiels de compétition. Le site
+      est gratuit, indépendant, et son code est public.
+    </p>
+
+    <h2>Les données</h2>
+    <p>
+      Tout vient du jeu de données public du projet{' '}
+      <a href="https://www.openpowerlifting.org" rel="noopener">OpenPowerlifting</a>, qui
+      recense les résultats de compétitions de force athlétique du monde entier.
+      Le fichier complet est{' '}
+      <a href="https://data.openpowerlifting.org" rel="noopener">
+        librement téléchargeable
+      </a>{' '}
+      et compte près de 4 millions de lignes.
+    </p>
+    <p>
+      Le site s'appuie actuellement sur {results.length.toLocaleString('fr-FR')}
+      résultats, {nombreAthletes()} athlètes et {meets.length} compétitions,
+      couvrant la période du {dateLongue(debut)} au {dateLongue(fin)}. Les
+      données sont régénérées automatiquement le 1<sup>er</sup> de chaque mois.
+    </p>
+
+    <h2>Comment une compétition est reconnue comme réunionnaise</h2>
+    <p>
+      C'est la question centrale du projet, et elle n'a pas de réponse
+      automatique satisfaisante :
+      <strong>le jeu de données ne contient aucune information de région</strong>.
+      Le champ prévu pour cela est vide sur la totalité des résultats de la
+      fédération française.
+    </p>
+    <p>Deux règles, dans cet ordre :</p>
+    <ol>
+      <li>
+        Le nom de la compétition contient « Réunion » — cas de la majorité des
+        championnats départementaux et régionaux.
+      </li>
+      <li>
+        La compétition figure dans une liste vérifiée à la main. C'est
+        indispensable : <em>Open de la Fournaise</em>, <em>Bench Cup 974</em> ou
+        <em>Fanm Kapab Contest</em> sont incontestablement réunionnais sans
+        jamais nommer l'île.
+      </li>
+    </ol>
+    <p>
+      <strong>La ville ne suffit jamais à inclure une compétition.</strong>{' '}
+      Saint-Denis, Saint-Louis, Saint-Paul et Saint-Pierre existent aussi en
+      métropole : s'y fier ferait entrer des compétitions qui n'ont rien à voir
+      avec l'île. Une compétition organisée dans une commune réunionnaise mais
+      dont le nom ne le dit pas est donc simplement <em>signalée</em>, puis
+      vérifiée à la main avant d'être ajoutée.
+    </p>
+
+    <h2>Ce qui est compté, et ce qui ne l'est pas</h2>
+    <ul>
+      <li>
+        <strong>Classement au total</strong> : full power uniquement (squat,
+        développé couché et soulevé de terre lors de la même compétition).
+      </li>
+      <li>
+        <strong>Record de développé couché</strong> : toutes les compétitions,
+        y compris celles de développé couché seul — elles représentent près de
+        la moitié des compétitions organisées sur l'île, et les ignorer
+        afficherait un record inférieur à la réalité.
+      </li>
+      <li>
+        <strong>Records de squat, soulevé de terre et total</strong> : full
+        power uniquement, puisque ces barres n'existent pas ailleurs.
+      </li>
+      <li>
+        <strong>Performances annulées</strong> : les résultats disqualifiés, y
+        compris pour dopage, et les forfaits ne sont jamais retenus.
+      </li>
+      <li>
+        <strong>Athlètes invités</strong> : leurs performances comptent. Elles
+        ont bien été réalisées en compétition, sous les mêmes juges, même si
+        l'athlète n'était pas classé officiellement ce jour-là.
+      </li>
+    </ul>
+
+    <h2>Une erreur ?</h2>
+    <p>
+      Deux cas de figure, et ils n'ont pas le même remède :
+    </p>
+    <ul>
+      <li>
+        <strong>Une performance est fausse ou absente</strong> → l'erreur vient
+        des données source. Il faut la signaler directement à
+        <a href="https://www.openpowerlifting.org" rel="noopener">OpenPowerlifting</a>,
+        qui corrigera à la source. La correction arrivera ici à la mise à jour
+        suivante.
+      </li>
+      <li>
+        <strong>Une compétition réunionnaise manque, ou une compétition
+        métropolitaine s'est glissée dans le classement</strong> → c'est un
+        problème de ce site. Écris-moi.
+      </li>
+    </ul>
+
+    <h2>Officiel et communauté</h2>
+    <p>
+      Le classement officiel présenté ici ne contient que des résultats
+      homologués. Le
+      <a href="/communaute/">classement communauté</a> accueille les
+      performances déclarées en salle et les compétitions non homologuées. Les
+      deux ne se mélangent jamais : une performance déclarée ne peut pas
+      apparaître dans un record officiel, ni l'inverse.
+    </p>
+
+    <h2>Contact</h2>
+    <p>
+      <a href="mailto:contact@sbd.re">contact@sbd.re</a>
+    </p>
+
+    <h2>Indépendance</h2>
+    <p>
+      Ce site est un projet personnel, sans but lucratif et sans publicité. Il
+      n'est affilié ni à la FFForce, ni à SBD Apparel, ni à aucun club. Le nom
+      « SBD » désigne ici les trois mouvements de la discipline : Squat, Bench,
+      Deadlift.
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  .texte {
+    max-width: 44rem;
+    padding-bottom: var(--space-8);
+  }
+
+  .chapeau {
+    font-size: var(--step-1);
+    color: var(--muted);
+    margin-bottom: var(--space-8);
+  }
+
+  h2 {
+    margin-top: var(--space-12);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+  }
+
+  ol,
+  ul {
+    padding-left: var(--space-6);
+    margin-bottom: var(--space-4);
+  }
+
+  li {
+    margin-bottom: var(--space-2);
+  }
+</style>

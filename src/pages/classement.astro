@@ -1,0 +1,288 @@
+---
+import RankingTable from '../components/RankingTable.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import {
+  EQUIPMENT_GROUPS,
+  compareWeightClass,
+  parseWeightClass,
+  type EquipmentGroup,
+} from '../lib/categories';
+import { fullPowerResults } from '../lib/data';
+import { equipementsPresents } from '../lib/records';
+import { meilleurTotalParAthlete } from '../lib/rankings';
+import type { Sex } from '../lib/types';
+
+const classement = meilleurTotalParAthlete();
+
+/**
+ * Catégories réellement présentes, avec les sexes concernés.
+ * Certaines valeurs (84, 84+) n'existent que chez les femmes, d'autres (83, 93)
+ * que chez les hommes : on marque chaque option pour pouvoir masquer les
+ * catégories sans objet dès que le visiteur filtre par sexe.
+ */
+const sexesParClasse = new Map<string, Set<Sex>>();
+for (const r of fullPowerResults) {
+  if (!r.weightClassKg) continue;
+  const set = sexesParClasse.get(r.weightClassKg) ?? new Set<Sex>();
+  set.add(r.sex);
+  sexesParClasse.set(r.weightClassKg, set);
+}
+
+const categories = [...sexesParClasse.entries()]
+  .map(([id, sexes]) => ({
+    id,
+    classe: parseWeightClass(id)!,
+    sexes: [...sexes].sort().join(''),
+  }))
+  .filter((c) => c.classe)
+  .sort((a, b) => compareWeightClass(a.classe, b.classe));
+
+const equipements = equipementsPresents(fullPowerResults);
+const libelleEquipement = (id: EquipmentGroup) =>
+  EQUIPMENT_GROUPS.find((e) => e.id === id)!;
+---
+
+<BaseLayout
+  titre="Classement"
+  description="Classement des athlètes réunionnais de force athlétique par meilleur total en compétition. Filtrable par sexe, catégorie de poids et équipement."
+>
+  <div class="wrap">
+    <header class="entete-page">
+      <h1>Classement</h1>
+      <p class="chapeau">
+        Meilleur total réalisé en compétition par chaque athlète, tous meets
+        réunionnais confondus. <strong>Full power uniquement</strong> — les
+        compétitions de développé couché seul figurent dans les
+        <a href="/records/">records</a>, pas ici : leur total ne serait pas
+        comparable.
+      </p>
+    </header>
+
+    <form class="filtres" aria-label="Filtrer le classement">
+      <div class="champ">
+        <label for="f-sexe">Sexe</label>
+        <select id="f-sexe" data-filtre="sexe">
+          <option value="">Tous</option>
+          <option value="M">Hommes</option>
+          <option value="F">Femmes</option>
+        </select>
+      </div>
+
+      <div class="champ">
+        <label for="f-categorie">Catégorie</label>
+        <select id="f-categorie" data-filtre="categorie">
+          <option value="">Toutes</option>
+          {
+            categories.map((c) => (
+              <option value={c.id} data-sexes={c.sexes}>
+                {c.classe.label}
+              </option>
+            ))
+          }
+        </select>
+      </div>
+
+      <div class="champ">
+        <label for="f-equipement">Équipement</label>
+        <select id="f-equipement" data-filtre="equipement">
+          <option value="">Tous</option>
+          {
+            equipements.map((e) => (
+              <option value={e}>{libelleEquipement(e).label}</option>
+            ))
+          }
+        </select>
+      </div>
+
+      <div class="champ">
+        <label for="f-tri">Trier par</label>
+        <select id="f-tri" data-filtre="tri">
+          <option value="total">Total</option>
+          <option value="dots">Points Dots</option>
+        </select>
+      </div>
+
+      <p class="compteur" aria-live="polite" data-compteur>
+        {classement.length} athlètes
+      </p>
+    </form>
+
+    <noscript>
+      <p class="noscript">
+        Les filtres nécessitent JavaScript. Le classement complet reste affiché
+        ci-dessous, trié par total.
+      </p>
+    </noscript>
+
+    <RankingTable entries={classement} id="classement" miseEnAvant="total" />
+
+    <p class="note">
+      Un athlète invité (mention « G » dans les résultats officiels) apparaît
+      dans le classement : sa performance a bien été réalisée en compétition,
+      même s'il n'était pas classé ce jour-là.
+    </p>
+  </div>
+</BaseLayout>
+
+<script>
+  const tableau = document.getElementById('classement') as HTMLTableElement | null;
+  const compteur = document.querySelector('[data-compteur]');
+
+  if (tableau) {
+    const corps = tableau.tBodies[0];
+    // On fige la liste des lignes une fois : elles seront réordonnées dans le
+    // DOM, jamais recréées. Avec 310 athlètes, c'est instantané.
+    const lignes = Array.from(corps.rows);
+
+    const selects = {
+      sexe: document.querySelector<HTMLSelectElement>('[data-filtre="sexe"]'),
+      categorie: document.querySelector<HTMLSelectElement>('[data-filtre="categorie"]'),
+      equipement: document.querySelector<HTMLSelectElement>('[data-filtre="equipement"]'),
+      tri: document.querySelector<HTMLSelectElement>('[data-filtre="tri"]'),
+    };
+
+    /**
+     * Masque les catégories de poids qui n'existent pas pour le sexe choisi.
+     * Sans ça, filtrer « Femmes » puis « −93 kg » donnerait une liste vide sans
+     * que le visiteur comprenne pourquoi.
+     */
+    function ajusterCategories() {
+      const sexe = selects.sexe?.value ?? '';
+      const options = selects.categorie?.options ?? [];
+      let selectionInvalide = false;
+
+      for (const option of Array.from(options)) {
+        if (!option.value) continue;
+        const sexes = option.dataset.sexes ?? '';
+        const compatible = !sexe || sexes.includes(sexe);
+        option.hidden = !compatible;
+        option.disabled = !compatible;
+        if (!compatible && option.selected) selectionInvalide = true;
+      }
+
+      if (selectionInvalide && selects.categorie) selects.categorie.value = '';
+    }
+
+    function appliquer() {
+      const sexe = selects.sexe?.value ?? '';
+      const categorie = selects.categorie?.value ?? '';
+      const equipement = selects.equipement?.value ?? '';
+      const tri = selects.tri?.value === 'dots' ? 'dots' : 'total';
+
+      const visibles = lignes.filter(
+        (l) =>
+          (!sexe || l.dataset.sexe === sexe) &&
+          (!categorie || l.dataset.categorie === categorie) &&
+          (!equipement || l.dataset.equipement === equipement),
+      );
+
+      visibles.sort(
+        (a, b) =>
+          Number(b.dataset[tri]) - Number(a.dataset[tri]) ||
+          (a.dataset.nom ?? '').localeCompare(b.dataset.nom ?? ''),
+      );
+
+      for (const l of lignes) l.hidden = true;
+
+      const fragment = document.createDocumentFragment();
+      visibles.forEach((ligne, i) => {
+        ligne.hidden = false;
+        const rang = ligne.querySelector<HTMLElement>('.rang');
+        if (rang) {
+          rang.textContent = String(i + 1);
+          // Le podium doit suivre le classement filtré, pas le classement
+          // d'origine : sinon le 1er des femmes garderait le rang 14.
+          if (i < 3) rang.dataset.podium = String(i + 1);
+          else delete rang.dataset.podium;
+        }
+        fragment.appendChild(ligne);
+      });
+      corps.appendChild(fragment);
+
+      if (compteur) {
+        compteur.textContent =
+          visibles.length === 0
+            ? 'Aucun athlète'
+            : `${visibles.length} athlète${visibles.length > 1 ? 's' : ''}`;
+      }
+    }
+
+    for (const select of Object.values(selects)) {
+      select?.addEventListener('change', () => {
+        if (select === selects.sexe) ajusterCategories();
+        appliquer();
+      });
+    }
+
+    ajusterCategories();
+  }
+</script>
+
+<style>
+  .entete-page {
+    margin-bottom: var(--space-8);
+  }
+
+  .chapeau {
+    color: var(--muted);
+    max-width: 68ch;
+  }
+
+  .filtres {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .champ {
+    display: grid;
+    gap: var(--space-1);
+    flex: 1 1 9rem;
+  }
+
+  label {
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  select {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: var(--step--1);
+  }
+
+  .compteur {
+    margin: 0 0 var(--space-2);
+    margin-left: auto;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+  }
+
+  .noscript,
+  .note {
+    font-size: var(--step--1);
+    color: var(--muted);
+    margin-top: var(--space-4);
+  }
+
+  /*
+   * Les lignes du tableau passent en `display: grid` en mobile ; sans cette
+   * règle, l'attribut `hidden` serait ignoré et les lignes filtrées
+   * resteraient visibles.
+   */
+  :global(#classement tr[hidden]) {
+    display: none !important;
+  }
+</style>

@@ -1,0 +1,283 @@
+---
+import RankingTable from '../components/RankingTable.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import nextMeet from '../data/next-meet.json';
+import { nombreAthletes, periode, results } from '../lib/data';
+import { annee, dateLongue } from '../lib/format';
+import { listeMeets } from '../lib/meets';
+import { topDots } from '../lib/rankings';
+
+const top = topDots(10);
+const meets = listeMeets();
+const { debut, fin } = periode();
+
+/**
+ * L'annonce disparaît d'elle-même une fois la date passée.
+ *
+ * « Aujourd'hui » est ici la date de BUILD, pas celle de la visite : sur un
+ * site statique, la page est calculée une fois pour toutes. Le site étant
+ * reconstruit chaque mois, une compétition passée peut donc rester affichée
+ * jusqu'à quelques semaines. C'est le compromis assumé du statique — et la
+ * raison pour laquelle on annonce une date, jamais un « demain ».
+ */
+const aujourdhui = new Date().toISOString().slice(0, 10);
+const annonce = nextMeet.annonce && nextMeet.date >= aujourdhui ? nextMeet : null;
+
+const stats = [
+  { valeur: nombreAthletes().toString(), libelle: 'athlètes' },
+  { valeur: meets.length.toString(), libelle: 'compétitions' },
+  { valeur: results.length.toLocaleString('fr-FR'), libelle: 'résultats' },
+  { valeur: `${annee(debut)}–${annee(fin)}`, libelle: 'de données' },
+];
+---
+
+<BaseLayout
+  titre="Classements et records du powerlifting réunionnais"
+  titreOnglet="SBD.re — Powerlifting La Réunion"
+  description="Classements et records de force athlétique de La Réunion, établis à partir des seuls résultats officiels de compétition. Squat, développé couché, soulevé de terre."
+>
+  <section class="hero wrap">
+    <p class="surtitre">Force athlétique · La Réunion · 974</p>
+    <h1>
+      Les records de l'île,<br />
+      <span class="accent">sur la barre.</span>
+    </h1>
+    <p class="chapeau">
+      Classements et records établis uniquement à partir des résultats officiels
+      de compétition. Pas de déclaratif, pas d'approximation — ce qui a été
+      soulevé sur le plateau.
+    </p>
+
+    <div class="actions">
+      <a class="bouton primaire" href="/classement/">Voir le classement</a>
+      <a class="bouton" href="/records/">Les records 974</a>
+    </div>
+
+    <dl class="stats">
+      {
+        stats.map((s) => (
+          <div>
+            <dt class="num">{s.valeur}</dt>
+            <dd>{s.libelle}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </section>
+
+  {
+    annonce && (
+      <section class="wrap">
+        <div class="annonce">
+          <p class="etiquette">Prochaine compétition</p>
+          <h2>{annonce.nom}</h2>
+          <p class="detail">
+            {dateLongue(annonce.date)}
+            {annonce.ville && <> · {annonce.ville}</>}
+            {annonce.lieu && <> · {annonce.lieu}</>}
+          </p>
+          {annonce.url && (
+            <a href={annonce.url} rel="noopener">
+              Informations et engagement
+            </a>
+          )}
+        </div>
+      </section>
+    )
+  }
+
+  <section class="wrap bloc">
+    <header class="titre-bloc">
+      <div>
+        <h2>Top 10 toutes catégories</h2>
+        <p class="fin">
+          Classé aux points Dots, qui rapportent le total au poids de corps —
+          la seule façon de comparer un athlète de 59 kg à un athlète de 120 kg.
+          Full power uniquement.
+        </p>
+      </div>
+      <a class="lien-plus" href="/classement/">Classement complet →</a>
+    </header>
+
+    <RankingTable entries={top} miseEnAvant="dots" />
+  </section>
+
+  <section class="wrap bloc">
+    <div class="communaute">
+      <div>
+        <h2>Et hors compétition ?</h2>
+        <p class="fin">
+          Le classement communauté accueille les performances réalisées en salle
+          et les compétitions non homologuées. Séparé du classement officiel,
+          il ne s'y mélange jamais.
+        </p>
+      </div>
+      <a class="bouton" href="/communaute/">Découvrir le classement communauté</a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    padding-block: var(--space-8) var(--space-12);
+  }
+
+  .surtitre {
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: var(--space-3);
+  }
+
+  h1 {
+    max-width: 16ch;
+  }
+
+  .accent {
+    color: var(--accent);
+  }
+
+  .chapeau {
+    max-width: 58ch;
+    color: var(--muted);
+    font-size: var(--step-1);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-bottom: var(--space-12);
+  }
+
+  .bouton {
+    display: inline-block;
+    padding: var(--space-3) var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .bouton:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .bouton.primaire {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+  }
+  .bouton.primaire:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    color: var(--on-accent);
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-6);
+    margin: 0;
+    padding-top: var(--space-8);
+    border-top: 1px solid var(--border);
+  }
+
+  @media (min-width: 48rem) {
+    .stats {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .stats dt {
+    font-size: var(--step-3);
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .stats dd {
+    margin: var(--space-1) 0 0;
+    color: var(--muted);
+    font-size: var(--step--1);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .bloc {
+    padding-block: var(--space-8);
+  }
+
+  .titre-bloc {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+  }
+
+  .titre-bloc h2 {
+    margin-bottom: var(--space-2);
+  }
+
+  .fin {
+    color: var(--muted);
+    max-width: 62ch;
+    margin: 0;
+    font-size: var(--step--1);
+  }
+
+  .lien-plus {
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .lien-plus:hover {
+    text-decoration: underline;
+  }
+
+  .annonce {
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    padding: var(--space-6);
+  }
+
+  .annonce h2 {
+    margin-bottom: var(--space-2);
+  }
+
+  .etiquette {
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: var(--space-2);
+  }
+
+  .detail {
+    color: var(--muted);
+    margin-bottom: var(--space-2);
+  }
+
+  .communaute {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    padding: var(--space-8);
+  }
+
+  .communaute h2 {
+    margin-bottom: var(--space-2);
+  }
+</style>

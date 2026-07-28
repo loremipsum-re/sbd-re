@@ -1,0 +1,420 @@
+---
+import ProgressChart from '../../components/ProgressChart.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { equipmentGroup, equipmentLabel, sexLabel } from '../../lib/categories';
+import { results } from '../../lib/data';
+import { dateLongue, kg, place, points } from '../../lib/format';
+import { libelleEvent } from '../../lib/meets';
+import { athleteSlug, openpowerliftingUrl } from '../../lib/slug';
+import type { Result } from '../../lib/types';
+
+export async function getStaticPaths() {
+  const parSlug = new Map<string, { name: string; lignes: Result[] }>();
+
+  for (const r of results) {
+    const slug = athleteSlug(r.name);
+    const entree = parSlug.get(slug);
+    if (entree) {
+      /*
+       * Deux noms différents qui produiraient le même slug fusionneraient deux
+       * athlètes en une seule page — et pourraient attribuer un record à la
+       * mauvaise personne. On préfère faire échouer le build bruyamment plutôt
+       * que de publier une donnée fausse en silence.
+       */
+      if (entree.name !== r.name) {
+        throw new Error(
+          `Collision de slug « ${slug} » entre « ${entree.name} » et « ${r.name} ». ` +
+            `Adapter athleteSlug() dans src/lib/slug.ts.`,
+        );
+      }
+      entree.lignes.push(r);
+    } else {
+      parSlug.set(slug, { name: r.name, lignes: [r] });
+    }
+  }
+
+  return [...parSlug.entries()].map(([slug, { name, lignes }]) => ({
+    params: { slug },
+    props: { name, lignes },
+  }));
+}
+
+// Les propriétés sont déduites automatiquement de getStaticPaths ci-dessus :
+// pas d'interface Props à déclarer ici.
+const { name, lignes } = Astro.props;
+
+const historique = [...lignes].sort((a, b) => a.date.localeCompare(b.date));
+const fullPower = historique.filter((r) => r.event === 'SBD' && (r.totalKg ?? 0) > 0);
+
+const meilleurTotal = fullPower.reduce<Result | null>(
+  (a, b) => (a === null || (b.totalKg ?? 0) > (a.totalKg ?? 0) ? b : a),
+  null,
+);
+const meilleurDots = fullPower.reduce<Result | null>(
+  (a, b) => (a === null || (b.dots ?? 0) > (a.dots ?? 0) ? b : a),
+  null,
+);
+
+const meilleures = {
+  squat: Math.max(0, ...historique.map((r) => r.bestSquatKg ?? 0)),
+  bench: Math.max(0, ...historique.map((r) => r.bestBenchKg ?? 0)),
+  deadlift: Math.max(0, ...historique.map((r) => r.bestDeadliftKg ?? 0)),
+};
+
+const dernier = historique[historique.length - 1];
+const meets = new Set(historique.map((r) => `${r.date}|${r.meetName}`)).size;
+
+const pointsGraphe = fullPower.map((r) => ({
+  date: r.date,
+  value: r.totalKg as number,
+  label: r.meetName,
+}));
+
+const description =
+  `${name} — powerlifting La Réunion. ` +
+  (meilleurTotal
+    ? `Meilleur total ${kg(meilleurTotal.totalKg)} en ${meilleurTotal.weightClassKg} kg. `
+    : '') +
+  `${meets} compétition${meets > 1 ? 's' : ''} réunionnaise${meets > 1 ? 's' : ''}.`;
+---
+
+<BaseLayout titre={name} description={description}>
+  <div class="wrap">
+    <p class="fil"><a href="/classement/">← Retour au classement</a></p>
+
+    <header class="entete-athlete">
+      <div>
+        <h1>{name}</h1>
+        <p class="badges">
+          <span class="badge">{sexLabel(dernier.sex)}</span>
+          {dernier.weightClassKg && <span class="badge">{dernier.weightClassKg} kg</span>}
+          <span class="badge">{equipmentLabel(equipmentGroup(dernier.equipment))}</span>
+          {dernier.division && <span class="badge">{dernier.division}</span>}
+        </p>
+      </div>
+      <a class="lien-opl" href={openpowerliftingUrl(name)} rel="noopener">
+        Fiche OpenPowerlifting →
+      </a>
+    </header>
+
+    <dl class="stats">
+      <div>
+        <dt>Meilleur total</dt>
+        <dd class="num">{meilleurTotal ? kg(meilleurTotal.totalKg) : '—'}</dd>
+      </div>
+      <div>
+        <dt>Meilleur Dots</dt>
+        <dd class="num">{meilleurDots ? points(meilleurDots.dots) : '—'}</dd>
+      </div>
+      <div>
+        <dt>Compétitions</dt>
+        <dd class="num">{meets}</dd>
+      </div>
+      <div>
+        <dt>Squat / DC / SDT</dt>
+        <dd class="triptyque">
+          <span class="num">{meilleures.squat || '—'}</span>
+          <span class="num">{meilleures.bench || '—'}</span>
+          <span class="num">{meilleures.deadlift || '—'}</span>
+        </dd>
+      </div>
+    </dl>
+
+    {
+      pointsGraphe.length > 1 && (
+        <section class="bloc">
+          <h2>Progression</h2>
+          <ProgressChart points={pointsGraphe} legende="Total en compétition" />
+        </section>
+      )
+    }
+
+    <section class="bloc">
+      <h2>Historique</h2>
+
+      <div class="cadre">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Compétition</th>
+              <th scope="col">Format</th>
+              <th scope="col" class="nombre">Squat</th>
+              <th scope="col" class="nombre">DC</th>
+              <th scope="col" class="nombre">SDT</th>
+              <th scope="col" class="nombre">Total</th>
+              <th scope="col" class="nombre">Dots</th>
+              <th scope="col" class="nombre">Place</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              [...historique].reverse().map((r) => (
+                <tr>
+                  <th scope="row" class="date">
+                    {dateLongue(r.date)}
+                  </th>
+                  <td data-libelle="Compétition">
+                    {r.meetName}
+                    <span class="ville">{r.meetTown}</span>
+                  </td>
+                  <td data-libelle="Format">
+                    <span class="format">{libelleEvent(r.event)}</span>
+                  </td>
+                  <td class="nombre" data-libelle="Squat">
+                    {r.bestSquatKg ?? '—'}
+                  </td>
+                  <td class="nombre" data-libelle="Développé couché">
+                    {r.bestBenchKg ?? '—'}
+                  </td>
+                  <td class="nombre" data-libelle="Soulevé de terre">
+                    {r.bestDeadliftKg ?? '—'}
+                  </td>
+                  <td class="nombre num" data-libelle="Total">
+                    {r.event === 'SBD' ? (r.totalKg ?? '—') : '—'}
+                  </td>
+                  <td class="nombre" data-libelle="Dots">
+                    {r.event === 'SBD' ? points(r.dots) : '—'}
+                  </td>
+                  <td class="nombre" data-libelle="Place">
+                    {place(r.place)}
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <p class="note">
+        Le total et les points Dots ne sont affichés que pour le full power. Sur
+        une compétition de développé couché seul, OpenPowerlifting renseigne un
+        « total » qui vaut simplement la meilleure barre au bench : l'afficher
+        ici laisserait croire à une contre-performance.
+      </p>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .fil {
+    font-size: var(--step--1);
+    margin-bottom: var(--space-4);
+  }
+  .fil a {
+    text-decoration: none;
+  }
+  .fil a:hover {
+    text-decoration: underline;
+  }
+
+  .entete-athlete {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+  }
+
+  h1 {
+    margin-bottom: var(--space-3);
+  }
+
+  .badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+  }
+
+  .badge {
+    font-size: var(--step--1);
+    font-weight: 600;
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--muted);
+  }
+
+  .lien-opl {
+    font-size: var(--step--1);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .lien-opl:hover {
+    text-decoration: underline;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+    margin: 0 0 var(--space-12);
+    padding: var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  @media (min-width: 48rem) {
+    .stats {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .stats dt {
+    font-size: var(--step--1);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: var(--space-1);
+  }
+
+  .stats dd {
+    margin: 0;
+    font-size: var(--step-2);
+    line-height: 1;
+  }
+
+  /*
+   * Trois chiffres sur une seule ligne. `nowrap` est indispensable : sans lui,
+   * la valeur passe à la ligne et laisse une barre oblique orpheline en fin de
+   * ligne précédente. La taille est réduite par rapport aux autres chiffres
+   * pour que les trois tiennent dans la colonne, même en mobile.
+   */
+  .stats dd.triptyque {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    white-space: nowrap;
+    font-size: var(--step-0);
+  }
+  .triptyque span:not(:last-child)::after {
+    content: '/';
+    margin-left: var(--space-2);
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .bloc {
+    margin-bottom: var(--space-12);
+  }
+
+  .cadre {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--step--1);
+  }
+
+  th,
+  td {
+    text-align: left;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .ville {
+    display: block;
+    color: var(--muted);
+  }
+
+  .format {
+    font-size: var(--step--1);
+    padding: 2px var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .date {
+    white-space: nowrap;
+    font-weight: 600;
+  }
+
+  /* ---------- Mobile : une carte par compétition ---------- */
+  @media (max-width: 61.999rem) {
+    thead {
+      display: none;
+    }
+
+    tbody tr {
+      display: block;
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr:last-child {
+      border-bottom: 0;
+    }
+
+    .date {
+      display: block;
+      padding: 0 0 var(--space-1);
+      color: var(--accent);
+    }
+
+    td {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--space-3);
+      padding: var(--space-1) 0;
+    }
+
+    td::before {
+      content: attr(data-libelle);
+      color: var(--muted);
+      font-weight: 600;
+    }
+  }
+
+  /* ---------- Desktop ---------- */
+  @media (min-width: 62rem) {
+    thead th {
+      font-size: var(--step--1);
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .nombre {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr:last-child {
+      border-bottom: 0;
+    }
+    tbody tr:hover {
+      background: color-mix(in srgb, var(--accent) 6%, transparent);
+    }
+
+    td::before {
+      display: none;
+    }
+
+    .ville {
+      display: inline;
+      margin-left: var(--space-2);
+    }
+  }
+
+  .note {
+    margin-top: var(--space-4);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+</style>

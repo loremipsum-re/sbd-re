@@ -1,0 +1,325 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import {
+  EQUIPMENT_GROUPS,
+  LIFTS,
+  compareWeightClass,
+  type EquipmentGroup,
+  type WeightClass,
+} from '../lib/categories';
+import { results } from '../lib/data';
+import { annee, kg } from '../lib/format';
+import { equipementsPresents, recordsPour, type RecordEntry } from '../lib/records';
+import type { LiftKey, Sex } from '../lib/types';
+
+/**
+ * Un tableau par couple (sexe × équipement), avec les catégories de poids en
+ * lignes et les quatre mouvements en colonnes.
+ *
+ * C'est la forme classique d'un tableau de records, et la plus dense : on lit
+ * d'un coup d'œil « chez les hommes, en Raw, en −93 kg, voilà les quatre
+ * meilleures barres de l'île ». Les découper mouvement par mouvement
+ * donnerait seize tableaux illisibles.
+ */
+
+// Index unique de tous les records : clé « mouvement|sexe|catégorie|équipement ».
+const index = new Map<string, RecordEntry>();
+for (const lift of LIFTS) {
+  for (const rec of recordsPour(lift.id)) {
+    index.set(`${lift.id}|${rec.sex}|${rec.weightClass.id}|${rec.equipment}`, rec);
+  }
+}
+
+const equipements = equipementsPresents();
+const sexes: { id: Sex; label: string }[] = [
+  { id: 'M', label: 'Hommes' },
+  { id: 'F', label: 'Femmes' },
+];
+
+/** Catégories qui possèdent au moins un record pour ce couple sexe/équipement. */
+function categoriesUtiles(sex: Sex, equipement: EquipmentGroup): WeightClass[] {
+  const vues = new Map<string, WeightClass>();
+  for (const lift of LIFTS) {
+    for (const rec of recordsPour(lift.id)) {
+      if (rec.sex !== sex || rec.equipment !== equipement) continue;
+      vues.set(rec.weightClass.id, rec.weightClass);
+    }
+  }
+  return [...vues.values()].sort(compareWeightClass);
+}
+
+const tableaux = equipements
+  .flatMap((equipement) =>
+    sexes.map((sexe) => ({
+      equipement,
+      sexe,
+      categories: categoriesUtiles(sexe.id, equipement),
+    })),
+  )
+  // On n'affiche jamais une section vide : mieux vaut pas de tableau qu'un
+  // tableau de tirets.
+  .filter((t) => t.categories.length > 0);
+
+const libelleEquipement = (id: EquipmentGroup) =>
+  EQUIPMENT_GROUPS.find((e) => e.id === id)?.label ?? id;
+
+const recordDe = (
+  lift: LiftKey,
+  sex: Sex,
+  categorie: string,
+  equipement: EquipmentGroup,
+) => index.get(`${lift}|${sex}|${categorie}|${equipement}`);
+---
+
+<BaseLayout
+  titre="Records 974"
+  description="Records de force athlétique de La Réunion par mouvement, sexe, catégorie de poids et équipement. Squat, développé couché, soulevé de terre et total."
+>
+  <div class="wrap">
+    <header class="entete-page">
+      <h1>Records 974</h1>
+      <p class="chapeau">
+        Meilleure performance jamais réalisée lors d'une compétition
+        réunionnaise, pour chaque catégorie. Le développé couché tient compte
+        des compétitions de bench seul ; squat, soulevé de terre et total ne
+        peuvent venir que du full power.
+      </p>
+    </header>
+
+    {
+      tableaux.map(({ equipement, sexe, categories }) => (
+        <section class="section">
+          <h2>
+            {sexe.label} <span class="equip">{libelleEquipement(equipement)}</span>
+          </h2>
+
+          <div class="cadre">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Catégorie</th>
+                  {LIFTS.map((l) => (
+                    <th scope="col" class="nombre">
+                      {l.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {categories.map((cat) => (
+                  <tr>
+                    <th scope="row" class="categorie">
+                      {cat.label}
+                    </th>
+                    {LIFTS.map((l) => {
+                      const rec = recordDe(l.id, sexe.id, cat.id, equipement);
+                      return (
+                        <td class="nombre" data-libelle={l.label}>
+                          {rec ? (
+                            <>
+                              <span class="valeur num">{kg(rec.valueKg)}</span>
+                              <a class="detenteur" href={`/athlete/${rec.slug}/`}>
+                                {rec.holder}
+                              </a>
+                              <span class="quand">{annee(rec.date)}</span>
+                            </>
+                          ) : (
+                            <span class="absent">—</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ))
+    }
+
+    <p class="note">
+      Un tiret signale une catégorie où aucune performance n'a encore été
+      enregistrée en compétition réunionnaise — la place est libre.
+      {results.length.toLocaleString('fr-FR')} résultats analysés.
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  .entete-page {
+    margin-bottom: var(--space-8);
+  }
+
+  .chapeau {
+    color: var(--muted);
+    max-width: 68ch;
+  }
+
+  .section {
+    margin-bottom: var(--space-12);
+  }
+
+  .section h2 {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+
+  .equip {
+    font-family: var(--font-body);
+    font-size: var(--step--1);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+  }
+
+  .cadre {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    text-align: left;
+    padding: var(--space-3);
+  }
+
+  .valeur {
+    display: block;
+    font-size: var(--step-1);
+    line-height: 1.1;
+  }
+
+  .detenteur {
+    display: block;
+    font-size: var(--step--1);
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .detenteur:hover {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+
+  .quand {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .absent {
+    color: var(--muted);
+    font-size: var(--step-1);
+  }
+
+  .categorie {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--step-0);
+    white-space: nowrap;
+  }
+
+  /* ---------- Mobile : une carte par catégorie ---------- */
+  @media (max-width: 55.999rem) {
+    thead {
+      display: none;
+    }
+
+    tbody tr {
+      display: block;
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr:last-child {
+      border-bottom: 0;
+    }
+
+    .categorie {
+      display: block;
+      padding: 0 0 var(--space-3);
+      color: var(--accent);
+      font-size: var(--step-1);
+    }
+
+    td {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: baseline;
+      gap: var(--space-2);
+      padding: var(--space-2) 0;
+      border-top: 1px solid var(--border);
+    }
+
+    td::before {
+      content: attr(data-libelle);
+      font-size: var(--step--1);
+      font-weight: 600;
+      color: var(--muted);
+      grid-row: 1;
+    }
+
+    .valeur {
+      grid-column: 2;
+      grid-row: 1;
+      text-align: right;
+    }
+
+    .detenteur,
+    .quand {
+      grid-column: 1 / -1;
+      text-align: left;
+    }
+
+    .quand {
+      display: none;
+    }
+  }
+
+  /* ---------- Desktop ---------- */
+  @media (min-width: 56rem) {
+    thead th {
+      font-size: var(--step--1);
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border);
+    }
+
+    thead th.nombre,
+    tbody td.nombre {
+      text-align: right;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr:last-child {
+      border-bottom: 0;
+    }
+    tbody tr:hover {
+      background: color-mix(in srgb, var(--accent) 6%, transparent);
+    }
+
+    td::before {
+      display: none;
+    }
+  }
+
+  .note {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+</style>

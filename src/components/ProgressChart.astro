@@ -1,0 +1,185 @@
+---
+/**
+ * Courbe de progression, en SVG calculé au build.
+ *
+ * Aucune librairie de graphiques : pour une simple ligne brisée, Chart.js ou
+ * D3 représenteraient des dizaines de kilo-octets de JavaScript et un temps
+ * d'exécution, là où quelques calculs de coordonnées suffisent. Le SVG produit
+ * ici est du HTML : il s'affiche instantanément, se met à l'échelle sans
+ * pixelliser, et suit le thème clair/sombre via `currentColor`.
+ */
+import { dateCourte, kg } from '../lib/format';
+
+interface Point {
+  date: string;
+  value: number;
+  label?: string;
+}
+
+interface Props {
+  points: Point[];
+  legende?: string;
+}
+
+const { points, legende = 'Progression du total' } = Astro.props;
+
+// Repère interne du SVG. Les unités n'ont pas d'importance : le viewBox se met
+// à l'échelle de son conteneur. On raisonne donc en coordonnées « confortables ».
+const L = 600;
+const H = 220;
+const MARGE = { haut: 24, bas: 34, gauche: 52, droite: 16 };
+
+const tries = [...points].sort((a, b) => a.date.localeCompare(b.date));
+
+const valeurs = tries.map((p) => p.value);
+const min = Math.min(...valeurs);
+const max = Math.max(...valeurs);
+
+// Une marge de 8 % évite que le meilleur point ne colle au bord haut. Si toutes
+// les valeurs sont identiques, on force une amplitude pour ne pas diviser par 0.
+const amplitude = max - min || Math.max(max * 0.1, 10);
+const basse = min - amplitude * 0.15;
+const haute = max + amplitude * 0.15;
+
+const largeurUtile = L - MARGE.gauche - MARGE.droite;
+const hauteurUtile = H - MARGE.haut - MARGE.bas;
+
+const x = (i: number) =>
+  tries.length === 1
+    ? MARGE.gauche + largeurUtile / 2
+    : MARGE.gauche + (i / (tries.length - 1)) * largeurUtile;
+
+const y = (v: number) =>
+  MARGE.haut + hauteurUtile - ((v - basse) / (haute - basse)) * hauteurUtile;
+
+const coordonnees = tries.map((p, i) => ({ ...p, cx: x(i), cy: y(p.value) }));
+const ligne = coordonnees.map((p) => `${p.cx.toFixed(1)},${p.cy.toFixed(1)}`).join(' ');
+
+// Aire sous la courbe, pour donner du corps au graphe.
+const aire =
+  coordonnees.length > 1
+    ? `M ${coordonnees[0].cx.toFixed(1)},${(H - MARGE.bas).toFixed(1)} ` +
+      `L ${ligne.split(' ').join(' L ')} ` +
+      `L ${coordonnees[coordonnees.length - 1].cx.toFixed(1)},${(H - MARGE.bas).toFixed(1)} Z`
+    : '';
+
+const graduations = [min, (min + max) / 2, max];
+const meilleur = coordonnees.reduce((a, b) => (b.value > a.value ? b : a), coordonnees[0]);
+---
+
+{
+  tries.length === 0 ? (
+    <p class="vide">Aucune donnée de progression.</p>
+  ) : (
+    <figure class="graphe">
+      <svg viewBox={`0 0 ${L} ${H}`} role="img" aria-labelledby="titre-graphe">
+        <title id="titre-graphe">
+          {legende} : {tries.length} points, de {kg(min)} à {kg(max)}.
+        </title>
+
+        {graduations.map((v) => (
+          <>
+            <line
+              class="grille"
+              x1={MARGE.gauche}
+              x2={L - MARGE.droite}
+              y1={y(v)}
+              y2={y(v)}
+            />
+            <text class="axe" x={MARGE.gauche - 8} y={y(v)} text-anchor="end" dy="0.32em">
+              {Math.round(v)}
+            </text>
+          </>
+        ))}
+
+        {aire && <path class="aire" d={aire} />}
+
+        {coordonnees.length > 1 && <polyline class="ligne" points={ligne} />}
+
+        {coordonnees.map((p) => (
+          <circle
+            class={p === meilleur ? 'point meilleur' : 'point'}
+            cx={p.cx}
+            cy={p.cy}
+            r={p === meilleur ? 5 : 3.5}
+          >
+            <title>
+              {dateCourte(p.date)} — {kg(p.value)}
+              {p.label ? ` · ${p.label}` : ''}
+            </title>
+          </circle>
+        ))}
+
+        <text class="axe" x={MARGE.gauche} y={H - 10}>
+          {tries[0].date.slice(0, 4)}
+        </text>
+        {tries.length > 1 && (
+          <text class="axe" x={L - MARGE.droite} y={H - 10} text-anchor="end">
+            {tries[tries.length - 1].date.slice(0, 4)}
+          </text>
+        )}
+      </svg>
+      <figcaption>
+        {legende} — {tries.length} compétition{tries.length > 1 ? 's' : ''}, meilleure
+        marque {kg(max)}.
+      </figcaption>
+    </figure>
+  )
+}
+
+<style>
+  .graphe {
+    margin: 0;
+  }
+
+  svg {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .grille {
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+
+  .axe {
+    fill: var(--muted);
+    font-size: 11px;
+    font-family: var(--font-body);
+  }
+
+  .aire {
+    fill: var(--accent);
+    opacity: 0.12;
+  }
+
+  .ligne {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  .point {
+    fill: var(--surface);
+    stroke: var(--accent);
+    stroke-width: 2.5;
+  }
+
+  .meilleur {
+    fill: var(--accent);
+  }
+
+  figcaption {
+    margin-top: var(--space-2);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .vide {
+    color: var(--muted);
+    font-size: var(--step--1);
+  }
+</style>

@@ -1,0 +1,74 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  titre="Page introuvable"
+  description="Cette page n'existe pas ou a été déplacée."
+>
+  <div class="wrap centre">
+    <p class="code num">404</p>
+    <h1>Barre non validée</h1>
+    <p class="chapeau">
+      Cette page n'existe pas, ou l'adresse a changé. Rien de grave — le
+      classement, lui, est toujours là.
+    </p>
+    <div class="actions">
+      <a class="bouton primaire" href="/classement/">Voir le classement</a>
+      <a class="bouton" href="/">Retour à l'accueil</a>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .centre {
+    max-width: 40rem;
+    padding-block: var(--space-16);
+    text-align: center;
+  }
+
+  .code {
+    font-size: var(--step-4);
+    color: var(--accent);
+    line-height: 1;
+    margin: 0 0 var(--space-2);
+  }
+
+  .chapeau {
+    color: var(--muted);
+    font-size: var(--step-1);
+    margin-bottom: var(--space-8);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    justify-content: center;
+  }
+
+  .bouton {
+    display: inline-block;
+    padding: var(--space-3) var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .bouton:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .bouton.primaire {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+  }
+  .bouton.primaire:hover {
+    background: var(--accent-hover);
+    color: var(--on-accent);
+  }
+</style>

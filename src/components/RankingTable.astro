@@ -1,0 +1,243 @@
+---
+/**
+ * Tableau de classement, sans aucun JavaScript.
+ *
+ * Deux mises en forme pour le même balisage :
+ *  - en mobile, chaque athlète devient une carte empilée ;
+ *  - à partir de 48rem, on repasse à un vrai tableau.
+ *
+ * Le balisage reste un <table> dans les deux cas. Un tableau de résultats EST
+ * un tableau : le transformer en <div> casserait la navigation au lecteur
+ * d'écran, qui perd alors le lien entre une valeur et son en-tête de colonne.
+ */
+import { equipmentLabel } from '../lib/categories';
+import { kg, nombre, points } from '../lib/format';
+import type { AthleteRanking } from '../lib/rankings';
+
+interface Props {
+  entries: AthleteRanking[];
+  /** Colonne mise en avant : influence uniquement le style, pas l'ordre. */
+  miseEnAvant?: 'total' | 'dots';
+  /**
+   * Ajoute un identifiant au tableau pour que la page /classement puisse le
+   * filtrer et le retrier côté navigateur. Les attributs `data-` portés par
+   * chaque ligne sont toujours présents : ils ne pèsent presque rien et évitent
+   * d'avoir deux versions du composant.
+   */
+  id?: string;
+}
+
+const { entries, miseEnAvant = 'total', id } = Astro.props;
+---
+
+<div class="cadre">
+  <table id={id}>
+    <thead>
+      <tr>
+        <th scope="col" class="rang">#</th>
+        <th scope="col">Athlète</th>
+        <th scope="col" class="nombre">Cat.</th>
+        <th scope="col" class="nombre">Poids</th>
+        <th scope="col" class="nombre" data-fort={miseEnAvant === 'total'}>Total</th>
+        <th scope="col" class="nombre" data-fort={miseEnAvant === 'dots'}>Dots</th>
+        <th scope="col" class="masquer-mobile">Compétition</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        entries.map((e, i) => (
+          <tr
+            data-sexe={e.sex}
+            data-categorie={e.weightClassKg}
+            data-equipement={e.equipmentGroup}
+            data-total={e.totalKg}
+            data-dots={e.dots}
+            data-nom={e.name}
+          >
+            <td class="rang" data-podium={i < 3 ? i + 1 : undefined}>
+              {i + 1}
+            </td>
+            <th scope="row" class="athlete">
+              <a href={`/athlete/${e.slug}/`}>{e.name}</a>
+              <span class="meta">
+                {equipmentLabel(e.equipmentGroup)} · {e.competitions} compét.
+              </span>
+            </th>
+            <td class="nombre" data-libelle="Catégorie">
+              {e.weightClassKg ? `${e.weightClassKg} kg` : '—'}
+            </td>
+            <td class="nombre" data-libelle="Poids de corps">
+              {nombre(e.bodyweightKg)}
+            </td>
+            <td class="nombre num" data-libelle="Total" data-fort={miseEnAvant === 'total'}>
+              {kg(e.totalKg)}
+            </td>
+            <td class="nombre num" data-libelle="Dots" data-fort={miseEnAvant === 'dots'}>
+              {points(e.dots)}
+            </td>
+            <td class="masquer-mobile competition">
+              <span>{e.meetName}</span>
+              <span class="meta">{e.date.slice(0, 4)}</span>
+            </td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+
+  {entries.length === 0 && <p class="vide">Aucun résultat pour ces critères.</p>}
+</div>
+
+<style>
+  .cadre {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--step--1);
+  }
+
+  thead {
+    display: none;
+  }
+
+  th,
+  td {
+    text-align: left;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .vide {
+    padding: var(--space-8);
+    text-align: center;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  /* ---------- Mobile : une carte par athlète ---------- */
+  @media (max-width: 47.999rem) {
+    tbody tr {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: var(--space-1) var(--space-3);
+      padding: var(--space-3);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .rang {
+      grid-row: 1 / 3;
+      align-self: center;
+      font-size: var(--step-1);
+    }
+
+    .athlete {
+      padding: 0;
+    }
+
+    td.nombre {
+      display: flex;
+      justify-content: space-between;
+      grid-column: 2;
+      padding: 0;
+      color: var(--muted);
+    }
+
+    td.nombre::before {
+      content: attr(data-libelle);
+    }
+
+    td[data-fort='true'] {
+      color: var(--text);
+      font-size: var(--step-0);
+    }
+
+    .masquer-mobile {
+      display: none;
+    }
+  }
+
+  /* ---------- Desktop : tableau classique ---------- */
+  @media (min-width: 48rem) {
+    thead {
+      display: table-header-group;
+    }
+
+    thead th {
+      font-size: var(--step--1);
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr:last-child {
+      border-bottom: 0;
+    }
+    tbody tr:hover {
+      background: color-mix(in srgb, var(--accent) 6%, transparent);
+    }
+
+    td.nombre,
+    th.nombre {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    td[data-fort='true'] {
+      font-size: var(--step-0);
+    }
+  }
+
+  .rang {
+    font-family: var(--font-display);
+    font-weight: 800;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Les trois premiers ressortent : c'est ce qu'on vient chercher sur un
+     classement, et ça donne au tableau son air de podium. */
+  .rang[data-podium] {
+    color: var(--accent);
+  }
+  .rang[data-podium='1'] {
+    font-size: var(--step-1);
+  }
+
+  .athlete {
+    font-weight: 600;
+  }
+  .athlete a {
+    color: var(--text);
+    text-decoration: none;
+  }
+  .athlete a:hover {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+
+  .meta {
+    display: block;
+    font-size: var(--step--1);
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  .competition span:first-child {
+    display: block;
+    max-width: 22ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+</style>

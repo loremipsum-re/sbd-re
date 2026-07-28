@@ -1,0 +1,21 @@
+{
+  "_lisezmoi": [
+    "Prochaine compétition annoncée sur la page d'accueil.",
+    "",
+    "Ce fichier s'édite À LA MAIN : les compétitions à venir n'existent pas encore",
+    "dans OpenPowerlifting, qui ne publie que des résultats passés. Le script de",
+    "mise à jour mensuelle n'y touche jamais.",
+    "",
+    "Mets « annonce » à false pour masquer complètement le bloc sur l'accueil,",
+    "par exemple entre deux saisons.",
+    "",
+    "« date » au format AAAA-MM-JJ. Le bloc disparaît automatiquement une fois la",
+    "date passée : pas de risque d'annoncer encore en octobre une compétition de mars."
+  ],
+  "annonce": false,
+  "nom": "Championnat Régional FA/PL La Réunion",
+  "date": "2026-12-13",
+  "ville": "L'Étang-Salé",
+  "lieu": "",
+  "url": ""
+}
