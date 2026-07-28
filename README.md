@@ -187,18 +187,30 @@ Dépôt GitHub → **Settings** → **Secrets and variables** → **Actions** �
 
 | Nom | Valeur |
 |---|---|
-| `FTP_SERVER` | `ftp.cluster0XX.hosting.ovh.net` — le même hôte pour le FTP et le SSH |
+| `FTP_SERVER` | `ssh.cluster0XX.hosting.ovh.net` — l'hôte **SSH**, pas l'hôte FTP |
 | `FTP_USERNAME` | l'identifiant de l'utilisateur dédié |
 | `FTP_PASSWORD` | son mot de passe |
 
 **Pourquoi SFTP et non FTPS.** Le mutualisé OVH n'implémente pas le FTPS : le
 serveur répond `500 This security scheme is not implemented` à la commande
-`AUTH TLS`. Le SSH est en revanche disponible sur le même hôte, port 22. Le
-déploiement passe donc par `rsync` à travers SSH — chiffré, incrémental, et il
-transfère correctement les fichiers commençant par un point. Ce dernier point
-n'est pas un détail : beaucoup d'outils SFTP ignorent silencieusement
-`.htaccess`, et le site fonctionnerait alors « presque », sans redirection HTTPS
-ni page 404.
+`AUTH TLS`. Le SSH, lui, est disponible — sur un hôte **dédié**,
+`ssh.cluster0XX.hosting.ovh.net`, port 22, à ne pas confondre avec l'hôte FTP.
+
+**Pourquoi lftp et non rsync.** rsync exige d'être installé des deux côtés de la
+connexion : il lance son propre programme sur le serveur distant, ce qu'un
+hébergement mutualisé ne permet pas. `lftp` parle directement le protocole SFTP,
+que le serveur SSH implémente nativement, et ne demande donc rien en face. Son
+mode `mirror` ne transfère que les fichiers modifiés et prend correctement les
+fichiers commençant par un point — ce qui n'est pas un détail : beaucoup
+d'outils SFTP ignorent silencieusement `.htaccess`, et le site fonctionnerait
+alors « presque », sans redirection HTTPS ni page 404.
+
+**Pourquoi pas une action toute faite du Marketplace.** Celles qui existent pour
+OVH clonent le dépôt git *sur le serveur*. Ici le dépôt contient le code source,
+pas le site : `dist/` est généré au build et volontairement exclu de git. Il
+faudrait committer le site construit à chaque mise à jour, ce qui alourdirait
+l'historique sans fin. S'ajoute le fait qu'on confierait le mot de passe de
+l'hébergement à une action tierce épinglée sur un tag modifiable.
 
 Un secret GitHub n'est jamais réaffichable : garde-les aussi dans ton
 gestionnaire de mots de passe.
