@@ -109,13 +109,34 @@ compétition organisée dans une commune réunionnaise mais dont le nom ne le di
 pas est simplement *signalée* dans `data/meets-candidates.json`, pour que tu
 tranches.
 
-### Les trois fichiers de `data/`
+### Les fichiers de `data/`
 
 | Fichier | Qui l'écrit | Rôle |
 |---|---|---|
 | `meets-include.json` | **toi** | Compétitions à inclure que la règle du nom ne trouve pas |
 | `meets-exclude.json` | **toi** | Compétitions à écarter, quoi qu'il arrive. A toujours le dernier mot |
 | `meets-candidates.json` | le script | Compétitions à examiner. **Ne pas modifier** : réécrit à chaque exécution |
+| `exterieur-exclude.json` | **toi** | Faux appariements dans les résultats hors de l'île (voir ci-dessous) |
+
+### Les compétitions disputées hors de La Réunion
+
+Les athlètes de l'île se déplacent, en métropole comme à l'étranger. Le script
+récupère aussi ces résultats, dans `src/data/results-exterieur.json`, et les
+affiche sur `/exterieur/` ainsi que sur chaque fiche d'athlète.
+
+**Ils n'entrent jamais dans le classement ni dans les records**, qui
+récompensent des barres soulevées sur un plateau réunionnais.
+
+Techniquement, cela demande **deux passes** sur le dump : on ne connaît la liste
+des athlètes réunionnais qu'après avoir parcouru l'ensemble du fichier, et
+garder 4 millions de lignes en mémoire en attendant serait exclu.
+
+**La limite à connaître.** Le rattachement se fait par le nom exact tel
+qu'OpenPowerlifting l'écrit. Le projet distingue les homonymes par un suffixe
+« #2 », mais il lui arrive de ne pas les avoir repérés. Un cas réel a été
+constaté : des tournois lycéens texans attribués à un athlète réunionnais du
+même nom. `data/exterieur-exclude.json` sert à corriger ces cas, par nom, par
+fédération ou par date.
 
 ### Routine mensuelle
 
