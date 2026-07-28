@@ -69,10 +69,18 @@ const { entries, miseEnAvant = 'total', id } = Astro.props;
             <td class="nombre" data-libelle="Poids de corps">
               {nombre(e.bodyweightKg)}
             </td>
-            <td class="nombre num" data-libelle="Total" data-fort={miseEnAvant === 'total'}>
+            <td
+              class="nombre num-tab"
+              data-libelle="Total"
+              data-fort={miseEnAvant === 'total'}
+            >
               {kg(e.totalKg)}
             </td>
-            <td class="nombre num" data-libelle="Dots" data-fort={miseEnAvant === 'dots'}>
+            <td
+              class="nombre num-tab"
+              data-libelle="Dots"
+              data-fort={miseEnAvant === 'dots'}
+            >
               {points(e.dots)}
             </td>
             <td class="masquer-mobile competition">

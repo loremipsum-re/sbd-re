@@ -4,6 +4,8 @@
  */
 import SiteFooter from '../components/SiteFooter.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
+// Les déclarations de polices d'abord : tokens.css s'en sert immédiatement.
+import '../styles/fonts.css';
 import '../styles/tokens.css';
 
 interface Props {
@@ -49,6 +51,32 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%8F%8B%EF%B8%8F%3C/text%3E%3C/svg%3E"
+    />
+
+    <!--
+      Le navigateur ne découvre normalement une police qu'après avoir lu le CSS,
+      qu'il doit lui-même d'abord télécharger : le texte s'affiche donc deux fois,
+      d'abord en police système puis en Inter. `preload` lance le téléchargement
+      immédiatement, en parallèle du CSS.
+
+      `crossorigin` est obligatoire pour les polices, même servies depuis le même
+      domaine — sans lui le navigateur télécharge le fichier une seconde fois.
+      Seuls les fichiers « latin » sont préchargés : « latin-ext » ne sert qu'à
+      de rares caractères et reste chargé à la demande.
+    -->
+    <link
+      rel="preload"
+      href="/fonts/inter-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/oswald-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
     />
 
     <!--

@@ -57,13 +57,24 @@
    * 3. Typographie, espacements, rayons — communs aux deux thèmes.
    * -------------------------------------------------------------------- */
 
-  /* Polices système : aucun téléchargement, donc aucun décalage de mise en page
-     au chargement et aucune requête réseau supplémentaire. L'impact visuel vient
-     du poids et du resserrement, pas d'une police exotique. */
-  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+  /*
+   * Deux polices, auto-hébergées (voir fonts.css).
+   *
+   * Oswald pour les titres et les chiffres : condensée, donc un total à quatre
+   * chiffres tient dans une colonne étroite — décisif sur un site fait de
+   * tableaux de charges. Sa graisse maximale est 700 : ne jamais demander 800,
+   * le navigateur fabriquerait un faux gras baveux.
+   *
+   * Inter pour le texte : dessinée pour les écrans, et ses chiffres s'alignent
+   * parfaitement en colonne avec `font-variant-numeric: tabular-nums`.
+   *
+   * Les polices système restent en repli : si le téléchargement échoue, le site
+   * reste parfaitement lisible.
+   */
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif;
+  --font-display: 'Oswald', 'Haettenschweiler', 'Arial Narrow Bold', system-ui,
     sans-serif;
-  --font-display: 'Segoe UI Variable Display', system-ui, -apple-system, 'Segoe UI',
-    Roboto, sans-serif;
 
   --step--1: clamp(0.83rem, 0.8rem + 0.15vw, 0.9rem);
   --step-0: clamp(1rem, 0.96rem + 0.2vw, 1.09rem);
@@ -143,15 +154,17 @@ h1,
 h2,
 h3 {
   font-family: var(--font-display);
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  line-height: 1.1;
+  /* Oswald est déjà condensée : un resserrement supplémentaire collerait les
+     lettres. On laisse le crénage naturel de la police. */
+  letter-spacing: 0;
   text-wrap: balance;
   margin: 0 0 var(--space-4);
 }
 
 h1 {
   font-size: var(--step-4);
-  font-weight: 800;
+  font-weight: 700;
 }
 h2 {
   font-size: var(--step-2);
@@ -159,7 +172,7 @@ h2 {
 }
 h3 {
   font-size: var(--step-1);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 p {
@@ -182,15 +195,31 @@ svg {
 }
 
 /*
- * Les chiffres sont le contenu principal du site. `tabular-nums` force tous les
- * chiffres à la même largeur : les colonnes de charges s'alignent verticalement
- * au lieu de tressauter d'une ligne à l'autre.
+ * Les chiffres sont le contenu principal du site — d'où DEUX classes, et pas une.
+ *
+ * Oswald ne fournit pas de chiffres à largeur fixe : `font-variant-numeric:
+ * tabular-nums` y est purement ignoré. Mesuré, pas supposé — en Oswald 700,
+ * « 111 » occupe 18,5 px quand « 888 » en occupe 26,4. Dans une colonne de
+ * plusieurs centaines de lignes, les totaux se décaleraient visiblement.
+ *
+ *   .num      → Oswald. Pour un chiffre ISOLÉ et grand : statistique de page
+ *               d'accueil, record mis en avant, bloc de résumé. Rien à aligner,
+ *               et sa forme condensée est justement ce qu'on veut.
+ *   .num-tab  → Inter. Pour un chiffre DANS UNE COLONNE de tableau. Inter
+ *               applique réellement tabular-nums : tous les chiffres font
+ *               exactement la même largeur, les colonnes restent d'aplomb.
  */
 .num {
   font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.num-tab {
+  font-family: var(--font-body);
   font-variant-numeric: tabular-nums;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 /* Visible uniquement pour les lecteurs d'écran. */
