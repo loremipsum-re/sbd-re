@@ -1,0 +1,65 @@
+name: Construire et déployer sur OVH
+
+# Se déclenche à chaque envoi sur main — y compris celui que produit
+# automatiquement le workflow de mise à jour des données.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Un seul déploiement à la fois. Sans ça, deux envois rapprochés pourraient
+# téléverser leurs fichiers en même temps et laisser le site dans un état
+# incohérent.
+concurrency:
+  group: deploiement-ovh
+  cancel-in-progress: true
+
+jobs:
+  deployer:
+    name: Build Astro puis dépôt FTPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # `npm ci` installe exactement les versions du package-lock.json, sans
+      # jamais les mettre à jour. C'est ce qui garantit que le site construit
+      # ici est identique à celui construit sur ta machine.
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Construire le site
+        run: npm run build
+        env:
+          # Ces deux variables ne servent qu'à la partie communauté.
+          # La clé « anon » est publique par conception : elle est destinée à
+          # partir dans le JavaScript du navigateur. Ce n'est pas elle qui
+          # protège les données, ce sont les politiques RLS côté Supabase.
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+
+      - name: Déposer sur OVH
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          # FTPS et jamais FTP simple : en FTP, identifiant et mot de passe
+          # transitent en clair sur le réseau.
+          protocol: ftps
+          local-dir: ./dist/
+          # Racine du site chez OVH en mutualisé.
+          server-dir: ./www/
+          # L'action garde un état de synchronisation sur le serveur et ne
+          # renvoie que les fichiers réellement modifiés.
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**

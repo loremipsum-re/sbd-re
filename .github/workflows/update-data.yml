@@ -1,0 +1,76 @@
+name: Mise à jour mensuelle des données
+
+on:
+  schedule:
+    # Le 1er de chaque mois à 4 h UTC, soit 8 h à La Réunion (UTC+4).
+    # Attention : GitHub exprime toujours cron en UTC, sans exception.
+    - cron: '0 4 1 * *'
+  # Permet de lancer la mise à jour à la main depuis l'onglet Actions.
+  workflow_dispatch:
+
+jobs:
+  mettre-a-jour:
+    name: Régénérer results.json depuis OpenPowerlifting
+    runs-on: ubuntu-latest
+
+    # Sans cette permission, le workflow peut lire le dépôt mais pas y écrire :
+    # le commit final échouerait.
+    permissions:
+      contents: write
+
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      # Télécharge ~168 Mo, lit 4 millions de lignes en flux, écrit
+      # src/data/results.json et data/meets-candidates.json.
+      - name: Régénérer les données
+        run: npm run data:update
+
+      - name: Commiter uniquement s'il y a du changement
+        run: |
+          FICHIERS="src/data/results.json data/meets-candidates.json"
+
+          # Le script étant idempotent, un dump inchangé produit des fichiers
+          # rigoureusement identiques. Sans ce test, on créerait un commit vide
+          # chaque mois — et donc un déploiement inutile.
+          if git diff --quiet -- $FICHIERS; then
+            echo "Données inchangées : aucun commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add $FICHIERS
+          git commit -m "données : mise à jour mensuelle depuis OpenPowerlifting"
+          git push
+
+          echo "Données mises à jour — le workflow de déploiement va prendre le relais."
+
+      - name: Signaler les compétitions à trier
+        run: |
+          # meets-candidates.json liste les compétitions organisées dans une
+          # commune réunionnaise que la règle du nom ne reconnaît pas. Elles ne
+          # sont PAS publiées tant qu'un humain ne les a pas validées : ce
+          # résumé sert à ne pas les oublier.
+          node -e "
+            const fs = require('node:fs');
+            const f = 'data/meets-candidates.json';
+            if (!fs.existsSync(f)) process.exit(0);
+            const { meets = [] } = JSON.parse(fs.readFileSync(f, 'utf8'));
+            if (meets.length === 0) {
+              console.log('Aucune compétition en attente de tri.');
+              process.exit(0);
+            }
+            console.log(meets.length + ' compétition(s) à vérifier à la main :');
+            for (const m of meets) console.log('  ' + m.date + '  ' + m.meetTown + ', ' + m.meetName);
+          " >> $GITHUB_STEP_SUMMARY

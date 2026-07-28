@@ -1,0 +1,71 @@
+# =============================================================================
+# SBD.re — configuration Apache pour hébergement mutualisé OVH
+#
+# Ce fichier est copié tel quel dans dist/ par Astro, puis déposé à la racine
+# de /www/ chez OVH. Apache le lit à chaque requête : aucune commande à lancer,
+# aucun redémarrage. En contrepartie, une erreur de syntaxe ici rend le site
+# entièrement inaccessible (erreur 500) — à modifier avec précaution.
+# =============================================================================
+
+# Pas de listing de répertoire : sans ça, un dossier sans index.html afficherait
+# la liste de ses fichiers aux visiteurs.
+Options -Indexes
+DirectoryIndex index.html
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # --- Forcer HTTPS --------------------------------------------------------
+  # Chez OVH le serveur Apache est derrière un répartiteur de charge qui gère
+  # lui-même le certificat : la variable %{HTTPS} n'y est pas fiable, car
+  # Apache reçoit la requête en clair. C'est l'en-tête X-Forwarded-Proto,
+  # ajouté par le répartiteur, qui indique le vrai protocole du visiteur.
+  # Les deux conditions doivent être fausses pour rediriger, ce qui couvre à la
+  # fois l'hébergement OVH et un serveur classique.
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteCond %{HTTPS} !=on
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+  # --- www vers le domaine nu ----------------------------------------------
+  # Une seule adresse canonique : www.sbd.re renvoie vers sbd.re. Sans cette
+  # règle, les moteurs de recherche voient deux sites au contenu identique.
+  RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+  RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
+</IfModule>
+
+ErrorDocument 404 /404.html
+
+<IfModule mod_headers.c>
+  # Empêche le navigateur de « deviner » un type de fichier différent de celui
+  # annoncé — une porte d'entrée classique pour faire exécuter un script.
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set X-Frame-Options "SAMEORIGIN"
+
+  # Les fichiers générés par Astro portent une empreinte dans leur nom
+  # (par exemple _astro/index.C4f9a2.css). Leur contenu ne changera JAMAIS :
+  # une nouvelle version produit un nouveau nom de fichier. On peut donc les
+  # mettre en cache un an sans risque de servir une version périmée.
+  <FilesMatch "\.(css|js|woff2?|svg|png|jpe?g|webp|avif|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # Le HTML, lui, doit être revérifié à chaque visite : c'est lui qui pointe
+  # vers les fichiers à jour. Le mettre en cache figerait le site.
+  <FilesMatch "\.html$">
+    Header set Cache-Control "public, max-age=0, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml
+  AddOutputFilterByType DEFLATE application/javascript application/json
+  AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# Types MIME que les hébergements mutualisés ne déclarent pas toujours.
+<IfModule mod_mime.c>
+  AddType application/json .json
+  AddType image/svg+xml .svg
+  AddType font/woff2 .woff2
+</IfModule>
