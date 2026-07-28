@@ -10,7 +10,8 @@
     "preview": "astro preview",
     "check": "astro check",
     "data:explore": "node scripts/explore-meets.mjs",
-    "data:update": "node scripts/update-data.mjs"
+    "data:update": "node scripts/update-data.mjs",
+    "fonts:update": "node scripts/fetch-fonts.mjs"
   },
   "engines": {
     "node": ">=20.0.0"
