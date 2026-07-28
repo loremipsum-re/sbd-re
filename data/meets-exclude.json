@@ -1,0 +1,17 @@
+{
+  "_lisezmoi": [
+    "Compétitions à écarter, même si la règle automatique les retient.",
+    "",
+    "Cette liste a le dernier mot : un meet listé ici n'entre jamais dans le site,",
+    "quelle que soit la raison pour laquelle il a été retenu ailleurs.",
+    "",
+    "À quoi ça sert : au 25 juillet 2026, aucun meet métropolitain ne se fait passer",
+    "pour un meet réunionnais dans le dump. Mais rien ne le garantit à l'avenir — il",
+    "suffit qu'une compétition s'organise un jour à Saint-Denis (93) ou à Saint-Louis",
+    "(68) pour qu'un faux positif apparaisse. C'est la soupape de sécurité.",
+    "",
+    "Même format que meets-include.json : date + meetName tels qu'ils figurent dans",
+    "le dump OpenPowerlifting."
+  ],
+  "meets": []
+}

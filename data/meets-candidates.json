@@ -1,0 +1,16 @@
+{
+  "_lisezmoi": [
+    "GÉNÉRÉ AUTOMATIQUEMENT — ne pas modifier à la main, le fichier est réécrit",
+    "à chaque exécution de scripts/update-data.mjs.",
+    "",
+    "Compétitions FFForce qui se tiennent dans une commune portant un nom",
+    "réunionnais, mais que la règle du nom ne retient pas. Elles ne sont PAS",
+    "incluses dans le site.",
+    "",
+    "À toi de trancher : si un meet de cette liste est bien réunionnais,",
+    "recopie-le dans meets-include.json. Sinon, ignore-le — ou mets-le dans",
+    "meets-exclude.json pour ne plus le revoir ici."
+  ],
+  "genereLe": "2026-07-28",
+  "meets": []
+}

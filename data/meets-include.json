@@ -1,0 +1,104 @@
+{
+  "_lisezmoi": [
+    "Compétitions réunionnaises que la règle automatique ne trouve PAS toute seule.",
+    "",
+    "La règle automatique retient un meet si son nom contient « reunion » (sans accent",
+    "ni casse). Elle suffit pour « Championnat Régional FA/PL La Réunion », mais rate",
+    "« Open de la Fournaise » ou « Bench Cup 974 », qui ne nomment jamais l'île.",
+    "",
+    "La ville n'inclut JAMAIS un meet automatiquement : Saint-Denis, Saint-Louis ou",
+    "Saint-Paul existent aussi en métropole. Elle sert seulement à signaler des",
+    "candidats, qui atterrissent dans meets-candidates.json et que tu tries à la main.",
+    "Les entrées ci-dessous sont le résultat de ce tri.",
+    "",
+    "Un meet est identifié par sa date ET son nom, exactement comme ils apparaissent",
+    "dans le dump OpenPowerlifting. « meetTown » et « raison » sont là pour la lecture",
+    "humaine, ils ne servent pas à la comparaison."
+  ],
+  "meets": [
+    {
+      "date": "2021-12-11",
+      "meetName": "Qualificatif France DC",
+      "meetTown": "Saint-Paul",
+      "raison": "Qualificatif régional organisé à Saint-Paul (974)"
+    },
+    {
+      "date": "2022-01-29",
+      "meetName": "Qualificatif France FA",
+      "meetTown": "L'Étang-Salé",
+      "raison": "L'Étang-Salé n'existe qu'à La Réunion"
+    },
+    {
+      "date": "2022-08-13",
+      "meetName": "Trophée de Sainte-Marie",
+      "meetTown": "Sainte-Marie",
+      "raison": "Trophée de la commune de Sainte-Marie (974)"
+    },
+    {
+      "date": "2023-05-13",
+      "meetName": "Open de l'Etang-Salé",
+      "meetTown": "Saint-Joseph",
+      "raison": "Nom de commune réunionnaise dans l'intitulé"
+    },
+    {
+      "date": "2023-09-09",
+      "meetName": "Coupe de l'Étang-Salé",
+      "meetTown": "L'Étang-Salé",
+      "raison": "Coupe de la commune de L'Étang-Salé (974)"
+    },
+    {
+      "date": "2023-10-14",
+      "meetName": "Challenge Régional PL/BP",
+      "meetTown": "L'Étang-Salé",
+      "raison": "Challenge régional tenu à L'Étang-Salé (974)"
+    },
+    {
+      "date": "2024-01-27",
+      "meetName": "Open du Sud",
+      "meetTown": "Saint-Joseph",
+      "raison": "« Sud » désigne le sud de l'île ; Saint-Joseph est une commune du 974"
+    },
+    {
+      "date": "2024-03-30",
+      "meetName": "Open de la Fournaise",
+      "meetTown": "L'Étang-Salé",
+      "raison": "Le Piton de la Fournaise est le volcan de La Réunion"
+    },
+    {
+      "date": "2024-04-06",
+      "meetName": "Open de l'Ouest",
+      "meetTown": "Saint-Paul",
+      "raison": "« Ouest » désigne la côte ouest de l'île"
+    },
+    {
+      "date": "2025-02-15",
+      "meetName": "Open de la Fournaise",
+      "meetTown": "L'Étang-Salé",
+      "raison": "Édition 2025 de l'Open de la Fournaise"
+    },
+    {
+      "date": "2025-03-15",
+      "meetName": "Open du Sud",
+      "meetTown": "Saint-Joseph",
+      "raison": "Édition 2025 de l'Open du Sud"
+    },
+    {
+      "date": "2026-01-18",
+      "meetName": "Open de la Fournaise",
+      "meetTown": "L'Étang-Salé",
+      "raison": "Édition 2026 de l'Open de la Fournaise"
+    },
+    {
+      "date": "2026-03-08",
+      "meetName": "Fanm Kapab Contest",
+      "meetTown": "Le Tampon",
+      "raison": "« Fanm kapab » est du créole réunionnais ; Le Tampon est une commune du 974"
+    },
+    {
+      "date": "2026-03-08",
+      "meetName": "Bench Cup 974",
+      "meetTown": "Le Tampon",
+      "raison": "974 est le code du département de La Réunion"
+    }
+  ]
+}
