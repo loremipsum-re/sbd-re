@@ -66,6 +66,7 @@ répercute immédiatement dans le navigateur.
 | `npm run check` | Vérifie les types TypeScript et les composants Astro |
 | `npm run data:update` | Régénère `src/data/results.json` depuis OpenPowerlifting |
 | `npm run data:explore` | Analyse le dump sans rien produire (outil de diagnostic) |
+| `npm run fonts:update` | Retélécharge les polices et régénère `src/styles/fonts.css` |
 
 ---
 
@@ -232,6 +233,40 @@ Tout est dans `src/styles/tokens.css`. Les couleurs y sont déclarées **une seu
 fois** en haut du fichier, puis référencées partout ailleurs. Changer l'accent
 orange du site, c'est modifier deux lignes (`--p-light-accent` et
 `--p-dark-accent`), pas chercher dans quinze composants.
+
+### Typographie
+
+Deux polices Google, **hébergées par le site lui-même** dans `public/fonts/` :
+
+- **Oswald** — titres et grands chiffres. Condensée, donc un total à quatre
+  chiffres tient dans une colonne étroite.
+- **Inter** — texte courant et chiffres de tableau.
+
+Elles ne sont **pas** chargées depuis `fonts.googleapis.com`. Ce lien
+transmettrait l'adresse IP de chaque visiteur à Google sans son consentement, ce
+que le tribunal de Munich a jugé contraire au RGPD en 2022. Les deux polices
+étant sous licence SIL Open Font, les redistribuer soi-même est autorisé — et
+plus rapide, puisqu'on économise une connexion vers un domaine tiers.
+
+Elles sont récupérées en **version variable** : un seul fichier par famille
+couvre toutes les graisses de 400 à 700. Résultat, 170 Ko sur le disque et
+environ 68 Ko réellement transférés à un visiteur francophone, contre 600 Ko
+avec des fichiers figés.
+
+**Le piège à connaître avant de toucher aux polices.** Oswald n'a pas de chiffres
+à largeur fixe : la propriété CSS `tabular-nums` y est purement ignorée. Mesuré
+sur le site : en Oswald 700, « 111 » occupe 18,5 px là où « 888 » en occupe 26,4.
+Dans une colonne de 266 lignes, les totaux se décaleraient visiblement d'une
+ligne à l'autre. D'où deux classes CSS distinctes :
+
+| Classe | Police | Quand l'utiliser |
+|---|---|---|
+| `.num` | Oswald | Chiffre **isolé** et grand : statistique d'accueil, record mis en avant |
+| `.num-tab` | Inter | Chiffre **dans une colonne** de tableau |
+
+Pour changer de police, modifie l'URL en tête de `scripts/fetch-fonts.mjs` puis
+lance `npm run fonts:update`. Vérifie ensuite que la nouvelle police de titrage
+gère bien `tabular-nums` avant de l'employer dans un tableau.
 
 ---
 
