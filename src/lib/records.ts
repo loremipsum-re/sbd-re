@@ -131,6 +131,44 @@ export function recordAbsolu(
   return candidats.reduce((a, b) => (b.valueKg > a.valueKg ? b : a));
 }
 
+/**
+ * Ensemble des performances qui constituent actuellement un record.
+ *
+ * Sert à marquer une ligne d'un badge de vérification sur les fiches athlètes :
+ * on veut distinguer « cette barre est le record de sa catégorie » de « cette
+ * barre est un bon résultat ». La clé identifie une performance précise, à une
+ * date et une compétition données.
+ *
+ * Calculé une seule fois puis mémorisé : la fonction est appelée pour chacune
+ * des 312 fiches athlètes, et recalculer les records à chaque fois multiplierait
+ * le temps de build sans raison.
+ */
+let cacheRecords: Set<string> | null = null;
+
+export function clesRecords(source: Result[] = results): Set<string> {
+  if (cacheRecords && source === results) return cacheRecords;
+
+  const cles = new Set<string>();
+  for (const lift of ['squat', 'bench', 'deadlift', 'total'] as LiftKey[]) {
+    for (const rec of recordsPour(lift, source)) {
+      cles.add(cleRecord(lift, rec.holder, rec.date, rec.meetName));
+    }
+  }
+
+  if (source === results) cacheRecords = cles;
+  return cles;
+}
+
+/** Construit la clé d'une performance, pour interroger l'ensemble ci-dessus. */
+export function cleRecord(
+  lift: LiftKey,
+  nom: string,
+  date: string,
+  meetName: string,
+): string {
+  return `${lift}|${nom}|${date}|${meetName}`;
+}
+
 /** Types d'équipement réellement présents dans les données, pour ne pas afficher de sections vides. */
 export function equipementsPresents(source: Result[] = results): EquipmentGroup[] {
   const vus = new Set<EquipmentGroup>();
