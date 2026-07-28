@@ -1,0 +1,405 @@
+---
+/**
+ * Enveloppe interactive pour n'importe quel tableau du site : recherche, tri
+ * par colonne, filtres, compteur de résultats.
+ *
+ * Tout fonctionne par attributs `data-`, sans framework. Les lignes sont déjà
+ * dans le HTML servi par le serveur : le script les réordonne et les masque,
+ * il n'en fabrique aucune. Conséquence directe, le contenu reste indexable par
+ * les moteurs de recherche et lisible sans JavaScript.
+ *
+ * CONTRAT DE BALISAGE attendu dans le tableau glissé en enfant :
+ *
+ *   <table data-tableau>
+ *     <thead>
+ *       <th data-tri>Athlète</th>              ← colonne triable, texte
+ *       <th data-tri data-type="nombre">Total</th>  ← colonne triable, numérique
+ *       <th>Notes</th>                          ← colonne non triable
+ *     </thead>
+ *     <tbody>
+ *       <tr data-sexe="F">                      ← alimente un <select data-filtre="sexe">
+ *         <td class="rang">1</td>               ← renumérotée après chaque tri
+ *         <td data-valeur="782.5">782,5 kg</td> ← valeur exacte pour le tri
+ *
+ * `data-valeur` est important : sans lui, « 782,5 kg » serait trié comme du
+ * texte, et 1000 passerait avant 90.
+ */
+
+interface Props {
+  /** Texte d'invite du champ de recherche. Omettre le champ si absent. */
+  recherche?: string;
+  singulier?: string;
+  pluriel?: string;
+  /** Nombre d'éléments au chargement, avant toute interaction. */
+  total?: number;
+}
+
+const { recherche, singulier = 'résultat', pluriel, total } = Astro.props;
+const plurielFinal = pluriel ?? `${singulier}s`;
+const aFiltres = Astro.slots.has('filtres');
+---
+
+<div
+  data-tableau-interactif
+  data-singulier={singulier}
+  data-pluriel={plurielFinal}
+>
+  {
+    (recherche || aFiltres) && (
+      <div class="outils">
+        {aFiltres && (
+          <div class="filtres">
+            <slot name="filtres" />
+          </div>
+        )}
+
+        {recherche && (
+          <div class="champ recherche">
+            <label for="champ-recherche">Rechercher</label>
+            <input
+              id="champ-recherche"
+              type="search"
+              data-recherche
+              placeholder={recherche}
+              autocomplete="off"
+            />
+          </div>
+        )}
+
+        <p class="compteur" aria-live="polite" data-compteur>
+          {total !== undefined && `${total} ${total > 1 ? plurielFinal : singulier}`}
+        </p>
+      </div>
+    )
+  }
+
+  <slot />
+</div>
+
+<script>
+  /** Minuscules sans accents, pour que « Begue » trouve « Bègue ». */
+  function normaliser(valeur: string): string {
+    return valeur
+      .normalize('NFD')
+      .replace(/\p{Mn}/gu, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-tableau-interactif]').forEach((bloc) => {
+    /*
+     * Un bloc peut contenir PLUSIEURS tableaux. C'est le cas de la page des
+     * records, découpée en une grille par sexe et par type d'équipement : on
+     * veut alors un seul champ de recherche qui les balaye tous, plutôt qu'un
+     * champ au-dessus de chaque grille.
+     *
+     * La recherche et les filtres s'appliquent globalement ; le tri, lui, se
+     * fait à l'intérieur de chaque tableau, puisque mélanger les lignes de deux
+     * grilles distinctes n'aurait aucun sens.
+     */
+    const tables = Array.from(
+      bloc.querySelectorAll<HTMLTableElement>('table[data-tableau]'),
+    ).filter((t) => t.tBodies[0]);
+    if (tables.length === 0) return;
+
+    // Liste figée une fois pour toutes : les lignes sont réordonnées dans le
+    // DOM, jamais recréées.
+    const groupes = tables.map((table) => ({
+      table,
+      corps: table.tBodies[0]!,
+      lignes: Array.from(table.tBodies[0]!.rows),
+    }));
+    const lignes = groupes.flatMap((g) => g.lignes);
+
+    const champ = bloc.querySelector<HTMLInputElement>('[data-recherche]');
+    const compteur = bloc.querySelector<HTMLElement>('[data-compteur]');
+    const selects = Array.from(bloc.querySelectorAll<HTMLSelectElement>('[data-filtre]'));
+
+    // Texte de chaque ligne, calculé une seule fois : refaire ce travail à
+    // chaque frappe rendrait la recherche saccadée sur les grands tableaux.
+    const texteLigne = new Map<HTMLTableRowElement, string>();
+    for (const ligne of lignes) texteLigne.set(ligne, normaliser(ligne.textContent ?? ''));
+
+    const entetes = groupes.flatMap((g) =>
+      Array.from(g.table.querySelectorAll<HTMLTableCellElement>('th[data-tri]')),
+    );
+    // Type de chaque colonne triable, résolu une fois : nombre ou texte.
+    const colonnesNumeriques = new Set(
+      entetes.filter((e) => e.dataset.type === 'nombre').map((e) => e.cellIndex),
+    );
+    let colonneTri: number | null = null;
+    let sensAscendant = true;
+
+    function valeurCellule(ligne: HTMLTableRowElement, index: number): string | number {
+      const cellule = ligne.cells[index];
+      if (!cellule) return '';
+      const brut = cellule.dataset.valeur ?? cellule.textContent ?? '';
+      if (colonnesNumeriques.has(index)) {
+        // Une cellule vide (« — ») doit finir en queue de classement, jamais en
+        // tête : -Infinity l'y envoie quel que soit le sens du tri.
+        const n = Number.parseFloat(brut.replace(',', '.'));
+        return Number.isFinite(n) ? n : Number.NEGATIVE_INFINITY;
+      }
+      return normaliser(brut);
+    }
+
+    /**
+     * Masque les options d'un filtre devenues sans objet à cause d'un autre.
+     *
+     * Cas concret : les catégories de poids diffèrent selon le sexe. Choisir
+     * « Femmes » puis « −93 kg » donnerait une liste vide sans que le visiteur
+     * comprenne pourquoi. On déclare la dépendance dans le balisage :
+     *
+     *   <select data-filtre="categorie" data-restreint-par="sexe">
+     *     <option value="63" data-compatible="F">−63 kg</option>
+     */
+    function ajusterOptions() {
+      for (const select of selects) {
+        const source = select.dataset.restreintPar;
+        if (!source) continue;
+        const maitre = selects.find((s) => s.dataset.filtre === source);
+        if (!maitre) continue;
+
+        const valeur = maitre.value;
+        let selectionDevenueInvalide = false;
+
+        for (const option of Array.from(select.options)) {
+          if (!option.value) continue;
+          const compatibles = option.dataset.compatible ?? '';
+          const compatible = !valeur || compatibles.includes(valeur);
+          option.hidden = !compatible;
+          option.disabled = !compatible;
+          if (!compatible && option.selected) selectionDevenueInvalide = true;
+        }
+
+        if (selectionDevenueInvalide) select.value = '';
+      }
+    }
+
+    function estVisible(ligne: HTMLTableRowElement, requete: string): boolean {
+      for (const select of selects) {
+        const cle = select.dataset.filtre!;
+        const attendu = select.value;
+        if (attendu && ligne.dataset[cle] !== attendu) return false;
+      }
+      if (requete && !texteLigne.get(ligne)!.includes(requete)) return false;
+      return true;
+    }
+
+    function appliquer() {
+      const requete = normaliser(champ?.value ?? '');
+      let totalVisible = 0;
+
+      for (const groupe of groupes) {
+        let visibles = groupe.lignes.filter((ligne) => estVisible(ligne, requete));
+
+        if (colonneTri !== null) {
+          const index = colonneTri;
+          visibles = [...visibles].sort((a, b) => {
+            const va = valeurCellule(a, index);
+            const vb = valeurCellule(b, index);
+            const comparaison =
+              typeof va === 'number' && typeof vb === 'number'
+                ? va - vb
+                : String(va).localeCompare(String(vb), 'fr');
+            return sensAscendant ? comparaison : -comparaison;
+          });
+        }
+
+        for (const ligne of groupe.lignes) ligne.hidden = true;
+
+        const fragment = document.createDocumentFragment();
+        visibles.forEach((ligne, i) => {
+          ligne.hidden = false;
+          const rang = ligne.querySelector<HTMLElement>('.rang');
+          if (rang) {
+            // Le rang suit toujours l'affichage courant : filtrer les femmes
+            // doit donner un classement de 1 à N, et non conserver les rangs
+            // du classement général.
+            rang.textContent = String(i + 1);
+            if (i < 3) rang.dataset.podium = String(i + 1);
+            else delete rang.dataset.podium;
+          }
+          fragment.appendChild(ligne);
+        });
+        groupe.corps.appendChild(fragment);
+
+        totalVisible += visibles.length;
+
+        // Une grille entièrement vidée par la recherche est masquée avec son
+        // titre, plutôt que de laisser un en-tête suivi de rien.
+        groupe.table.closest('[data-section-tableau]')?.toggleAttribute(
+          'hidden',
+          visibles.length === 0,
+        );
+      }
+
+      if (compteur) {
+        const singulier = bloc.dataset.singulier ?? 'résultat';
+        const pluriel = bloc.dataset.pluriel ?? `${singulier}s`;
+        compteur.textContent =
+          totalVisible === 0
+            ? 'Aucun résultat'
+            : `${totalVisible} ${totalVisible > 1 ? pluriel : singulier}`;
+      }
+    }
+
+    // ----- Tri par clic sur l'en-tête -----
+    for (const entete of entetes) {
+      const index = entete.cellIndex;
+      const libelle = entete.textContent?.trim() ?? '';
+
+      // Un <button> et non un <th> cliquable : c'est ce qui rend le tri
+      // accessible au clavier et annoncé comme une commande.
+      const bouton = document.createElement('button');
+      bouton.type = 'button';
+      bouton.className = 'bouton-tri';
+      bouton.innerHTML = `<span>${libelle}</span><span class="fleche" aria-hidden="true"></span>`;
+      entete.textContent = '';
+      entete.appendChild(bouton);
+      entete.setAttribute('aria-sort', 'none');
+
+      bouton.addEventListener('click', () => {
+        if (colonneTri === index) sensAscendant = !sensAscendant;
+        else {
+          colonneTri = index;
+          // Les colonnes numériques partent en décroissant : sur un classement,
+          // c'est le plus gros total qu'on veut voir en premier.
+          sensAscendant = entete.dataset.type !== 'nombre';
+        }
+        // Quand le bloc contient plusieurs grilles de même structure, elles
+        // sont triées ensemble : leurs en-têtes de même rang doivent donc
+        // afficher le même état, sans quoi un lecteur d'écran annoncerait un
+        // tri sur une seule grille.
+        for (const autre of entetes) {
+          autre.setAttribute(
+            'aria-sort',
+            autre.cellIndex === index ? (sensAscendant ? 'ascending' : 'descending') : 'none',
+          );
+        }
+        appliquer();
+      });
+    }
+
+    champ?.addEventListener('input', appliquer);
+    for (const select of selects) {
+      select.addEventListener('change', () => {
+        ajusterOptions();
+        appliquer();
+      });
+    }
+    ajusterOptions();
+
+    // Rend visibles les outils, qui restent masqués sans JavaScript pour ne pas
+    // proposer des commandes inopérantes.
+    bloc.querySelector('.outils')?.setAttribute('data-pret', '');
+  });
+</script>
+
+<style>
+  .outils {
+    display: none;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .outils[data-pret] {
+    display: flex;
+  }
+
+  .filtres {
+    display: contents;
+  }
+
+  .champ {
+    display: grid;
+    gap: var(--space-1);
+    flex: 1 1 9rem;
+  }
+
+  .recherche {
+    flex: 2 1 14rem;
+  }
+
+  label {
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  input {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: var(--step--1);
+  }
+
+  .compteur {
+    margin: 0 0 var(--space-2);
+    margin-left: auto;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /* Les en-têtes deviennent des boutons : on annule tout le style natif. */
+  :global(.bouton-tri) {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-transform: inherit;
+    letter-spacing: inherit;
+    cursor: pointer;
+    text-align: inherit;
+  }
+
+  :global(th[class*='nombre'] .bouton-tri),
+  :global(th.nombre .bouton-tri) {
+    justify-content: flex-end;
+  }
+
+  :global(.bouton-tri:hover) {
+    color: var(--accent);
+  }
+
+  /* Chevron neutre au repos, orienté une fois la colonne active. */
+  :global(.bouton-tri .fleche)::after {
+    content: '↕';
+    opacity: 0.35;
+    font-size: 0.9em;
+  }
+  :global(th[aria-sort='ascending'] .fleche)::after {
+    content: '↑';
+    opacity: 1;
+  }
+  :global(th[aria-sort='descending'] .fleche)::after {
+    content: '↓';
+    opacity: 1;
+  }
+  :global(th[aria-sort='ascending'] .bouton-tri),
+  :global(th[aria-sort='descending'] .bouton-tri) {
+    color: var(--accent);
+  }
+
+  /* Les lignes du tableau passent en grille sur mobile ; sans cette règle,
+     l'attribut `hidden` serait ignoré et les lignes filtrées resteraient là. */
+  :global([data-tableau-interactif] tr[hidden]) {
+    display: none !important;
+  }
+</style>

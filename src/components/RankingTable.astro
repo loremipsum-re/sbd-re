@@ -1,94 +1,95 @@
 ---
 /**
- * Tableau de classement, sans aucun JavaScript.
+ * Tableau de classement.
  *
- * Deux mises en forme pour le même balisage :
- *  - en mobile, chaque athlète devient une carte empilée ;
- *  - à partir de 48rem, on repasse à un vrai tableau.
+ * Deux mises en forme pour le même balisage : cartes empilées en mobile,
+ * tableau à partir de 48rem. Le balisage reste un <table> dans les deux cas.
+ * Un tableau de résultats est un tableau : le transformer en <div> ferait
+ * perdre au lecteur d'écran le lien entre une valeur et son en-tête.
  *
- * Le balisage reste un <table> dans les deux cas. Un tableau de résultats EST
- * un tableau : le transformer en <div> casserait la navigation au lecteur
- * d'écran, qui perd alors le lien entre une valeur et son en-tête de colonne.
+ * Les attributs `data-valeur` portent la valeur exacte pour le tri : sans eux,
+ * « 782,5 kg » serait comparé comme du texte et 90 passerait après 1000.
  */
-import { equipmentLabel } from '../lib/categories';
+import { equipmentLabel, parseWeightClass } from '../lib/categories';
 import { kg, nombre, points } from '../lib/format';
 import type { AthleteRanking } from '../lib/rankings';
+import { cleRecord, clesRecords } from '../lib/records';
+import { meetSlug } from '../lib/slug';
+import VerifiedBadge from './VerifiedBadge.astro';
 
 interface Props {
   entries: AthleteRanking[];
-  /** Colonne mise en avant : influence uniquement le style, pas l'ordre. */
   miseEnAvant?: 'total' | 'dots';
-  /**
-   * Ajoute un identifiant au tableau pour que la page /classement puisse le
-   * filtrer et le retrier côté navigateur. Les attributs `data-` portés par
-   * chaque ligne sont toujours présents : ils ne pèsent presque rien et évitent
-   * d'avoir deux versions du composant.
-   */
   id?: string;
 }
 
 const { entries, miseEnAvant = 'total', id } = Astro.props;
+const records = clesRecords();
 ---
 
 <div class="cadre">
-  <table id={id}>
+  <table id={id} data-tableau>
     <thead>
       <tr>
         <th scope="col" class="rang">#</th>
-        <th scope="col">Athlète</th>
-        <th scope="col" class="nombre">Cat.</th>
-        <th scope="col" class="nombre">Poids</th>
-        <th scope="col" class="nombre" data-fort={miseEnAvant === 'total'}>Total</th>
-        <th scope="col" class="nombre" data-fort={miseEnAvant === 'dots'}>Dots</th>
-        <th scope="col" class="masquer-mobile">Compétition</th>
+        <th scope="col" data-tri>Athlète</th>
+        <th scope="col" class="nombre" data-tri data-type="nombre">Cat.</th>
+        <th scope="col" class="nombre" data-tri data-type="nombre">Poids</th>
+        <th scope="col" class="nombre" data-tri data-type="nombre">Total</th>
+        <th scope="col" class="nombre" data-tri data-type="nombre">Dots</th>
+        <th scope="col" class="masquer-mobile" data-tri>Compétition</th>
       </tr>
     </thead>
     <tbody>
       {
-        entries.map((e, i) => (
-          <tr
-            data-sexe={e.sex}
-            data-categorie={e.weightClassKg}
-            data-equipement={e.equipmentGroup}
-            data-total={e.totalKg}
-            data-dots={e.dots}
-            data-nom={e.name}
-          >
-            <td class="rang" data-podium={i < 3 ? i + 1 : undefined}>
-              {i + 1}
-            </td>
-            <th scope="row" class="athlete">
-              <a href={`/athlete/${e.slug}/`}>{e.name}</a>
-              <span class="meta">
-                {equipmentLabel(e.equipmentGroup)} · {e.competitions} compét.
-              </span>
-            </th>
-            <td class="nombre" data-libelle="Catégorie">
-              {e.weightClassKg ? `${e.weightClassKg} kg` : '—'}
-            </td>
-            <td class="nombre" data-libelle="Poids de corps">
-              {nombre(e.bodyweightKg)}
-            </td>
-            <td
-              class="nombre num-tab"
-              data-libelle="Total"
-              data-fort={miseEnAvant === 'total'}
+        entries.map((e, i) => {
+          const classe = parseWeightClass(e.weightClassKg);
+          const estRecord = records.has(cleRecord('total', e.name, e.date, e.meetName));
+          return (
+            <tr
+              data-sexe={e.sex}
+              data-categorie={e.weightClassKg}
+              data-equipement={e.equipmentGroup}
             >
-              {kg(e.totalKg)}
-            </td>
-            <td
-              class="nombre num-tab"
-              data-libelle="Dots"
-              data-fort={miseEnAvant === 'dots'}
-            >
-              {points(e.dots)}
-            </td>
-            <td class="masquer-mobile competition">
-              <span>{e.meetName}</span>
-              <span class="meta">{e.date.slice(0, 4)}</span>
-            </td>
-          </tr>
-        ))
+              <td class="rang" data-podium={i < 3 ? i + 1 : undefined}>
+                {i + 1}
+              </td>
+              <th scope="row" class="athlete">
+                <a href={`/athlete/${e.slug}/`}>{e.name}</a>
+                {estRecord && <VerifiedBadge detail="Record de sa catégorie" />}
+                <span class="meta">
+                  {equipmentLabel(e.equipmentGroup)} · {e.competitions} compét.
+                </span>
+              </th>
+              <td class="nombre" data-libelle="Catégorie" data-valeur={classe?.kg ?? ''}>
+                {e.weightClassKg ? `${e.weightClassKg} kg` : '—'}
+              </td>
+              <td class="nombre" data-libelle="Poids de corps" data-valeur={e.bodyweightKg ?? ''}>
+                {nombre(e.bodyweightKg)}
+              </td>
+              <td
+                class="nombre num-tab"
+                data-libelle="Total"
+                data-valeur={e.totalKg}
+                data-fort={miseEnAvant === 'total'}
+              >
+                {kg(e.totalKg)}
+              </td>
+              <td
+                class="nombre num-tab"
+                data-libelle="Dots"
+                data-valeur={e.dots}
+                data-fort={miseEnAvant === 'dots'}
+              >
+                {points(e.dots)}
+              </td>
+              <td class="masquer-mobile competition">
+                <a href={`/competitions/${meetSlug(e.date, e.meetName)}/`}>{e.meetName}</a>
+                <span class="meta">{e.date.slice(0, 4)}</span>
+              </td>
+            </tr>
+          );
+        })
       }
     </tbody>
   </table>
@@ -208,7 +209,7 @@ const { entries, miseEnAvant = 'total', id } = Astro.props;
 
   .rang {
     font-family: var(--font-display);
-    font-weight: 800;
+    font-weight: 700;
     color: var(--muted);
     font-variant-numeric: tabular-nums;
   }
@@ -227,11 +228,9 @@ const { entries, miseEnAvant = 'total', id } = Astro.props;
   }
   .athlete a {
     color: var(--text);
-    text-decoration: none;
   }
   .athlete a:hover {
     color: var(--accent);
-    text-decoration: underline;
   }
 
   .meta {
@@ -241,11 +240,15 @@ const { entries, miseEnAvant = 'total', id } = Astro.props;
     color: var(--muted);
   }
 
-  .competition span:first-child {
+  .competition a {
     display: block;
     max-width: 22ch;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: var(--text);
+  }
+  .competition a:hover {
+    color: var(--accent);
   }
 </style>
