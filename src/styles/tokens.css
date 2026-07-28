@@ -24,8 +24,22 @@
   --p-light-border: #e7ded3;
   --p-light-text: #1b1714;
   --p-light-muted: #6d635a;
-  --p-light-accent: #c8540a; /* orange assombri : contraste AA sur fond clair */
-  --p-light-accent-hover: #a94406;
+  /*
+   * Orange assombri pour tenir le contraste AA (4.5:1) sur fond clair.
+   *
+   * La valeur n'est pas choisie à l'œil : elle est contrainte par le cas le
+   * plus difficile du site, l'onglet de navigation actif, qui pose du texte
+   * accentué sur un fond teinté du même accent à 12 %. Sur ce fond, la valeur
+   * précédente (#c8540a) ne donnait que 3.56:1.
+   *
+   * Contrastes obtenus avec #a8410a — fond de page 5.74, carte blanche 6.13,
+   * onglet actif 4.80, bloc d'annonce 5.09, blanc sur bouton 6.13.
+   *
+   * Avant de l'éclaircir, vérifier CES cinq valeurs : le fond de page seul est
+   * trompeusement permissif.
+   */
+  --p-light-accent: #a8410a;
+  --p-light-accent-hover: #8f3406;
   --p-light-on-accent: #ffffff;
 
   /* Thème sombre : noir cassé chaud, jamais du noir pur.
