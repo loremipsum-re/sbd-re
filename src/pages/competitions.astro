@@ -26,7 +26,7 @@ const annees = [...new Set(meets.map((m) => m.date.slice(0, 4)))].sort().reverse
     </header>
 
     <InteractiveTable
-      recherche="Compétition, commune…"
+      recherche="Nom d'une compétition"
       singulier="compétition"
       pluriel="compétitions"
       total={meets.length}
@@ -63,7 +63,11 @@ const annees = [...new Set(meets.map((m) => m.date.slice(0, 4)))].sort().reverse
           <tbody>
             {
               meets.map((meet) => (
-                <tr data-annee={meet.date.slice(0, 4)} data-ville={meet.meetTown}>
+                <tr
+                  data-recherche={meet.meetName}
+                  data-annee={meet.date.slice(0, 4)}
+                  data-ville={meet.meetTown}
+                >
                   <td class="date" data-libelle="Date" data-valeur={meet.date.replace(/-/g, '')}>
                     {dateCourte(meet.date)}
                   </td>

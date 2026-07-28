@@ -4,7 +4,14 @@ import Coupe from '../../../components/Coupe.astro';
 import InteractiveTable from '../../../components/InteractiveTable.astro';
 import Medaille from '../../../components/Medaille.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import { equipmentGroup, equipmentLabel, parseWeightClass, sexLabel } from '../../../lib/categories';
+import {
+  EQUIPMENT_GROUPS,
+  compareWeightClass,
+  equipmentGroup,
+  equipmentLabel,
+  parseWeightClass,
+  sexLabel,
+} from '../../../lib/categories';
 import { dateLongue, nombre, place, points } from '../../../lib/format';
 import { editionsDe, libelleEvent, listeMeets, resultatsDuMeet } from '../../../lib/meets';
 import { cleRecord, clesRecords } from '../../../lib/records';
@@ -42,6 +49,28 @@ const medailleDe = (r: Result): Metal | null => {
   const rang = Number.parseInt(r.place, 10);
   return Number.isFinite(rang) && rang >= 1 && rang <= 3 ? METAUX[rang - 1] : null;
 };
+
+/*
+ * Filtres identiques à ceux du classement : sexe, catégorie de poids et
+ * équipement. Les valeurs sont tirées des résultats de CETTE compétition
+ * uniquement, pour ne jamais proposer un filtre qui ne renverrait rien.
+ */
+const sexesParClasse = new Map<string, Set<string>>();
+for (const r of resultats) {
+  if (!r.weightClassKg) continue;
+  const set = sexesParClasse.get(r.weightClassKg) ?? new Set<string>();
+  set.add(r.sex);
+  sexesParClasse.set(r.weightClassKg, set);
+}
+
+const categories = [...sexesParClasse.entries()]
+  .map(([id, sexes]) => ({ id, classe: parseWeightClass(id)!, sexes: [...sexes].sort().join('') }))
+  .filter((c) => c.classe)
+  .sort((a, b) => compareWeightClass(a.classe, b.classe));
+
+const equipements = [...new Set(resultats.map((r) => equipmentGroup(r.equipment)))];
+const libelleEquipement = (id: string) =>
+  EQUIPMENT_GROUPS.find((e) => e.id === id)?.label ?? id;
 
 const description =
   `${meet.meetName}, ${dateLongue(meet.date)}` +
@@ -97,7 +126,7 @@ const description =
     <h2>Résultats</h2>
 
     <InteractiveTable
-      recherche="Nom, catégorie, division…"
+      recherche="Nom d'un athlète"
       singulier="résultat"
       pluriel="résultats"
       total={resultats.length}
@@ -111,6 +140,34 @@ const description =
             <option value="F">Femmes</option>
           </select>
         </div>
+
+        <div class="champ">
+          <label for="f-categorie">Catégorie</label>
+          <select id="f-categorie" data-filtre="categorie" data-restreint-par="sexe">
+            <option value="">Toutes</option>
+            {
+              categories.map((c) => (
+                <option value={c.id} data-compatible={c.sexes}>
+                  {c.classe.label}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+
+        {
+          equipements.length > 1 && (
+            <div class="champ">
+              <label for="f-equipement">Équipement</label>
+              <select id="f-equipement" data-filtre="equipement">
+                <option value="">Tous</option>
+                {equipements.map((e) => (
+                  <option value={e}>{libelleEquipement(e)}</option>
+                ))}
+              </select>
+            </div>
+          )
+        }
       </Fragment>
 
       <div class="cadre">
@@ -134,7 +191,13 @@ const description =
                 const classe = parseWeightClass(r.weightClassKg);
                 const metal = medailleDe(r);
                 return (
-                  <tr data-sexe={r.sex} data-podium={metal ?? undefined}>
+                  <tr
+                    data-recherche={r.name}
+                    data-sexe={r.sex}
+                    data-categorie={r.weightClassKg}
+                    data-equipement={equipmentGroup(r.equipment)}
+                    data-podium={metal ?? undefined}
+                  >
                     <td class="place" data-valeur={Number.parseInt(r.place, 10) || 999}>
                       {metal ? (
                         <Medaille metal={metal} detail={`${place(r.place)} de sa catégorie`} taille={20} />

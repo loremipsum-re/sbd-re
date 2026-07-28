@@ -115,10 +115,19 @@ const aFiltres = Astro.slots.has('filtres');
     const compteur = bloc.querySelector<HTMLElement>('[data-compteur]');
     const selects = Array.from(bloc.querySelectorAll<HTMLSelectElement>('[data-filtre]'));
 
-    // Texte de chaque ligne, calculé une seule fois : refaire ce travail à
-    // chaque frappe rendrait la recherche saccadée sur les grands tableaux.
+    /*
+     * Texte sur lequel porte la recherche, calculé une seule fois : refaire ce
+     * travail à chaque frappe rendrait la saisie saccadée sur un grand tableau.
+     *
+     * La recherche vise le NOM porté par `data-recherche`, et non la ligne
+     * entière. Chercher dans tout le contenu ferait remonter des lignes sur une
+     * coïncidence de chiffre : taper « 93 » sortirait aussi bien la catégorie
+     * 93 kg qu'un total de 93 ou une année 1993.
+     */
     const texteLigne = new Map<HTMLTableRowElement, string>();
-    for (const ligne of lignes) texteLigne.set(ligne, normaliser(ligne.textContent ?? ''));
+    for (const ligne of lignes) {
+      texteLigne.set(ligne, normaliser(ligne.dataset.recherche ?? ligne.textContent ?? ''));
+    }
 
     const entetes = groupes.flatMap((g) =>
       Array.from(g.table.querySelectorAll<HTMLTableCellElement>('th[data-tri]')),

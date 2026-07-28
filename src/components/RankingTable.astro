@@ -47,6 +47,7 @@ const METAUX = ['or', 'argent', 'bronze'] as const;
           const classe = parseWeightClass(e.weightClassKg);
           return (
             <tr
+              data-recherche={e.name}
               data-sexe={e.sex}
               data-categorie={e.weightClassKg}
               data-equipement={e.equipmentGroup}
