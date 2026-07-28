@@ -51,9 +51,9 @@ const medailleDe = (r: Result): Metal | null => {
 };
 
 /*
- * Filtres identiques à ceux du classement : sexe, catégorie de poids et
- * équipement. Les valeurs sont tirées des résultats de CETTE compétition
- * uniquement, pour ne jamais proposer un filtre qui ne renverrait rien.
+ * Filtres alignés sur ceux du classement : sexe, catégorie, équipement,
+ * division et âge. Les valeurs sont tirées de CETTE compétition, pour ne jamais
+ * proposer un filtre qui ne renverrait rien.
  */
 const sexesParClasse = new Map<string, Set<string>>();
 for (const r of resultats) {
@@ -69,6 +69,13 @@ const categories = [...sexesParClasse.entries()]
   .sort((a, b) => compareWeightClass(a.classe, b.classe));
 
 const equipements = [...new Set(resultats.map((r) => equipmentGroup(r.equipment)))];
+const divisions = [...new Set(resultats.map((r) => r.division).filter(Boolean))].sort((a, b) =>
+  a.localeCompare(b, 'fr'),
+);
+const ages = [...new Set(resultats.map((r) => r.ageClass).filter(Boolean))].sort(
+  (a, b) => Number.parseInt(a, 10) - Number.parseInt(b, 10),
+);
+
 const libelleEquipement = (id: string) =>
   EQUIPMENT_GROUPS.find((e) => e.id === id)?.label ?? id;
 
@@ -130,6 +137,7 @@ const description =
       singulier="résultat"
       pluriel="résultats"
       total={resultats.length}
+      barreDeTri
     >
       <Fragment slot="filtres">
         <div class="champ">
@@ -168,21 +176,49 @@ const description =
             </div>
           )
         }
+
+        {
+          divisions.length > 1 && (
+            <div class="champ">
+              <label for="f-division">Division</label>
+              <select id="f-division" data-filtre="division">
+                <option value="">Toutes</option>
+                {divisions.map((d) => (
+                  <option value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+          )
+        }
+
+        {
+          ages.length > 1 && (
+            <div class="champ">
+              <label for="f-age">Âge</label>
+              <select id="f-age" data-filtre="age">
+                <option value="">Tous</option>
+                {ages.map((a) => (
+                  <option value={a}>{a} ans</option>
+                ))}
+              </select>
+            </div>
+          )
+        }
       </Fragment>
 
       <div class="cadre">
         <table data-tableau>
-          <thead>
+          <thead class="sr-only">
             <tr>
-              <th scope="col" class="col-place" data-tri data-type="nombre">Place</th>
-              <th scope="col" data-tri>Athlète</th>
-              <th scope="col" class="nombre" data-tri data-type="nombre">Cat.</th>
-              <th scope="col" class="nombre" data-tri data-type="nombre">Poids</th>
-              <th scope="col" class="nombre" data-tri data-type="nombre">Squat</th>
-              <th scope="col" class="nombre" data-tri data-type="nombre">DC</th>
-              <th scope="col" class="nombre" data-tri data-type="nombre">SDT</th>
-              <th scope="col" class="nombre" data-tri data-type="nombre">Total</th>
-              <th scope="col" class="nombre" data-tri data-type="nombre">Dots</th>
+              <th scope="col" data-tri data-cle="triPlace" data-type="nombre">Place</th>
+              <th scope="col" data-tri data-cle="nom">Nom</th>
+              <th scope="col" data-tri data-cle="triCategorie" data-type="nombre">Catégorie</th>
+              <th scope="col" data-tri data-cle="poids" data-type="nombre">Poids de corps</th>
+              <th scope="col" data-tri data-cle="squat" data-type="nombre">Squat</th>
+              <th scope="col" data-tri data-cle="bench" data-type="nombre">Développé couché</th>
+              <th scope="col" data-tri data-cle="deadlift" data-type="nombre">Soulevé de terre</th>
+              <th scope="col" data-tri data-cle="total" data-type="nombre">Total</th>
+              <th scope="col" data-tri data-cle="dots" data-type="nombre">Dots</th>
             </tr>
           </thead>
           <tbody>
@@ -190,63 +226,72 @@ const description =
               resultats.map((r) => {
                 const classe = parseWeightClass(r.weightClassKg);
                 const metal = medailleDe(r);
+                const estFullPower = r.event === 'SBD';
                 return (
                   <tr
                     data-recherche={r.name}
+                    data-nom={r.name}
+                    data-tri-place={Number.parseInt(r.place, 10) || 999}
+                    data-tri-categorie={classe?.kg ?? ''}
+                    data-poids={r.bodyweightKg ?? ''}
+                    data-squat={r.bestSquatKg ?? ''}
+                    data-bench={r.bestBenchKg ?? ''}
+                    data-deadlift={r.bestDeadliftKg ?? ''}
+                    data-total={estFullPower ? (r.totalKg ?? '') : ''}
+                    data-dots={estFullPower ? (r.dots ?? '') : ''}
                     data-sexe={r.sex}
                     data-categorie={r.weightClassKg}
                     data-equipement={equipmentGroup(r.equipment)}
+                    data-division={r.division}
+                    data-age={r.ageClass}
                     data-podium={metal ?? undefined}
                   >
-                    <td class="place" data-valeur={Number.parseInt(r.place, 10) || 999}>
+                    <td class="place" data-metal={metal ?? undefined}>
                       {metal ? (
-                        <Medaille metal={metal} detail={`${place(r.place)} de sa catégorie`} taille={20} />
+                        <Medaille metal={metal} detail={`${place(r.place)} de sa catégorie`} taille={26} />
                       ) : (
-                        place(r.place)
+                        <span class="place-num">{place(r.place)}</span>
                       )}
                     </td>
-                    <th scope="row" class="athlete">
-                      <span class="nom-ligne">
-                        <a href={`/athlete/${athleteSlug(r.name)}/`}>{r.name}</a>
-                        <BadgeOfficiel taille={13} />
-                      </span>
-                      <span class="meta">
-                        {sexLabel(r.sex)} · {equipmentLabel(equipmentGroup(r.equipment))}
-                        {r.division && <> · {r.division}</>}
-                      </span>
+
+                    <th scope="row" class="nom">
+                      <a href={`/athlete/${athleteSlug(r.name)}/`}>{r.name}</a>
+                      <BadgeOfficiel taille={14} />
                     </th>
-                    <td class="nombre" data-libelle="Catégorie" data-valeur={classe?.kg ?? ''}>
-                      {r.weightClassKg ? `${r.weightClassKg} kg` : '—'}
+
+                    <td class="ligne contexte">
+                      <span>{sexLabel(r.sex)}</span>
+                      <span>{equipmentLabel(equipmentGroup(r.equipment))}</span>
+                      {r.division && <span>{r.division}</span>}
+                      {r.ageClass && <span>{r.ageClass} ans</span>}
                     </td>
-                    <td class="nombre" data-libelle="Poids de corps" data-valeur={r.bodyweightKg ?? ''}>
-                      {nombre(r.bodyweightKg)}
+
+                    <td class="ligne physique">
+                      <span>{r.weightClassKg ? `${r.weightClassKg} kg` : 'catégorie inconnue'}</span>
+                      <span>{nombre(r.bodyweightKg)} kg de corps</span>
                     </td>
-                    <td class="nombre num-tab" data-libelle="Squat" data-valeur={r.bestSquatKg ?? ''}>
-                      <span class="v">
-                        {nombre(r.bestSquatKg)}
-                        {r.bestSquatKg && estRecord(r, 'squat') && <Coupe detail="Record du squat" taille={14} />}
+
+                    <td class="ligne barres">
+                      <span>
+                        SQ <b class="num-tab">{nombre(r.bestSquatKg)}</b>
+                        {r.bestSquatKg && estRecord(r, 'squat') && <Coupe metal="or" detail="Record du squat" taille={13} />}
+                      </span>
+                      <span>
+                        DC <b class="num-tab">{nombre(r.bestBenchKg)}</b>
+                        {r.bestBenchKg && estRecord(r, 'bench') && <Coupe metal="or" detail="Record du développé couché" taille={13} />}
+                      </span>
+                      <span>
+                        SDT <b class="num-tab">{nombre(r.bestDeadliftKg)}</b>
+                        {r.bestDeadliftKg && estRecord(r, 'deadlift') && <Coupe metal="or" detail="Record du soulevé de terre" taille={13} />}
                       </span>
                     </td>
-                    <td class="nombre num-tab" data-libelle="Développé couché" data-valeur={r.bestBenchKg ?? ''}>
-                      <span class="v">
-                        {nombre(r.bestBenchKg)}
-                        {r.bestBenchKg && estRecord(r, 'bench') && <Coupe detail="Record du développé couché" taille={14} />}
+
+                    <td class="ligne perf">
+                      <span class="fort num-tab">
+                        {estFullPower ? `${nombre(r.totalKg)} kg` : 'sans total'}
+                        {estFullPower && estRecord(r, 'total') && <Coupe metal="or" detail="Record au total" taille={14} />}
                       </span>
-                    </td>
-                    <td class="nombre num-tab" data-libelle="Soulevé de terre" data-valeur={r.bestDeadliftKg ?? ''}>
-                      <span class="v">
-                        {nombre(r.bestDeadliftKg)}
-                        {r.bestDeadliftKg && estRecord(r, 'deadlift') && <Coupe detail="Record du soulevé de terre" taille={14} />}
-                      </span>
-                    </td>
-                    <td class="nombre num-tab" data-libelle="Total" data-valeur={r.event === 'SBD' ? (r.totalKg ?? '') : ''}>
-                      <span class="v">
-                        {r.event === 'SBD' ? nombre(r.totalKg) : '—'}
-                        {r.event === 'SBD' && estRecord(r, 'total') && <Coupe detail="Record au total" taille={14} />}
-                      </span>
-                    </td>
-                    <td class="nombre" data-libelle="Dots" data-valeur={r.event === 'SBD' ? (r.dots ?? '') : ''}>
-                      {r.event === 'SBD' ? points(r.dots) : '—'}
+                      {estFullPower && <span class="fort num-tab">{points(r.dots)} Dots</span>}
                     </td>
                   </tr>
                 );
@@ -347,6 +392,28 @@ const description =
     line-height: 1;
   }
 
+  .champ {
+    display: grid;
+    gap: var(--space-1);
+    flex: 1 1 9rem;
+  }
+
+  label {
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  select {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: var(--step--1);
+  }
+
   .cadre {
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
@@ -357,146 +424,123 @@ const description =
   table {
     width: 100%;
     border-collapse: collapse;
-    font-size: var(--step--1);
   }
 
-  th,
-  td {
+  /* ---------- La carte, même structure que le classement ---------- */
+  tbody tr {
+    display: grid;
+    grid-template-columns: 3.25rem 1fr;
+    grid-template-areas:
+      'place nom'
+      'place contexte'
+      'place physique'
+      'place barres'
+      'place perf';
+    gap: var(--space-1) var(--space-3);
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr:last-child {
+    border-bottom: 0;
+  }
+  tbody tr:hover {
+    background: color-mix(in srgb, var(--accent) 5%, transparent);
+  }
+
+  /* Une ligne de podium se remarque discrètement, sans écraser la liste. */
+  tr[data-podium='or'] {
+    background: color-mix(in srgb, var(--or) 7%, transparent);
+  }
+  tr[data-podium='argent'] {
+    background: color-mix(in srgb, var(--argent) 6%, transparent);
+  }
+  tr[data-podium='bronze'] {
+    background: color-mix(in srgb, var(--bronze) 6%, transparent);
+  }
+
+  td,
+  th {
+    padding: 0;
     text-align: left;
-    padding: var(--space-2) var(--space-3);
   }
 
-  thead {
-    display: none;
-  }
-
-  .athlete {
-    font-weight: 600;
-  }
-
-  .nom-ligne {
-    display: inline-flex;
-    align-items: center;
-  }
-
-  .athlete a {
-    color: var(--text);
-  }
-  .athlete a:hover {
-    color: var(--accent);
-  }
-
-  .meta {
-    display: block;
-    font-size: var(--step--1);
-    font-weight: 400;
-    color: var(--muted);
-  }
-
-  /* Regroupe la valeur et sa coupe : sans ce conteneur, la cellule en
-     `space-between` éparpillerait libellé, chiffre et pictogramme. */
-  .v {
-    display: inline-flex;
-    align-items: center;
-  }
-
-  /*
-   * La cellule de place occupe la colonne de gauche sur toute la hauteur de la
-   * carte. Elle ne porte SURTOUT PAS la classe `.nombre`, qui forcerait
-   * `grid-column: 2` et entrerait en conflit avec ce placement.
-   */
   .place {
+    grid-area: place;
+    align-self: start;
+    padding-top: 0.1em;
     font-family: var(--font-display);
     font-weight: 700;
+    font-size: var(--step-2);
+    line-height: 1;
     color: var(--muted);
     font-variant-numeric: tabular-nums;
   }
 
-  /* Une ligne de podium se remarque discrètement, sans écraser le tableau. */
-  tr[data-podium='or'] {
-    background: color-mix(in srgb, var(--or) 8%, transparent);
+  .nom {
+    grid-area: nom;
+    display: flex;
+    align-items: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--step-1);
+    line-height: 1.15;
   }
-  tr[data-podium='argent'] {
-    background: color-mix(in srgb, var(--argent) 7%, transparent);
+  .nom a {
+    color: var(--text);
   }
-  tr[data-podium='bronze'] {
-    background: color-mix(in srgb, var(--bronze) 7%, transparent);
+  .nom a:hover {
+    color: var(--accent);
   }
 
-  /* ---------- Mobile : une carte par athlète ---------- */
-  @media (max-width: 61.999rem) {
+  .ligne {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-2);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .contexte {
+    grid-area: contexte;
+  }
+  .physique {
+    grid-area: physique;
+  }
+  .barres {
+    grid-area: barres;
+  }
+  .perf {
+    grid-area: perf;
+    margin-top: var(--space-1);
+  }
+
+  /* Séparateur décoratif, dans le CSS pour ne polluer ni la lecture à voix
+     haute ni la recherche. */
+  .ligne > *:not(:last-child)::after {
+    content: '•';
+    margin-left: var(--space-2);
+    color: var(--border);
+  }
+
+  .barres b {
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  .fort {
+    color: var(--text);
+    font-weight: 700;
+    font-size: var(--step-0);
+  }
+
+  @media (min-width: 40rem) {
     tbody tr {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: var(--space-1) var(--space-3);
-      padding: var(--space-3);
-      border-bottom: 1px solid var(--border);
+      grid-template-columns: 4rem 1fr;
+      padding: var(--space-4) var(--space-6);
     }
-
-    td.place {
-      grid-row: 1 / 3;
-      grid-column: 1;
-      align-self: center;
-      font-size: var(--step-1);
-      padding: 0;
-    }
-
-    .athlete {
-      padding: 0;
-    }
-
-    td.nombre {
-      display: flex;
-      justify-content: space-between;
-      grid-column: 2;
-      padding: 0;
-      color: var(--muted);
-    }
-
-    td.nombre::before {
-      content: attr(data-libelle);
-    }
-  }
-
-  /* ---------- Desktop ---------- */
-  @media (min-width: 62rem) {
-    thead {
-      display: table-header-group;
-    }
-
-    thead th {
-      font-size: var(--step--1);
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-
-    td.nombre,
-    th.nombre {
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
-
-    th.col-place,
-    td.place {
-      text-align: left;
-    }
-
-    tbody tr {
-      border-bottom: 1px solid var(--border);
-    }
-    tbody tr:last-child {
-      border-bottom: 0;
-    }
-    tbody tr:hover {
-      background: color-mix(in srgb, var(--accent) 6%, transparent);
-    }
-
-    td::before {
-      display: none;
+    .place {
+      font-size: var(--step-3);
     }
   }
 
