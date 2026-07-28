@@ -1,0 +1,13 @@
+# Normalise les fins de ligne : LF dans le dépôt, quel que soit le système.
+#
+# Sans ça, git enregistrerait les fichiers créés sous Windows avec des retours
+# chariot (CRLF). Les workflows GitHub tournent sous Linux : un bloc `run:`
+# contenant des CRLF y provoque des erreurs de shell difficiles à diagnostiquer.
+* text=auto eol=lf
+
+# Fichiers binaires : ne jamais y toucher.
+*.woff2 binary
+*.png binary
+*.jpg binary
+*.webp binary
+*.ico binary
