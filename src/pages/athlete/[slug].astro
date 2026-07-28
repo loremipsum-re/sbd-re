@@ -10,7 +10,7 @@ import { exterieurDe, paysFr } from '../../lib/exterieur';
 import { dateLongue, kg, nombre, place, points } from '../../lib/format';
 import { liensAthlete } from '../../lib/liens';
 import { libelleEvent } from '../../lib/meets';
-import { rangDots } from '../../lib/rankings';
+import { rangsDots } from '../../lib/rankings';
 import { cleRecord, clesRecords } from '../../lib/records';
 import { athleteSlug, meetPath, openpowerliftingUrl } from '../../lib/slug';
 import type { LiftKey, Metal, Result } from '../../lib/types';
@@ -87,7 +87,7 @@ const nbRecords = (['squat', 'bench', 'deadlift', 'total'] as LiftKey[]).reduce(
  * Le centile situe l'athlète bien mieux qu'un rang brut : « 18e sur 266 » parle
  * moins que « parmi les 7 % meilleurs ». Les deux sont affichés.
  */
-const rang = rangDots(name);
+const rangs = rangsDots(name);
 
 /**
  * Compétitions disputées hors de l'île.
@@ -111,20 +111,58 @@ const phraseExterieur =
   (paysVisites.length > 0 ? `, en ${paysVisites.map(paysFr).join(', ')}` : '') +
   '.';
 
-/** Seuil de mise en avant : le podium, ou à défaut les dix pour cent de tête. */
-const seuilDistinction = rang ? Math.max(3, Math.ceil(rang.total * 0.1)) : 0;
-const estDistingue = rang !== null && rang.rang <= seuilDistinction;
-const metalDuRang: Metal | undefined =
-  rang?.rang === 1 ? 'or' : rang?.rang === 2 ? 'argent' : rang?.rang === 3 ? 'bronze' : undefined;
-
 /** « 1er » puis « 2e », « 3e »… La première place fait exception en français. */
 const ordinal = (n: number) => (n === 1 ? '1er' : `${n}e`);
 
-const pointsGraphe = fullPower.map((r) => ({
-  date: r.date,
-  value: r.totalKg as number,
-  label: r.meetName,
-}));
+const metalDe = (n: number): Metal | undefined =>
+  n === 1 ? 'or' : n === 2 ? 'argent' : n === 3 ? 'bronze' : undefined;
+
+/**
+ * Mise en avant déclenchée par le podium, ou à défaut par les dix pour cent de
+ * tête. On retient le meilleur des deux rangs : un athlète 2e chez les femmes
+ * mérite sa distinction même s'il est 40e au général.
+ */
+const seuil = (total: number) => Math.max(3, Math.ceil(total * 0.1));
+const estDistingue =
+  rangs !== null &&
+  (rangs.global.rang <= seuil(rangs.global.total) || rangs.sexe.rang <= seuil(rangs.sexe.total));
+const metalDuRang = rangs
+  ? (metalDe(rangs.sexe.rang) ?? metalDe(rangs.global.rang))
+  : undefined;
+
+const libelleSexe = dernier?.sex === 'F' ? 'chez les femmes' : 'chez les hommes';
+
+/**
+ * Points de la courbe : les totaux full power, sur l'île et ailleurs.
+ *
+ * Les compétitions d'un seul mouvement en sont exclues : leur « total » n'est
+ * que la barre disputée, et l'inclure ferait plonger la courbe sans qu'aucune
+ * contre-performance n'ait eu lieu.
+ */
+const pointsGraphe = [
+  ...fullPower.map((r) => ({
+    date: r.date,
+    value: r.totalKg as number,
+    meetName: r.meetName,
+    weightClassKg: r.weightClassKg,
+    bodyweightKg: r.bodyweightKg,
+    division: r.division,
+    place: r.place,
+    exterieur: false,
+  })),
+  ...exterieur
+    .filter((r) => r.event === 'SBD' && (r.totalKg ?? 0) > 0)
+    .map((r) => ({
+      date: r.date,
+      value: r.totalKg as number,
+      meetName: r.meetName,
+      weightClassKg: r.weightClassKg,
+      bodyweightKg: r.bodyweightKg,
+      division: r.division,
+      place: r.place,
+      exterieur: true,
+    })),
+];
 
 const description =
   `${name}, powerlifter à La Réunion. ` +
@@ -144,11 +182,51 @@ const description =
           {name}
           <BadgeOfficiel taille={22} />
         </h1>
+        {/*
+          Chaque badge mène au classement déjà filtré sur ce critère. Les
+          filtres se lisant dans l'adresse, aucune page supplémentaire n'a
+          besoin d'être générée : un simple paramètre suffit.
+        */}
         <p class="badges">
-          <span class="badge">{sexLabel(dernier.sex)}</span>
-          {dernier.weightClassKg && <span class="badge">{dernier.weightClassKg} kg</span>}
-          <span class="badge">{equipmentLabel(equipmentGroup(dernier.equipment))}</span>
-          {dernier.division && <span class="badge">{dernier.division}</span>}
+          <a class="badge lien-nu" href={`/classement/?sexe=${dernier.sex}`}>
+            {sexLabel(dernier.sex)}
+          </a>
+          {
+            dernier.weightClassKg && (
+              <a
+                class="badge lien-nu"
+                href={`/classement/?categorie=${encodeURIComponent(dernier.weightClassKg)}`}
+              >
+                {dernier.weightClassKg} kg
+              </a>
+            )
+          }
+          <a
+            class="badge lien-nu"
+            href={`/classement/?equipement=${equipmentGroup(dernier.equipment)}`}
+          >
+            {equipmentLabel(equipmentGroup(dernier.equipment))}
+          </a>
+          {
+            dernier.division && (
+              <a
+                class="badge lien-nu"
+                href={`/classement/?division=${encodeURIComponent(dernier.division)}`}
+              >
+                {dernier.division}
+              </a>
+            )
+          }
+          {
+            dernier.ageClass && (
+              <a
+                class="badge lien-nu"
+                href={`/classement/?age=${encodeURIComponent(dernier.ageClass)}`}
+              >
+                {dernier.ageClass} ans
+              </a>
+            )
+          }
         </p>
       </div>
 
@@ -167,21 +245,24 @@ const description =
     </header>
 
     {
-      estDistingue && rang && (
+      estDistingue && rangs && (
         <div class="distinction" data-metal={metalDuRang ?? 'top'}>
           <Coupe
             metal={metalDuRang}
             taille={34}
-            detail={`${ordinal(rang.rang)} du classement Dots`}
+            detail={`${ordinal(rangs.global.rang)} du classement Dots`}
           />
           <div>
             <p class="rang-titre">
-              {rang.rang}
-              <sup>{rang.rang === 1 ? 'er' : 'e'}</sup> au classement Dots de La Réunion
+              {ordinal(rangs.global.rang)} de La Réunion
+              <span class="separateur">·</span>
+              {ordinal(rangs.sexe.rang)} {libelleSexe}
             </p>
             <p class="rang-detail">
-              Parmi les {rang.centile} % meilleurs des {rang.total} athlètes classés,
-              avec {points(rang.dots)} points.
+              Classement aux points Dots, avec {points(rangs.dots)} points. Parmi les
+              {' '}{rangs.global.centile} % meilleurs des {rangs.global.total} athlètes
+              classés, et les {rangs.sexe.centile} % meilleurs des {rangs.sexe.total}{' '}
+              {dernier.sex === 'F' ? 'femmes' : 'hommes'}.
             </p>
           </div>
         </div>
@@ -198,9 +279,15 @@ const description =
         <dd class="num">{meilleurDots ? points(meilleurDots.dots) : '—'}</dd>
       </div>
       <div>
-        <dt>Classement Dots</dt>
+        <dt>Rang général</dt>
         <dd class="num">
-          {rang ? <>{rang.rang}<span class="sur">/{rang.total}</span></> : '—'}
+          {rangs ? <>{rangs.global.rang}<span class="sur">/{rangs.global.total}</span></> : '—'}
+        </dd>
+      </div>
+      <div>
+        <dt>Rang {dernier.sex === 'F' ? 'femmes' : 'hommes'}</dt>
+        <dd class="num">
+          {rangs ? <>{rangs.sexe.rang}<span class="sur">/{rangs.sexe.total}</span></> : '—'}
         </dd>
       </div>
       <div>
@@ -229,6 +316,17 @@ const description =
           <h2>Progression</h2>
           <ProgressChart points={pointsGraphe} legende="Total en compétition" />
         </section>
+      )
+    }
+
+    {
+      /* Le graphique n'a de sens qu'à partir de deux points. Avec un seul, on
+         affiche quand même le contexte plutôt que rien du tout. */
+      pointsGraphe.length === 1 && (
+        <p class="note unique">
+          Un seul total en compétition à ce jour, {kg(pointsGraphe[0].value)}. La courbe de
+          progression apparaîtra dès la deuxième compétition.
+        </p>
       )
     }
 
@@ -419,6 +517,19 @@ const description =
     color: var(--muted);
   }
 
+  /* Ces badges sont des liens vers le classement filtré : la bordure qui
+     s'anime au survol l'annonce, là où un soulignement casserait la pastille. */
+  a.badge:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .separateur {
+    margin-inline: var(--space-2);
+    color: var(--muted);
+    font-weight: 400;
+  }
+
   .liens-externes {
     display: grid;
     gap: var(--space-1);
@@ -493,13 +604,13 @@ const description =
 
   @media (min-width: 48rem) {
     .stats {
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
     }
   }
 
-  @media (min-width: 62rem) {
+  @media (min-width: 68rem) {
     .stats {
-      grid-template-columns: repeat(6, 1fr);
+      grid-template-columns: repeat(7, 1fr);
     }
   }
 
