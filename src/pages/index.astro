@@ -4,12 +4,13 @@ import RankingTable from '../components/RankingTable.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import nextMeet from '../data/next-meet.json';
 import { nombreAthletes, periode, results } from '../lib/data';
-import { annee, dateLongue } from '../lib/format';
-import { listeMeets } from '../lib/meets';
+import { annee, dateLongue, dateCourte } from '../lib/format';
+import { libelleEvent, listeMeets, meetsRecents } from '../lib/meets';
 import { topDots } from '../lib/rankings';
 
 const top = topDots(10);
 const meets = listeMeets();
+const recentes = meetsRecents(5);
 const { debut, fin } = periode();
 
 /**
@@ -102,6 +103,47 @@ const stats = [
     <InteractiveTable>
       <RankingTable entries={top} miseEnAvant="dots" />
     </InteractiveTable>
+  </section>
+
+  <section class="wrap bloc">
+    <header class="titre-bloc">
+      <div>
+        <h2>Compétitions récentes</h2>
+        <p class="fin">
+          Les derniers plateaux de l'île. Ouvrez une compétition pour voir le
+          détail des barres de chaque athlète engagé.
+        </p>
+      </div>
+      <a class="lien-plus lien-nu" href="/competitions/">Toutes les compétitions →</a>
+    </header>
+
+    <ul class="recentes">
+      {
+        recentes.map((m) => (
+          <li>
+            <a class="carte lien-nu" href={`/competitions/${m.chemin}/`}>
+              <span class="carte-date">
+                <span class="jour">{dateCourte(m.date).slice(0, 5)}</span>
+                <span class="an">{annee(m.date)}</span>
+              </span>
+              <span class="carte-corps">
+                <span class="carte-nom">{m.meetName}</span>
+                <span class="carte-meta">
+                  {m.meetTown}
+                  {m.events.map((e) => (
+                    <span class="carte-format">{libelleEvent(e)}</span>
+                  ))}
+                </span>
+              </span>
+              <span class="carte-effectif">
+                <span class="num">{m.athletes}</span>
+                <span class="carte-libelle">athlètes</span>
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
   </section>
 
   <section class="wrap bloc">
@@ -265,6 +307,90 @@ const stats = [
   .detail {
     color: var(--muted);
     margin-bottom: var(--space-2);
+  }
+
+  .recentes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .carte {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    color: var(--text);
+  }
+  .carte:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  .carte-date {
+    display: grid;
+    justify-items: center;
+    min-width: 3.5rem;
+    padding-right: var(--space-4);
+    border-right: 1px solid var(--border);
+  }
+
+  .jour {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--step-0);
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .an {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .carte-corps {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .carte-nom {
+    display: block;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .carte-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .carte-format {
+    padding: 1px var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .carte-effectif {
+    display: grid;
+    justify-items: end;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .carte-libelle {
+    font-size: var(--step--1);
+    color: var(--muted);
   }
 
   .communaute {
