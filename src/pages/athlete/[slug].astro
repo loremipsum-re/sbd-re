@@ -1,12 +1,16 @@
 ---
+import InteractiveTable from '../../components/InteractiveTable.astro';
 import ProgressChart from '../../components/ProgressChart.astro';
+import VerifiedBadge from '../../components/VerifiedBadge.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { equipmentGroup, equipmentLabel, sexLabel } from '../../lib/categories';
 import { results } from '../../lib/data';
-import { dateLongue, kg, place, points } from '../../lib/format';
+import { dateLongue, kg, nombre, place, points } from '../../lib/format';
+import { liensAthlete } from '../../lib/liens';
 import { libelleEvent } from '../../lib/meets';
-import { athleteSlug, openpowerliftingUrl } from '../../lib/slug';
-import type { Result } from '../../lib/types';
+import { cleRecord, clesRecords } from '../../lib/records';
+import { athleteSlug, meetSlug, openpowerliftingUrl } from '../../lib/slug';
+import type { LiftKey, Result } from '../../lib/types';
 
 export async function getStaticPaths() {
   const parSlug = new Map<string, { name: string; lignes: Result[] }>();
@@ -17,7 +21,7 @@ export async function getStaticPaths() {
     if (entree) {
       /*
        * Deux noms différents qui produiraient le même slug fusionneraient deux
-       * athlètes en une seule page — et pourraient attribuer un record à la
+       * athlètes en une seule page, et pourraient attribuer un record à la
        * mauvaise personne. On préfère faire échouer le build bruyamment plutôt
        * que de publier une donnée fausse en silence.
        */
@@ -35,13 +39,13 @@ export async function getStaticPaths() {
 
   return [...parSlug.entries()].map(([slug, { name, lignes }]) => ({
     params: { slug },
-    props: { name, lignes },
+    props: { name, lignes, slug },
   }));
 }
 
-// Les propriétés sont déduites automatiquement de getStaticPaths ci-dessus :
-// pas d'interface Props à déclarer ici.
-const { name, lignes } = Astro.props;
+const { name, lignes, slug } = Astro.props;
+const records = clesRecords();
+const liens = liensAthlete(slug);
 
 const historique = [...lignes].sort((a, b) => a.date.localeCompare(b.date));
 const fullPower = historique.filter((r) => r.event === 'SBD' && (r.totalKg ?? 0) > 0);
@@ -64,6 +68,16 @@ const meilleures = {
 const dernier = historique[historique.length - 1];
 const meets = new Set(historique.map((r) => `${r.date}|${r.meetName}`)).size;
 
+/** Une barre est-elle le record en cours de sa catégorie ? */
+const estRecord = (r: Result, lift: LiftKey) =>
+  records.has(cleRecord(lift, r.name, r.date, r.meetName));
+
+/** Nombre de records détenus, toutes catégories de mouvement confondues. */
+const nbRecords = (['squat', 'bench', 'deadlift', 'total'] as LiftKey[]).reduce(
+  (total, lift) => total + historique.filter((r) => estRecord(r, lift)).length,
+  0,
+);
+
 const pointsGraphe = fullPower.map((r) => ({
   date: r.date,
   value: r.totalKg as number,
@@ -71,20 +85,23 @@ const pointsGraphe = fullPower.map((r) => ({
 }));
 
 const description =
-  `${name} — powerlifting La Réunion. ` +
+  `${name}, powerlifter à La Réunion. ` +
   (meilleurTotal
-    ? `Meilleur total ${kg(meilleurTotal.totalKg)} en ${meilleurTotal.weightClassKg} kg. `
+    ? `Meilleur total ${kg(meilleurTotal.totalKg)} en catégorie ${meilleurTotal.weightClassKg} kg. `
     : '') +
-  `${meets} compétition${meets > 1 ? 's' : ''} réunionnaise${meets > 1 ? 's' : ''}.`;
+  `${meets} compétition${meets > 1 ? 's' : ''} disputée${meets > 1 ? 's' : ''}.`;
 ---
 
 <BaseLayout titre={name} description={description}>
   <div class="wrap">
-    <p class="fil"><a href="/classement/">← Retour au classement</a></p>
+    <p class="fil"><a href="/classement/">Retour au classement</a></p>
 
     <header class="entete-athlete">
       <div>
-        <h1>{name}</h1>
+        <h1>
+          {name}
+          {nbRecords > 0 && <VerifiedBadge detail={`Détient ${nbRecords} record${nbRecords > 1 ? 's' : ''} à La Réunion`} taille={22} />}
+        </h1>
         <p class="badges">
           <span class="badge">{sexLabel(dernier.sex)}</span>
           {dernier.weightClassKg && <span class="badge">{dernier.weightClassKg} kg</span>}
@@ -92,9 +109,19 @@ const description =
           {dernier.division && <span class="badge">{dernier.division}</span>}
         </p>
       </div>
-      <a class="lien-opl" href={openpowerliftingUrl(name)} rel="noopener">
-        Fiche OpenPowerlifting →
-      </a>
+
+      <div class="liens-externes">
+        <a href={openpowerliftingUrl(name)} rel="noopener">
+          Fiche complète sur OpenPowerlifting
+        </a>
+        {
+          liens.map((lien) => (
+            <a href={lien.url} rel="noopener me">
+              {lien.label}
+            </a>
+          ))
+        }
+      </div>
     </header>
 
     <dl class="stats">
@@ -132,65 +159,84 @@ const description =
     <section class="bloc">
       <h2>Historique</h2>
 
-      <div class="cadre">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Date</th>
-              <th scope="col">Compétition</th>
-              <th scope="col">Format</th>
-              <th scope="col" class="nombre">Squat</th>
-              <th scope="col" class="nombre">DC</th>
-              <th scope="col" class="nombre">SDT</th>
-              <th scope="col" class="nombre">Total</th>
-              <th scope="col" class="nombre">Dots</th>
-              <th scope="col" class="nombre">Place</th>
-            </tr>
-          </thead>
-          <tbody>
-            {
-              [...historique].reverse().map((r) => (
-                <tr>
-                  <th scope="row" class="date">
-                    {dateLongue(r.date)}
-                  </th>
-                  <td data-libelle="Compétition">
-                    {r.meetName}
-                    <span class="ville">{r.meetTown}</span>
-                  </td>
-                  <td data-libelle="Format">
-                    <span class="format">{libelleEvent(r.event)}</span>
-                  </td>
-                  <td class="nombre" data-libelle="Squat">
-                    {r.bestSquatKg ?? '—'}
-                  </td>
-                  <td class="nombre" data-libelle="Développé couché">
-                    {r.bestBenchKg ?? '—'}
-                  </td>
-                  <td class="nombre" data-libelle="Soulevé de terre">
-                    {r.bestDeadliftKg ?? '—'}
-                  </td>
-                  <td class="nombre num-tab" data-libelle="Total">
-                    {r.event === 'SBD' ? (r.totalKg ?? '—') : '—'}
-                  </td>
-                  <td class="nombre" data-libelle="Dots">
-                    {r.event === 'SBD' ? points(r.dots) : '—'}
-                  </td>
-                  <td class="nombre" data-libelle="Place">
-                    {place(r.place)}
-                  </td>
-                </tr>
-              ))
-            }
-          </tbody>
-        </table>
-      </div>
+      <InteractiveTable
+        recherche="Compétition, commune, année…"
+        singulier="compétition"
+        pluriel="compétitions"
+        total={historique.length}
+      >
+        <div class="cadre">
+          <table data-tableau>
+            <thead>
+              <tr>
+                <th scope="col" data-tri data-type="nombre">Date</th>
+                <th scope="col" data-tri>Compétition</th>
+                <th scope="col" data-tri>Format</th>
+                <th scope="col" class="nombre" data-tri data-type="nombre">Squat</th>
+                <th scope="col" class="nombre" data-tri data-type="nombre">DC</th>
+                <th scope="col" class="nombre" data-tri data-type="nombre">SDT</th>
+                <th scope="col" class="nombre" data-tri data-type="nombre">Total</th>
+                <th scope="col" class="nombre" data-tri data-type="nombre">Dots</th>
+                <th scope="col" class="nombre" data-tri data-type="nombre">Place</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                [...historique].reverse().map((r) => (
+                  <tr>
+                    <th scope="row" class="date" data-valeur={r.date.replace(/-/g, '')}>
+                      {dateLongue(r.date)}
+                    </th>
+                    <td data-libelle="Compétition" class="competition">
+                      <a href={`/competitions/${meetSlug(r.date, r.meetName)}/`}>{r.meetName}</a>
+                      <span class="ville">{r.meetTown}</span>
+                    </td>
+                    <td data-libelle="Format">
+                      <span class="format">{libelleEvent(r.event)}</span>
+                    </td>
+                    <td class="nombre num-tab" data-libelle="Squat" data-valeur={r.bestSquatKg ?? ''}>
+                      <span class="v">
+                        {nombre(r.bestSquatKg)}
+                        {r.bestSquatKg && estRecord(r, 'squat') && <VerifiedBadge detail="Record du squat dans sa catégorie" taille={13} />}
+                      </span>
+                    </td>
+                    <td class="nombre num-tab" data-libelle="Développé couché" data-valeur={r.bestBenchKg ?? ''}>
+                      <span class="v">
+                        {nombre(r.bestBenchKg)}
+                        {r.bestBenchKg && estRecord(r, 'bench') && <VerifiedBadge detail="Record du développé couché dans sa catégorie" taille={13} />}
+                      </span>
+                    </td>
+                    <td class="nombre num-tab" data-libelle="Soulevé de terre" data-valeur={r.bestDeadliftKg ?? ''}>
+                      <span class="v">
+                        {nombre(r.bestDeadliftKg)}
+                        {r.bestDeadliftKg && estRecord(r, 'deadlift') && <VerifiedBadge detail="Record du soulevé de terre dans sa catégorie" taille={13} />}
+                      </span>
+                    </td>
+                    <td class="nombre num-tab" data-libelle="Total" data-valeur={r.event === 'SBD' ? (r.totalKg ?? '') : ''}>
+                      <span class="v">
+                        {r.event === 'SBD' ? nombre(r.totalKg) : '—'}
+                        {r.event === 'SBD' && estRecord(r, 'total') && <VerifiedBadge detail="Record au total dans sa catégorie" taille={13} />}
+                      </span>
+                    </td>
+                    <td class="nombre" data-libelle="Dots" data-valeur={r.event === 'SBD' ? (r.dots ?? '') : ''}>
+                      {r.event === 'SBD' ? points(r.dots) : '—'}
+                    </td>
+                    <td class="nombre" data-libelle="Place" data-valeur={Number.parseInt(r.place, 10) || 999}>
+                      {place(r.place)}
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </InteractiveTable>
 
       <p class="note">
-        Le total et les points Dots ne sont affichés que pour le full power. Sur
-        une compétition de développé couché seul, OpenPowerlifting renseigne un
-        « total » qui vaut simplement la meilleure barre au bench : l'afficher
-        ici laisserait croire à une contre-performance.
+        Le pictogramme bleu signale une barre qui constitue aujourd'hui le
+        record de sa catégorie à La Réunion. Le total et les points Dots
+        concernent le full power : sur une compétition à un seul mouvement, ils
+        reprendraient simplement la barre disputée.
       </p>
     </section>
   </div>
@@ -200,12 +246,6 @@ const description =
   .fil {
     font-size: var(--step--1);
     margin-bottom: var(--space-4);
-  }
-  .fil a {
-    text-decoration: none;
-  }
-  .fil a:hover {
-    text-decoration: underline;
   }
 
   .entete-athlete {
@@ -237,14 +277,12 @@ const description =
     color: var(--muted);
   }
 
-  .lien-opl {
+  .liens-externes {
+    display: grid;
+    gap: var(--space-1);
     font-size: var(--step--1);
     font-weight: 600;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-  .lien-opl:hover {
-    text-decoration: underline;
+    text-align: right;
   }
 
   .stats {
@@ -278,12 +316,6 @@ const description =
     line-height: 1;
   }
 
-  /*
-   * Trois chiffres sur une seule ligne. `nowrap` est indispensable : sans lui,
-   * la valeur passe à la ligne et laisse une barre oblique orpheline en fin de
-   * ligne précédente. La taille est réduite par rapport aux autres chiffres
-   * pour que les trois tiennent dans la colonne, même en mobile.
-   */
   .stats dd.triptyque {
     display: flex;
     align-items: baseline;
@@ -321,9 +353,28 @@ const description =
     padding: var(--space-2) var(--space-3);
   }
 
+  thead {
+    display: none;
+  }
+
+  .competition a {
+    color: var(--text);
+  }
+  .competition a:hover {
+    color: var(--accent);
+  }
+
   .ville {
     display: block;
     color: var(--muted);
+  }
+
+  /* Regroupe la valeur et son badge : sans ce conteneur, la cellule en
+     `space-between` éparpillerait libellé, chiffre et badge sur toute la
+     largeur de la ligne. */
+  .v {
+    display: inline-flex;
+    align-items: center;
   }
 
   .format {
@@ -342,10 +393,6 @@ const description =
 
   /* ---------- Mobile : une carte par compétition ---------- */
   @media (max-width: 61.999rem) {
-    thead {
-      display: none;
-    }
-
     tbody tr {
       display: block;
       padding: var(--space-4);
@@ -377,6 +424,10 @@ const description =
 
   /* ---------- Desktop ---------- */
   @media (min-width: 62rem) {
+    thead {
+      display: table-header-group;
+    }
+
     thead th {
       font-size: var(--step--1);
       font-weight: 600;
@@ -416,5 +467,6 @@ const description =
     margin-top: var(--space-4);
     font-size: var(--step--1);
     color: var(--muted);
+    max-width: 68ch;
   }
 </style>

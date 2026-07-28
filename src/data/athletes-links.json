@@ -1,0 +1,29 @@
+{
+  "_lisezmoi": [
+    "Liens personnels affichés sur les fiches d'athlètes.",
+    "",
+    "Ce fichier s'édite À LA MAIN et reste vide par défaut. Il n'est jamais",
+    "alimenté automatiquement.",
+    "",
+    "IMPORTANT, avant d'ajouter une entrée : les noms et résultats des athlètes",
+    "sont déjà publics puisqu'ils viennent de compétitions officielles. Leurs",
+    "comptes personnels, eux, ne le sont pas au même titre. Rassembler nom,",
+    "performances et réseaux sociaux sur une page dédiée constitue un traitement",
+    "de données personnelles à part entière.",
+    "",
+    "N'ajoute donc un lien qu'avec l'accord explicite de la personne concernée,",
+    "et retire-le sans discuter si elle le demande.",
+    "",
+    "La clé est le slug de l'athlète, celui qui figure dans l'URL de sa fiche.",
+    "Réseaux reconnus : instagram, facebook, youtube, tiktok, strava, site.",
+    "",
+    "Exemple :",
+    "  \"athletes\": {",
+    "    \"prenom-nom\": {",
+    "      \"instagram\": \"https://instagram.com/identifiant\",",
+    "      \"site\": \"https://exemple.re\"",
+    "    }",
+    "  }"
+  ],
+  "athletes": {}
+}
