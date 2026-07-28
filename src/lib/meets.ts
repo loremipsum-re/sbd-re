@@ -51,8 +51,8 @@ export function listeMeets(source: Result[] = results): Meet[] {
   const meets: Meet[] = [];
   for (const { meet, noms, events } of parMeet.values()) {
     meet.athletes = noms.size;
-    // Ordre stable : le full power d'abord quand les deux formats coexistent.
-    meet.events = (['SBD', 'B'] as EventCode[]).filter((e) => events.has(e));
+    // Ordre stable : le full power d'abord quand plusieurs formats coexistent.
+    meet.events = (['SBD', 'B', 'S', 'D'] as EventCode[]).filter((e) => events.has(e));
     meets.push(meet);
   }
 
@@ -62,7 +62,13 @@ export function listeMeets(source: Result[] = results): Meet[] {
 
 /** Libellé lisible d'un format de compétition. */
 export function libelleEvent(event: EventCode): string {
-  return event === 'SBD' ? 'Full power' : 'Développé couché';
+  const libelles: Record<EventCode, string> = {
+    SBD: 'Full power',
+    B: 'Développé couché',
+    S: 'Squat',
+    D: 'Soulevé de terre',
+  };
+  return libelles[event] ?? event;
 }
 
 /** Compétitions groupées par année, pour un affichage en sections. */

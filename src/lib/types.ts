@@ -10,8 +10,13 @@ export type Sex = 'M' | 'F';
  * Format de la compétition.
  *  SBD = squat + développé couché + soulevé de terre (« full power »)
  *  B   = développé couché seul
+ *  S   = squat seul
+ *  D   = soulevé de terre seul
+ *
+ * Seul SBD produit un total comparable. Les trois autres formats servent
+ * uniquement à établir le record du mouvement concerné.
  */
-export type EventCode = 'SBD' | 'B';
+export type EventCode = 'SBD' | 'B' | 'S' | 'D';
 
 export interface Result {
   /** Nom canonique OpenPowerlifting. Peut porter un suffixe « #2 » en cas d'homonymie. */

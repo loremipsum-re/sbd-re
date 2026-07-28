@@ -37,20 +37,28 @@ export interface RecordEntry {
   meetTown: string;
 }
 
-/** Charge retenue pour un mouvement donné, ou null si la ligne ne compte pas. */
+/**
+ * Charge retenue pour un mouvement donné, ou null si la ligne ne compte pas.
+ *
+ * Règle générale : une barre compte dès lors qu'elle a réellement été soulevée,
+ * quel que soit le format de la compétition. Un squat réalisé lors d'une
+ * compétition de squat seul reste un squat.
+ *
+ * L'exception est le TOTAL, qui n'existe qu'en full power. Sur les formats
+ * partiels, OpenPowerlifting renseigne un « total » qui n'est que la somme des
+ * mouvements disputés : le retenir mettrait un bench de 130 kg en concurrence
+ * avec un vrai total de 700 kg.
+ */
 function valeurPour(r: Result, lift: LiftKey): number | null {
-  switch (lift) {
-    case 'squat':
-      return r.event === 'SBD' ? r.bestSquatKg : null;
-    case 'deadlift':
-      return r.event === 'SBD' ? r.bestDeadliftKg : null;
-    case 'total':
-      // Le total n'a de sens qu'en full power : voir l'avertissement en tête.
-      return r.event === 'SBD' ? r.totalKg : null;
-    case 'bench':
-      // Seul mouvement où les compétitions de bench seul comptent.
-      return r.bestBenchKg;
+  if (lift === 'total') {
+    return r.event === 'SBD' ? r.totalKg : null;
   }
+  // Pour les mouvements individuels, la valeur est simplement absente (null)
+  // quand la compétition ne comportait pas ce mouvement : aucun filtre sur
+  // `event` n'est nécessaire, les données s'en chargent.
+  if (lift === 'squat') return r.bestSquatKg;
+  if (lift === 'bench') return r.bestBenchKg;
+  return r.bestDeadliftKg;
 }
 
 /**

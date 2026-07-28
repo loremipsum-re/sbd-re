@@ -27,15 +27,22 @@ const force = process.argv.includes('--force');
 /**
  * Formats de compétition retenus.
  *
- *  SBD = squat + développé couché + soulevé de terre (« full power »).
- *  B   = développé couché seul.
+ *  SBD = full power (squat + développé couché + soulevé de terre)
+ *  B   = développé couché seul
+ *  S   = squat seul
+ *  D   = soulevé de terre seul
  *
- * Le développé couché seul représente 26 des 61 compétitions réunionnaises.
- * L'écarter donnerait un record de bench inférieur à ce qui s'est réellement
- * fait sur l'île. En revanche ces lignes n'ont pas de total comparable : le
- * classement au total devra filtrer sur event === 'SBD' (voir src/lib/).
+ * On garde tous les formats, parce qu'un record doit refléter ce qui a
+ * réellement été soulevé sur l'île. Le développé couché seul représente à lui
+ * seul 26 des 61 compétitions réunionnaises : l'écarter afficherait un record
+ * de bench inférieur à la réalité.
+ *
+ * MAIS ces lignes n'ont pas de total comparable — sur une compétition de bench
+ * seul, OpenPowerlifting renseigne un « total » qui vaut simplement la meilleure
+ * barre. Tout classement au total doit donc filtrer sur event === 'SBD'
+ * (voir src/lib/rankings.ts et src/lib/records.ts).
  */
-const EVENTS_RETENUS = new Set(['SBD', 'B']);
+const EVENTS_RETENUS = new Set(['SBD', 'B', 'S', 'D']);
 
 /**
  * Résultats qui ne comptent pas.
@@ -237,9 +244,8 @@ console.log('');
 console.log(`  Meets retenus ......... ${meetsRetenus.size}`);
 console.log(`  Athlètes distincts .... ${athletes.size}`);
 console.log(`  Résultats ............. ${resultats.length}`);
-for (const [event, n] of [...parEvent].sort()) {
-  const libelle = event === 'SBD' ? 'full power' : event === 'B' ? 'développé couché' : event;
-  console.log(`      dont ${event} (${libelle}) : ${n}`);
+for (const [event, n] of [...parEvent].sort((a, b) => b[1] - a[1])) {
+  console.log(`      dont ${event.padEnd(3)} — ${libelleEvent(event).padEnd(28)} ${n}`);
 }
 console.log(
   `  Période ............... ${dates[0] ?? '—'} → ${dates[dates.length - 1] ?? '—'}`,
