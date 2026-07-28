@@ -1,4 +1,6 @@
 ---
+import InteractiveTable from '../components/InteractiveTable.astro';
+import VerifiedBadge from '../components/VerifiedBadge.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import {
   EQUIPMENT_GROUPS,
@@ -7,22 +9,21 @@ import {
   type EquipmentGroup,
   type WeightClass,
 } from '../lib/categories';
-import { results } from '../lib/data';
 import { annee, kg } from '../lib/format';
 import { equipementsPresents, recordsPour, type RecordEntry } from '../lib/records';
+import { meetSlug } from '../lib/slug';
 import type { LiftKey, Sex } from '../lib/types';
 
 /**
- * Un tableau par couple (sexe × équipement), avec les catégories de poids en
+ * Une grille par couple sexe et équipement, avec les catégories de poids en
  * lignes et les quatre mouvements en colonnes.
  *
  * C'est la forme classique d'un tableau de records, et la plus dense : on lit
- * d'un coup d'œil « chez les hommes, en Raw, en −93 kg, voilà les quatre
- * meilleures barres de l'île ». Les découper mouvement par mouvement
- * donnerait seize tableaux illisibles.
+ * d'un coup d'œil « chez les hommes, en Raw, en 93 kg, voilà les quatre
+ * meilleures barres de l'île ». Découper mouvement par mouvement donnerait
+ * seize grilles illisibles.
  */
 
-// Index unique de tous les records : clé « mouvement|sexe|catégorie|équipement ».
 const index = new Map<string, RecordEntry>();
 for (const lift of LIFTS) {
   for (const rec of recordsPour(lift.id)) {
@@ -36,7 +37,7 @@ const sexes: { id: Sex; label: string }[] = [
   { id: 'F', label: 'Femmes' },
 ];
 
-/** Catégories qui possèdent au moins un record pour ce couple sexe/équipement. */
+/** Catégories possédant au moins un record pour ce couple sexe et équipement. */
 function categoriesUtiles(sex: Sex, equipement: EquipmentGroup): WeightClass[] {
   const vues = new Map<string, WeightClass>();
   for (const lift of LIFTS) {
@@ -48,7 +49,7 @@ function categoriesUtiles(sex: Sex, equipement: EquipmentGroup): WeightClass[] {
   return [...vues.values()].sort(compareWeightClass);
 }
 
-const tableaux = equipements
+const grilles = equipements
   .flatMap((equipement) =>
     sexes.map((sexe) => ({
       equipement,
@@ -56,92 +57,115 @@ const tableaux = equipements
       categories: categoriesUtiles(sexe.id, equipement),
     })),
   )
-  // On n'affiche jamais une section vide : mieux vaut pas de tableau qu'un
-  // tableau de tirets.
+  // Une section vide vaut moins qu'une section absente : mieux vaut aucune
+  // grille qu'une grille de tirets.
   .filter((t) => t.categories.length > 0);
+
+/*
+ * Le compteur du composant dénombre des LIGNES, et une ligne vaut ici une
+ * catégorie de poids, pas un record. Annoncer « 101 records » puis retomber à
+ * « 26 » après une recherche laisserait croire à un bug : on compte donc des
+ * catégories, ce que le tableau affiche réellement.
+ */
+const totalLignes = grilles.reduce((n, g) => n + g.categories.length, 0);
 
 const libelleEquipement = (id: EquipmentGroup) =>
   EQUIPMENT_GROUPS.find((e) => e.id === id)?.label ?? id;
 
-const recordDe = (
-  lift: LiftKey,
-  sex: Sex,
-  categorie: string,
-  equipement: EquipmentGroup,
-) => index.get(`${lift}|${sex}|${categorie}|${equipement}`);
+const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: EquipmentGroup) =>
+  index.get(`${lift}|${sex}|${categorie}|${equipement}`);
 ---
 
 <BaseLayout
-  titre="Records 974"
-  description="Records de force athlétique de La Réunion par mouvement, sexe, catégorie de poids et équipement. Squat, développé couché, soulevé de terre et total."
+  titre="Records de La Réunion"
+  description="Records officiels de force athlétique à La Réunion, par mouvement, sexe, catégorie de poids et équipement. Squat, développé couché, soulevé de terre et total."
 >
   <div class="wrap">
     <header class="entete-page">
-      <h1>Records 974</h1>
+      <h1>Records de La Réunion</h1>
       <p class="chapeau">
-        Meilleure performance jamais réalisée lors d'une compétition
-        réunionnaise, pour chaque catégorie. Le développé couché tient compte
-        des compétitions de bench seul ; squat, soulevé de terre et total ne
-        peuvent venir que du full power.
+        La meilleure performance réalisée lors d'une compétition organisée à
+        La Réunion, pour chaque catégorie. Le développé couché tient compte des
+        compétitions dédiées à ce mouvement. Squat, soulevé de terre et total
+        proviennent du full power, seul format où ces barres se disputent.
+      </p>
+      <p class="chapeau">
+        Cherchez un athlète pour voir tous les records qu'il détient, ou triez
+        une grille en cliquant sur un en-tête.
       </p>
     </header>
 
-    {
-      tableaux.map(({ equipement, sexe, categories }) => (
-        <section class="section">
-          <h2>
-            {sexe.label} <span class="equip">{libelleEquipement(equipement)}</span>
-          </h2>
+    <InteractiveTable
+      recherche="Nom d'athlète, catégorie…"
+      singulier="catégorie"
+      pluriel="catégories"
+      total={totalLignes}
+    >
+      {
+        grilles.map(({ equipement, sexe, categories }) => (
+          <section class="section" data-section-tableau>
+            <h2>
+              {sexe.label} <span class="equip">{libelleEquipement(equipement)}</span>
+            </h2>
 
-          <div class="cadre">
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">Catégorie</th>
-                  {LIFTS.map((l) => (
-                    <th scope="col" class="nombre">
-                      {l.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {categories.map((cat) => (
+            <div class="cadre">
+              <table data-tableau>
+                <thead>
                   <tr>
-                    <th scope="row" class="categorie">
-                      {cat.label}
+                    <th scope="col" data-tri data-type="nombre">
+                      Catégorie
                     </th>
-                    {LIFTS.map((l) => {
-                      const rec = recordDe(l.id, sexe.id, cat.id, equipement);
-                      return (
-                        <td class="nombre" data-libelle={l.label}>
-                          {rec ? (
-                            <>
-                              <span class="valeur num">{kg(rec.valueKg)}</span>
-                              <a class="detenteur" href={`/athlete/${rec.slug}/`}>
-                                {rec.holder}
-                              </a>
-                              <span class="quand">{annee(rec.date)}</span>
-                            </>
-                          ) : (
-                            <span class="absent">—</span>
-                          )}
-                        </td>
-                      );
-                    })}
+                    {LIFTS.map((l) => (
+                      <th scope="col" class="nombre" data-tri data-type="nombre">
+                        {l.label}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ))
-    }
+                </thead>
+                <tbody>
+                  {categories.map((cat) => (
+                    <tr>
+                      <th scope="row" class="categorie" data-valeur={cat.kg}>
+                        {cat.label}
+                      </th>
+                      {LIFTS.map((l) => {
+                        const rec = recordDe(l.id, sexe.id, cat.id, equipement);
+                        return (
+                          <td class="nombre" data-libelle={l.label} data-valeur={rec?.valueKg ?? ''}>
+                            {rec ? (
+                              <>
+                                <span class="valeur num">
+                                  {kg(rec.valueKg)}
+                                  <VerifiedBadge detail={`Record officiel, ${l.label}`} taille={14} />
+                                </span>
+                                <a class="detenteur" href={`/athlete/${rec.slug}/`}>
+                                  {rec.holder}
+                                </a>
+                                <a class="quand" href={`/competitions/${meetSlug(rec.date, rec.meetName)}/`}>
+                                  {annee(rec.date)}
+                                </a>
+                              </>
+                            ) : (
+                              <span class="absent">—</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ))
+      }
+    </InteractiveTable>
 
     <p class="note">
       Un tiret signale une catégorie où aucune performance n'a encore été
-      enregistrée en compétition réunionnaise — la place est libre.
-      {results.length.toLocaleString('fr-FR')} résultats analysés.
+      enregistrée lors d'une compétition réunionnaise : la place est libre. Le
+      pictogramme bleu confirme qu'il s'agit d'un résultat officiel, validé en
+      compétition.
     </p>
   </div>
 </BaseLayout>
@@ -207,16 +231,17 @@ const recordDe = (
     display: block;
     font-size: var(--step--1);
     color: var(--muted);
-    text-decoration: none;
   }
   .detenteur:hover {
     color: var(--accent);
-    text-decoration: underline;
   }
 
   .quand {
     font-size: var(--step--1);
     color: var(--muted);
+  }
+  .quand:hover {
+    color: var(--accent);
   }
 
   .absent {
@@ -226,7 +251,7 @@ const recordDe = (
 
   .categorie {
     font-family: var(--font-display);
-    font-weight: 800;
+    font-weight: 700;
     font-size: var(--step-0);
     white-space: nowrap;
   }
@@ -321,5 +346,6 @@ const recordDe = (
   .note {
     font-size: var(--step--1);
     color: var(--muted);
+    max-width: 68ch;
   }
 </style>

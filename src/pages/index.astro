@@ -1,4 +1,5 @@
 ---
+import InteractiveTable from '../components/InteractiveTable.astro';
 import RankingTable from '../components/RankingTable.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import nextMeet from '../data/next-meet.json';
@@ -14,11 +15,11 @@ const { debut, fin } = periode();
 /**
  * L'annonce disparaît d'elle-même une fois la date passée.
  *
- * « Aujourd'hui » est ici la date de BUILD, pas celle de la visite : sur un
+ * « Aujourd'hui » est ici la date de BUILD, et non celle de la visite : sur un
  * site statique, la page est calculée une fois pour toutes. Le site étant
  * reconstruit chaque mois, une compétition passée peut donc rester affichée
- * jusqu'à quelques semaines. C'est le compromis assumé du statique — et la
- * raison pour laquelle on annonce une date, jamais un « demain ».
+ * quelques semaines. C'est le compromis assumé du statique, et la raison pour
+ * laquelle on annonce une date plutôt qu'un « demain ».
  */
 const aujourdhui = new Date().toISOString().slice(0, 10);
 const annonce = nextMeet.annonce && nextMeet.date >= aujourdhui ? nextMeet : null;
@@ -32,25 +33,24 @@ const stats = [
 ---
 
 <BaseLayout
-  titre="Classements et records du powerlifting réunionnais"
-  titreOnglet="SBD.re — Powerlifting La Réunion"
-  description="Classements et records de force athlétique de La Réunion, établis à partir des seuls résultats officiels de compétition. Squat, développé couché, soulevé de terre."
+  titre="Classement des powerlifters à La Réunion"
+  titreOnglet="SBD.re - Classement des Powerlifters à La Réunion"
+  description="Classements et records de force athlétique à La Réunion. Le classement officiel réunit les résultats homologués de compétition, destiné aux athlètes confirmés et aux clubs. Le classement communauté accueille les performances déclarées en salle, ouvert à tous les pratiquants."
 >
   <section class="hero wrap">
-    <p class="surtitre">Force athlétique · La Réunion · 974</p>
+    <p class="surtitre">Force athlétique à La Réunion</p>
     <h1>
       Les records de l'île,<br />
       <span class="accent">sur la barre.</span>
     </h1>
     <p class="chapeau">
-      Classements et records établis uniquement à partir des résultats officiels
-      de compétition. Pas de déclaratif, pas d'approximation — ce qui a été
-      soulevé sur le plateau.
+      Chaque chiffre publié ici provient d'une compétition officielle, validé
+      par trois juges sur le plateau et enregistré par la fédération.
     </p>
 
     <div class="actions">
-      <a class="bouton primaire" href="/classement/">Voir le classement</a>
-      <a class="bouton" href="/records/">Les records 974</a>
+      <a class="bouton primaire lien-nu" href="/classement/">Voir le classement</a>
+      <a class="bouton lien-nu" href="/records/">Les records de La Réunion</a>
     </div>
 
     <dl class="stats">
@@ -73,8 +73,8 @@ const stats = [
           <h2>{annonce.nom}</h2>
           <p class="detail">
             {dateLongue(annonce.date)}
-            {annonce.ville && <> · {annonce.ville}</>}
-            {annonce.lieu && <> · {annonce.lieu}</>}
+            {annonce.ville && <> à {annonce.ville}</>}
+            {annonce.lieu && <>, {annonce.lieu}</>}
           </p>
           {annonce.url && (
             <a href={annonce.url} rel="noopener">
@@ -91,15 +91,17 @@ const stats = [
       <div>
         <h2>Top 10 toutes catégories</h2>
         <p class="fin">
-          Classé aux points Dots, qui rapportent le total au poids de corps —
-          la seule façon de comparer un athlète de 59 kg à un athlète de 120 kg.
-          Full power uniquement.
+          Classé aux points Dots, qui rapportent le total soulevé au poids de
+          corps. C'est ce calcul qui permet de placer un athlète de 59 kg et un
+          athlète de 120 kg sur la même échelle. Full power uniquement.
         </p>
       </div>
-      <a class="lien-plus" href="/classement/">Classement complet →</a>
+      <a class="lien-plus lien-nu" href="/classement/">Classement complet →</a>
     </header>
 
-    <RankingTable entries={top} miseEnAvant="dots" />
+    <InteractiveTable>
+      <RankingTable entries={top} miseEnAvant="dots" />
+    </InteractiveTable>
   </section>
 
   <section class="wrap bloc">
@@ -107,12 +109,13 @@ const stats = [
       <div>
         <h2>Et hors compétition ?</h2>
         <p class="fin">
-          Le classement communauté accueille les performances réalisées en salle
-          et les compétitions non homologuées. Séparé du classement officiel,
-          il ne s'y mélange jamais.
+          Le classement communauté accueille les performances réalisées en
+          salle et les compétitions locales non homologuées. Il vit dans son
+          propre espace, ce qui laisse au classement officiel toute sa valeur
+          de référence.
         </p>
       </div>
-      <a class="bouton" href="/communaute/">Découvrir le classement communauté</a>
+      <a class="bouton lien-nu" href="/communaute/">Découvrir le classement communauté</a>
     </div>
   </section>
 </BaseLayout>
@@ -160,7 +163,6 @@ const stats = [
     background: var(--surface);
     color: var(--text);
     font-weight: 600;
-    text-decoration: none;
   }
   .bouton:hover {
     border-color: var(--accent);
@@ -233,8 +235,8 @@ const stats = [
 
   .lien-plus {
     font-weight: 600;
-    text-decoration: none;
     white-space: nowrap;
+    color: var(--accent);
   }
   .lien-plus:hover {
     text-decoration: underline;

@@ -104,7 +104,7 @@ const meilleur = coordonnees.reduce((a, b) => (b.value > a.value ? b : a), coord
             r={p === meilleur ? 5 : 3.5}
           >
             <title>
-              {dateCourte(p.date)} — {kg(p.value)}
+              {dateCourte(p.date)} · {kg(p.value)}
               {p.label ? ` · ${p.label}` : ''}
             </title>
           </circle>
@@ -120,7 +120,7 @@ const meilleur = coordonnees.reduce((a, b) => (b.value > a.value ? b : a), coord
         )}
       </svg>
       <figcaption>
-        {legende} — {tries.length} compétition{tries.length > 1 ? 's' : ''}, meilleure
+        {legende} sur {tries.length} compétition{tries.length > 1 ? 's' : ''}. Meilleure
         marque {kg(max)}.
       </figcaption>
     </figure>
