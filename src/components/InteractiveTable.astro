@@ -185,6 +185,41 @@ const aFiltres = Astro.slots.has('filtres');
       }
     }
 
+    /*
+     * Les filtres se lisent et s'écrivent dans l'adresse de la page.
+     *
+     * Deux bénéfices concrets. Un état filtré devient partageable par simple
+     * copier-coller du lien. Et les badges d'une fiche d'athlète peuvent
+     * pointer vers le classement déjà filtré sur sa catégorie, sans qu'aucune
+     * page supplémentaire ait besoin d'être générée.
+     */
+    function lireAdresse() {
+      const params = new URLSearchParams(location.search);
+      for (const select of selects) {
+        const valeur = params.get(select.dataset.filtre!);
+        // On ignore une valeur inconnue plutôt que de vider le filtre : une
+        // adresse trafiquée ne doit pas casser la page.
+        if (valeur !== null && [...select.options].some((o) => o.value === valeur)) {
+          select.value = valeur;
+        }
+      }
+      const q = params.get('q');
+      if (q !== null && champ) champ.value = q;
+    }
+
+    function ecrireAdresse() {
+      const params = new URLSearchParams();
+      for (const select of selects) {
+        if (select.value) params.set(select.dataset.filtre!, select.value);
+      }
+      if (champ?.value) params.set('q', champ.value);
+      const requete = params.toString();
+      // `replaceState` et non `pushState` : chaque frappe dans la recherche
+      // ajouterait sinon une entrée dans l'historique, et le bouton Retour
+      // deviendrait inutilisable.
+      history.replaceState(null, '', requete ? `?${requete}` : location.pathname);
+    }
+
     function estVisible(ligne: HTMLTableRowElement, requete: string): boolean {
       for (const select of selects) {
         const cle = select.dataset.filtre!;
@@ -302,14 +337,25 @@ const aFiltres = Astro.slots.has('filtres');
       });
     }
 
-    champ?.addEventListener('input', appliquer);
+    const interactif = selects.length > 0 || champ !== null;
+
+    champ?.addEventListener('input', () => {
+      appliquer();
+      ecrireAdresse();
+    });
     for (const select of selects) {
       select.addEventListener('change', () => {
         ajusterOptions();
         appliquer();
+        ecrireAdresse();
       });
     }
+
+    if (interactif) lireAdresse();
     ajusterOptions();
+    // Un état venu de l'adresse doit être appliqué immédiatement, sans quoi la
+    // page s'afficherait complète alors que les filtres annoncent autre chose.
+    if (interactif && location.search) appliquer();
 
     // Rend visibles les outils, qui restent masqués sans JavaScript pour ne pas
     // proposer des commandes inopérantes.

@@ -36,6 +36,23 @@ const categories = [...sexesParClasse.entries()]
 
 const equipements = equipementsPresents(fullPowerResults);
 const libelleEquipement = (id: EquipmentGroup) => EQUIPMENT_GROUPS.find((e) => e.id === id)!;
+
+/**
+ * Divisions et tranches d'âge, tirées du classement affiché.
+ *
+ * Les deux notions se recouvrent sans se confondre. La DIVISION est fédérale
+ * et dépend de l'année de naissance : un athlète reste « Juniors » toute sa
+ * saison. La TRANCHE D'ÂGE est l'âge réel au moment du plateau. Filtrer sur
+ * l'une ou sur l'autre ne donne pas le même résultat, d'où deux filtres.
+ */
+const divisions = [...new Set(classement.map((e) => e.division).filter(Boolean))].sort(
+  (a, b) => a.localeCompare(b, 'fr'),
+);
+
+const tranchesAge = [...new Set(classement.map((e) => e.ageClass).filter(Boolean))].sort(
+  // Tri numérique sur la borne basse : sans lui, « 5-12 » passerait après « 45-49 ».
+  (a, b) => Number.parseInt(a, 10) - Number.parseInt(b, 10),
+);
 ---
 
 <BaseLayout
@@ -93,6 +110,22 @@ const libelleEquipement = (id: EquipmentGroup) => EQUIPMENT_GROUPS.find((e) => e
           <select id="f-equipement" data-filtre="equipement">
             <option value="">Tous</option>
             {equipements.map((e) => <option value={e}>{libelleEquipement(e).label}</option>)}
+          </select>
+        </div>
+
+        <div class="champ">
+          <label for="f-division">Division</label>
+          <select id="f-division" data-filtre="division">
+            <option value="">Toutes</option>
+            {divisions.map((d) => <option value={d}>{d}</option>)}
+          </select>
+        </div>
+
+        <div class="champ">
+          <label for="f-age">Âge</label>
+          <select id="f-age" data-filtre="age">
+            <option value="">Tous</option>
+            {tranchesAge.map((a) => <option value={a}>{a} ans</option>)}
           </select>
         </div>
       </Fragment>
