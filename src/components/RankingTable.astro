@@ -1,18 +1,24 @@
 ---
 /**
- * Tableau de classement.
+ * Classement des athlètes, en cartes de quatre lignes.
  *
- * Deux mises en forme pour le même balisage : cartes empilées en mobile,
- * tableau à partir de 48rem. Le balisage reste un <table> dans les deux cas.
+ *   🏆  Gabriel Begue ✓
+ *       Raw • 9 comp. locales • 20 hors département
+ *       93 kg • 91,3 kg • 24-34 ans
+ *       782,5 kg • 502,4 Dots • 17/12/2022
  *
- * La colonne de rang mérite une attention particulière. Elle contient à la
- * fois un numéro et une coupe, et le script de tri recalcule le podium à
- * chaque interaction. Le numéro vit donc dans son propre `.rang-num`, et la
- * couleur passe par des attributs sur la cellule, jamais par un remplacement
- * du pictogramme.
+ * Le balisage reste un <table>, et l'en-tête existe toujours : simplement,
+ * il n'est visible que des lecteurs d'écran. Ce sont des données tabulaires,
+ * et les transformer en <div> ferait perdre le lien entre une valeur et son
+ * intitulé pour qui navigue à l'oreille.
+ *
+ * Conséquence directe de cet affichage : les valeurs de tri vivent sur la
+ * LIGNE, dans des attributs `data-`, et non plus dans les cellules. Trois
+ * valeurs cohabitent par ligne, l'index de colonne ne veut donc plus rien dire.
+ * Les en-têtes portent `data-cle` pour indiquer où lire.
  */
 import { equipmentLabel, parseWeightClass } from '../lib/categories';
-import { kg, nombre, points } from '../lib/format';
+import { dateCourte, kg, nombre, points } from '../lib/format';
 import type { AthleteRanking } from '../lib/rankings';
 import { meetPath } from '../lib/slug';
 import BadgeOfficiel from './BadgeOfficiel.astro';
@@ -20,25 +26,28 @@ import Coupe from './Coupe.astro';
 
 interface Props {
   entries: AthleteRanking[];
-  miseEnAvant?: 'total' | 'dots';
   id?: string;
 }
 
-const { entries, miseEnAvant = 'total', id } = Astro.props;
+const { entries, id } = Astro.props;
 const METAUX = ['or', 'argent', 'bronze'] as const;
 ---
 
 <div class="cadre">
   <table id={id} data-tableau>
-    <thead>
+    <thead class="sr-only">
       <tr>
-        <th scope="col" class="rang">#</th>
-        <th scope="col" data-tri>Athlète</th>
-        <th scope="col" class="nombre" data-tri data-type="nombre">Cat.</th>
-        <th scope="col" class="nombre" data-tri data-type="nombre">Poids</th>
-        <th scope="col" class="nombre" data-tri data-type="nombre">Total</th>
-        <th scope="col" class="nombre" data-tri data-type="nombre">Dots</th>
-        <th scope="col" class="masquer-mobile" data-tri>Compétition</th>
+        <th scope="col" data-tri data-cle="nom">Nom</th>
+        <th scope="col" data-tri data-cle="total" data-type="nombre">Total</th>
+        <th scope="col" data-tri data-cle="dots" data-type="nombre">Dots</th>
+        {/*
+          `triCategorie` et non `categorie` : le filtre par catégorie lit déjà
+          `data-categorie`, qui porte la valeur brute (« 120+ »). Le tri, lui,
+          a besoin de la borne numérique. Deux usages, deux attributs.
+        */}
+        <th scope="col" data-tri data-cle="triCategorie" data-type="nombre">Catégorie</th>
+        <th scope="col" data-tri data-cle="poids" data-type="nombre">Poids de corps</th>
+        <th scope="col" data-tri data-cle="competitions" data-type="nombre">Compétitions</th>
       </tr>
     </thead>
     <tbody>
@@ -48,6 +57,12 @@ const METAUX = ['or', 'argent', 'bronze'] as const;
           return (
             <tr
               data-recherche={e.name}
+              data-nom={e.name}
+              data-total={e.totalKg}
+              data-dots={e.dots}
+              data-tri-categorie={classe?.kg ?? ''}
+              data-poids={e.bodyweightKg ?? ''}
+              data-competitions={e.competitions + e.competitionsExterieur}
               data-sexe={e.sex}
               data-categorie={e.weightClassKg}
               data-equipement={e.equipmentGroup}
@@ -60,42 +75,36 @@ const METAUX = ['or', 'argent', 'bronze'] as const;
                 data-niveau={i < 50 ? 'haut' : 'bas'}
               >
                 <span class="rang-num">{i + 1}</span>
-                <Coupe detail={`${i + 1}e du classement`} taille={19} />
+                <Coupe detail={`${i + 1}e du classement`} taille={26} />
               </td>
-              <th scope="row" class="athlete">
-                <span class="nom-ligne">
-                  <a href={`/athlete/${e.slug}/`}>{e.name}</a>
-                  <BadgeOfficiel taille={13} />
-                </span>
-                <span class="meta">
-                  {equipmentLabel(e.equipmentGroup)} · {e.competitions} compét.
-                </span>
+
+              <th scope="row" class="nom">
+                <a href={`/athlete/${e.slug}/`}>{e.name}</a>
+                <BadgeOfficiel taille={14} />
               </th>
-              <td class="nombre" data-libelle="Catégorie" data-valeur={classe?.kg ?? ''}>
-                {e.weightClassKg ? `${e.weightClassKg} kg` : '—'}
+
+              <td class="ligne contexte">
+                <span>{equipmentLabel(e.equipmentGroup)}</span>
+                <span>
+                  {e.competitions} comp. locale{e.competitions > 1 ? 's' : ''}
+                </span>
+                <span>
+                  {e.competitionsExterieur} hors département
+                </span>
               </td>
-              <td class="nombre" data-libelle="Poids de corps" data-valeur={e.bodyweightKg ?? ''}>
-                {nombre(e.bodyweightKg)}
+
+              <td class="ligne physique">
+                <span>{e.weightClassKg ? `${e.weightClassKg} kg` : 'catégorie inconnue'}</span>
+                <span>{nombre(e.bodyweightKg)} kg</span>
+                <span>{e.ageClass ? `${e.ageClass} ans` : 'âge inconnu'}</span>
               </td>
-              <td
-                class="nombre num-tab"
-                data-libelle="Total"
-                data-valeur={e.totalKg}
-                data-fort={miseEnAvant === 'total'}
-              >
-                {kg(e.totalKg)}
-              </td>
-              <td
-                class="nombre num-tab"
-                data-libelle="Dots"
-                data-valeur={e.dots}
-                data-fort={miseEnAvant === 'dots'}
-              >
-                {points(e.dots)}
-              </td>
-              <td class="masquer-mobile competition">
-                <a href={`/competitions/${meetPath(e.date, e.meetName)}/`}>{e.meetName}</a>
-                <span class="meta">{e.date.slice(0, 4)}</span>
+
+              <td class="ligne perf">
+                <span class="fort num-tab">{kg(e.totalKg)}</span>
+                <span class="fort num-tab">{points(e.dots)} Dots</span>
+                <a href={`/competitions/${meetPath(e.dotsDate, e.dotsMeetName)}/`}>
+                  {dateCourte(e.dotsDate)}
+                </a>
               </td>
             </tr>
           );
@@ -104,7 +113,7 @@ const METAUX = ['or', 'argent', 'bronze'] as const;
     </tbody>
   </table>
 
-  {entries.length === 0 && <p class="vide">Aucun résultat pour ces critères.</p>}
+  {entries.length === 0 && <p class="vide">Aucun athlète pour ces critères.</p>}
 </div>
 
 <style>
@@ -118,17 +127,6 @@ const METAUX = ['or', 'argent', 'bronze'] as const;
   table {
     width: 100%;
     border-collapse: collapse;
-    font-size: var(--step--1);
-  }
-
-  thead {
-    display: none;
-  }
-
-  th,
-  td {
-    text-align: left;
-    padding: var(--space-2) var(--space-3);
   }
 
   .vide {
@@ -138,12 +136,41 @@ const METAUX = ['or', 'argent', 'bronze'] as const;
     margin: 0;
   }
 
-  /* ---------- Colonne de rang ---------- */
+  /* ---------- La carte ---------- */
+  tbody tr {
+    display: grid;
+    grid-template-columns: 3.25rem 1fr;
+    grid-template-areas:
+      'rang nom'
+      'rang contexte'
+      'rang physique'
+      'rang perf';
+    gap: var(--space-1) var(--space-3);
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr:last-child {
+    border-bottom: 0;
+  }
+  tbody tr:hover {
+    background: color-mix(in srgb, var(--accent) 5%, transparent);
+  }
+
+  td,
+  th {
+    padding: 0;
+    text-align: left;
+  }
+
   .rang {
+    grid-area: rang;
+    align-self: start;
+    padding-top: 0.1em;
     font-family: var(--font-display);
     font-weight: 700;
+    font-size: var(--step-2);
+    line-height: 1;
     font-variant-numeric: tabular-nums;
-    white-space: nowrap;
   }
 
   /* Les cinquante premiers en doré, les suivants en gris. */
@@ -176,117 +203,71 @@ const METAUX = ['or', 'argent', 'bronze'] as const;
     color: var(--bronze);
   }
 
-  /* ---------- Mobile : une carte par athlète ---------- */
-  @media (max-width: 47.999rem) {
-    tbody tr {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: var(--space-1) var(--space-3);
-      padding: var(--space-3);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .rang {
-      grid-row: 1 / 3;
-      align-self: center;
-      font-size: var(--step-1);
-    }
-
-    .athlete {
-      padding: 0;
-    }
-
-    td.nombre {
-      display: flex;
-      justify-content: space-between;
-      grid-column: 2;
-      padding: 0;
-      color: var(--muted);
-    }
-
-    td.nombre::before {
-      content: attr(data-libelle);
-    }
-
-    td[data-fort='true'] {
-      color: var(--text);
-      font-size: var(--step-0);
-    }
-
-    .masquer-mobile {
-      display: none;
-    }
-  }
-
-  /* ---------- Desktop : tableau classique ---------- */
-  @media (min-width: 48rem) {
-    thead {
-      display: table-header-group;
-    }
-
-    thead th {
-      font-size: var(--step--1);
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-
-    tbody tr {
-      border-bottom: 1px solid var(--border);
-    }
-    tbody tr:last-child {
-      border-bottom: 0;
-    }
-    tbody tr:hover {
-      background: color-mix(in srgb, var(--accent) 6%, transparent);
-    }
-
-    td.nombre,
-    th.nombre {
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
-
-    td[data-fort='true'] {
-      font-size: var(--step-0);
-    }
-  }
-
-  .athlete {
-    font-weight: 600;
-  }
-
-  .nom-ligne {
-    display: inline-flex;
+  .nom {
+    grid-area: nom;
+    display: flex;
     align-items: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--step-1);
+    line-height: 1.15;
   }
-
-  .athlete a {
+  .nom a {
     color: var(--text);
   }
-  .athlete a:hover {
+  .nom a:hover {
     color: var(--accent);
   }
 
-  .meta {
-    display: block;
+  /* Les trois lignes d'information, séparées par des puces. */
+  .ligne {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-2);
     font-size: var(--step--1);
-    font-weight: 400;
     color: var(--muted);
   }
 
-  .competition a {
-    display: block;
-    max-width: 22ch;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--text);
+  .contexte {
+    grid-area: contexte;
   }
-  .competition a:hover {
+  .physique {
+    grid-area: physique;
+  }
+  .perf {
+    grid-area: perf;
+    margin-top: var(--space-1);
+  }
+
+  /* Le séparateur est décoratif : il vit dans le CSS pour ne pas polluer le
+     texte lu par un lecteur d'écran, ni la recherche. */
+  .ligne > *:not(:last-child)::after {
+    content: '•';
+    margin-left: var(--space-2);
+    color: var(--border);
+  }
+
+  .fort {
+    color: var(--text);
+    font-weight: 700;
+    font-size: var(--step-0);
+  }
+
+  .perf a {
+    color: var(--muted);
+  }
+  .perf a:hover {
     color: var(--accent);
+  }
+
+  @media (min-width: 40rem) {
+    tbody tr {
+      grid-template-columns: 4rem 1fr;
+      padding: var(--space-4) var(--space-6);
+    }
+    .rang {
+      font-size: var(--step-3);
+    }
   }
 </style>

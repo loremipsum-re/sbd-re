@@ -80,6 +80,7 @@ const tranchesAge = [...new Set(classement.map((e) => e.ageClass).filter(Boolean
       singulier="athlète"
       pluriel="athlètes"
       total={classement.length}
+      barreDeTri
     >
       <Fragment slot="filtres">
         <div class="champ">
@@ -130,7 +131,7 @@ const tranchesAge = [...new Set(classement.map((e) => e.ageClass).filter(Boolean
         </div>
       </Fragment>
 
-      <RankingTable entries={classement} id="classement" miseEnAvant="total" />
+      <RankingTable entries={classement} id="classement" />
     </InteractiveTable>
 
     <p class="note">

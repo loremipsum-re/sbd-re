@@ -1,5 +1,4 @@
 ---
-import InteractiveTable from '../components/InteractiveTable.astro';
 import RankingTable from '../components/RankingTable.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import nextMeet from '../data/next-meet.json';
@@ -100,9 +99,7 @@ const stats = [
       <a class="lien-plus lien-nu" href="/classement/">Classement complet →</a>
     </header>
 
-    <InteractiveTable>
-      <RankingTable entries={top} miseEnAvant="dots" />
-    </InteractiveTable>
+    <RankingTable entries={top} />
   </section>
 
   <section class="wrap bloc">

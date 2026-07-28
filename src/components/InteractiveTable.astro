@@ -32,9 +32,15 @@ interface Props {
   pluriel?: string;
   /** Nombre d'éléments au chargement, avant toute interaction. */
   total?: number;
+  /**
+   * Affiche une barre « Trier par » au-dessus de la liste, construite à partir
+   * des en-têtes du tableau. Nécessaire dès que la liste s'affiche en cartes :
+   * sans colonnes visibles, il n'y a plus d'en-tête à cliquer.
+   */
+  barreDeTri?: boolean;
 }
 
-const { recherche, singulier = 'résultat', pluriel, total } = Astro.props;
+const { recherche, singulier = 'résultat', pluriel, total, barreDeTri } = Astro.props;
 const plurielFinal = pluriel ?? `${singulier}s`;
 const aFiltres = Astro.slots.has('filtres');
 ---
@@ -69,6 +75,16 @@ const aFiltres = Astro.slots.has('filtres');
         <p class="compteur" aria-live="polite" data-compteur>
           {total !== undefined && `${total} ${total > 1 ? plurielFinal : singulier}`}
         </p>
+      </div>
+    )
+  }
+
+  {
+    barreDeTri && (
+      /* `hidden` par défaut : sans JavaScript, ces boutons ne feraient rien.
+         Le script le retire une fois la barre construite. */
+      <div class="barre-tri" data-barre-tri hidden>
+        <span class="intitule">Trier par</span>
       </div>
     )
   }
@@ -139,17 +155,33 @@ const aFiltres = Astro.slots.has('filtres');
     let colonneTri: number | null = null;
     let sensAscendant = true;
 
+    /*
+     * Où le tri va chercher sa valeur, par ordre de préférence :
+     *
+     *   1. `ligne.dataset[cle]` si l'en-tête déclare `data-cle`. Indispensable
+     *      pour un affichage en cartes, où plusieurs valeurs cohabitent dans
+     *      une même cellule et où l'index de colonne ne veut plus rien dire.
+     *   2. `cellule.dataset.valeur`, la valeur exacte du tableau classique.
+     *   3. le texte affiché, en dernier recours.
+     */
+    const clesParColonne = new Map(
+      entetes.filter((e) => e.dataset.cle).map((e) => [e.cellIndex, e.dataset.cle!]),
+    );
+
     function valeurCellule(ligne: HTMLTableRowElement, index: number): string | number {
-      const cellule = ligne.cells[index];
-      if (!cellule) return '';
-      const brut = cellule.dataset.valeur ?? cellule.textContent ?? '';
+      const cle = clesParColonne.get(index);
+      const brut =
+        cle !== undefined
+          ? (ligne.dataset[cle] ?? '')
+          : (ligne.cells[index]?.dataset.valeur ?? ligne.cells[index]?.textContent ?? '');
+
       if (colonnesNumeriques.has(index)) {
-        // Une cellule vide (« — ») doit finir en queue de classement, jamais en
-        // tête : -Infinity l'y envoie quel que soit le sens du tri.
-        const n = Number.parseFloat(brut.replace(',', '.'));
+        // Une valeur absente doit finir en queue de classement, jamais en tête :
+        // -Infinity l'y envoie quel que soit le sens du tri.
+        const n = Number.parseFloat(String(brut).replace(',', '.'));
         return Number.isFinite(n) ? n : Number.NEGATIVE_INFINITY;
       }
-      return normaliser(brut);
+      return normaliser(String(brut));
     }
 
     /**
@@ -300,6 +332,32 @@ const aFiltres = Astro.slots.has('filtres');
       }
     }
 
+    /** Applique un tri et met à jour l'état annoncé aux lecteurs d'écran. */
+    function trierPar(index: number, entete: HTMLTableCellElement) {
+      if (colonneTri === index) sensAscendant = !sensAscendant;
+      else {
+        colonneTri = index;
+        // Les colonnes numériques partent en décroissant : sur un classement,
+        // c'est le plus gros total qu'on veut voir en premier.
+        sensAscendant = entete.dataset.type !== 'nombre';
+      }
+      // Quand le bloc contient plusieurs grilles de même structure, elles sont
+      // triées ensemble : leurs en-têtes de même rang doivent afficher le même
+      // état, sans quoi un lecteur d'écran annoncerait un tri partiel.
+      for (const autre of entetes) {
+        autre.setAttribute(
+          'aria-sort',
+          autre.cellIndex === index ? (sensAscendant ? 'ascending' : 'descending') : 'none',
+        );
+      }
+      for (const b of barre?.querySelectorAll<HTMLButtonElement>('[data-index]') ?? []) {
+        const actif = Number(b.dataset.index) === index;
+        b.setAttribute('aria-pressed', String(actif));
+        b.dataset.sens = actif ? (sensAscendant ? 'asc' : 'desc') : '';
+      }
+      appliquer();
+    }
+
     // ----- Tri par clic sur l'en-tête -----
     for (const entete of entetes) {
       const index = entete.cellIndex;
@@ -315,26 +373,28 @@ const aFiltres = Astro.slots.has('filtres');
       entete.appendChild(bouton);
       entete.setAttribute('aria-sort', 'none');
 
-      bouton.addEventListener('click', () => {
-        if (colonneTri === index) sensAscendant = !sensAscendant;
-        else {
-          colonneTri = index;
-          // Les colonnes numériques partent en décroissant : sur un classement,
-          // c'est le plus gros total qu'on veut voir en premier.
-          sensAscendant = entete.dataset.type !== 'nombre';
-        }
-        // Quand le bloc contient plusieurs grilles de même structure, elles
-        // sont triées ensemble : leurs en-têtes de même rang doivent donc
-        // afficher le même état, sans quoi un lecteur d'écran annoncerait un
-        // tri sur une seule grille.
-        for (const autre of entetes) {
-          autre.setAttribute(
-            'aria-sort',
-            autre.cellIndex === index ? (sensAscendant ? 'ascending' : 'descending') : 'none',
-          );
-        }
-        appliquer();
-      });
+      bouton.addEventListener('click', () => trierPar(index, entete));
+    }
+
+    /*
+     * Barre « Trier par », construite à partir des mêmes en-têtes.
+     *
+     * Elle prend le relais quand la liste s'affiche en cartes : sans colonnes
+     * visibles, il n'y a plus d'en-tête à cliquer. Les deux mécanismes
+     * partagent exactement la même logique de tri.
+     */
+    const barre = bloc.querySelector<HTMLElement>('[data-barre-tri]');
+    if (barre && entetes.length > 0) {
+      for (const entete of entetes) {
+        const bouton = document.createElement('button');
+        bouton.type = 'button';
+        bouton.dataset.index = String(entete.cellIndex);
+        bouton.setAttribute('aria-pressed', 'false');
+        bouton.innerHTML = `<span>${entete.textContent?.trim() ?? ''}</span><span class="fleche" aria-hidden="true"></span>`;
+        bouton.addEventListener('click', () => trierPar(entete.cellIndex, entete));
+        barre.appendChild(bouton);
+      }
+      barre.hidden = false;
     }
 
     const interactif = selects.length > 0 || champ !== null;
@@ -417,6 +477,61 @@ const aFiltres = Astro.slots.has('filtres');
     font-variant-numeric: tabular-nums;
     color: var(--accent);
     white-space: nowrap;
+  }
+
+  .barre-tri {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+
+  .barre-tri[hidden] {
+    display: none;
+  }
+
+  .intitule {
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .barre-tri :global(button) {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--muted);
+    font: inherit;
+    font-size: var(--step--1);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .barre-tri :global(button:hover) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .barre-tri :global(button[aria-pressed='true']) {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+  }
+
+  /* La flèche n'apparaît que sur le critère actif, et indique le sens. */
+  .barre-tri :global(button .fleche)::after {
+    content: '';
+  }
+  .barre-tri :global(button[data-sens='asc'] .fleche)::after {
+    content: '↑';
+  }
+  .barre-tri :global(button[data-sens='desc'] .fleche)::after {
+    content: '↓';
   }
 
   /* Les en-têtes deviennent des boutons : on annule tout le style natif. */
