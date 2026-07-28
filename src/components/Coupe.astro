@@ -1,0 +1,78 @@
+---
+/**
+ * Coupe de vainqueur.
+ *
+ * Deux usages : signaler un record en cours, et distinguer les trois premiers
+ * du classement des athlètes. Le métal se choisit par la propriété `metal` ;
+ * sans elle, la coupe prend la couleur d'or, celle du vainqueur.
+ */
+
+import type { Metal } from '../lib/types';
+
+interface Props {
+  metal?: Metal;
+  taille?: number;
+  detail?: string;
+}
+
+const { metal, taille = 16, detail } = Astro.props;
+
+const LIBELLES: Record<Metal, string> = {
+  or: 'Première place',
+  argent: 'Deuxième place',
+  bronze: 'Troisième place',
+};
+
+const texte = detail ?? (metal ? LIBELLES[metal] : 'Record');
+
+/*
+ * Sans `metal`, la coupe prend la couleur de son parent via `currentColor`.
+ * C'est indispensable dans la colonne de rang du classement : le script de tri
+ * y recalcule le podium à chaque interaction, et il pilote la couleur par un
+ * attribut sur la cellule plutôt qu'en remplaçant le pictogramme.
+ */
+const classes = ['coupe', metal ? `metal-${metal}` : 'metal-herite'];
+---
+
+<span class={classes.join(' ')} title={texte}>
+  <svg width={taille} height={taille} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path
+      d="M6 3h12v4.2a6 6 0 0 1-12 0V3z"
+      fill="currentColor"></path>
+    <path
+      d="M6 4.5H3.6v1.7A3.4 3.4 0 0 0 7 9.6M18 4.5h2.4v1.7A3.4 3.4 0 0 1 17 9.6"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.7"
+      stroke-linecap="round"></path>
+    <path
+      d="M12 13.2v3.6M8.6 20.8h6.8"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"></path>
+    <path d="M8 18.4h8v2.4H8z" fill="currentColor"></path>
+  </svg>
+  <span class="sr-only">{texte}</span>
+</span>
+
+<style>
+  .coupe {
+    display: inline-flex;
+    vertical-align: -0.17em;
+    margin-left: 0.3em;
+  }
+
+  .metal-or {
+    color: var(--or);
+  }
+  .metal-argent {
+    color: var(--argent);
+  }
+  .metal-bronze {
+    color: var(--bronze);
+  }
+  .metal-herite {
+    color: inherit;
+  }
+</style>

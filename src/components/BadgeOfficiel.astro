@@ -1,0 +1,43 @@
+---
+/**
+ * Coche signalant un compétiteur officiel, c'est-à-dire dont les performances
+ * proviennent d'une compétition homologuée.
+ *
+ * Volontairement discrète : elle reprend la couleur du texte qu'elle
+ * accompagne au lieu d'imposer la sienne. Sur les pages officielles, elle
+ * accompagne chaque nom ; son intérêt se révélera surtout face au classement
+ * communauté, où les performances déclarées en seront dépourvues.
+ */
+
+interface Props {
+  taille?: number;
+  detail?: string;
+}
+
+const { taille = 15, detail = 'Compétiteur officiel' } = Astro.props;
+---
+
+<span class="badge" title={detail}>
+  <svg width={taille} height={taille} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <circle cx="12" cy="12" r="10.5" fill="none" stroke="currentColor" stroke-width="1.6"></circle>
+    <path
+      d="M7.5 12.4l3.1 3.1L16.8 9"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.2"
+      stroke-linecap="round"
+      stroke-linejoin="round"></path>
+  </svg>
+  <span class="sr-only">{detail}</span>
+</span>
+
+<style>
+  .badge {
+    display: inline-flex;
+    vertical-align: -0.15em;
+    margin-left: 0.35em;
+    /* `currentColor` dans le SVG : le pictogramme suit la couleur du nom,
+       y compris au survol, sans qu'aucune règle supplémentaire soit nécessaire. */
+    opacity: 0.75;
+  }
+</style>

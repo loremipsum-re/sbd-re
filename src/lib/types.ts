@@ -52,3 +52,6 @@ export interface Result {
 
 /** Un des quatre classements proposés par le site. */
 export type LiftKey = 'squat' | 'bench' | 'deadlift' | 'total';
+
+/** Métal d'une distinction : coupe de classement ou médaille de podium. */
+export type Metal = 'or' | 'argent' | 'bronze';

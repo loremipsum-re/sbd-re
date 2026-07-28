@@ -1,0 +1,57 @@
+---
+/**
+ * Médaille de podium, pour les trois premiers d'une compétition.
+ *
+ * Distincte de la coupe, qui marque un record ou une tête de classement
+ * général. La médaille dit « ce jour-là, sur ce plateau », la coupe dit
+ * « toutes compétitions confondues ».
+ */
+
+import type { Metal } from '../lib/types';
+
+interface Props {
+  metal: Metal;
+  taille?: number;
+  detail?: string;
+}
+
+const { metal, taille = 16, detail } = Astro.props;
+
+const LIBELLES: Record<Metal, string> = {
+  or: 'Médaille d’or',
+  argent: 'Médaille d’argent',
+  bronze: 'Médaille de bronze',
+};
+
+const texte = detail ?? LIBELLES[metal];
+---
+
+<span class={`medaille metal-${metal}`} title={texte}>
+  <svg width={taille} height={taille} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path
+      d="M8.4 2h-4l4.3 7.6 3.5-2.1L8.4 2zM15.6 2h4l-4.3 7.6-3.5-2.1L15.6 2z"
+      fill="currentColor"
+      opacity="0.55"></path>
+    <circle cx="12" cy="16" r="6.2" fill="currentColor"></circle>
+    <circle cx="12" cy="16" r="3.9" fill="none" stroke="var(--surface)" stroke-width="1.3"></circle>
+  </svg>
+  <span class="sr-only">{texte}</span>
+</span>
+
+<style>
+  .medaille {
+    display: inline-flex;
+    vertical-align: -0.2em;
+    margin-left: 0.3em;
+  }
+
+  .metal-or {
+    color: var(--or);
+  }
+  .metal-argent {
+    color: var(--argent);
+  }
+  .metal-bronze {
+    color: var(--bronze);
+  }
+</style>
