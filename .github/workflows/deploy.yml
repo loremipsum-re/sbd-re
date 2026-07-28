@@ -126,20 +126,29 @@ jobs:
           # confirmée par un premier déploiement réussi : une erreur de chemin
           # combinée à une suppression récursive effacerait l'hébergement.
           #
-          # Le mot de passe est passé par une variable d'environnement lue par
-          # lftp, et jamais écrit dans la ligne de commande : les arguments d'un
-          # processus sont visibles par tout le système.
+          # Le script lftp passe par un FICHIER, pas par la ligne de commande.
+          # Deux raisons : les arguments d'un processus sont lisibles par tout
+          # le système, et surtout lftp n'interprète PAS les variables du shell —
+          # les échapper reviendrait à lui transmettre la chaîne « $SSH_HOST »
+          # telle quelle. C'est bien bash qui doit les développer, ici, à
+          # l'écriture du fichier.
+          # Écrit ligne par ligne plutôt qu'avec un « heredoc » : dans un bloc
+          # YAML, le marqueur de fin d'un heredoc se retrouve indenté et ne
+          # termine pas toujours le bloc comme prévu. printf n'a pas ce défaut.
+          {
+            printf '%s\n' 'set sftp:auto-confirm yes'
+            printf '%s\n' 'set net:timeout 20'
+            printf '%s\n' 'set net:max-retries 3'
+            printf '%s\n' "open -u \"$SSH_USER\",\"$SSH_PASS\" sftp://$SSH_HOST"
+            printf '%s\n' "mirror --reverse --verbose --no-perms --parallel=4 ./dist/ \"$CIBLE/\""
+            printf '%s\n' 'bye'
+          } > /tmp/deploy.lftp
+
           set +e
-          SORTIE=$(lftp -c "
-            set sftp:auto-confirm yes;
-            set net:timeout 20;
-            set net:max-retries 3;
-            set xfer:parallel 4;
-            open -u \"\$SSH_USER\",\"\$SSH_PASS\" sftp://\$SSH_HOST;
-            mirror --reverse --verbose --no-perms ./dist/ \"\$CIBLE/\";
-          " 2>&1)
+          SORTIE=$(lftp -f /tmp/deploy.lftp 2>&1)
           CODE=$?
           set -e
+          rm -f /tmp/deploy.lftp
 
           echo "$SORTIE" | tail -40
 
