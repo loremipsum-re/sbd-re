@@ -2,6 +2,7 @@
 /**
  * Gabarit commun à toutes les pages : en-tête, navigation, pied de page, méta.
  */
+import BanniereConsentement from '../components/BanniereConsentement.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
 // Les déclarations de polices d'abord : tokens.css s'en sert immédiatement.
@@ -13,12 +14,37 @@ interface Props {
   description: string;
   /** Titre de l'onglet. Par défaut « <titre> | SBD.re ». */
   titreOnglet?: string;
+  /**
+   * Image de partage, chemin absolu depuis la racine du site.
+   * Sans elle, aucune balise `og:image` n'est émise : mieux vaut pas d'image
+   * du tout qu'une balise pointant vers un fichier inexistant, que les réseaux
+   * sociaux mettent en cache durablement.
+   */
+  image?: string;
+  imageAlt?: string;
 }
 
-const { titre, description, titreOnglet } = Astro.props;
+/**
+ * Image de partage par défaut, en attente du système de design.
+ *
+ * Dès que le logo sera prêt : déposer le fichier dans `public/`, renseigner
+ * cette constante, et toutes les pages en hériteront. Format recommandé
+ * 1200 × 630 pixels, en PNG ou JPEG. Le SVG est mal pris en charge par les
+ * réseaux sociaux.
+ */
+const IMAGE_PARTAGE_DEFAUT: string | null = null;
+
+const { titre, description, titreOnglet, image, imageAlt } = Astro.props;
 
 const canonique = new URL(Astro.url.pathname, Astro.site);
 const chemin = Astro.url.pathname;
+
+// Les réseaux sociaux exigent une URL absolue : un chemin relatif est ignoré.
+const imagePartage = image ?? IMAGE_PARTAGE_DEFAUT;
+const imageAbsolue = imagePartage ? new URL(imagePartage, Astro.site).href : null;
+
+/** Identifiant du projet Microsoft Clarity, pour la mesure d'audience. */
+const CLARITY_ID = 'xtvqmm4cxo';
 
 const liens = [
   { href: '/classement/', label: 'Classement' },
@@ -48,7 +74,18 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonique.href} />
     <meta property="og:locale" content="fr_FR" />
-    <meta name="twitter:card" content="summary" />
+    {
+      imageAbsolue ? (
+        <>
+          <meta property="og:image" content={imageAbsolue} />
+          <meta property="og:image:alt" content={imageAlt ?? titre} />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:image" content={imageAbsolue} />
+        </>
+      ) : (
+        <meta name="twitter:card" content="summary" />
+      )
+    }
 
     <link
       rel="icon"
@@ -101,6 +138,43 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
         }
       })();
     </script>
+
+    <!--
+      Mesure d'audience Microsoft Clarity, SOUS CONDITION DE CONSENTEMENT.
+
+      Le script n'est pas posé ici : seule la fonction qui sait le charger l'est.
+      Elle n'est appelée que si le visiteur a déjà accepté lors d'une visite
+      précédente, ou lorsqu'il accepte via la bannière.
+
+      Tant que rien n'est accepté, aucune requête ne part vers clarity.ms et
+      aucun cookie n'est déposé. C'est ce que le RGPD et la doctrine de la CNIL
+      exigent pour un outil qui enregistre les sessions et transmet les données
+      à un tiers.
+    -->
+    <script is:inline define:vars={{ CLARITY_ID }}>
+      window.sbdChargerMesure = function () {
+        if (window.__sbdMesureChargee) return;
+        window.__sbdMesureChargee = true;
+        (function (c, l, a, r, i, t, y) {
+          c[a] =
+            c[a] ||
+            function () {
+              (c[a].q = c[a].q || []).push(arguments);
+            };
+          t = l.createElement(r);
+          t.async = 1;
+          t.src = 'https://www.clarity.ms/tag/' + i;
+          y = l.getElementsByTagName(r)[0];
+          y.parentNode.insertBefore(t, y);
+        })(window, document, 'clarity', 'script', CLARITY_ID);
+      };
+
+      try {
+        if (localStorage.getItem('sbd-mesure') === 'oui') window.sbdChargerMesure();
+      } catch (e) {
+        // Stockage indisponible : on ne charge rien, faute de consentement vérifiable.
+      }
+    </script>
   </head>
 
   <body>
@@ -137,6 +211,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     </main>
 
     <SiteFooter />
+    <BanniereConsentement />
   </body>
 </html>
 
