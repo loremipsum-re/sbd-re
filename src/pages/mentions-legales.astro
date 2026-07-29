@@ -1,0 +1,177 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+/**
+ * Mentions légales.
+ *
+ * Les informations d'identification de l'éditeur portent la mention
+ * « à compléter » là où elles relèvent d'un état civil ou d'un enregistrement
+ * officiel. Elles ne sont pas inventées : une mention légale fausse vaut
+ * moins qu'une mention légale absente, et engage la responsabilité de
+ * l'éditeur.
+ */
+const A_COMPLETER = 'à compléter';
+---
+
+<BaseLayout
+  titre="Mentions légales"
+  description="Éditeur, directeur de publication, hébergeur et conditions d'utilisation du site SBD.re."
+>
+  <div class="wrap texte">
+    <h1>Mentions légales</h1>
+
+    <h2>Éditeur du site</h2>
+    <dl class="fiche">
+      <div>
+        <dt>Nom</dt>
+        <dd>Lorem Ipsum Réunion</dd>
+      </div>
+      <div>
+        <dt>Forme juridique</dt>
+        <dd class="vide">{A_COMPLETER}</dd>
+      </div>
+      <div>
+        <dt>Adresse</dt>
+        <dd class="vide">{A_COMPLETER}</dd>
+      </div>
+      <div>
+        <dt>Numéro SIRET</dt>
+        <dd class="vide">{A_COMPLETER}</dd>
+      </div>
+      <div>
+        <dt>Contact</dt>
+        <dd><a href="mailto:contact@sbd.re">contact@sbd.re</a></dd>
+      </div>
+      <div>
+        <dt>Directeur de la publication</dt>
+        <dd>Nathan Lannes</dd>
+      </div>
+    </dl>
+
+    <h2>Hébergeur</h2>
+    <dl class="fiche">
+      <div>
+        <dt>Société</dt>
+        <dd>OVH SAS</dd>
+      </div>
+      <div>
+        <dt>Adresse</dt>
+        <dd>2 rue Kellermann, 59100 Roubaix, France</dd>
+      </div>
+      <div>
+        <dt>Site</dt>
+        <dd><a href="https://www.ovhcloud.com" rel="noopener">ovhcloud.com</a></dd>
+      </div>
+    </dl>
+
+    <h2>Objet du site</h2>
+    <p>
+      SBD.re recense les classements et records de force athlétique à
+      La Réunion, à partir des résultats officiels de compétition. Le site est
+      gratuit, sans publicité, et ne vend aucun produit ni service.
+    </p>
+    <p>
+      Il s'agit d'un projet indépendant, sans affiliation à la FFForce, à
+      SBD Apparel, ni à aucun club ou fédération.
+    </p>
+
+    <h2>Sources et propriété intellectuelle</h2>
+    <p>
+      Les résultats sportifs proviennent du projet
+      {' '}<a href="https://www.openpowerlifting.org" rel="noopener">OpenPowerlifting</a>,
+      dont les données sont publiées sous licence libre. Leur réutilisation ici
+      respecte les conditions de ce projet.
+    </p>
+    <p>
+      Le code source du site est public et consultable dans son
+      {' '}<a href="https://github.com/loremipsum-re/sbd-re" rel="noopener">dépôt</a>.
+      Les polices de caractères Oswald et Inter sont distribuées sous licence
+      SIL Open Font, qui autorise leur redistribution.
+    </p>
+    <p>
+      La marque « SBD » appartient à SBD Apparel. Elle désigne ici les trois
+      mouvements de la discipline : squat, bench, deadlift. Le nom de domaine
+      sbd.re fait référence à cette discipline et à La Réunion.
+    </p>
+
+    <h2>Exactitude des informations</h2>
+    <p>
+      Les données publiées reflètent les résultats homologués tels que
+      transmis par les fédérations. Une erreur constatée sur une performance
+      relève de la source : elle est à signaler à OpenPowerlifting, qui la
+      corrigera, et la correction remontera ici à la mise à jour suivante.
+    </p>
+    <p>
+      Une erreur relevant du site lui-même, comme une compétition manquante ou
+      un athlète mal rattaché, se signale à
+      {' '}<a href="mailto:contact@sbd.re">contact@sbd.re</a>.
+    </p>
+
+    <h2>Données personnelles</h2>
+    <p>
+      Le traitement des données, les cookies et vos droits sont détaillés sur la
+      page <a href="/confidentialite/">confidentialité</a>.
+    </p>
+
+    <h2>Liens vers d'autres sites</h2>
+    <p>
+      Le site renvoie vers des ressources extérieures, notamment
+      OpenPowerlifting. Leur contenu relève de la responsabilité de leurs
+      éditeurs respectifs.
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  .texte {
+    max-width: 44rem;
+    padding-bottom: var(--space-8);
+  }
+
+  h2 {
+    margin-top: var(--space-12);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+  }
+
+  .fiche {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0 0 var(--space-4);
+    padding: var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .fiche > div {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+  }
+
+  @media (min-width: 34rem) {
+    .fiche > div {
+      grid-template-columns: 14rem 1fr;
+      gap: var(--space-4);
+      align-items: baseline;
+    }
+  }
+
+  .fiche dt {
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .fiche dd {
+    margin: 0;
+  }
+
+  /* Signale visuellement ce qui reste à renseigner, pour que ça ne passe pas
+     inaperçu une fois le site en ligne. */
+  .vide {
+    color: var(--accent);
+    font-style: italic;
+  }
+</style>

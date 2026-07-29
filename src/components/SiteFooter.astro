@@ -49,8 +49,9 @@ const { debut, fin } = periode();
       <div>
         <p class="titre">Soutenir le projet</p>
         <p class="fin">
-          Le site est gratuit, sans publicité et sans traceur. Un café aide à
-          couvrir le nom de domaine et l'hébergement.
+          Le site est gratuit et sans publicité. La mesure d'audience reste
+          facultative et se refuse en un clic. Un café aide à couvrir le nom de
+          domaine et l'hébergement.
         </p>
       </div>
       {/*
@@ -75,6 +76,11 @@ const { debut, fin } = periode();
       </p>
       <p>
         Site indépendant, non affilié à la FFForce ni à SBD Apparel.
+      </p>
+      <p class="legal">
+        <a href="/mentions-legales/">Mentions légales</a>
+        <span aria-hidden="true">·</span>
+        <a href="/confidentialite/">Confidentialité</a>
       </p>
       <p class="realisation">
         Une réalisation de Nathan Lannes,{' '}
@@ -191,8 +197,15 @@ const { debut, fin } = periode();
     color: var(--muted);
   }
 
-  .realisation {
+  .legal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
     margin-top: var(--space-3);
+  }
+
+  .realisation {
+    margin-top: var(--space-2);
   }
 
   .mentions p {

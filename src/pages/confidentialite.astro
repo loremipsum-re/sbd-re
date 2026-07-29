@@ -1,0 +1,305 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { nombreAthletes } from '../lib/data';
+---
+
+<BaseLayout
+  titre="Confidentialité"
+  description="Quelles données SBD.re collecte, pourquoi, combien de temps, et comment exercer vos droits."
+>
+  <div class="wrap texte">
+    <h1>Confidentialité</h1>
+
+    <p class="chapeau">
+      Cette page décrit les données traitées par SBD.re, la raison pour laquelle
+      elles le sont, et les moyens dont vous disposez pour agir dessus.
+    </p>
+
+    <h2>Qui est responsable</h2>
+    <p>
+      Le site est édité par <strong>Lorem Ipsum Réunion</strong>. Les
+      coordonnées complètes figurent sur la page
+      {' '}<a href="/mentions-legales/">mentions légales</a>.
+      Pour toute question relative aux données, écrivez à
+      {' '}<a href="mailto:contact@sbd.re">contact@sbd.re</a>.
+    </p>
+
+    <h2>Ce que le site fait sans votre accord</h2>
+    <p>
+      <strong>Rien.</strong> Aucun cookie n'est déposé, aucune requête n'est
+      envoyée à un service tiers tant que vous n'avez pas accepté la mesure
+      d'audience. Les polices de caractères sont hébergées par le site
+      lui-même, précisément pour éviter d'avertir un tiers de votre visite.
+    </p>
+    <p>
+      Un espace de stockage local conserve deux préférences techniques : le
+      thème clair ou sombre que vous choisissez, et votre réponse à la bannière
+      de consentement. Ces informations restent sur votre appareil et ne sont
+      transmises à personne.
+    </p>
+
+    <h2>La mesure d'audience, si vous l'acceptez</h2>
+    <p>
+      Le site utilise <strong>Microsoft Clarity</strong> pour comprendre
+      comment ses pages sont consultées, et améliorer ce qui gêne. Cet outil se
+      charge uniquement après votre accord explicite.
+    </p>
+
+    <h3>Ce qui est alors collecté</h3>
+    <ul>
+      <li>Les pages visitées, leur ordre et leur durée de consultation.</li>
+      <li>
+        Les interactions : clics, défilements, mouvements de la souris. Elles
+        alimentent des cartes de chaleur et des relectures de session
+        reconstituées.
+      </li>
+      <li>
+        Des informations techniques : type d'appareil, navigateur, taille
+        d'écran, système d'exploitation, page d'origine, adresse IP.
+      </li>
+      <li>
+        Des cookies déposés par Microsoft, nommés <code>_clck</code> et
+        {' '}<code>_clsk</code>, qui servent à distinguer les visites et les
+        sessions.
+      </li>
+    </ul>
+
+    <h3>Ce qui n'est pas collecté</h3>
+    <p>
+      Le contenu que vous saisissez dans un champ de formulaire est masqué par
+      défaut par Clarity. Le site ne demande de toute façon aucune saisie : il
+      n'y a ni compte, ni formulaire, ni paiement.
+    </p>
+
+    <h3>Où vont ces données</h3>
+    <p>
+      Elles sont traitées par <strong>Microsoft Corporation</strong>, qui peut
+      les transférer hors de l'Union européenne. Le détail de leurs pratiques et
+      de leur durée de conservation figure dans la
+      {' '}<a href="https://privacy.microsoft.com/fr-fr/privacystatement" rel="noopener">
+        déclaration de confidentialité de Microsoft
+      </a> et sur la page dédiée à
+      {' '}<a href="https://learn.microsoft.com/fr-fr/clarity/setup-and-installation/faq" rel="noopener">
+        Clarity
+      </a>.
+    </p>
+    <p class="base">
+      Base légale : votre consentement, que vous pouvez retirer à tout moment.
+    </p>
+
+    <div class="action-consentement">
+      <p class="etat" data-etat-consentement>Chargement de votre choix actuel…</p>
+      <div class="boutons">
+        <button type="button" data-consentement="oui">Accepter la mesure</button>
+        <button type="button" data-consentement="non">Refuser la mesure</button>
+      </div>
+    </div>
+
+    <h2>Les athlètes publiés sur ce site</h2>
+    <p>
+      Le site publie le nom, le sexe, la catégorie de poids, le poids de corps,
+      la tranche d'âge et les performances de {nombreAthletes()} athlètes.
+      Ces informations proviennent du projet public
+      {' '}<a href="https://www.openpowerlifting.org" rel="noopener">OpenPowerlifting</a>,
+      qui recense les résultats officiels publiés par les fédérations.
+    </p>
+    <p>
+      Base légale : l'intérêt légitime à documenter l'histoire sportive d'un
+      territoire, à partir de résultats déjà rendus publics par les instances
+      organisatrices.
+    </p>
+    <p>
+      <strong>Vous figurez sur ce site et souhaitez en être retiré ?</strong>{' '}
+      Écrivez à <a href="mailto:contact@sbd.re">contact@sbd.re</a> en précisant
+      votre nom tel qu'il apparaît. Votre fiche sera retirée du site.
+    </p>
+    <p>
+      Une précision utile : les données étant régénérées chaque mois depuis
+      OpenPowerlifting, une suppression demandée ici est appliquée par une liste
+      d'exclusion permanente. Pour disparaître également de la source, la
+      demande est à adresser directement à OpenPowerlifting.
+    </p>
+
+    <h2>Ce que le site ne fait pas</h2>
+    <ul>
+      <li>Aucune publicité, aucune régie publicitaire.</li>
+      <li>Aucune revente ni partage de données à des fins commerciales.</li>
+      <li>Aucun profilage, aucune décision automatisée.</li>
+      <li>Aucun compte utilisateur, aucun mot de passe, aucune newsletter.</li>
+    </ul>
+
+    <h2>Hébergement</h2>
+    <p>
+      Le site est hébergé par <strong>OVH SAS</strong>, sur des serveurs situés
+      en France. Les journaux techniques du serveur sont gérés par
+      l'hébergeur selon ses propres règles.
+    </p>
+
+    <h2>Vos droits</h2>
+    <p>
+      Vous disposez d'un droit d'accès, de rectification, d'effacement,
+      d'opposition, de limitation et de portabilité sur vos données. Pour les
+      exercer, écrivez à <a href="mailto:contact@sbd.re">contact@sbd.re</a>.
+    </p>
+    <p>
+      Si la réponse apportée ne vous convient pas, vous pouvez saisir la
+      {' '}<a href="https://www.cnil.fr/fr/plaintes" rel="noopener">CNIL</a>,
+      autorité française de protection des données.
+    </p>
+
+    <h2>Évolution de cette page</h2>
+    <p>
+      Toute modification du périmètre des données traitées entraînera une mise à
+      jour de cette page. L'historique complet des changements est consultable
+      publiquement dans le
+      {' '}<a href="https://github.com/loremipsum-re/sbd-re" rel="noopener">
+        dépôt de code du site
+      </a>.
+    </p>
+  </div>
+</BaseLayout>
+
+<script>
+  /*
+   * Permet de revenir sur son choix depuis cette page, comme l'exige le RGPD :
+   * retirer son consentement doit être aussi simple que de le donner.
+   */
+  const CLE = 'sbd-mesure';
+  const etat = document.querySelector<HTMLElement>('[data-etat-consentement]');
+
+  function lire(): string | null {
+    try {
+      return localStorage.getItem(CLE);
+    } catch {
+      return null;
+    }
+  }
+
+  function afficher() {
+    if (!etat) return;
+    const choix = lire();
+    etat.textContent =
+      choix === 'oui'
+        ? 'Vous avez accepté la mesure d’audience.'
+        : choix === 'non'
+          ? 'Vous avez refusé la mesure d’audience. Aucune donnée n’est collectée.'
+          : 'Vous n’avez pas encore répondu. Aucune donnée n’est collectée pour l’instant.';
+  }
+
+  /*
+   * Sélecteur volontairement restreint au bloc de cette page. Sans ça, il
+   * capterait aussi les boutons de la bannière, qui portent le même attribut
+   * et disposent déjà de leur propre gestionnaire.
+   */
+  const boutons = document.querySelectorAll<HTMLButtonElement>(
+    '.action-consentement [data-consentement]',
+  );
+
+  for (const bouton of boutons) {
+    bouton.addEventListener('click', () => {
+      const choix = bouton.dataset.consentement === 'oui' ? 'oui' : 'non';
+      try {
+        localStorage.setItem(CLE, choix);
+      } catch {
+        // Sans stockage, le choix ne vaut que pour la visite en cours.
+      }
+      if (choix === 'oui') {
+        window.sbdChargerMesure?.();
+      } else {
+        /*
+         * Un refus après coup doit produire un effet immédiat. Le script déjà
+         * chargé ne peut pas être « déchargé » proprement : on recharge donc la
+         * page, ce qui repart d'un contexte sans mesure.
+         */
+        if (window.__sbdMesureChargee) {
+          location.reload();
+          return;
+        }
+      }
+      afficher();
+    });
+  }
+
+  afficher();
+</script>
+
+<style>
+  .texte {
+    max-width: 44rem;
+    padding-bottom: var(--space-8);
+  }
+
+  .chapeau {
+    font-size: var(--step-1);
+    color: var(--muted);
+    margin-bottom: var(--space-8);
+  }
+
+  h2 {
+    margin-top: var(--space-12);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+  }
+
+  h3 {
+    margin-top: var(--space-6);
+    font-size: var(--step-0);
+  }
+
+  ul {
+    padding-left: var(--space-6);
+    margin-bottom: var(--space-4);
+  }
+
+  li {
+    margin-bottom: var(--space-2);
+  }
+
+  code {
+    font-size: 0.9em;
+    padding: 1px var(--space-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  .base {
+    font-weight: 600;
+  }
+
+  .action-consentement {
+    margin-top: var(--space-6);
+    padding: var(--space-6);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+    background: var(--surface);
+  }
+
+  .etat {
+    font-weight: 600;
+    margin-bottom: var(--space-4);
+  }
+
+  .boutons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .boutons button {
+    padding: var(--space-3) var(--space-6);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--accent);
+    font: inherit;
+    font-size: var(--step--1);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .boutons button:hover {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+</style>
