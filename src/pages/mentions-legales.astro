@@ -4,13 +4,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 /**
  * Mentions légales.
  *
- * Les informations d'identification de l'éditeur portent la mention
- * « à compléter » là où elles relèvent d'un état civil ou d'un enregistrement
- * officiel. Elles ne sont pas inventées : une mention légale fausse vaut
- * moins qu'une mention légale absente, et engage la responsabilité de
- * l'éditeur.
+ * Les informations d'identification sont fournies par l'éditeur. Aucune n'est
+ * déduite ni inventée : une mention légale fausse vaut moins qu'une mention
+ * légale absente, et engage la responsabilité de celui qui la publie.
  */
-const A_COMPLETER = 'à compléter';
 ---
 
 <BaseLayout
@@ -27,16 +24,12 @@ const A_COMPLETER = 'à compléter';
         <dd>Lorem Ipsum Réunion</dd>
       </div>
       <div>
-        <dt>Forme juridique</dt>
-        <dd class="vide">{A_COMPLETER}</dd>
-      </div>
-      <div>
         <dt>Adresse</dt>
-        <dd class="vide">{A_COMPLETER}</dd>
+        <dd>Saint-Denis, La Réunion</dd>
       </div>
       <div>
         <dt>Numéro SIRET</dt>
-        <dd class="vide">{A_COMPLETER}</dd>
+        <dd>922 261 680 00016</dd>
       </div>
       <div>
         <dt>Contact</dt>
@@ -168,10 +161,4 @@ const A_COMPLETER = 'à compléter';
     margin: 0;
   }
 
-  /* Signale visuellement ce qui reste à renseigner, pour que ça ne passe pas
-     inaperçu une fois le site en ligne. */
-  .vide {
-    color: var(--accent);
-    font-style: italic;
-  }
 </style>
