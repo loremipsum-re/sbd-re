@@ -40,6 +40,21 @@ d'intégration continue.
 - **Interdit : le combo noir et rouge**, qui est l'identité de la marque SBD Apparel. L'accent du site est orange.
 - Mentions obligatoires en pied de page : source OpenPowerlifting, et non-affiliation à la FFForce comme à SBD Apparel.
 
+## Vie privée
+
+**Aucun script tiers ne se charge sans consentement.** Microsoft Clarity est
+posé derrière une bannière, et la fonction `window.sbdChargerMesure()` n'est
+appelée qu'après acceptation. Avant de brancher quoi que ce soit d'externe,
+vérifier dans le navigateur qu'aucune requête ne part avant l'accord.
+
+Deux pages encadrent cela : `/confidentialite/` et `/mentions-legales/`. La
+première documente aussi la publication des noms et performances des athlètes,
+qui est un traitement de données personnelles à part entière, avec droit
+d'opposition.
+
+Ne jamais inventer de donnée légale : SIRET, adresse et forme juridique portent
+la mention « à compléter » tant que l'auteur ne les a pas fournis.
+
 ## Invariants à ne pas casser
 
 **Le total n'a de sens qu'en full power.** Sur une compétition d'un seul

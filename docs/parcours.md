@@ -22,8 +22,16 @@ explicitement, jamais subi.
 | Full power (SBD) uniquement | **Tous les formats** | Les chiffres ont montré que la restriction coûtait un tiers des données. |
 
 **Ce qui n'a pas bougé** : aucun compte ni soumission ne peut atteindre le
-classement officiel, pas de CMS, pas de scraping de la FFForce, pas d'analytics
-invasif, et l'interdiction du combo noir + rouge (identité de SBD Apparel).
+classement officiel, pas de CMS, pas de scraping de la FFForce, pas de
+publicité, et l'interdiction du combo noir + rouge (identité de SBD Apparel).
+
+**Mesure d'audience, ajoutée en juillet 2026.** Microsoft Clarity fournit des
+cartes de chaleur et des relectures de session, mais **derrière un consentement
+explicite**. Il dépose des cookies et transmet les données à Microsoft : il ne
+relève donc pas de l'exemption que la CNIL accorde à la simple mesure
+d'audience. Tant que rien n'est accepté, aucune requête ne part vers
+clarity.ms. Le refus est aussi accessible que l'acceptation, et révocable à
+tout moment depuis `/confidentialite/`.
 
 ---
 
