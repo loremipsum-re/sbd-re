@@ -4,35 +4,34 @@
  *
  * POURQUOI ELLE EXISTE
  *
- * Microsoft Clarity dépose des cookies, enregistre les sessions et transmet
- * les données à Microsoft. Il ne relève donc pas de l'exemption que la CNIL
- * accorde à la simple mesure d'audience : le consentement préalable est
- * obligatoire, et le refus doit être aussi simple que l'acceptation.
+ * L'outil de mesure dépose des cookies et transmet les données à un tiers. Il
+ * ne relève donc pas de l'exemption que la CNIL accorde à la simple mesure
+ * d'audience : le consentement préalable est obligatoire, et le refus doit
+ * être aussi simple que l'acceptation.
  *
  * D'où deux boutons de même poids visuel, et aucune case pré-cochée. Un
- * bandeau où « Accepter » serait mis en avant et « Refuser » caché dans un
- * sous-menu est précisément ce que la CNIL sanctionne.
+ * bandeau où « Accepter » serait mis en avant et « Refuser » relégué est
+ * précisément ce que la CNIL sanctionne.
+ *
+ * Le texte reste volontairement court. Le détail du traitement, des cookies
+ * déposés et du destinataire vit sur /confidentialite/. Ce schéma est valide
+ * À CONDITION que le lien reste visible dans la bannière : sans lui, le
+ * consentement ne serait pas éclairé. Ne pas le retirer.
  *
  * Tant que rien n'est accepté, AUCUN script tiers n'est chargé.
  */
 ---
 
 <div class="banniere" data-banniere-consentement hidden>
-  <div class="wrap contenu">
-    <div class="texte">
-      <p class="titre">Mesure d'audience</p>
-      <p>
-        Ce site peut mesurer la façon dont ses pages sont consultées, à l'aide
-        d'un outil qui dépose des cookies et transmet ces données à Microsoft.
-        Cette mesure sert uniquement à améliorer le site. Elle reste facultative,
-        et le site fonctionne identiquement sans elle.
-        {' '}<a href="/confidentialite/">En savoir plus</a>.
-      </p>
-    </div>
-    <div class="actions">
-      <button type="button" data-consentement="non">Refuser</button>
-      <button type="button" data-consentement="oui">Accepter</button>
-    </div>
+  <p class="titre">Améliorer le site</p>
+  <p class="texte">
+    Ce site peut analyser la navigation pour repérer ce qui gêne et corriger
+    l'ergonomie. C'est entièrement facultatif, et tout fonctionne à l'identique
+    sans. <a href="/confidentialite/">En savoir plus</a>.
+  </p>
+  <div class="actions">
+    <button type="button" data-consentement="non">Refuser</button>
+    <button type="button" data-consentement="oui">Accepter</button>
   </div>
 </div>
 
@@ -72,60 +71,52 @@
 <style>
   .banniere {
     position: fixed;
-    inset-inline: 0;
-    bottom: 0;
     z-index: 20;
-    border-top: 1px solid var(--border);
+    inset-block-end: var(--space-4);
+    inset-inline-end: var(--space-4);
+    inline-size: min(23rem, calc(100vw - 2 * var(--space-4)));
+    padding: var(--space-5, var(--space-4)) var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
     background: var(--surface);
-    box-shadow: 0 -4px 24px rgb(0 0 0 / 0.18);
+    /* Ombre portée marquée : la carte doit se détacher du contenu qu'elle
+       recouvre, sans quoi elle se confond avec une section de la page. */
+    box-shadow: 0 8px 32px rgb(0 0 0 / 0.28);
   }
 
   .banniere[hidden] {
     display: none;
   }
 
-  .contenu {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-4);
-    padding-block: var(--space-4);
-  }
-
-  .texte {
-    flex: 1 1 22rem;
-  }
-
   .titre {
     font-family: var(--font-display);
     font-weight: 700;
     font-size: var(--step-0);
-    margin-bottom: var(--space-1);
+    margin: 0 0 var(--space-2);
   }
 
-  .texte p {
-    margin: 0;
+  .texte {
+    margin: 0 0 var(--space-4);
     font-size: var(--step--1);
     color: var(--muted);
-    max-width: 68ch;
   }
 
   .actions {
     display: flex;
-    gap: var(--space-3);
+    gap: var(--space-2);
   }
 
   /*
-   * Les deux boutons ont volontairement le même poids visuel. Mettre en avant
-   * l'acceptation et effacer le refus est exactement ce que la CNIL considère
-   * comme un consentement non valide.
+   * Les deux boutons ont volontairement le même poids visuel et la même
+   * largeur. Mettre en avant l'acceptation et effacer le refus est exactement
+   * ce que la CNIL considère comme un consentement non valide.
    */
   .actions button {
-    padding: var(--space-3) var(--space-6);
+    flex: 1;
+    padding: var(--space-3) var(--space-4);
     border: 1px solid var(--accent);
     border-radius: var(--radius);
-    background: var(--surface);
+    background: var(--bg);
     color: var(--accent);
     font: inherit;
     font-size: var(--step--1);
@@ -135,5 +126,16 @@
 
   .actions button:hover {
     background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
+  /* Sur les écrans étroits, la carte s'étire d'un bord à l'autre : une carte
+     de 23rem flottant dans un coin y serait à l'étroit. */
+  @media (max-width: 30rem) {
+    .banniere {
+      inset-inline: var(--space-3);
+      inset-block-end: var(--space-3);
+      inline-size: auto;
+      padding: var(--space-4);
+    }
   }
 </style>
