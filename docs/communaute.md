@@ -81,6 +81,25 @@ envoi de fichier, sur l'hôte qui sert le site public. Un PHP et un MySQL locaux
 resteront le bon outil pour cette étape, mais ils ne bloquent plus rien
 maintenant.
 
+### La fermeture du dossier des bibliothèques, vérifiée en production
+
+Les bibliothèques PHP ont été déployées le 30 juillet 2026, premier code
+exécutable jamais envoyé sur l'hébergement. Le `.htaccess` de
+`public/api/lib/` n'avait alors jamais servi en conditions réelles. Mesuré
+juste après le déploiement, sur les adresses publiques :
+
+| Adresse | Réponse | Code révélé |
+|---|---|---|
+| `/api/lib/configuration.php` | 403 | aucun |
+| `/api/lib/bdd.php` | 403 | aucun |
+| `/api/lib/autorisation.php` | 403 | aucun |
+| `/api/lib/` | 403 | aucun |
+| `/api/lib/.htaccess` | 403 | aucun |
+
+Refaire ce contrôle après toute modification du `.htaccess`, à la racine comme
+dans ce dossier. Une directive mal placée transformerait ces 403 en pages de
+code source lisibles, sans que rien d'autre ne change sur le site.
+
 ### Un invariant du projet tombe
 
 Le README affirmait « OVH ne fait que servir des fichiers HTML. Aucun code ne
