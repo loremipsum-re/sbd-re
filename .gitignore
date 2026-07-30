@@ -13,6 +13,18 @@ dist/
 .env.local
 .env.*.local
 
+# Configuration de la partie communauté : porte le mot de passe MySQL.
+# Le modèle versionné et sans secret est db/config.exemple.php.
+#
+# Cette règle vise CE fichier précis, et non « **/config.php ».
+# Le motif large paraissait plus sûr ; il avalait en réalité la bibliothèque
+# public/api/lib/config.php, qui doit être versionnée. Elle existait alors en
+# local sans jamais partir sur GitHub : le site se construisait ici et cassait
+# en production. La bibliothèque a depuis été renommée en configuration.php,
+# et la règle resserrée. Ne pas la réélargir.
+db/config.php
+sbd-re-prive/
+
 # État de synchronisation déposé par l'action FTP sur le serveur
 .ftp-deploy-sync-state.json
 
