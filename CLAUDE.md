@@ -158,7 +158,20 @@ npm run data:explore  # diagnostic du dump, ne produit rien
 npm run fonts:update  # retélécharge les polices auto-hébergées
 ```
 
-Sous Windows, si `node` est introuvable, recharger le PATH :
+Pour la partie communauté, **PHP 8.4 est installé en local** et disponible dans
+le PATH utilisateur. Aucun PHP ne doit être livré sans être passé par le
+contrôle de syntaxe : deux allers-retours ont été perdus le 30 juillet 2026
+faute de l'avoir fait.
+
+```bash
+php -l <fichier>                    # contrôle de syntaxe
+php db/verifier-autorisation.php    # 39 règles d'autorisation, sans base
+```
+
+MySQL, lui, n'est **pas** installé en local. Tout ce qui touche à la base
+s'éprouve sur le serveur OVH, par `php db/verifier.php` en SSH.
+
+Sous Windows, si `node` ou `php` est introuvable, recharger le PATH :
 
 ```powershell
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")

@@ -77,9 +77,27 @@ s'utilise, et se supprime aussitôt.
 
 **Ce que le serveur ne remplace pas.** Éprouver un schéma et relever des
 versions, oui. Écrire l'authentification, non : chaque correction demanderait un
-envoi de fichier, sur l'hôte qui sert le site public. Un PHP et un MySQL locaux
-resteront le bon outil pour cette étape, mais ils ne bloquent plus rien
-maintenant.
+envoi de fichier, sur l'hôte qui sert le site public.
+
+### L'outillage local
+
+**PHP 8.4 est installé sur la machine de développement** depuis le 30 juillet
+2026, avec `pdo_mysql`, `mbstring`, `openssl`, `curl` et `fileinfo`, le fuseau
+`Indian/Reunion` et l'affichage des erreurs activé, à l'exact opposé du serveur
+OVH réglé en production.
+
+La règle qui va avec : **aucun fichier PHP n'est livré sans être passé par
+`php -l`.** Deux allers-retours ont été perdus le même jour sur une erreur de
+syntaxe et sur deux caractères invisibles, l'un et l'autre détectables en trois
+secondes.
+
+`db/verifier-autorisation.php` tourne également en local, ses règles étant des
+fonctions pures sans base ni session. C'est justement pour cela qu'elles
+prennent des tableaux en argument plutôt que d'aller chercher l'état courant.
+
+**MySQL n'est pas installé en local.** Tout ce qui touche à la base s'éprouve
+encore sur le serveur, par `php db/verifier.php` en SSH. C'est le dernier écart
+qui reste entre ici et la production.
 
 ### La fermeture du dossier des bibliothèques, vérifiée en production
 
