@@ -28,9 +28,14 @@ officiels de compétition.
           OVH /sbd-re/  ──>  https://sbd.re
 ```
 
-Point important : **OVH ne fait que servir des fichiers HTML**. Aucun code ne
-s'exécute sur le serveur. Le mutualisé ne sait faire tourner que du PHP, jamais
-du Node — c'est GitHub qui fait tout le travail, gratuitement.
+Point important : **OVH ne fait aujourd'hui que servir des fichiers HTML**.
+Aucun code ne s'exécute sur le serveur. Le mutualisé ne sait faire tourner que
+du PHP, jamais du Node — c'est GitHub qui fait tout le travail, gratuitement.
+
+Cela changera avec la partie communauté, qui ajoutera une petite API PHP devant
+une base MySQL. Le classement **officiel** restera, lui, entièrement statique et
+en lecture seule : ni panne de base ni faille de l'API ne peuvent l'altérer.
+Voir [docs/communaute.md](docs/communaute.md).
 
 ---
 
@@ -270,6 +275,7 @@ Ensuite, chaque envoi sur `main` déclenche un déploiement automatique.
 ```
 ├── .github/workflows/     Automatisation : mise à jour des données, déploiement
 ├── data/                  Listes de compétitions (include / exclude / candidates)
+├── db/                    Schéma MySQL de la partie communauté (pas encore branché)
 ├── scripts/
 │   ├── lib/opl.mjs        Téléchargement, cache, lecture en flux du dump
 │   ├── explore-meets.mjs  Diagnostic : ce que contient vraiment le dump
@@ -412,10 +418,17 @@ permet au workflow mensuel de ne commiter que s'il y a réellement du nouveau.
 
 ## À venir
 
-Le **classement communauté** (performances déclarées en salle et compétitions
-non homologuées), avec comptes Google et e-mail via Supabase, modération avant
-publication, et catégorisation par tranches de poids et de taille. Il vivra
-strictement séparé du classement officiel, qui restera en lecture seule.
+Le **classement communauté** : performances déclarées en salle et compétitions
+non homologuées, avec comptes Google et e-mail, lien vidéo obligatoire,
+modération avant publication, et catégorisation par tranches de poids et de
+taille. Il vivra strictement séparé du classement officiel, qui restera en
+lecture seule.
+
+Il reposera sur une **API PHP devant une base MySQL**, toutes deux sur
+l'hébergement OVH. Le plan initial prévoyait Supabase ; le choix et ses
+conséquences sont expliqués dans [docs/communaute.md](docs/communaute.md), avec
+le modèle de données et le modèle de sécurité. Le schéma de base est prêt dans
+[db/schema.sql](db/schema.sql), le code ne l'est pas.
 
 ---
 

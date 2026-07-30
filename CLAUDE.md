@@ -17,6 +17,7 @@ par GitHub Actions.
 
 - [README.md](README.md) : comment le projet fonctionne, comment le lancer, comment déployer.
 - [docs/parcours.md](docs/parcours.md) : **pourquoi** il est ce qu'il est. Décisions, découvertes et pièges rencontrés. C'est le document qui fait gagner le plus de temps.
+- [docs/communaute.md](docs/communaute.md) : la conception de la partie communauté, à lire avant d'y toucher. Architecture, modèle de données, et surtout le modèle de sécurité qui remplace les politiques RLS.
 
 ## Attentes de travail
 
@@ -140,6 +141,12 @@ isolé et grand, `.num-tab` pour un chiffre dans une colonne.
 **Astro supprime l'espace avant une balise inline.** Écrire `{' '}` explicitement.
 Un script de détection existe, voir docs/parcours.md.
 
+**Le MySQL d'OVH n'est pas en mode strict.** Mesuré : MySQL 8.4.10, `sql_mode`
+réduit au seul `NO_ENGINE_SUBSTITUTION`. Une charge saisie à 1500 kg entrerait
+donc à 999,99 kg, une contrainte `CHECK` étant évaluée **après** ce rabotage.
+**Chaque connexion PHP impose son `sql_mode`** dès l'ouverture, sans exception.
+Voir docs/communaute.md, section 11.
+
 ## Commandes
 
 ```bash
@@ -179,10 +186,19 @@ $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";"
 **Chantier principal**
 
 La **partie communauté**, phases 4 à 7 du plan initial : classement
-non-officiel, comptes Google et e-mail via Supabase en région Europe,
-soumissions modérées, tranches de poids et de taille. L'étape la plus délicate
-sera l'écriture des politiques d'accès RLS, seul endroit du projet où une
-erreur permettrait à un inconnu de modifier le classement.
+non-officiel, comptes Google et e-mail, lien vidéo obligatoire, soumissions
+modérées, tranches de poids et de taille.
+
+**Conception arrêtée le 30 juillet 2026**, à lire dans
+[docs/communaute.md](docs/communaute.md). Supabase est écarté au profit d'une
+**API PHP devant une base MySQL** sur l'hébergement OVH déjà payé. Le schéma est
+prêt dans [db/schema.sql](db/schema.sql) ; aucun code PHP n'existe encore.
+
+Deux conséquences à ne pas perdre de vue. MySQL n'a pas d'équivalent des
+politiques RLS : **toute l'autorisation vit dans le code PHP**, et c'est
+désormais le seul endroit du projet où une erreur laisserait un inconnu modifier
+le classement. Et les bases OVH mutualisées ne sont joignables que depuis
+l'hébergement, ce qui impose un MySQL local pour développer.
 
 Elle repose sur une hypothèse jamais vérifiée : que des athlètes veuillent
 déclarer leurs performances de salle. Un sondage auprès de quelques

@@ -18,7 +18,7 @@ explicitement, jamais subi.
 |---|---|---|
 | Hébergement GitHub Pages | **OVH mutualisé** | Choix d'hébergeur. GitHub reste utilisé, mais uniquement comme automate. |
 | Thème sombre uniquement | **Clair + sombre** | Demande explicite, avec fonds atténués plutôt que noir et blanc purs. |
-| Ni comptes ni backend | **Comptes prévus** (communauté) | Demande explicite. Limité à la partie non-officielle ; l'officiel reste en lecture seule. |
+| Ni comptes ni backend | **Comptes et API PHP prévus** (communauté) | Demande explicite. Limité à la partie non-officielle ; l'officiel reste statique et en lecture seule. |
 | Full power (SBD) uniquement | **Tous les formats** | Les chiffres ont montré que la restriction coûtait un tiers des données. |
 
 **Ce qui n'a pas bougé** : aucun compte ni soumission ne peut atteindre le
@@ -289,13 +289,27 @@ le podium général, script Buy Me a Coffee officiel ou bouton maison, nom de
 l'onglet Extérieur.
 
 **Chantier principal** : la partie communauté, classement non-officiel, comptes
-Google et e-mail via Supabase, soumissions modérées, tranches de poids et de
-taille. Elle nécessite un projet Supabase en région Europe et un projet Google
-Cloud pour l'OAuth.
+Google et e-mail, soumissions modérées, tranches de poids et de taille.
 
-L'étape la plus délicate y sera l'écriture des **politiques d'accès RLS** :
-c'est le seul endroit du projet où une erreur permettrait à un inconnu de
-trafiquer le classement.
+Sa conception a été arrêtée le 30 juillet 2026 et vit dans son propre document,
+[communaute.md](communaute.md). Le point à retenir ici : **Supabase est écarté**
+au profit d'une API PHP devant une base MySQL, sur l'hébergement OVH déjà payé.
+La décision est celle de l'auteur, pour rester chez un seul fournisseur dans un
+langage qu'il maîtrise.
+
+Elle déplace le risque sans le réduire. MySQL ne connaît pas les politiques
+d'accès RLS de PostgreSQL : là où la base aurait refusé elle-même une écriture
+interdite même en cas de bug du front-end, **c'est désormais le code PHP qui
+doit vérifier chaque droit**. Le « seul endroit du projet où une erreur
+permettrait à un inconnu de trafiquer le classement » n'a pas disparu, il a
+changé de fichier.
+
+Deux faits vérifiés en chemin, qui contraignent tout le reste : une base de
+données ne se parle jamais depuis un navigateur, ce qui rend une couche serveur
+obligatoire dès lors que les données quittent le HTML statique ; et les bases
+incluses dans un mutualisé OVH ne sont joignables **que depuis l'hébergement**,
+le port 3306 n'étant pas exposé. Développer exige donc un MySQL local, et aucune
+migration de schéma ne peut être automatisée.
 
 Elle repose aussi sur une hypothèse jamais vérifiée, à savoir que des athlètes
 veuillent déclarer leurs performances de salle. Un premier retour d'un
