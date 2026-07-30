@@ -1,0 +1,25 @@
+# =============================================================================
+# Ce dossier ne contient que des bibliothèques : elles sont incluses par les
+# points d'entrée de l'API, jamais demandées directement. Tout accès HTTP y est
+# refusé.
+#
+# Ce fichier est volontairement SÉPARÉ du .htaccess racine. Une erreur de
+# syntaxe dans celui de la racine rend le site entier inaccessible ; ici, elle
+# ne toucherait que ce dossier.
+#
+# Les fichiers PHP portent en plus un garde-fou interne (`if (!defined(
+# 'SBDRE_API'))`). Deux protections indépendantes valent mieux qu'une seule
+# bien intentionnée.
+# =============================================================================
+
+# Apache 2.4, celui d'OVH.
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+
+# Apache 2.2, au cas où. Sans ce repli, la directive ci-dessus serait ignorée
+# et le dossier resterait ouvert sans que rien ne le signale.
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+</IfModule>
