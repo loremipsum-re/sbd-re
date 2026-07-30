@@ -97,6 +97,13 @@ CREATE TABLE IF NOT EXISTS membre (
   -- deux performances : il est porté par la performance.
   tranche_taille  VARCHAR(10)     NULL     DEFAULT NULL,
 
+  -- Tranche d'âge COURANTE, d'après COMMUNITY_AGE_BRACKETS. Elle ne sert qu'à
+  -- pré-remplir le formulaire : c'est la copie figée sur la performance qui
+  -- fait foi, comme pour le poids. Sans quoi le classement master d'un athlète
+  -- de 39 ans basculerait tout seul le jour de ses 40 ans, réécrivant
+  -- rétroactivement des barres soulevées des années plus tôt.
+  tranche_age     VARCHAR(10)     NULL     DEFAULT NULL,
+
   -- « membre » ne peut agir que sur ses propres performances. « moderateur »
   -- accède à la file d'attente. « admin » peut en plus changer les rôles.
   -- Le rôle est donné à la main en base : aucun point d'entrée de l'API ne
@@ -165,6 +172,12 @@ CREATE TABLE IF NOT EXISTS performance (
   -- Identifiant d'une tranche de COMMUNITY_WEIGHT_BRACKETS : « 80-90 », « 120+ ».
   tranche_poids   VARCHAR(10)     NOT NULL,
 
+  -- Tranche d'âge AU MOMENT DE LA BARRE, d'après COMMUNITY_AGE_BRACKETS.
+  -- Figée ici pour la même raison que le poids : un anniversaire ne doit pas
+  -- déplacer des performances passées d'une catégorie à l'autre. Le formulaire
+  -- la pré-remplit depuis le profil, mais c'est cette copie qui fait foi.
+  tranche_age     VARCHAR(10)     NOT NULL,
+
   date_performance DATE           NOT NULL,
 
   -- Salle ou lieu, facultatif et purement descriptif. Ne sert jamais à situer
@@ -210,7 +223,12 @@ CREATE TABLE IF NOT EXISTS performance (
   -- Le classement public lit toujours « les performances publiées d'un
   -- mouvement, d'un équipement et d'une tranche ». Cet index couvre exactement
   -- cette question, la charge décroissante évitant en plus un tri.
-  KEY ix_perf_classement (etat, mouvement, equipement, tranche_poids, charge_kg),
+  --
+  -- MySQL n'exploite qu'un préfixe d'un index composé : un filtre par âge sans
+  -- filtre par poids ne s'en servira que partiellement. À l'échelle attendue,
+  -- quelques milliers de lignes au plus, c'est sans conséquence mesurable.
+  -- Affiner avant d'avoir des chiffres serait de l'optimisation à l'aveugle.
+  KEY ix_perf_classement (etat, mouvement, equipement, tranche_poids, tranche_age, charge_kg),
 
   -- La file de modération, lue à chaque visite de la page de modération.
   KEY ix_perf_file (etat, date_soumission),

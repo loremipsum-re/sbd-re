@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import {
+  COMMUNITY_AGE_BRACKETS,
   COMMUNITY_HEIGHT_BRACKETS,
   COMMUNITY_WEIGHT_BRACKETS,
 } from '../../lib/categories';
@@ -63,12 +64,18 @@ import {
 
     <h2>Des tranches plutôt que des chiffres exacts</h2>
     <p>
-      Le classement communauté raisonnera par tranches de poids et de taille.
-      Déclarer « entre 80 et 90 kg » suffit largement à situer une performance,
-      tout en gardant vos mensurations pour vous.
+      Le classement communauté raisonnera par tranches d'âge, de poids et de
+      taille. Déclarer « entre 80 et 90 kg » suffit largement à situer une
+      performance, tout en gardant vos mensurations pour vous.
     </p>
 
     <div class="tranches">
+      <div>
+        <h3>Âge</h3>
+        <ul class="puces">
+          {COMMUNITY_AGE_BRACKETS.map((b) => <li>{b.label}</li>)}
+        </ul>
+      </div>
       <div>
         <h3>Poids de corps</h3>
         <ul class="puces">
@@ -195,7 +202,10 @@ import {
 
   @media (min-width: 40rem) {
     .tranches {
-      grid-template-columns: 1fr 1fr;
+      /* auto-fit plutôt que trois colonnes figées : une quatrième famille de
+         tranches un jour se placerait toute seule, et les listes gardent une
+         largeur lisible sur les écrans intermédiaires. */
+      grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
     }
   }
 

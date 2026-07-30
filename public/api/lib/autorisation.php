@@ -214,6 +214,7 @@ const CHAMPS_PROFIL = [
     'nom_reel',
     'afficher_nom_reel',
     'tranche_taille',
+    'tranche_age',
     'sexe',
 ];
 
@@ -223,6 +224,7 @@ const CHAMPS_PERFORMANCE = [
     'equipement',
     'charge_kg',
     'tranche_poids',
+    'tranche_age',
     'date_performance',
     'lieu',
     'lien_video',

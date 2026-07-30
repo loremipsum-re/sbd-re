@@ -150,6 +150,27 @@ export const COMMUNITY_WEIGHT_BRACKETS: Bracket[] = [
   { id: '120+', label: 'plus de 120 kg', min: 120, max: null },
 ];
 
+/**
+ * Tranches d'âge, calquées sur les catégories de la fédération plutôt
+ * qu'inventées : un powerlifter sait déjà s'il est junior, open ou master, et
+ * retrouver son vocabulaire vaut mieux que découpler les deux classements pour
+ * rien.
+ *
+ * La borne basse à 15 ans n'est pas sportive mais juridique : c'est en France
+ * l'âge à partir duquel un mineur consent seul au traitement de ses données.
+ * En deçà, il faudrait recueillir et conserver l'accord d'un parent, et pouvoir
+ * le prouver. Décision de l'auteur du 30 juillet 2026, voir docs/communaute.md.
+ */
+export const COMMUNITY_AGE_BRACKETS: Bracket[] = [
+  { id: '15-17', label: '15 à 17 ans', min: 15, max: 18 },
+  { id: '18-23', label: '18 à 23 ans', min: 18, max: 24 },
+  { id: '24-39', label: '24 à 39 ans', min: 24, max: 40 },
+  { id: '40-49', label: '40 à 49 ans', min: 40, max: 50 },
+  { id: '50-59', label: '50 à 59 ans', min: 50, max: 60 },
+  { id: '60-69', label: '60 à 69 ans', min: 60, max: 70 },
+  { id: '70+', label: '70 ans et plus', min: 70, max: null },
+];
+
 export const COMMUNITY_HEIGHT_BRACKETS: Bracket[] = [
   { id: '-150', label: 'moins de 150 cm', min: null, max: 150 },
   { id: '150-160', label: '150 à 160 cm', min: 150, max: 160 },

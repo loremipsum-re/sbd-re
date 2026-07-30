@@ -255,6 +255,7 @@ try {
             'equipement'       => 'raw',
             'charge_kg'        => 180.5,
             'tranche_poids'    => '80-90',
+            'tranche_age'      => '24-39',
             'date_performance' => '2026-01-15',
             'lien_video'       => 'https://exemple.re/video',
         ];
@@ -264,10 +265,10 @@ try {
             $bdd->prepare(
                 'INSERT INTO performance
                    (membre_id, mouvement, equipement, charge_kg, tranche_poids,
-                    date_performance, lien_video)
+                    tranche_age, date_performance, lien_video)
                  VALUES
                    (:membre_id, :mouvement, :equipement, :charge_kg, :tranche_poids,
-                    :date_performance, :lien_video)'
+                    :tranche_age, :date_performance, :lien_video)'
             )->execute($valeurs);
 
             // Aucune exception : la valeur est passée. C'est un échec du test.
@@ -308,10 +309,10 @@ try {
         $bdd->prepare(
             'INSERT INTO performance
                (membre_id, mouvement, equipement, charge_kg, tranche_poids,
-                date_performance, lien_video)
-             VALUES (?, ?, ?, ?, ?, ?, ?)'
-        )->execute([$membreId, 'bench', 'raw', 122.5, '80-90', '2026-03-02',
-                    'https://exemple.re/video']);
+                tranche_age, date_performance, lien_video)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+        )->execute([$membreId, 'bench', 'raw', 122.5, '80-90', '24-39',
+                    '2026-03-02', 'https://exemple.re/video']);
         ok('Insertion d\'une performance valide : acceptée, comme prévu.');
     } catch (PDOException $e) {
         ko('Une performance VALIDE a été refusée : ' . $e->getMessage());
