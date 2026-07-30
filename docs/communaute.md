@@ -145,6 +145,37 @@ actuel : une erreur de syntaxe y rend le site entièrement inaccessible.
 
 ## 3. Le modèle de données
 
+### À qui cela s'adresse
+
+Précisé par l'auteur le 30 juillet 2026, après qu'il a écarté l'idée d'un
+sondage préalable. **Deux publics, aux attentes différentes.**
+
+**Ceux qui veulent montrer.** Ils affichent déjà leurs performances sur Facebook
+et Instagram. Ils viennent pour se comparer, et pour regarder ce que font les
+autres. Le mot employé est « stalker », et il faut le prendre au sérieux : la
+consultation des profils d'autrui est un usage principal, pas un effet de bord.
+
+**Ceux qui veulent en être.** Le plus grand nombre. Ils souhaitent figurer dans
+un classement et voir les meilleurs. Ni comparaison fine ni exploration : une
+place, et un haut de tableau.
+
+Trois conséquences de conception :
+
+- **Les fiches d'athlètes communautaires sont une fonctionnalité de premier
+  plan**, au même titre que le classement. Le second public entre par le
+  classement, le premier par les fiches.
+- **Le partage compte.** Une performance publiée a vocation à partir sur
+  Instagram ou Facebook. Cela donne d'un coup beaucoup de valeur aux images
+  OpenGraph, aujourd'hui en attente du logo : voir la section correspondante du
+  README.
+- **Le rang doit vouloir dire quelque chose.** C'est le point délicat, traité
+  plus bas.
+
+Les données qui comptent, dans l'ordre donné par l'auteur : **tranche d'âge,
+tranche de poids, tranche de taille, charge soulevée, et rang.**
+
+### Les tables
+
 Quatre tables, détaillées et commentées dans
 [db/schema.sql](../db/schema.sql) : `membre`, `performance`, `jeton`,
 `tentative_connexion`.
@@ -160,11 +191,16 @@ Les décisions qu'il encode, et qui méritent d'être connues avant d'y toucher.
 correspondance entre la base et l'affichage : un seul vocabulaire de bout en
 bout.
 
-### Le poids est porté par la performance, la taille par le membre
+### Le poids et l'âge sont portés par la performance, la taille par le membre
 
-Une taille ne bouge plus à l'âge adulte. Un poids de corps, si. Quelqu'un qui
-prend dix kilos ne doit pas voir ses anciennes barres changer de tranche
-rétroactivement : la tranche est figée au moment de la barre.
+Une taille ne bouge plus à l'âge adulte. Un poids de corps, si, et un âge
+toujours. Quelqu'un qui prend dix kilos ne doit pas voir ses anciennes barres
+changer de tranche rétroactivement, et un athlète de 39 ans ne doit pas voir son
+palmarès entier basculer en catégorie master le jour de ses 40 ans. Les deux
+tranches sont donc **figées au moment de la barre**.
+
+`membre.tranche_age` existe malgré tout, mais uniquement pour pré-remplir le
+formulaire. C'est la copie portée par la performance qui fait foi.
 
 ### Aucun total n'est saisissable
 
@@ -184,11 +220,48 @@ Le Dots exige un poids de corps au kilo près. Les tranches déclaratives ne le
 fournissent pas, et prendre le milieu de la tranche fabriquerait un chiffre
 faux, ce que le projet s'interdit partout ailleurs.
 
-**Conséquence à mesurer** : le classement communauté se lit par tranche, sans
-score relatif, donc sans « meilleur athlète toutes catégories » comme l'accueil
-en propose côté officiel. C'est le prix du choix des tranches, qui reste le bon
-choix pour la participation et pour le RGPD. À revoir seulement si l'auteur
-préfère demander un poids exact.
+**Conséquence assumée** : aucun classement ne peut départager équitablement un
+athlète de 60 kg et un de 120 kg. C'est le prix du choix des tranches, qui reste
+le bon choix pour la participation et pour le RGPD. À revoir seulement le jour
+où l'auteur voudra demander un poids exact, même facultatif.
+
+### Le classement principal, et ce que « rang » veut dire
+
+Décision de l'auteur, le 30 juillet 2026.
+
+**Un seul classement par mouvement et par sexe**, trié à la charge brute, toutes
+tranches confondues. Âge, poids et équipement sont des **filtres**, et la
+tranche s'affiche en badge à côté de chaque nom.
+
+Le raisonnement tient en un calcul. Segmenter le classement par toutes les
+tranches donnerait 2 sexes × 8 poids × 6 âges × 3 équipements × 3 mouvements,
+soit **864 classements**. Avec quelques dizaines d'inscrits, presque chacun
+serait premier de sa case, et le rang ne voudrait plus rien dire.
+
+C'est le même problème que l'arbitrage encore ouvert du site officiel, celui des
+médailles décernées par catégorie de poids : 41 médailles pour 54 résultats,
+sportivement exact et visuellement vide de sens.
+
+Le classement unique répond aussi au second public décrit plus haut, celui qui
+veut simplement voir les meilleurs. Un lourd y domine mécaniquement un léger,
+c'est la contrepartie, et le badge de tranche la rend lisible.
+
+**À revoir quand les chiffres le justifieront** : le jour où une tranche de
+poids compte une dizaine d'inscrits, une vue par tranche devient utile. Rien
+dans le schéma ne l'empêche, `ix_perf_classement` la couvre déjà.
+
+### L'âge minimum est de quinze ans
+
+Décision de l'auteur, le 30 juillet 2026. Quinze ans est en France l'âge à
+partir duquel un mineur consent seul au traitement de ses données. En deçà, il
+faudrait recueillir l'accord d'un parent, le conserver et pouvoir le prouver.
+
+Conséquences à ne pas oublier au moment d'écrire l'inscription et les pages
+légales : la tranche `15-17` existe dans `COMMUNITY_AGE_BRACKETS`, l'inscription
+doit refuser un âge déclaré inférieur, et `/confidentialite/` doit dire
+explicitement que le site accueille des mineurs de quinze ans et plus. Publier
+le nom, la performance et une vidéo d'un mineur demande une rédaction plus
+prudente que pour un adulte.
 
 ### Le nom public est au choix de l'athlète
 
