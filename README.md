@@ -284,6 +284,50 @@ Ensuite, chaque envoi sur `main` déclenche un déploiement automatique.
     └── pages/             Une page = un fichier
 ```
 
+### Les pages du site
+
+| Adresse | Nombre | Contenu |
+|---|---|---|
+| `/` | 1 | Top 10 aux points Dots, compétitions récentes |
+| `/classement/` | 1 | 266 athlètes, filtrable et triable |
+| `/records/` | 1 | Grille par sexe et par équipement |
+| `/categories/…` | 20 | Une page par catégorie, avec l'histoire de ses records |
+| `/competitions/…` | 95 | Liste, regroupements par nom, une page par édition |
+| `/exterieur/` | 1 | Résultats obtenus hors de l'île |
+| `/athlete/…` | 312 | Une fiche par athlète |
+| Autres | 5 | Communauté, à propos, confidentialité, mentions légales, 404 |
+
+Les adresses de compétition regroupent les éditions successives d'un même
+événement : `/competitions/open-de-la-fournaise/2025-02-15/`. Retirer la date
+mène à la liste des éditions. Les anciennes adresses de la forme `date-nom`
+redirigent, grâce à une table générée dans `astro.config.mjs`.
+
+### Mesure d'audience
+
+Microsoft Clarity fournit cartes de chaleur et relectures de session, **derrière
+un consentement explicite**. Le script n'est jamais posé directement : seule la
+fonction `window.sbdChargerMesure()` est définie dans le gabarit, et elle n'est
+appelée qu'après acceptation.
+
+Tant que rien n'est accepté, aucune requête ne part vers `clarity.ms` et aucun
+cookie n'est déposé. Le refus s'exerce en un clic et se révoque depuis
+`/confidentialite/`.
+
+**Avant de brancher tout autre service externe**, vérifier dans l'onglet réseau
+du navigateur qu'aucune requête ne part avant l'accord du visiteur.
+
+### Partage sur les réseaux sociaux
+
+La plomberie OpenGraph attend le logo. Dans `BaseLayout.astro`, la constante
+`IMAGE_PARTAGE_DEFAUT` vaut `null` et aucune balise `og:image` n'est émise :
+une balise pointant vers un fichier absent serait mise en cache durablement par
+les réseaux sociaux.
+
+Dès que le logo existe, déposer une image de 1200 × 630 pixels en PNG ou JPEG
+dans `public/`, renseigner la constante, et toutes les pages en héritent. Une
+page peut aussi fournir sa propre image via les propriétés `image` et
+`imageAlt`.
+
 ### Changer l'apparence
 
 Tout est dans `src/styles/tokens.css`. Les couleurs y sont déclarées **une seule

@@ -193,25 +193,111 @@ réussi. Combinée à une erreur de chemin, elle aurait vidé l'hébergement.
 
 ---
 
-## 6. État au 28 juillet 2026
+## 6. Ce qui a été ajouté après la mise en ligne
+
+### Les résultats hors de La Réunion
+
+Les athlètes de l'île se déplacent : 436 résultats concernent 73 des 312
+athlètes, dans 28 pays, depuis 1993. Ils vivent sur `/exterieur/` et sur les
+fiches, **sans jamais entrer au classement ni aux records**, qui récompensent
+des barres soulevées sur un plateau réunionnais.
+
+Techniquement, cela impose **deux passes** sur le dump : la liste des athlètes
+réunionnais n'est connue qu'après avoir lu tout le fichier.
+
+**Un faux appariement a été trouvé** : des tournois lycéens texans attribués à
+un « Kobe Washington » présent à La Réunion en 2023. Deux personnes différentes
+qu'OpenPowerlifting n'avait pas distinguées. Le rattachement se faisant par le
+nom exact, on hérite de leurs erreurs d'identification.
+`data/exterieur-exclude.json` sert à corriger ces cas ; **d'autres existent
+probablement**.
+
+### Les pages par catégorie
+
+Dix-sept catégories, chacune avec son classement, ses records et surtout
+**l'histoire de son record au total** : qui l'a détenu, de combien il l'a battu,
+combien de temps sa marque a tenu. En −93 kg hommes, neuf marques se sont
+succédé depuis 2017.
+
+Cette chronologie existait dans les données depuis le début sans être affichée
+nulle part. Ces pages répondent aussi à des recherches réelles du type « record
+squat 93 kg réunion », là où le site n'avait qu'une seule page de records.
+
+### Affichage en cartes : un arbitrage entre deux demandes
+
+L'auteur a demandé des **en-têtes de colonnes cliquables** pour trier, puis un
+**affichage en lignes** de quatre niveaux par athlète. Les deux s'excluent :
+sans colonnes visibles, il n'y a plus d'en-tête à cliquer.
+
+Choix retenu : les cartes partout, et une **barre « Trier par »** construite à
+partir des mêmes en-têtes, restés présents pour les lecteurs d'écran. Les deux
+mécanismes partagent la même logique de tri.
+
+Conséquence importante : les valeurs de tri ont migré des cellules vers la
+**ligne**, en attributs `data-`. Plusieurs valeurs cohabitant dans une même
+cellule, l'index de colonne ne voulait plus rien dire. Voir le contrat détaillé
+dans `CLAUDE.md`.
+
+### Le meilleur total et le meilleur Dots sont deux choses distinctes
+
+Le score Dots affiché était celui du meilleur total, ce qui n'est pas la même
+chose que le meilleur Dots. En descendant de catégorie, un athlète obtient un
+meilleur Dots avec un total inférieur. Les deux sont désormais calculés
+séparément, chacun avec sa date et sa compétition.
+
+Le défaut a été révélé par une demande de l'auteur d'afficher « la date du
+Dots », qui supposait implicitement que ce score a sa propre date.
+
+### La mesure d'audience
+
+Microsoft Clarity a été ajouté **derrière un consentement explicite**. Il dépose
+des cookies et transmet les données à Microsoft : il ne relève donc pas de
+l'exemption que la CNIL accorde à la simple mesure d'audience.
+
+Le script n'est jamais posé directement. Seule la fonction
+`window.sbdChargerMesure()` est définie, et elle n'est appelée qu'après
+acceptation. Vérifié dans le navigateur : aucune requête vers `clarity.ms` avant
+accord, aucune après refus.
+
+Le texte de la bannière reste court et ne nomme pas Microsoft, à la demande de
+l'auteur. Ce schéma est valide **à condition que le lien vers
+`/confidentialite/` reste visible** : sans lui, le consentement ne serait plus
+éclairé.
+
+---
+
+## 7. État au 30 juillet 2026
 
 | | |
 |---|---|
 | En ligne | <https://sbd.re> |
 | Dépôt | <https://github.com/loremipsum-re/sbd-re> |
-| Données | 61 compétitions, 312 athlètes, 1 135 résultats, 2017 → 2026 |
-| Pages | 319, dont 312 fiches athlètes |
-| Pipeline | 4 M de lignes en ~10 s, mémoire stable à ~115 Mo |
+| Données | 61 compétitions, 312 athlètes, 1 135 résultats à La Réunion, plus 436 à l'extérieur |
+| Pages | 436 |
+| Pipeline | 4 M de lignes en ~10 s par passe, deux passes, mémoire stable à ~115 Mo |
 | Poids réseau | Page la plus lourde : 271 Ko bruts, **21,4 Ko** après gzip |
-| Lighthouse | Performance, bonnes pratiques et SEO à 100 ; accessibilité corrigée |
+| Lighthouse | 100 partout, mesuré par l'auteur après la refonte |
+| Référencement | Plan de site de 433 adresses, datées page par page. Search Console en cours |
 | Automatisation | Données le 1er du mois à 8 h (heure de La Réunion), déploiement à chaque envoi |
 
 ### Ce qui reste
 
-La **partie communauté** — classement non-officiel, comptes Google et e-mail via
-Supabase, soumissions modérées, tranches de poids et de taille. Elle nécessite un
-projet Supabase en région Europe et un projet Google Cloud pour l'OAuth.
+**En attente de l'auteur** : le logo, pour activer les OpenGraph.
 
-L'étape la plus délicate y sera l'écriture des **politiques d'accès RLS** : c'est
-le seul endroit du projet où une erreur permettrait à un inconnu de trafiquer le
-classement.
+**Trois arbitrages ouverts** : attribution des médailles par catégorie ou sur
+le podium général, script Buy Me a Coffee officiel ou bouton maison, nom de
+l'onglet Extérieur.
+
+**Chantier principal** : la partie communauté, classement non-officiel, comptes
+Google et e-mail via Supabase, soumissions modérées, tranches de poids et de
+taille. Elle nécessite un projet Supabase en région Europe et un projet Google
+Cloud pour l'OAuth.
+
+L'étape la plus délicate y sera l'écriture des **politiques d'accès RLS** :
+c'est le seul endroit du projet où une erreur permettrait à un inconnu de
+trafiquer le classement.
+
+Elle repose aussi sur une hypothèse jamais vérifiée, à savoir que des athlètes
+veuillent déclarer leurs performances de salle. Un premier retour d'un
+powerlifter a été positif sur la partie officielle ; rien ne dit encore que la
+partie communauté trouvera son public.
