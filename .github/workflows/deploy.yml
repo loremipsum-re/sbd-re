@@ -35,15 +35,14 @@ jobs:
       - name: Installer les dépendances
         run: npm ci
 
+      # Aucune variable d'environnement n'est nécessaire ici, y compris pour la
+      # partie communauté. Son API PHP vivant sur la MÊME ORIGINE que le site,
+      # le navigateur n'a besoin d'aucune clé ni identifiant : un cookie de
+      # session suffit. Les identifiants MySQL restent dans un fichier de
+      # configuration déposé chez OVH, que le build n'a jamais à connaître.
+      # Voir docs/communaute.md.
       - name: Construire le site
         run: npm run build
-        env:
-          # Ces deux variables ne servent qu'à la partie communauté.
-          # La clé « anon » est publique par conception : elle est destinée à
-          # partir dans le JavaScript du navigateur. Ce n'est pas elle qui
-          # protège les données, ce sont les politiques RLS côté Supabase.
-          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
-          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
 
       # ---------------------------------------------------------------------
       # Dépôt par SFTP (SSH), et non par FTPS.
