@@ -139,11 +139,35 @@ return [
     // -------------------------------------------------------------------------
     // Courriels sortants
     // -------------------------------------------------------------------------
-    // La délivrabilité depuis un mutualisé est un sujet en soi : à tester tôt.
-    // Un lien de vérification qui atterrit en indésirable bloque purement et
-    // simplement les inscriptions, et rien dans les journaux ne le signale.
+    // L'expéditeur DOIT appartenir au domaine du site. L'enregistrement SPF de
+    // sbd.re se termine par « -all », ce qui demande le rejet de tout message
+    // envoyé au nom du domaine par un serveur non autorisé.
     'courriel' => [
         'expediteur'     => 'bonjour@sbd.re',
         'nom_expediteur' => 'SBD.re',
+    ],
+
+    // -------------------------------------------------------------------------
+    // SMTP
+    // -------------------------------------------------------------------------
+    // Mesuré le 30 juillet 2026 : la fonction mail() de PHP est REFUSÉE par
+    // l'hébergement, « User loremis is not allowed to submit mail ». Le SMTP
+    // authentifié n'est donc pas un contournement, c'est la seule voie, et
+    // c'était de toute façon la bonne : les messages sortent alors des serveurs
+    // de messagerie qu'autorise le SPF du domaine.
+    //
+    // Deux combinaisons possibles chez OVH, l'une et l'autre chiffrées :
+    //   ssl0.ovh.net port 465 avec 'ssl'
+    //   ssl0.ovh.net port 587 avec 'tls'
+    //
+    // L'utilisateur est l'ADRESSE COMPLÈTE de la boîte, pas un identifiant
+    // court, et le mot de passe est celui de cette boîte. Il faut donc que la
+    // boîte existe réellement dans l'espace client OVH.
+    'smtp' => [
+        'hote'         => 'ssl0.ovh.net',
+        'port'         => 465,
+        'chiffrement'  => 'ssl',
+        'utilisateur'  => 'bonjour@sbd.re',
+        'mot_de_passe' => 'a-completer',
     ],
 ];

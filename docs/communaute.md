@@ -99,6 +99,50 @@ prennent des tableaux en argument plutôt que d'aller chercher l'état courant.
 encore sur le serveur, par `php db/verifier.php` en SSH. C'est le dernier écart
 qui reste entre ici et la production.
 
+### L'envoi de courriels passe par SMTP, et pas par choix
+
+Mesuré le 30 juillet 2026 sur l'hébergement : **`mail()` est refusée au niveau
+du système.**
+
+```
+sendmail: fatal: User loremis(126629) is not allowed to submit mail
+```
+
+Le blocage tombe bien, car cette voie n'était de toute façon pas la bonne. Le
+domaine publie :
+
+```
+v=spf1 include:mx.ovh.com -all
+```
+
+Seuls les serveurs de messagerie d'OVH sont autorisés à écrire au nom de sbd.re,
+et le `-all` demande le **rejet** de tout le reste. Un message parti du
+`sendmail` local de l'hébergement web serait désavoué par le domaine lui-même.
+
+D'où **SMTP authentifié sur une boîte du domaine** : les messages sortent alors
+des serveurs que le SPF autorise. Réglages dans `db/config.exemple.php`, section
+`smtp`, sur `ssl0.ovh.net` en 465 avec SSL ou en 587 avec TLS.
+
+### PHPMailer, première dépendance tierce du projet
+
+Choisie par l'auteur le 30 juillet 2026. C'est la bibliothèque que **WordPress
+emploie lui-même**, donc un terrain qu'il connaît, et elle est éprouvée par des
+millions de sites là où l'authentification et le chiffrement sont exactement le
+genre de code qu'on n'écrit pas soi-même sans bonne raison.
+
+Version 7.1.1, licence LGPL 2.1, déposée à la main dans
+`public/api/lib/phpmailer/` : l'hébergement mutualisé n'a pas Composer. **Trois
+fichiers sur sept** sont retenus, ceux qu'exige l'envoi SMTP, plus la licence.
+`DSNConfigurator`, `OAuth`, `OAuthTokenProvider` et `POP3` sont écartés.
+
+Le reste du projet garde sa règle : aucune dépendance sans nécessité démontrée.
+
+**Un piège traité dans le code.** PHPMailer, en mode bavard, restitue la
+conversation SMTP entière, où l'authentification transite en base64. Le mot de
+passe de la boîte y apparaît donc pour qui sait décoder, ce qui est immédiat.
+`masquerIdentifiants()` filtre ces lignes avant tout affichage : sans elle,
+coller la sortie d'un diagnostic dans une conversation le divulguerait.
+
 ### La fermeture du dossier des bibliothèques, vérifiée en production
 
 Les bibliothèques PHP ont été déployées le 30 juillet 2026, premier code
