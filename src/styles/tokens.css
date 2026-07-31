@@ -16,56 +16,99 @@
    * 1. PALETTE — les valeurs brutes, déclarées une fois pour toutes.
    * -------------------------------------------------------------------- */
 
-  /* Thème clair : blanc cassé légèrement chaud, jamais du blanc pur.
-     Le blanc pur (#FFF) sur un écran fatigue en lecture prolongée et donne un
-     rendu clinique qui jure avec l'ambiance salle de force. */
-  --p-light-bg: #faf7f3;
-  --p-light-surface: #ffffff;
-  --p-light-border: #e7ded3;
-  --p-light-text: #1b1714;
-  --p-light-muted: #6d635a;
   /*
-   * Orange assombri pour tenir le contraste AA (4.5:1) sur fond clair.
+   * IDENTITÉ — les trois couleurs du drapeau réunionnais, assombries de 30 %.
    *
-   * La valeur n'est pas choisie à l'œil : elle est contrainte par le cas le
-   * plus difficile du site, l'onglet de navigation actif, qui pose du texte
-   * accentué sur un fond teinté du même accent à 12 %. Sur ce fond, la valeur
-   * précédente (#c8540a) ne donnait que 3.56:1.
+   * Établie dans le système de marque « SBD.RE Branding System » en juillet
+   * 2026. Le bleu, le rouge et le jaune du drapeau donnent au site une origine
+   * lisible sans passer par un cliché de carte postale.
    *
-   * Contrastes obtenus avec #a8410a — fond de page 5.74, carte blanche 6.13,
-   * onglet actif 4.80, bloc d'annonce 5.09, blanc sur bouton 6.13.
-   *
-   * Avant de l'éclaircir, vérifier CES cinq valeurs : le fond de page seul est
-   * trompeusement permissif.
+   * Ces trois valeurs sont l'identité brute. Les rôles plus bas les adaptent
+   * au contraste : un jaune de drapeau est illisible en texte sur fond clair,
+   * il n'y sert donc que d'aplat.
    */
-  --p-light-accent: #a8410a;
-  --p-light-accent-hover: #8f3406;
-  --p-light-on-accent: #ffffff;
+  --p-bleu: #2447b3;
+  --p-rouge: #c41a1a;
+  --p-jaune: #d6d600;
+
+  /* Thème clair : gris papier, jamais du blanc pur, qui fatigue en lecture
+     prolongée et donne un rendu clinique. */
+  --p-light-bg: #f3f2f2;
+  --p-light-surface: #eae9e9;
+  --p-light-border: #d7d3d3;
+  --p-light-text: #201e1d; /* basalte */
+  --p-light-muted: #605d5d;
   /*
-   * Métaux du podium. Seules couleurs du site en dehors de l'accent orange,
-   * et strictement réservées aux distinctions : coupes, médailles, rangs.
+   * L'accent TEXTE est un jaune assombri, pas le jaune de drapeau.
    *
-   * L'or de ce thème est volontairement un laiton sombre. Un or franc est
-   * beaucoup trop clair pour rester lisible sur fond blanc : mesuré, #9a7a14
-   * ne donne que 3.80:1, sous le seuil. #8a6a12 atteint 4.74:1.
+   * Le #d6d600 du drapeau ne donne que 1.6:1 sur ce fond : illisible. Il reste
+   * magnifique en APLAT, avec du texte basalte dessus, d'où les deux jetons
+   * distincts. Ne jamais employer --accent-fill comme couleur de texte.
+   *
+   * Le cas contraignant reste l'onglet de navigation actif, qui pose du texte
+   * accentué sur un fond teinté du même accent : c'est lui qui fixe la valeur,
+   * pas le fond de page. Mesuré : #6b6b00 donnait 5.04 sur le fond de page mais
+   * seulement 4.32 sur l'onglet actif, sous le seuil. #676700 tient partout.
+   *
+   * Contrastes obtenus — fond de page 5.34, carte 4.93, onglet actif 4.54,
+   * survol 9.63, basalte sur aplat jaune 10.66.
+   *
+   * Avant de l'éclaircir, vérifier CES valeurs, pas seulement le fond de page,
+   * qui est trompeusement permissif.
    */
-  --p-light-or: #8a6a12;
+  --p-light-accent: #676700;
+  --p-light-accent-hover: #404000;
+  --p-light-accent-fill: #d6d600;
+  --p-light-on-accent: #201e1d;
+  /* Le bleu sert au marquage « vérifié », jamais au texte courant. */
+  --p-light-bleu: #2447b3;
+  /*
+   * Le rouge du drapeau, assombri pour rester lisible en texte sur fond clair.
+   * Il ne figure PAS dans le thème sombre : voir la note du thème sombre.
+   */
+  --p-light-rouge: #a31414;
+  /*
+   * Métaux du podium, strictement réservés aux distinctions.
+   *
+   * Le doré d'identité #c9a227 ne donne que 2.3:1 en texte sur ce fond : il
+   * sert d'aplat, et --p-light-or reste un laiton sombre pour le texte.
+   *
+   * La carte étant désormais plus sombre que le fond (#eae9e9 contre #f3f2f2),
+   * l'ancien #8a6a12 n'y donnait plus que 4.18. Mesuré : #836511 tient les deux,
+   * fond 4.90 et carte 4.52.
+   */
+  --p-light-or: #836511;
+  --p-light-or-fill: #c9a227;
   --p-light-argent: #5f6672;
   --p-light-bronze: #8a5326;
 
-  /* Thème sombre : noir cassé chaud, jamais du noir pur.
-     Le noir pur crée un contraste trop violent avec le texte clair et fait
-     « baver » les caractères (halation) sur les écrans OLED. */
-  --p-dark-bg: #15120f;
-  --p-dark-surface: #1f1a16;
-  --p-dark-border: #322a23;
-  --p-dark-text: #f4efe9;
-  --p-dark-muted: #a2968a;
-  --p-dark-accent: #ff7a1a; /* orange plein : il peut être vif sur fond sombre */
-  --p-dark-accent-hover: #ff9448;
-  --p-dark-on-accent: #1a1005;
-  /* Sur fond sombre, les métaux peuvent rester francs : tous dépassent 7:1. */
+  /* Thème sombre : basalte, jamais du noir pur. Le noir pur crée un contraste
+     trop violent avec le texte clair et fait « baver » les caractères sur les
+     écrans OLED. */
+  --p-dark-bg: #171614;
+  --p-dark-surface: #211f1c;
+  --p-dark-border: #3a3633;
+  --p-dark-text: #f3f2f2;
+  --p-dark-muted: #b5afab;
+  /* Le jaune peut rester franc sur fond sombre : il y est très lisible. */
+  --p-dark-accent: #d1d100;
+  --p-dark-accent-hover: #e8e83a;
+  --p-dark-accent-fill: #d1d100;
+  --p-dark-on-accent: #171614;
+  --p-dark-bleu: #5b7fe0;
+  /*
+   * AUCUN ROUGE DANS LE THÈME SOMBRE, et c'est délibéré.
+   *
+   * Le rouge vif sur fond quasi noir est l'identité visuelle de SBD Apparel,
+   * marque à laquelle ce site n'est pas affilié. La maquette d'origine s'en
+   * servait pour le rang 1 ; ce rôle revient ici au doré, qui dit la même
+   * chose sans emprunter l'image d'une autre marque.
+   *
+   * Le rouge subsiste uniquement dans le logo inversé, où il est la plus
+   * petite des trois barres et où le jaune domine.
+   */
   --p-dark-or: #ffc94d;
+  --p-dark-or-fill: #c9a227;
   --p-dark-argent: #cbd5e1;
   --p-dark-bronze: #e0a06a;
 
@@ -80,8 +123,12 @@
   --muted: var(--p-light-muted);
   --accent: var(--p-light-accent);
   --accent-hover: var(--p-light-accent-hover);
+  --accent-fill: var(--p-light-accent-fill);
   --on-accent: var(--p-light-on-accent);
+  --bleu: var(--p-light-bleu);
+  --rouge: var(--p-light-rouge);
   --or: var(--p-light-or);
+  --or-fill: var(--p-light-or-fill);
   --argent: var(--p-light-argent);
   --bronze: var(--p-light-bronze);
 
@@ -90,23 +137,30 @@
    * -------------------------------------------------------------------- */
 
   /*
-   * Deux polices, auto-hébergées (voir fonts.css).
+   * UNE seule police, auto-hébergée (voir fonts.css) : Archivo, variable sur
+   * deux axes, graisse 400 à 800 et largeur 62 % à 125 %.
    *
-   * Oswald pour les titres et les chiffres : condensée, donc un total à quatre
-   * chiffres tient dans une colonne étroite — décisif sur un site fait de
-   * tableaux de charges. Sa graisse maximale est 700 : ne jamais demander 800,
-   * le navigateur fabriquerait un faux gras baveux.
+   * Elle remplace Oswald et Inter à elle seule depuis juillet 2026. Oswald
+   * avait été choisie pour sa forme condensée, indispensable pour loger un
+   * total à quatre chiffres dans une colonne étroite, mais elle ignore
+   * `tabular-nums`. Archivo l'applique réellement — mesuré dans le navigateur,
+   * « 111 » et « 888 » font exactement 68,17 px en graisse 400 — et sa forme
+   * resserrée s'obtient par `font-stretch` sur le même fichier.
    *
-   * Inter pour le texte : dessinée pour les écrans, et ses chiffres s'alignent
-   * parfaitement en colonne avec `font-variant-numeric: tabular-nums`.
+   * Les deux jetons pointent donc vers la même famille. Ils restent distincts
+   * pour que le jour où le titrage change de police, rien d'autre ne bouge.
    *
    * Les polices système restent en repli : si le téléchargement échoue, le site
    * reste parfaitement lisible.
    */
-  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,
+  --font-body: 'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,
     Arial, sans-serif;
-  --font-display: 'Oswald', 'Haettenschweiler', 'Arial Narrow Bold', system-ui,
-    sans-serif;
+  --font-display: 'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto,
+    Helvetica, Arial, sans-serif;
+
+  /* Largeur resserrée, pour les colonnes de chiffres et les titres longs.
+     C'est ce qui remplace la condensation native d'Oswald. */
+  --stretch-condense: 84%;
 
   --step--1: clamp(0.83rem, 0.8rem + 0.15vw, 0.9rem);
   --step-0: clamp(1rem, 0.96rem + 0.2vw, 1.09rem);
@@ -145,8 +199,13 @@
     --muted: var(--p-dark-muted);
     --accent: var(--p-dark-accent);
     --accent-hover: var(--p-dark-accent-hover);
+    --accent-fill: var(--p-dark-accent-fill);
     --on-accent: var(--p-dark-on-accent);
+    --bleu: var(--p-dark-bleu);
+    /* Pas de rouge en sombre : le doré tient ce rôle. Voir la palette. */
+    --rouge: var(--p-dark-or);
     --or: var(--p-dark-or);
+    --or-fill: var(--p-dark-or-fill);
     --argent: var(--p-dark-argent);
     --bronze: var(--p-dark-bronze);
   }
@@ -162,8 +221,13 @@
   --muted: var(--p-dark-muted);
   --accent: var(--p-dark-accent);
   --accent-hover: var(--p-dark-accent-hover);
+  --accent-fill: var(--p-dark-accent-fill);
   --on-accent: var(--p-dark-on-accent);
+  --bleu: var(--p-dark-bleu);
+  /* Pas de rouge en sombre : le doré tient ce rôle. Voir la palette. */
+  --rouge: var(--p-dark-or);
   --or: var(--p-dark-or);
+  --or-fill: var(--p-dark-or-fill);
   --argent: var(--p-dark-argent);
   --bronze: var(--p-dark-bronze);
 }
@@ -192,25 +256,29 @@ h1,
 h2,
 h3 {
   font-family: var(--font-display);
-  line-height: 1.1;
-  /* Oswald est déjà condensée : un resserrement supplémentaire collerait les
-     lettres. On laisse le crénage naturel de la police. */
-  letter-spacing: 0;
+  line-height: 1.05;
+  /* Archivo n'est pas condensée comme l'était Oswald : en gros titrage, ses
+     lettres respirent trop. Un resserrement léger rend la masse compacte que
+     donne le système de marque. */
+  letter-spacing: -0.02em;
   text-wrap: balance;
   margin: 0 0 var(--space-4);
 }
 
+/* La graisse 800 est celle du système de marque. Elle est réellement dessinée
+   dans le fichier variable : aucun faux gras fabriqué par le navigateur. */
 h1 {
   font-size: var(--step-4);
-  font-weight: 700;
+  font-weight: 800;
 }
 h2 {
   font-size: var(--step-2);
-  font-weight: 700;
+  font-weight: 800;
 }
 h3 {
   font-size: var(--step-1);
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 p {
@@ -254,24 +322,29 @@ svg {
 }
 
 /*
- * Les chiffres sont le contenu principal du site — d'où DEUX classes, et pas une.
+ * Les chiffres sont le contenu principal du site.
  *
- * Oswald ne fournit pas de chiffres à largeur fixe : `font-variant-numeric:
- * tabular-nums` y est purement ignoré. Mesuré, pas supposé — en Oswald 700,
- * « 111 » occupe 18,5 px quand « 888 » en occupe 26,4. Dans une colonne de
- * plusieurs centaines de lignes, les totaux se décaleraient visiblement.
+ * Les deux classes existaient parce qu'Oswald ignorait `tabular-nums` : il
+ * fallait une police pour les grands chiffres isolés et une autre pour les
+ * colonnes. Archivo supprime ce partage — mesuré dans le navigateur, avec
+ * `tabular-nums` « 111 » et « 888 » occupent exactement 68,17 px, et en
+ * graisse 800 ses chiffres sont déjà à largeur fixe sans rien demander.
  *
- *   .num      → Oswald. Pour un chiffre ISOLÉ et grand : statistique de page
- *               d'accueil, record mis en avant, bloc de résumé. Rien à aligner,
- *               et sa forme condensée est justement ce qu'on veut.
- *   .num-tab  → Inter. Pour un chiffre DANS UNE COLONNE de tableau. Inter
- *               applique réellement tabular-nums : tous les chiffres font
- *               exactement la même largeur, les colonnes restent d'aplomb.
+ * Les deux classes sont CONSERVÉES, mais pour une raison désormais différente :
+ * elles ne changent plus de police, seulement de rôle typographique. Des
+ * dizaines de gabarits les emploient, et les fusionner n'apporterait rien.
+ *
+ *   .num      → chiffre ISOLÉ et grand : statistique d'accueil, record mis en
+ *               avant. Resserré, pour retrouver la compacité d'Oswald.
+ *   .num-tab  → chiffre DANS UNE COLONNE. Largeur normale, chiffres tabulaires,
+ *               les colonnes restent d'aplomb.
  */
 .num {
   font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: 0;
+  font-weight: 800;
+  font-stretch: var(--stretch-condense);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .num-tab {
