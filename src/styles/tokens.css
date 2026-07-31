@@ -131,6 +131,11 @@
   --or-fill: var(--p-light-or-fill);
   --argent: var(--p-light-argent);
   --bronze: var(--p-light-bronze);
+  /* Les trois barres du logo, dans l'ordre squat, bench, soulevé de terre.
+     Sur fond clair, le rouge tient la barre pleine du centre. */
+  --logo-a: var(--p-bleu);
+  --logo-b: var(--p-rouge);
+  --logo-c: var(--p-jaune);
 
   /* ----------------------------------------------------------------------
    * 3. Typographie, espacements, rayons, communs aux deux thèmes.
@@ -208,6 +213,11 @@
     --or-fill: var(--p-dark-or-fill);
     --argent: var(--p-dark-argent);
     --bronze: var(--p-dark-bronze);
+    /* Voir la note du bloc [data-theme='dark'] : le jaune tient la barre
+       pleine, le rouge devient la plus petite. */
+    --logo-a: #5b7fe0;
+    --logo-b: #d1d100;
+    --logo-c: #e03c3c;
   }
 }
 
@@ -230,6 +240,12 @@
   --or-fill: var(--p-dark-or-fill);
   --argent: var(--p-dark-argent);
   --bronze: var(--p-dark-bronze);
+  /* Sur fond sombre, c'est le JAUNE qui tient la barre pleine et le rouge qui
+     devient la plus petite. Le rouge cesse ainsi de dominer sur fond quasi
+     noir, ce qui est précisément l'image de SBD Apparel qu'on évite. */
+  --logo-a: #5b7fe0;
+  --logo-b: #d1d100;
+  --logo-c: #e03c3c;
 }
 
 /* ------------------------------------------------------------------------

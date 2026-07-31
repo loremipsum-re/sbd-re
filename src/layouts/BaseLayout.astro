@@ -3,6 +3,7 @@
  * Gabarit commun à toutes les pages : en-tête, navigation, pied de page, méta.
  */
 import BanniereConsentement from '../components/BanniereConsentement.astro';
+import Logo from '../components/Logo.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
 // Les déclarations de polices d'abord : tokens.css s'en sert immédiatement.
@@ -52,6 +53,7 @@ const liens = [
   { href: '/categories/', label: 'Catégories' },
   { href: '/competitions/', label: 'Compétitions' },
   { href: '/exterieur/', label: 'Extérieur' },
+  { href: '/comparer/', label: 'Comparer' },
   { href: '/communaute/', label: 'Communauté' },
   { href: '/a-propos/', label: 'À propos' },
 ];
@@ -179,7 +181,9 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
 
     <header class="entete">
       <div class="wrap barre">
-        <a class="marque lien-nu" href="/">SBD<span>.re</span></a>
+        <a class="marque lien-nu" href="/" aria-label="SBD.re, accueil">
+          <Logo />
+        </a>
 
         <nav aria-label="Navigation principale">
           <ul>
@@ -246,14 +250,10 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
   }
 
   .marque {
-    font-family: var(--font-display);
-    font-weight: 700;
+    display: inline-flex;
     font-size: var(--step-1);
     color: var(--text);
     flex-shrink: 0;
-  }
-  .marque span {
-    color: var(--accent);
   }
 
   nav {

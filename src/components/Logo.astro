@@ -1,0 +1,88 @@
+---
+/**
+ * Logo SBD.re — trois barres et le mot-symbole.
+ *
+ * Issu du système de marque « SBD.RE Branding System », juillet 2026. Les trois
+ * barres sont à la fois les trois mouvements de la discipline et les trois
+ * couleurs du drapeau réunionnais. Leurs hauteurs inégales évoquent une barre
+ * chargée, et leur ordre n'est pas décoratif : la plus haute est au centre,
+ * comme la marche du vainqueur sur un podium.
+ *
+ * En SVG plutôt qu'en image : le logo doit rester net à toutes les tailles,
+ * changer de couleur avec le thème, et ne coûter aucune requête réseau.
+ */
+
+interface Props {
+  /** « complet » affiche les barres et le mot. « icone » n'affiche que les barres. */
+  variante?: 'complet' | 'icone';
+  /** Hauteur des barres, en unités de la police environnante. */
+  taille?: string;
+  class?: string;
+}
+
+const { variante = 'complet', taille = '1.35em', class: classe } = Astro.props;
+---
+
+<span class:list={['logo', classe]} style={`--hauteur-barres:${taille}`}>
+  <svg
+    class="barres"
+    viewBox="0 0 11 16"
+    role="img"
+    aria-label="SBD.re"
+    focusable="false"
+  >
+    <!-- Squat : 62 % de la hauteur. -->
+    <rect x="0" y="6.08" width="3" height="9.92" fill="var(--logo-a)" />
+    <!-- Bench : la barre pleine, au centre. -->
+    <rect x="4" y="0" width="3" height="16" fill="var(--logo-b)" />
+    <!-- Deadlift : 42 %. -->
+    <rect x="8" y="9.28" width="3" height="6.72" fill="var(--logo-c)" />
+  </svg>
+
+  {
+    variante === 'complet' && (
+      <span class="mot" aria-hidden="true">
+        SBD<span class="ext">.re</span>
+      </span>
+    )
+  }
+</span>
+
+<style>
+  .logo {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 0.32em;
+    line-height: 1;
+  }
+
+  /*
+   * `height` porte la mesure et la largeur suit le ratio du viewBox. Le SVG est
+   * aligné sur la ligne de base du mot par `align-items: flex-end` du parent :
+   * les barres et les lettres posent donc sur le même sol, ce qui est tout
+   * l'effet recherché.
+   */
+  .barres {
+    height: var(--hauteur-barres);
+    width: auto;
+    display: block;
+    /* Annule la règle globale `svg { height: auto }` de tokens.css, qui
+       écraserait la hauteur demandée ci-dessus. */
+    max-width: none;
+  }
+
+  .mot {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--hauteur-barres);
+    letter-spacing: -0.03em;
+    color: var(--text);
+    /* Le mot-symbole est optiquement plus bas que les barres : ce décalage le
+       remet d'aplomb sans toucher à l'alignement du conteneur. */
+    transform: translateY(0.06em);
+  }
+
+  .ext {
+    color: var(--accent);
+  }
+</style>
