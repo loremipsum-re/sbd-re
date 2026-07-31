@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="SBD.re">
+  <!--
+    Favicon SBD.re, d'après la déclinaison « Favicon 32 » du système de marque.
+
+    Sur un carré de 32 px, le logo complet serait illisible : les trois barres
+    y perdent leurs proportions et le mot disparaît. On garde donc l'aplat rouge
+    et trois barres épaissies, qui restent identifiables à cette taille.
+
+    Les couleurs sont FIGÉES et ne suivent pas le thème : un favicon est mis en
+    cache par le navigateur et affiché sur un fond d'onglet qu'on ne contrôle
+    pas. Le rouge plein reste lisible sur un onglet clair comme sombre.
+  -->
+  <rect width="32" height="32" fill="#c41a1a" />
+  <rect x="6" y="13" width="5" height="13" fill="#f3f2f2" />
+  <rect x="13.5" y="6" width="5" height="20" fill="#f3f2f2" />
+  <rect x="21" y="17" width="5" height="9" fill="#d6d600" />
+</svg>

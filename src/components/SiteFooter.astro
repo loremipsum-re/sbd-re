@@ -27,7 +27,14 @@ const { debut, fin } = periode();
       <nav aria-label="Pied de page">
         <p class="titre">Le site</p>
         <ul>
-          <li><a href="/classement/">Classement</a></li>
+          {/*
+            L'en-tête ne porte que trois entrées ; ce menu recueille tout le
+            reste. C'est ici, et nulle part ailleurs, que se retrouvent les
+            rubriques sorties de la barre de navigation.
+          */}
+          <li><a href="/classement/">Classement officiel</a></li>
+          <li><a href="/communaute/">Communauté</a></li>
+          <li><a href="/comparer/">Comparer des athlètes</a></li>
           <li><a href="/records/">Records</a></li>
           <li><a href="/categories/">Catégories</a></li>
           <li><a href="/competitions/">Compétitions</a></li>
@@ -84,7 +91,7 @@ const { debut, fin } = periode();
       </p>
       <p class="realisation">
         Une réalisation de{' '}
-        <a href="https://loremipsum.re" rel="noopener">lorem</a>.
+        <a href="https://loremipsum.re" rel="noopener">loremipsum.re</a>.
       </p>
     </div>
   </div>

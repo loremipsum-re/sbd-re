@@ -47,14 +47,25 @@ const imageAbsolue = imagePartage ? new URL(imagePartage, Astro.site).href : nul
 /** Identifiant du projet Microsoft Clarity, pour la mesure d'audience. */
 const CLARITY_ID = 'xtvqmm4cxo';
 
-const liens = [
-  { href: '/classement/', label: 'Classement' },
+/**
+ * L'en-tête ne porte que les TROIS entrées principales.
+ *
+ * Le reste vit dans le pied de page. Une navigation qui montre tout ne met
+ * rien en avant : huit rubriques alignées laissaient le visiteur choisir sans
+ * indice, et débordaient de l'écran sur téléphone.
+ */
+const liensPrincipaux = [
+  { href: '/classement/', label: 'Classement officiel' },
+  { href: '/communaute/', label: 'Communauté' },
+  { href: '/comparer/', label: 'Comparer' },
+];
+
+/** Rubriques secondaires : dans le menu du téléphone et dans le pied de page. */
+const liensSecondaires = [
   { href: '/records/', label: 'Records' },
   { href: '/categories/', label: 'Catégories' },
   { href: '/competitions/', label: 'Compétitions' },
   { href: '/exterieur/', label: 'Extérieur' },
-  { href: '/comparer/', label: 'Comparer' },
-  { href: '/communaute/', label: 'Communauté' },
   { href: '/a-propos/', label: 'À propos' },
 ];
 
@@ -89,10 +100,14 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
       )
     }
 
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%8F%8B%EF%B8%8F%3C/text%3E%3C/svg%3E"
-    />
+    {/*
+      Favicon en SVG, servi comme fichier plutôt qu'en data-URI : il est mis en
+      cache une fois pour tout le site au lieu d'être répété dans les 437 pages.
+      Les navigateurs sans prise en charge du SVG retombent sur /favicon.ico
+      qu'ils demandent d'eux-mêmes ; en son absence ils n'affichent rien, ce qui
+      est sans conséquence.
+    */}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
     <!--
       Le navigateur ne découvre normalement une police qu'après avoir lu le CSS,
@@ -179,16 +194,16 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
   <body>
     <a class="evitement" href="#contenu">Aller au contenu</a>
 
-    <header class="entete">
+    <header class="entete" id="top">
       <div class="wrap barre">
         <a class="marque lien-nu" href="/" aria-label="SBD.re, accueil">
           <Logo />
         </a>
 
-        <nav aria-label="Navigation principale">
+        <nav class="nav-large" aria-label="Navigation principale">
           <ul>
             {
-              liens.map((lien) => (
+              liensPrincipaux.map((lien) => (
                 <li>
                   <a
                     class="lien-nu"
@@ -203,6 +218,38 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
           </ul>
         </nav>
 
+        {/*
+          Menu du téléphone, en <details> plutôt qu'en JavaScript.
+
+          Le navigateur gère lui-même l'ouverture, la fermeture, le clavier et
+          l'annonce aux lecteurs d'écran. Aucun piège au focus à écrire, et le
+          menu fonctionne même si le JavaScript échoue. Il se referme tout seul
+          au changement de page, puisque la page est rechargée.
+        */}
+        <details class="menu-mobile">
+          <summary aria-label="Ouvrir le menu">
+            <span class="barres-menu" aria-hidden="true"></span>
+            <span class="mot-menu">Menu</span>
+          </summary>
+          <nav aria-label="Navigation">
+            <ul>
+              {
+                [...liensPrincipaux, ...liensSecondaires].map((lien) => (
+                  <li>
+                    <a
+                      class="lien-nu"
+                      href={lien.href}
+                      aria-current={estActif(lien.href) ? 'page' : undefined}
+                    >
+                      {lien.label}
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+          </nav>
+        </details>
+
         <ThemeToggle />
       </div>
     </header>
@@ -213,6 +260,40 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
 
     <SiteFooter />
     <BanniereConsentement />
+
+    {/*
+      Retour en haut. C'est un LIEN vers l'ancre du haut de page, pas un bouton :
+      sans JavaScript il fonctionne quand même, et le clavier le traite
+      naturellement. Le script ne fait que le montrer une fois la page
+      suffisamment défilée, pour qu'il n'encombre pas le premier écran.
+    */}
+    <a class="haut" href="#top" aria-label="Revenir en haut de la page" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path
+          d="M12 5l7 7-1.4 1.4L13 8.8V20h-2V8.8l-4.6 4.6L5 12z"
+          fill="currentColor"></path>
+      </svg>
+    </a>
+
+    <script is:inline>
+      (() => {
+        const bouton = document.querySelector('.haut');
+        if (!bouton) return;
+
+        // Un seuil généreux : sous 600 px de défilement, le haut de page est
+        // encore à portée de pouce et le bouton ne servirait qu'à masquer du
+        // contenu.
+        const basculer = () => {
+          bouton.hidden = window.scrollY < 600;
+        };
+
+        // `passive` indique au navigateur que l'écouteur ne bloquera jamais le
+        // défilement : sans lui, il doit attendre l'exécution du script avant
+        // de faire bouger la page, ce qui se sent au doigt sur téléphone.
+        addEventListener('scroll', basculer, { passive: true });
+        basculer();
+      })();
+    </script>
   </body>
 </html>
 
@@ -240,6 +321,122 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     background: color-mix(in srgb, var(--bg) 85%, transparent);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border);
+  }
+
+  /* ----------------------------------------------------------------------
+   * Navigation : trois entrées sur grand écran, un menu sur téléphone.
+   *
+   * Les deux existent dans le HTML et c'est le CSS qui choisit. Basculer en
+   * JavaScript imposerait d'attendre son exécution, avec un scintillement à
+   * chaque chargement.
+   * -------------------------------------------------------------------- */
+
+  .menu-mobile {
+    position: relative;
+  }
+
+  .menu-mobile summary {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: var(--step--1);
+    font-weight: 700;
+    cursor: pointer;
+    /* Retire la flèche que Safari et Chrome ajoutent d'office. */
+    list-style: none;
+  }
+  .menu-mobile summary::-webkit-details-marker {
+    display: none;
+  }
+  .menu-mobile[open] summary {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Trois traits dessinés en dégradé plutôt qu'en trois éléments : un seul
+     nœud dans le DOM pour la même image. */
+  .barres-menu {
+    width: 1.15em;
+    height: 0.75em;
+    background:
+      linear-gradient(currentColor 0 0) 0 0 / 100% 2px no-repeat,
+      linear-gradient(currentColor 0 0) 0 50% / 100% 2px no-repeat,
+      linear-gradient(currentColor 0 0) 0 100% / 100% 2px no-repeat;
+  }
+
+  .menu-mobile nav {
+    position: absolute;
+    right: 0;
+    top: calc(100% + var(--space-2));
+    min-width: 14rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.28);
+    padding: var(--space-2);
+    z-index: 10;
+  }
+
+  .menu-mobile nav ul {
+    display: block;
+    overflow: visible;
+  }
+
+  .menu-mobile nav a {
+    display: block;
+    padding: var(--space-3);
+    white-space: normal;
+  }
+
+  /* Sous 52rem : le menu remplace les onglets. Au-dessus, l'inverse. */
+  @media (max-width: 51.99rem) {
+    .nav-large {
+      display: none;
+    }
+  }
+  @media (min-width: 52rem) {
+    .menu-mobile {
+      display: none;
+    }
+  }
+
+  /* ----------------------------------------------------------------------
+   * Retour en haut
+   * -------------------------------------------------------------------- */
+
+  .haut {
+    position: fixed;
+    right: var(--space-4);
+    bottom: var(--space-4);
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    text-decoration: none;
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.25);
+  }
+  .haut:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .haut svg {
+    width: 1.4rem;
+    height: 1.4rem;
+  }
+  /* `hidden` doit l'emporter sur `display: flex`, sinon le bouton resterait
+     visible dès le haut de page. */
+  .haut[hidden] {
+    display: none;
   }
 
   .barre {
