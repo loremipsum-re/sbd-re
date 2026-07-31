@@ -37,8 +37,23 @@ const FEUILLE = path.join(ROOT, 'src', 'styles', 'fonts.css');
 const AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';
 
+/**
+ * UNE seule famille depuis juillet 2026 : Archivo, qui remplace Oswald et Inter.
+ *
+ * Deux axes sont demandés, et c'est le point intéressant :
+ *   wght 400..800 — des graisses de texte au titrage le plus lourd ;
+ *   wdth 62..125  — un axe de LARGEUR, du très resserré au large.
+ *
+ * Cet axe rend Oswald inutile. On avait choisi Oswald pour sa forme condensée,
+ * qui fait tenir un total à quatre chiffres dans une colonne étroite, mais elle
+ * ignore `tabular-nums` — d'où les deux classes .num et .num-tab, et tout le
+ * piège documenté dans parcours.md. Archivo, elle, applique réellement
+ * tabular-nums : mesuré dans le navigateur, « 111 » et « 888 » occupent
+ * exactement 68,17 px en graisse 400. Un seul fichier couvre donc les deux
+ * usages.
+ */
 const URL_CSS =
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Oswald:wght@500..700&display=swap';
+  'https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap';
 
 /**
  * Le français tient dans latin + latin-ext. Les autres sous-ensembles
@@ -70,11 +85,15 @@ for (const bloc of blocs) {
   if (!SOUS_ENSEMBLES.has(sousEnsemble)) continue;
 
   const famille = /font-family:\s*'([^']+)'/.exec(bloc)?.[1];
-  // Une police variable déclare une plage : « font-weight: 400 700 ».
+  // Une police variable déclare une plage : « font-weight: 400 800 ».
   const graisse = /font-weight:\s*([^;]+);/.exec(bloc)?.[1]?.trim();
   const style = /font-style:\s*(\w+)/.exec(bloc)?.[1] ?? 'normal';
   const url = /src:\s*url\(([^)]+)\)/.exec(bloc)?.[1];
   const plage = /unicode-range:\s*([^;]+);/.exec(bloc)?.[1]?.trim();
+  // L'axe de largeur, quand la police en a un : « font-stretch: 62% 125% ».
+  // Sans cette déclaration, le navigateur refuserait toute valeur de
+  // `font-stretch` autre que 100 % et la forme resserrée serait inaccessible.
+  const largeur = /font-stretch:\s*([^;]+);/.exec(bloc)?.[1]?.trim();
   if (!famille || !graisse || !url) continue;
 
   const nom = `${famille.toLowerCase().replace(/\s+/g, '-')}-${sousEnsemble}.woff2`;
@@ -85,7 +104,7 @@ for (const bloc of blocs) {
   writeFileSync(path.join(DOSSIER_POLICES, nom), octets);
   total += octets.length;
 
-  faces.push({ famille, graisse, style, nom, plage, taille: octets.length });
+  faces.push({ famille, graisse, style, nom, plage, largeur, taille: octets.length });
   console.log(
     `  ${nom.padEnd(28)} graisses ${graisse.padEnd(9)} ${(octets.length / 1024).toFixed(1)} Ko`,
   );
@@ -99,15 +118,17 @@ const entete = `/*
  * Polices auto-hébergées — GÉNÉRÉ PAR scripts/fetch-fonts.mjs.
  * Ne pas modifier à la main : le fichier est réécrit à chaque exécution.
  *
- * Deux familles, en version VARIABLE : un seul fichier par famille couvre
- * toutes les graisses. Des fichiers figés auraient pesé trois fois plus lourd.
+ * UNE famille depuis juillet 2026 : Archivo, en version VARIABLE sur deux axes.
+ * Un seul fichier couvre toutes les graisses ET toutes les largeurs.
  *
- *   Oswald — titres et grands chiffres. Condensée : un total à quatre chiffres
- *            tient dans une colonne étroite. Attention, elle n'a PAS de chiffres
- *            à largeur fixe : ne pas l'utiliser dans une colonne de tableau
- *            (voir les classes .num et .num-tab dans tokens.css).
- *   Inter  — texte courant et chiffres de tableau. Applique réellement
- *            tabular-nums, donc les colonnes restent d'aplomb.
+ *   wght 400..800 — du texte courant au titrage le plus lourd.
+ *   wdth 62..125  — l'axe de LARGEUR, piloté en CSS par « font-stretch ».
+ *
+ * Elle remplace Oswald et Inter à elle seule. Oswald avait été choisie pour sa
+ * forme condensée, mais elle ignore « tabular-nums », ce qui avait imposé deux
+ * classes CSS distinctes. Archivo applique réellement tabular-nums — mesuré
+ * dans le navigateur, « 111 » et « 888 » font exactement 68,17 px en graisse
+ * 400 — et sa forme resserrée s'obtient par font-stretch sur le même fichier.
  *
  * « font-display: swap » affiche le texte immédiatement dans une police système
  * puis bascule une fois la police chargée. Sans lui, le texte resterait
@@ -120,7 +141,7 @@ const regles = faces
     (f) => `@font-face {
   font-family: '${f.famille}';
   font-style: ${f.style};
-  font-weight: ${f.graisse};
+  font-weight: ${f.graisse};${f.largeur ? `\n  font-stretch: ${f.largeur};` : ''}
   font-display: swap;
   src: url('/fonts/${f.nom}') format('woff2-variations');
   unicode-range: ${f.plage};
