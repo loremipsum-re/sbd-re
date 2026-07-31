@@ -1,0 +1,535 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { equipmentGroup, equipmentLabel } from '../lib/categories';
+import { results } from '../lib/data';
+import { athleteSlug } from '../lib/slug';
+import type { Result } from '../lib/types';
+
+/**
+ * Comparaison d'athlètes, jusqu'à quatre à la fois.
+ *
+ * POURQUOI TOUTES LES DONNÉES SONT DANS LA PAGE
+ * ---------------------------------------------
+ * Le site est statique : il n'y a pas de serveur à interroger quand le
+ * visiteur change de sélection. Les 312 athlètes sont donc résumés une fois au
+ * build et livrés dans la page, ce qui rend la comparaison instantanée et
+ * fonctionnelle hors ligne. Le résumé est volontairement maigre — dix nombres
+ * par athlète — parce que c'est ce qui décide du poids de la page.
+ *
+ * L'ÉTAT VIT DANS L'ADRESSE
+ * -------------------------
+ * La sélection s'écrit dans l'URL, comme les filtres du reste du site. Une
+ * comparaison se partage donc par simple copie du lien, ce qui est exactement
+ * l'usage attendu d'un tel outil.
+ */
+
+interface Resume {
+  n: string; // nom
+  s: string; // slug
+  x: string; // sexe
+  c: string; // catégorie de poids
+  p: number | null; // poids de corps
+  e: string; // équipement
+  sq: number; // meilleur squat
+  bp: number; // meilleur développé couché
+  dl: number; // meilleur soulevé de terre
+  t: number; // meilleur total full power
+  d: number; // meilleur Dots
+  co: number; // compétitions à La Réunion
+}
+
+/**
+ * Un athlète, résumé par ses MEILLEURES barres, tous formats confondus.
+ *
+ * Les mouvements isolés comptent : une barre soulevée devant des juges compte,
+ * qu'elle vienne d'un full power ou d'une compétition de développé couché seul.
+ * Le total et le Dots, eux, ne viennent QUE du full power — c'est l'invariant
+ * le plus important du projet, un « total » de compétition de bench seul ne
+ * vaut que cette barre-là.
+ */
+const parAthlete = new Map<string, Result[]>();
+for (const r of results) {
+  const liste = parAthlete.get(r.name);
+  if (liste) liste.push(r);
+  else parAthlete.set(r.name, [r]);
+}
+
+const athletes: Resume[] = [...parAthlete.entries()]
+  .map(([nom, lignes]) => {
+    const fullPower = lignes.filter((r) => r.event === 'SBD');
+    const max = (f: (r: Result) => number | null | undefined) =>
+      Math.max(0, ...lignes.map((r) => f(r) ?? 0));
+
+    // La ligne du meilleur total sert de référence pour la catégorie et
+    // l'équipement : c'est la performance qui définit le mieux l'athlète.
+    const reference =
+      fullPower.reduce<Result | null>(
+        (a, b) => ((b.totalKg ?? 0) > (a?.totalKg ?? 0) ? b : a),
+        null,
+      ) ?? lignes[0];
+
+    return {
+      n: nom,
+      s: athleteSlug(nom),
+      x: reference.sex,
+      c: reference.weightClassKg,
+      p: reference.bodyweightKg,
+      e: equipmentLabel(equipmentGroup(reference.equipment)),
+      sq: max((r) => r.bestSquatKg),
+      bp: max((r) => r.bestBenchKg),
+      dl: max((r) => r.bestDeadliftKg),
+      t: Math.max(0, ...fullPower.map((r) => r.totalKg ?? 0)),
+      d: Math.max(0, ...fullPower.map((r) => r.dots ?? 0)),
+      co: fullPower.length,
+    };
+  })
+  .sort((a, b) => a.n.localeCompare(b.n, 'fr'));
+
+const nombreAthletes = athletes.length;
+---
+
+<BaseLayout
+  titre="Comparer des athlètes"
+  description={`Comparez jusqu'à quatre athlètes de force athlétique de La Réunion parmi ${nombreAthletes} : squat, développé couché, soulevé de terre, total et points Dots, avec l'écart en pourcentage.`}
+>
+  <div class="wrap page-comparer">
+    <h1>Comparer des athlètes</h1>
+
+    <p class="chapeau">
+      Choisissez jusqu'à quatre athlètes et comparez leurs meilleures barres.
+      L'écart s'affiche en pourcentage par rapport au meilleur de chaque ligne.
+      L'adresse de la page garde votre sélection : le lien se partage tel quel.
+    </p>
+
+    <div class="choix">
+      <label for="recherche">Ajouter un athlète</label>
+      <div class="ligne-choix">
+        <input
+          id="recherche"
+          type="text"
+          list="liste-athletes"
+          placeholder="Tapez un nom, par exemple Gabriel Begue"
+          autocomplete="off"
+        />
+        <button type="button" id="ajouter">Ajouter</button>
+      </div>
+      <datalist id="liste-athletes">
+        {athletes.map((a) => <option value={a.n} />)}
+      </datalist>
+      <p class="aide">
+        {nombreAthletes} athlètes disponibles. Quatre au maximum dans une
+        comparaison, au-delà le tableau devient illisible.
+      </p>
+    </div>
+
+    <div id="selection" class="selection" aria-live="polite"></div>
+
+    <div id="vide" class="vide">
+      <p>Aucun athlète sélectionné pour l'instant.</p>
+      <p class="fin">
+        Commencez par en ajouter un, ou essayez directement{' '}
+        <a href="?a=gabriel-begue,noah-nativel">une comparaison d'exemple</a>.
+      </p>
+    </div>
+
+    <div id="tableau" class="tableau-zone" hidden></div>
+
+    <h2>Ce que ces chiffres disent, et ce qu'ils ne disent pas</h2>
+    <p>
+      Les meilleures barres de chaque athlète ne viennent pas forcément de la
+      même compétition, ni de la même année. Un squat de 2019 peut ainsi côtoyer
+      un soulevé de terre de 2025.
+    </p>
+    <p>
+      Le total et les points Dots proviennent uniquement du full power, seul
+      format où les trois mouvements s'enchaînent. Les barres isolées, elles,
+      comptent quel que soit le format de la compétition.
+    </p>
+    <p>
+      Comparer deux athlètes de catégories de poids différentes au total brut a
+      ses limites : c'est précisément ce que corrigent les points Dots, qui
+      rapportent la performance au poids de corps.
+    </p>
+  </div>
+</BaseLayout>
+
+<script is:inline define:vars={{ athletes }}>
+  (() => {
+    const MAX = 4;
+    const parSlug = new Map(athletes.map((a) => [a.s, a]));
+
+    const champ = document.getElementById('recherche');
+    const bouton = document.getElementById('ajouter');
+    const zoneSelection = document.getElementById('selection');
+    const zoneTableau = document.getElementById('tableau');
+    const zoneVide = document.getElementById('vide');
+
+    /** Les lignes du tableau. `dec` = nombre de décimales à l'affichage. */
+    const LIGNES = [
+      { clef: 'sq', label: 'Squat', unite: 'kg', dec: 1 },
+      { clef: 'bp', label: 'Développé couché', unite: 'kg', dec: 1 },
+      { clef: 'dl', label: 'Soulevé de terre', unite: 'kg', dec: 1 },
+      { clef: 't', label: 'Total', unite: 'kg', dec: 1 },
+      { clef: 'd', label: 'Points Dots', unite: '', dec: 1 },
+      { clef: 'co', label: 'Compétitions', unite: '', dec: 0 },
+    ];
+
+    const nombre = (v, dec) =>
+      v.toLocaleString('fr-FR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: dec,
+      });
+
+    /** Slugs sélectionnés, lus dans l'adresse. */
+    function selection() {
+      const brut = new URLSearchParams(location.search).get('a') ?? '';
+      const vus = new Set();
+      return brut
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => {
+          // Un slug inconnu ou répété est ignoré plutôt que d'afficher une
+          // colonne vide : une adresse bricolée à la main ne doit pas casser
+          // la page.
+          if (!s || vus.has(s) || !parSlug.has(s)) return false;
+          vus.add(s);
+          return true;
+        })
+        .slice(0, MAX);
+    }
+
+    function ecrire(slugs) {
+      const url = new URL(location.href);
+      if (slugs.length) url.searchParams.set('a', slugs.join(','));
+      else url.searchParams.delete('a');
+      history.replaceState(null, '', url);
+      rendre();
+    }
+
+    function rendre() {
+      const slugs = selection();
+      const choisis = slugs.map((s) => parSlug.get(s));
+
+      zoneSelection.innerHTML = choisis.length
+        ? choisis
+            .map(
+              (a) =>
+                `<span class="jeton">${a.n}<button type="button" data-retirer="${a.s}" aria-label="Retirer ${a.n}">×</button></span>`,
+            )
+            .join('') +
+          (choisis.length > 1
+            ? '<button type="button" id="vider" class="vider">Tout retirer</button>'
+            : '')
+        : '';
+
+      zoneVide.hidden = choisis.length > 0;
+      zoneTableau.hidden = choisis.length === 0;
+      if (!choisis.length) return;
+
+      const enTetes = choisis
+        .map(
+          (a) =>
+            `<th scope="col"><a href="/athlete/${a.s}/">${a.n}</a><span class="sous">${a.c} kg · ${a.e}</span></th>`,
+        )
+        .join('');
+
+      const corps = LIGNES.map((l) => {
+        const valeurs = choisis.map((a) => a[l.clef]);
+        const meilleur = Math.max(...valeurs);
+
+        const cellules = valeurs
+          .map((v) => {
+            if (!v) return '<td class="absent">—</td>';
+
+            // L'écart se lit par rapport au MEILLEUR de la ligne : c'est la
+            // seule référence qui ne dépende pas de l'ordre de sélection.
+            const chef = v === meilleur;
+            const ecart = meilleur > 0 ? ((v - meilleur) / meilleur) * 100 : 0;
+            const badge = chef
+              ? '<span class="chef">meilleur</span>'
+              : `<span class="ecart">${nombre(ecart, 1)} %</span>`;
+
+            return `<td class="${chef ? 'est-chef' : ''}"><span class="valeur num-tab">${nombre(v, l.dec)}${l.unite ? ' ' + l.unite : ''}</span>${badge}</td>`;
+          })
+          .join('');
+
+        return `<tr><th scope="row">${l.label}</th>${cellules}</tr>`;
+      }).join('');
+
+      zoneTableau.innerHTML =
+        `<table class="comparaison"><thead><tr><th scope="col"><span class="sr-only">Mesure</span></th>${enTetes}</tr></thead><tbody>${corps}</tbody></table>`;
+    }
+
+    function ajouter(nom) {
+      const trouve = athletes.find(
+        (a) => a.n.toLowerCase() === nom.trim().toLowerCase(),
+      );
+      if (!trouve) return false;
+
+      const slugs = selection();
+      if (slugs.includes(trouve.s) || slugs.length >= MAX) return false;
+
+      ecrire([...slugs, trouve.s]);
+      return true;
+    }
+
+    bouton.addEventListener('click', () => {
+      if (ajouter(champ.value)) champ.value = '';
+    });
+
+    champ.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      if (ajouter(champ.value)) champ.value = '';
+    });
+
+    // Choisir dans la liste native valide directement, sans passer par le
+    // bouton : c'est le geste attendu.
+    champ.addEventListener('input', () => {
+      if (athletes.some((a) => a.n === champ.value) && ajouter(champ.value)) {
+        champ.value = '';
+      }
+    });
+
+    zoneSelection.addEventListener('click', (e) => {
+      const cible = e.target.closest('[data-retirer]');
+      if (cible) {
+        ecrire(selection().filter((s) => s !== cible.dataset.retirer));
+        return;
+      }
+      if (e.target.id === 'vider') ecrire([]);
+    });
+
+    // Les boutons Précédent et Suivant du navigateur doivent fonctionner :
+    // l'adresse EST l'état.
+    window.addEventListener('popstate', rendre);
+
+    rendre();
+  })();
+</script>
+
+<style>
+  .chapeau {
+    font-size: var(--step-1);
+    color: var(--muted);
+    max-width: 62ch;
+    margin-bottom: var(--space-8);
+  }
+
+  .choix {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    margin-bottom: var(--space-6);
+  }
+
+  .choix label {
+    display: block;
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: var(--space-2);
+  }
+
+  .ligne-choix {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+
+  .ligne-choix input {
+    flex: 1 1 18rem;
+    padding: var(--space-3);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+  }
+  .ligne-choix input:focus-visible {
+    border-color: var(--accent);
+  }
+
+  .ligne-choix button {
+    padding: var(--space-3) var(--space-6);
+    border: 0;
+    border-radius: var(--radius);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .ligne-choix button:hover {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  .aide {
+    font-size: var(--step--1);
+    color: var(--muted);
+    margin: var(--space-3) 0 0;
+  }
+
+  .selection {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+  }
+
+  .selection:empty {
+    margin-bottom: 0;
+  }
+
+  .vide {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-8);
+    text-align: center;
+    color: var(--muted);
+  }
+  .vide p {
+    margin: 0;
+  }
+  .vide .fin {
+    font-size: var(--step--1);
+    margin-top: var(--space-2);
+  }
+
+  /* Le tableau peut dépasser sur mobile avec quatre colonnes : il défile
+     dans son propre conteneur, jamais la page entière. */
+  .tableau-zone {
+    overflow-x: auto;
+    margin-bottom: var(--space-12);
+  }
+
+  h2 {
+    margin-top: var(--space-12);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+  }
+</style>
+
+<!--
+  Styles des éléments CONSTRUITS EN JAVASCRIPT.
+
+  Astro limite ses styles aux éléments présents au moment du build : il leur
+  ajoute un attribut de portée que le navigateur exige pour appliquer la règle.
+  Les jetons et le tableau de comparaison n'existant qu'après un clic, ils ne
+  portent pas cet attribut et les règles scopées les ignorent purement et
+  simplement — le tableau s'affiche alors sans aucune mise en forme.
+
+  D'où ce second bloc en `is:global`, volontairement préfixé par
+  `.page-comparer` pour qu'il ne déborde sur aucune autre page.
+-->
+<style is:global>
+  .page-comparer .jeton {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: 2px solid var(--accent);
+    border-radius: 999px;
+    font-size: var(--step--1);
+    font-weight: 600;
+  }
+
+  .page-comparer .jeton button,
+  .page-comparer .vider {
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font: inherit;
+    font-size: var(--step-0);
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 var(--space-1);
+  }
+  .page-comparer .jeton button:hover,
+  .page-comparer .vider:hover {
+    color: var(--accent);
+  }
+
+  .page-comparer .vider {
+    font-size: var(--step--1);
+    text-decoration: underline;
+    align-self: center;
+  }
+
+  .page-comparer .comparaison {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 34rem;
+  }
+
+  .page-comparer .comparaison th,
+  .page-comparer .comparaison td {
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .page-comparer .comparaison thead th {
+    border-bottom: 2px solid var(--text);
+  }
+
+  .page-comparer .comparaison thead a {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--step-0);
+    text-decoration: none;
+  }
+
+  .page-comparer .sous {
+    display: block;
+    font-size: var(--step--1);
+    font-weight: 400;
+    color: var(--muted);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .page-comparer .comparaison tbody th {
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .page-comparer .valeur {
+    display: block;
+    font-size: var(--step-1);
+    font-weight: 700;
+  }
+
+  .page-comparer .est-chef .valeur {
+    color: var(--accent);
+  }
+
+  .page-comparer .chef,
+  .page-comparer .ecart {
+    display: inline-block;
+    margin-top: var(--space-1);
+    font-size: var(--step--1);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .page-comparer .chef {
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .page-comparer .ecart,
+  .page-comparer .absent {
+    color: var(--muted);
+  }
+</style>
