@@ -36,6 +36,7 @@ interface Resume {
   t: number; // meilleur total full power
   d: number; // meilleur Dots
   co: number; // compétitions à La Réunion
+  r: number; // rang aux Dots à La Réunion, 0 si non classé
 }
 
 /**
@@ -81,9 +82,29 @@ const athletes: Resume[] = [...parAthlete.entries()]
       t: Math.max(0, ...fullPower.map((r) => r.totalKg ?? 0)),
       d: Math.max(0, ...fullPower.map((r) => r.dots ?? 0)),
       co: fullPower.length,
+      r: 0,
     };
-  })
-  .sort((a, b) => a.n.localeCompare(b.n, 'fr'));
+  });
+
+/**
+ * Le rang à La Réunion, calculé sur les points DOTS.
+ *
+ * Les Dots plutôt que le total brut : c'est le score qui rapporte la
+ * performance au poids de corps, et donc le seul qui permette de situer un
+ * athlète de 66 kg face à un de 120 kg. Le classement du site emploie la même
+ * mesure.
+ *
+ * Un athlète sans total full power n'est pas classé : son « total » de
+ * compétition de développé couché seul ne vaut que cette barre-là, et le
+ * comparer aux autres serait faux. Il porte alors le rang 0, affiché « — ».
+ */
+const classes = athletes.filter((a) => a.d > 0).sort((a, b) => b.d - a.d);
+classes.forEach((a, i) => {
+  a.r = i + 1;
+});
+
+const nombreClasses = classes.length;
+athletes.sort((a, b) => a.n.localeCompare(b.n, 'fr'));
 
 const nombreAthletes = athletes.length;
 ---
@@ -153,7 +174,7 @@ const nombreAthletes = athletes.length;
   </div>
 </BaseLayout>
 
-<script is:inline define:vars={{ athletes }}>
+<script is:inline define:vars={{ athletes, nombreClasses }}>
   (() => {
     const MAX = 4;
     const parSlug = new Map(athletes.map((a) => [a.s, a]));
@@ -166,6 +187,10 @@ const nombreAthletes = athletes.length;
 
     /** Les lignes du tableau. `dec` = nombre de décimales à l'affichage. */
     const LIGNES = [
+      // `rang: true` inverse tout : le meilleur est le PLUS PETIT, et l'écart
+      // se compte en places plutôt qu'en pourcentage. Un rang deux fois plus
+      // grand ne veut rien dire ; douze places d'écart, si.
+      { clef: 'r', label: 'Rang à La Réunion', unite: '', dec: 0, rang: true },
       { clef: 'sq', label: 'Squat', unite: 'kg', dec: 1 },
       { clef: 'bp', label: 'Développé couché', unite: 'kg', dec: 1 },
       { clef: 'dl', label: 'Soulevé de terre', unite: 'kg', dec: 1 },
@@ -235,25 +260,51 @@ const nombreAthletes = athletes.length;
 
       const corps = LIGNES.map((l) => {
         const valeurs = choisis.map((a) => a[l.clef]);
-        const meilleur = Math.max(...valeurs);
+        const connus = valeurs.filter((v) => v > 0);
+
+        // L'écart se lit par rapport au MEILLEUR de la ligne : c'est la seule
+        // référence qui ne dépende pas de l'ordre de sélection. Pour un rang,
+        // « meilleur » veut dire le plus petit nombre.
+        const meilleur = connus.length
+          ? l.rang
+            ? Math.min(...connus)
+            : Math.max(...connus)
+          : 0;
 
         const cellules = valeurs
           .map((v) => {
-            if (!v) return '<td class="absent">—</td>';
+            if (!v) {
+              return `<td class="absent">—<span class="ecart">${l.rang ? 'non classé' : 'aucune barre'}</span></td>`;
+            }
 
-            // L'écart se lit par rapport au MEILLEUR de la ligne : c'est la
-            // seule référence qui ne dépende pas de l'ordre de sélection.
             const chef = v === meilleur;
-            const ecart = meilleur > 0 ? ((v - meilleur) / meilleur) * 100 : 0;
-            const badge = chef
-              ? '<span class="chef">meilleur</span>'
-              : `<span class="ecart">${nombre(ecart, 1)} %</span>`;
+            let badge;
 
-            return `<td class="${chef ? 'est-chef' : ''}"><span class="valeur num-tab">${nombre(v, l.dec)}${l.unite ? ' ' + l.unite : ''}</span>${badge}</td>`;
+            if (chef) {
+              badge = '<span class="ecart positif">meilleur</span>';
+            } else if (l.rang) {
+              // Un rang plus grand est moins bon : l'écart est donc négatif,
+              // même si le nombre de places, lui, augmente.
+              const places = v - meilleur;
+              badge = `<span class="ecart negatif">−${places} place${places > 1 ? 's' : ''}</span>`;
+            } else {
+              const ecart = ((v - meilleur) / meilleur) * 100;
+              badge = `<span class="ecart negatif">${nombre(ecart, 1)} %</span>`;
+            }
+
+            const affiche = l.rang
+              ? `${nombre(v, 0)}<span class="sur">e</span>`
+              : `${nombre(v, l.dec)}${l.unite ? ' ' + l.unite : ''}`;
+
+            return `<td class="${chef ? 'est-chef' : ''}"><span class="valeur num-tab">${affiche}</span>${badge}</td>`;
           })
           .join('');
 
-        return `<tr><th scope="row">${l.label}</th>${cellules}</tr>`;
+        const precision = l.rang
+          ? `<span class="sous">sur ${nombreClasses} classés</span>`
+          : '';
+
+        return `<tr><th scope="row">${l.label}${precision}</th>${cellules}</tr>`;
       }).join('');
 
       zoneTableau.innerHTML =
@@ -513,23 +564,39 @@ const nombreAthletes = athletes.length;
     color: var(--accent);
   }
 
-  .page-comparer .chef,
   .page-comparer .ecart {
-    display: inline-block;
+    display: block;
     margin-top: var(--space-1);
     font-size: var(--step--1);
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
+    color: var(--muted);
   }
 
-  .page-comparer .chef {
-    font-weight: 700;
+  /*
+   * Rouge en dessous, vert au-dessus.
+   *
+   * Le SIGNE est toujours écrit à côté du nombre, et « meilleur » est un mot,
+   * pas une pastille. La couleur seule exclurait les daltoniens, pour qui
+   * rouge et vert sont justement la paire indistincte.
+   */
+  .page-comparer .ecart.negatif {
+    color: var(--negatif);
+  }
+  .page-comparer .ecart.positif {
+    color: var(--positif);
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--accent);
   }
 
-  .page-comparer .ecart,
   .page-comparer .absent {
     color: var(--muted);
+  }
+
+  /* L'exposant du rang : « 3e » et non « 3 ». */
+  .page-comparer .sur {
+    font-size: 0.6em;
+    vertical-align: super;
+    margin-left: 0.05em;
   }
 </style>

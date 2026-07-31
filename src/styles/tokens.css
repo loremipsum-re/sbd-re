@@ -136,6 +136,16 @@
   --logo-a: var(--p-bleu);
   --logo-b: var(--p-rouge);
   --logo-c: var(--p-jaune);
+  /*
+   * Écarts chiffrés : rouge en dessous, vert au-dessus.
+   *
+   * Le signe reste TOUJOURS affiché à côté. La couleur seule exclurait les
+   * daltoniens, pour qui rouge et vert sont précisément la paire indistincte.
+   * Contrastes mesurés — clair : 7.05 et 5.91 sur le fond, 6.50 et 5.45 sur
+   * une carte. Sombre : 8.91 et 10.41 sur le fond.
+   */
+  --negatif: #a31414;
+  --positif: #1a6b2a;
 
   /* ----------------------------------------------------------------------
    * 3. Typographie, espacements, rayons, communs aux deux thèmes.
@@ -218,6 +228,9 @@
     --logo-a: #5b7fe0;
     --logo-b: #d1d100;
     --logo-c: #e03c3c;
+    /* Voir la note du bloc [data-theme='dark']. */
+    --negatif: #ff9b91;
+    --positif: #7dd88f;
   }
 }
 
@@ -246,6 +259,10 @@
   --logo-a: #5b7fe0;
   --logo-b: #d1d100;
   --logo-c: #e03c3c;
+  /* Rouge et vert désaturés, pour rester lisibles sur fond sombre sans
+     évoquer l'écarlate de SBD Apparel. Le signe reste affiché à côté. */
+  --negatif: #ff9b91;
+  --positif: #7dd88f;
 }
 
 /* ------------------------------------------------------------------------
