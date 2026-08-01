@@ -333,6 +333,16 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
 
   .menu-mobile {
     position: relative;
+    /*
+     * Pousse le menu ET le bouton de thème contre le bord droit.
+     *
+     * Sur grand écran c'est la navigation, en `flex: 1`, qui occupe l'espace
+     * disponible. Elle disparaît sur téléphone, et sans cette marge
+     * automatique tout se tasserait à gauche contre le logo. Le bouton de
+     * thème, dernier élément de la barre, se retrouve ainsi tout à droite et
+     * le menu juste à sa gauche.
+     */
+    margin-left: auto;
   }
 
   .menu-mobile summary {
