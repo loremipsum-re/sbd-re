@@ -240,8 +240,30 @@ const annees = [...new Set(meets.map((m) => m.date.slice(0, 4)))].sort().reverse
       content: ' athlètes';
     }
 
+    /*
+     * Le format descend sur sa propre ligne, toujours.
+     *
+     * `order: 1` le fait passer APRÈS le nombre d'athlètes, alors qu'il le
+     * précède dans le tableau : l'ordre des colonnes sert la lecture sur grand
+     * écran, celui-ci sert la carte.
+     *
+     * Le résultat est une carte à hauteur constante — nom, texte, étiquettes —
+     * quelle que soit la longueur du nom de commune. Mélangés à la même ligne,
+     * les cadres des étiquettes se réalignaient à chaque carte et l'oeil
+     * n'accrochait plus rien.
+     */
+    td[data-libelle='Format'] {
+      order: 1;
+      flex-basis: 100%;
+      margin-top: var(--space-2);
+    }
+
+    td[data-libelle='Format']::before {
+      content: none;
+    }
+
     .format {
-      margin-right: 0;
+      margin-right: var(--space-1);
     }
   }
 
