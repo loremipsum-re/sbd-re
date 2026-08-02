@@ -81,6 +81,9 @@
   --p-light-or-fill: #c9a227;
   --p-light-argent: #5f6672;
   --p-light-bronze: #8a5326;
+  /* Ambre d'alerte. Volontairement plus terreux que le doré du podium, avec
+     lequel il ne coexiste jamais. Mesuré : fond 5.87, carte 5.42. */
+  --p-light-alerte: #8a4f00;
 
   /* Thème sombre : basalte, jamais du noir pur. Le noir pur crée un contraste
      trop violent avec le texte clair et fait « baver » les caractères sur les
@@ -111,6 +114,8 @@
   --p-dark-or-fill: #c9a227;
   --p-dark-argent: #cbd5e1;
   --p-dark-bronze: #e0a06a;
+  /* Mesuré : fond 8.98, carte 8.17. */
+  --p-dark-alerte: #f0a854;
 
   /* ----------------------------------------------------------------------
    * 2. RÔLES — thème clair par défaut.
@@ -146,6 +151,31 @@
    */
   --negatif: #a31414;
   --positif: #1a6b2a;
+
+  /*
+   * ÉTATS SÉMANTIQUES — ce que le site fait, pas ce qu'un chiffre vaut.
+   *
+   * Distincts de --positif et --negatif, qui disent le SENS D'UN ÉCART chiffré
+   * et vivent dans un tableau. Ceux-ci disent l'ÉTAT D'UNE ACTION : une
+   * soumission acceptée, un champ mal rempli, une modération en attente.
+   *
+   * Ils sont posés maintenant, à vide, et c'est assumé. La partie communauté
+   * amène des formulaires et de la modération ; sans ces trois jetons mesurés,
+   * quelqu'un y inventera un rouge au jugé, et ce sera le mauvais rouge.
+   *
+   * Contrastes mesurés — clair : succès 5.91 sur le fond et 5.45 sur une carte,
+   * alerte 5.87 et 5.42, danger 7.05 et 6.50. Sombre : 10.41 et 9.47, 8.98 et
+   * 8.17, 8.91 et 8.10.
+   *
+   * En thème sombre, --danger reste le saumon désaturé de --negatif. L'écarlate
+   * sur fond quasi noir est l'identité de SBD Apparel : voir la palette.
+   *
+   * La couleur ne porte JAMAIS l'information seule : un mot ou une icône la
+   * double, comme le signe double déjà l'écart chiffré.
+   */
+  --succes: #1a6b2a;
+  --alerte: var(--p-light-alerte);
+  --danger: #a31414;
 
   /* ----------------------------------------------------------------------
    * 3. Typographie, espacements, rayons, communs aux deux thèmes.
@@ -184,14 +214,43 @@
   --step-3: clamp(1.73rem, 1.53rem + 0.98vw, 2.58rem);
   --step-4: clamp(2.07rem, 1.76rem + 1.56vw, 3.44rem);
 
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
-  --space-12: 3rem;
-  --space-16: 4rem;
+  /*
+   * ESPACEMENTS — grille de 4 points, pas de 8 points préféré.
+   *
+   * Vérifié à l'audit du 2 août 2026 : sept jetons sur huit sont déjà des
+   * multiples de 8. Seul --space-3 s'en écarte, et c'est délibéré. Il vaut
+   * 12 px, multiple de 4, et sert au rembourrage des champs de saisie et des
+   * liens de menu. Sans lui il faudrait choisir entre 8 px, à l'étroit, et
+   * 16 px, bouffi. Apple elle-même admet le demi-pas.
+   *
+   * Règle : prendre un multiple de 8. Descendre à 4 ou 12 seulement pour un
+   * rembourrage interne serré, jamais pour un écart entre deux blocs.
+   */
+  --space-1: 0.25rem; /*  4 px — demi-pas */
+  --space-2: 0.5rem; /*   8 px */
+  --space-3: 0.75rem; /* 12 px — demi-pas, rembourrage interne */
+  --space-4: 1rem; /*    16 px — marge de contenu par défaut */
+  --space-6: 1.5rem; /*  24 px */
+  --space-8: 2rem; /*    32 px */
+  --space-12: 3rem; /*   48 px */
+  --space-16: 4rem; /*   64 px */
+
+  /*
+   * TAILLE MINIMALE D'UNE CIBLE TACTILE.
+   *
+   * 44 px, soit les 44 points qu'Apple tient depuis l'iPhone d'origine : c'est
+   * la largeur mesurée d'une pulpe de doigt adulte sur un écran. En dessous,
+   * la cible n'est pas manquée de peu, elle est manquée franchement, et le
+   * visiteur ne sait pas s'il a mal visé ou si le site est cassé.
+   *
+   * Ce chiffre ne se négocie pas contre de l'esthétique. Un bouton peut être
+   * discret et haut de 44 px : c'est la zone cliquable qui compte, pas l'encre.
+   *
+   * Mesuré avant correction, à 375 px de large : aucun contrôle du site ne
+   * l'atteignait. Boutons de tri 31 px, filtres 35 px, recherche 39 px,
+   * bouton de thème 40 px, liens de pied de page 15 px.
+   */
+  --cible-min: 2.75rem;
 
   --radius: 0.5rem;
   --radius-lg: 0.875rem;
@@ -231,6 +290,9 @@
     /* Voir la note du bloc [data-theme='dark']. */
     --negatif: #ff9b91;
     --positif: #7dd88f;
+    --succes: #7dd88f;
+    --alerte: var(--p-dark-alerte);
+    --danger: #ff9b91;
   }
 }
 
@@ -263,6 +325,9 @@
      évoquer l'écarlate de SBD Apparel. Le signe reste affiché à côté. */
   --negatif: #ff9b91;
   --positif: #7dd88f;
+  --succes: #7dd88f;
+  --alerte: var(--p-dark-alerte);
+  --danger: #ff9b91;
 }
 
 /* ------------------------------------------------------------------------
