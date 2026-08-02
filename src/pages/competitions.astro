@@ -184,29 +184,64 @@ const annees = [...new Set(meets.map((m) => m.date.slice(0, 4)))].sort().reverse
 
   /* ---------- Mobile : une carte par compétition ---------- */
   @media (max-width: 47.999rem) {
-    tbody tr {
+    /*
+     * Le <table> lui-même doit passer en bloc, pas seulement ses lignes.
+     *
+     * Une table garde sinon sa disposition tabulaire et refuse de descendre
+     * sous la largeur de son contenu : elle débordait donc du cadre, qui la
+     * rognait au lieu de la laisser défiler. Les colonnes de droite
+     * disparaissaient purement et simplement.
+     */
+    table,
+    tbody {
       display: block;
+    }
+
+    /*
+     * Une carte, deux lignes : le nom, puis tout le reste à la suite.
+     *
+     * Les libellés « Commune » et « Format » sont retirés. Une date, un nom de
+     * commune et un format de compétition se reconnaissent sans être annoncés,
+     * et les annoncer coûtait quatre lignes par carte. Ils restent lisibles
+     * par les lecteurs d'écran grâce aux en-têtes de colonnes du tableau.
+     */
+    tbody tr {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0 var(--space-2);
       padding: var(--space-4);
       border-bottom: 1px solid var(--border);
     }
 
     .nom {
-      display: block;
+      order: -1;
+      flex-basis: 100%;
       padding: 0 0 var(--space-2);
       font-size: var(--step-0);
     }
 
     td {
-      display: flex;
-      justify-content: space-between;
-      gap: var(--space-3);
-      padding: var(--space-1) 0;
+      display: inline;
+      padding: 0;
+      color: var(--muted);
     }
 
-    td::before {
-      content: attr(data-libelle);
-      color: var(--muted);
-      font-weight: 600;
+    /* Un point médian sépare les valeurs. La date étant la première, elle n'en
+       porte pas. */
+    td:not(.date)::before {
+      content: '·';
+      margin-right: var(--space-2);
+      color: var(--border);
+    }
+
+    /* Le nombre seul ne veut rien dire une fois son libellé retiré. */
+    td.nombre::after {
+      content: ' athlètes';
+    }
+
+    .format {
+      margin-right: 0;
     }
   }
 
