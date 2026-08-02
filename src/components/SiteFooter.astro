@@ -145,14 +145,37 @@ const { debut, fin } = periode();
     padding: 0;
     margin: 0;
     display: grid;
-    gap: var(--space-1);
+    /*
+     * Aucun écart entre les lignes, et c'est voulu. Les liens font désormais
+     * 44 px de haut chacun ; un écart en plus les éloignerait sans rien
+     * gagner, alors que des lignes jointives se lisent comme une liste.
+     */
+    gap: 0;
+    /* Compense le rembourrage des liens, pour que la première ligne reste
+       alignée sur le titre de la colonne. */
+    margin-left: calc(-1 * var(--space-3));
   }
 
+  /*
+   * Les liens de navigation du pied de page faisaient 15 px de haut, la pire
+   * cible mesurée du site. C'est pourtant un plan du site complet, atteint au
+   * pouce, en bas de page, souvent d'une seule main.
+   *
+   * Ils deviennent des lignes à la manière d'une liste : le texte garde sa
+   * taille, c'est la zone cliquable qui grandit autour de lui. Le pied de page
+   * s'allonge, ce qui est le prix accepté d'une navigation utilisable.
+   */
   ul a {
+    display: flex;
+    align-items: center;
+    min-height: var(--cible-min);
+    padding-inline: var(--space-3);
+    border-radius: var(--radius);
     color: var(--muted);
   }
   ul a:hover {
     color: var(--accent);
+    background: var(--bg);
   }
 
   .soutien {
@@ -207,8 +230,23 @@ const { debut, fin } = periode();
   .legal {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: var(--space-2);
     margin-top: var(--space-3);
+  }
+
+  /*
+   * Mentions légales et confidentialité restent côte à côte sur une ligne,
+   * séparées par le point médian : ce sont deux liens, pas une liste. Seule
+   * leur zone cliquable grandit, verticalement, autour d'un texte inchangé.
+   *
+   * La page de confidentialité porte le droit d'opposition des athlètes à la
+   * publication de leur nom. Elle doit s'atteindre du premier coup.
+   */
+  .legal a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
   }
 
   .realisation {
