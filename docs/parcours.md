@@ -266,7 +266,91 @@ l'auteur. Ce schéma est valide **à condition que le lien vers
 
 ---
 
-## 7. État au 30 juillet 2026
+## 7. L'audit ergonomique du 2 août 2026
+
+L'auteur voulait appliquer au site les conventions d'ergonomie d'Apple, à partir
+des skills <https://github.com/quin566/ios-ui-design-skills>, installés dans
+`.claude/skills/`. Le périmètre était tranché d'avance : **l'usage, pas le
+goût**. Le système de marque *Modernist* reste intact, et l'esthétique iOS,
+ombres multicouches et matériaux translucides, restait écartée.
+
+L'audit s'est fait par la mesure dans le navigateur, jamais à la relecture.
+C'est ce qui l'a rendu utile, parce qu'il a démenti trois choses que le projet
+tenait pour acquises.
+
+### Ce que la mesure a démenti
+
+**Le site n'avait aucune cible tactile conforme.** Pas « quelques-unes trop
+petites » : à 375 px de large, aucun contrôle n'atteignait les 44 px, du bouton
+de tri à 31 px aux liens de pied de page à 15 px. C'est le genre de constat
+qu'aucune relecture de code ne produit, parce que le CSS ne dit nulle part
+combien de pixels un bouton fait au bout du compte.
+
+**La grille d'espacement était déjà bonne.** `CLAUDE.md` affirmait que les
+jetons `--space-*` ne suivaient aucune grille. Sept sur huit sont des multiples
+de 8, et le huitième est un multiple de 4. Il n'y avait rien à corriger, juste à
+documenter. Une demi-journée de refonte évitée par une addition.
+
+**Les états vides n'étaient pas absents.** `/comparer/` en avait déjà un,
+complet, avec son action de sortie. Trois autres existaient mais étaient des
+impasses : un constat, aucune issue. Le vrai défaut n'était pas l'absence, il
+était la forme.
+
+### Le piège : un jeton d'accent employé comme un aplat
+
+Le seul défaut de contraste du site vivait dans le lien « Aller au contenu »,
+le tout premier élément qu'atteint une navigation au clavier. Il posait
+`--accent` en fond sous `--on-accent` : en thème clair, du basalte sur le jaune
+sombre, soit **2,78:1**.
+
+`tokens.css` documentait pourtant la règle depuis le départ. `--accent` est un
+accent de TEXTE, `--accent-fill` est l'aplat, et la paire basalte sur aplat vaut
+10,66:1. La distinction était écrite, commentée, expliquée, et employée à
+l'envers vingt lignes plus loin.
+
+Deux raisons à sa survie. En thème sombre les deux jetons valent la même
+couleur, donc le défaut y était invisible. Et le lien est hors écran tant qu'il
+n'a pas le focus, donc invisible tout court à qui navigue à la souris.
+
+**La leçon vaut au-delà de ce cas.** Un audit de contraste qui ne teste que le
+thème par défaut, et que les éléments visibles au repos, passe à côté de ce
+genre de trou. Il faut parcourir les éléments dans les deux thèmes et les forcer
+dans leurs états, focus compris.
+
+### Ce qui a été corrigé
+
+| | Avant | Après |
+|---|---|---|
+| Boutons de tri | 31 px | 44 px |
+| Sélecteurs de filtre | 35 px | 44 px |
+| Champ de recherche | 39 px | 44 px |
+| Bouton de thème | 40 × 40 px | 44 × 44 px |
+| Menu | 41 px | 44 px |
+| Onglets de navigation | 39 px | 44 px |
+| Liens de pied de page | 15 px | 44 px |
+| Lien d'évitement, thème clair | 2,78:1 | 10,66:1 |
+
+La règle des 44 px vit dans `tokens.css`, une seule fois. Les quatre pages de
+listes répétaient chacune la même règle `select` sans qu'aucune ne fixe de
+hauteur : corriger à la racine valait mieux que corriger quatre fois.
+
+Trois exclusions sont assumées et documentées dans le code. Les cases à cocher
+et boutons radio, que le navigateur dessine lui-même. Les boutons d'en-tête de
+tableau, qui n'existent qu'au pointeur puisque l'en-tête est masquée en cartes.
+Et les liens en ligne dans les cartes, noms d'athlètes et dates, qui sont des
+liens de prose dans une carte de 149 px et non des commandes.
+
+### Ce qui reste ouvert
+
+Les états d'erreur n'ont pas de cas d'emploi aujourd'hui : le site est statique
+et rien n'y échoue. Les jetons `--succes`, `--alerte` et `--danger` sont posés,
+mesurés, et attendent les formulaires de la partie communauté.
+
+Les niveaux de texte restent à deux, `--text` et `--muted`, là où la
+convention en propose quatre. Rien n'en demande un troisième aujourd'hui, et un
+jeton sans usage est un jeton qui dérive.
+
+## 8. État au 30 juillet 2026
 
 | | |
 |---|---|

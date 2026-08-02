@@ -138,6 +138,17 @@ Ils figurent sur `/exterieur/` et sur les fiches d'athlètes.
 **Oswald n'a pas de chiffres à largeur fixe.** Utiliser `.num` pour un chiffre
 isolé et grand, `.num-tab` pour un chiffre dans une colonne.
 
+**Tout contrôle fait au moins 44 px**, jeton `--cible-min`, règle globale dans
+`tokens.css`. Un nouveau bouton en hérite sans rien demander. Employer
+`min-height` et jamais `height` : le texte doit rester libre de grandir. Les
+trois exclusions sont écrites dans `tokens.css`, ne pas en ajouter sans mesurer.
+
+**`--accent` est un accent de TEXTE, `--accent-fill` est l'aplat.** Poser
+`--accent` en fond sous `--on-accent` donne 2,78:1 en thème clair. L'erreur a
+déjà été commise une fois, sur le lien d'évitement. Le thème sombre ne la
+révèle pas, les deux jetons y valant la même couleur : toujours vérifier en
+clair.
+
 **Astro supprime l'espace avant une balise inline.** Écrire `{' '}` explicitement.
 Un script de détection existe, voir docs/parcours.md.
 
@@ -196,26 +207,40 @@ $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";"
 3. **Nom de l'onglet Extérieur.** L'auteur proposait « International » ou
    « France ».
 
-**Audit ergonomique iOS, décidé le 2 août 2026**
+**Audit ergonomique iOS : fait le 2 août 2026**
 
-L'auteur veut appliquer au site les conventions d'ergonomie d'Apple, à partir
-des skills <https://github.com/quin566/ios-ui-design-skills>. À installer,
-puis auditer, puis corriger.
+Les skills <https://github.com/quin566/ios-ui-design-skills> sont installés dans
+`.claude/skills/`. L'audit a été mené par la mesure dans le navigateur et les
+corrections sont livrées. Le détail, chiffres avant et après compris, est dans
+[docs/parcours.md](docs/parcours.md), section 7.
 
-**Il a explicitement écarté l'esthétique iOS.** Le système de marque
-*Modernist* installé le 30 juillet — aplats francs, bordures de 2 px, angles
-nets, aucune ombre — reste intact. Douceur, profondeur, ombres multicouches et
+**L'esthétique iOS reste explicitement écartée.** Le système de marque
+*Modernist* installé le 30 juillet, aplats francs, bordures de 2 px, angles
+nets, aucune ombre, reste intact. Douceur, profondeur, ombres multicouches et
 matériaux translucides lui sont opposés et ne doivent pas être importés.
 
-Ce qui est dans le périmètre, parce que cela relève de l'usage et non du goût :
+Ce qui a été corrigé :
 
-- **Tailles de cible tactile**, 44 pt minimum. Jamais mesurées sur ce site.
-- **Grille d'espacement de 8 points.** Les jetons `--space-*` n'en suivent
-  aucune aujourd'hui.
-- **Rayons imbriqués** : rayon intérieur = rayon extérieur moins la marge.
-- **Couleurs sémantiques à quatre niveaux.** Le site en a deux, palette et rôles.
-- **États vides et d'erreur**, absents partout. La page `/comparer/` en a besoin,
-  et toute la partie communauté aussi.
+- **Cibles tactiles.** Aucun contrôle du site n'atteignait 44 px. La règle vit
+  maintenant dans `tokens.css`, jeton `--cible-min`, avec trois exclusions
+  documentées sur place.
+- **Rayons imbriqués.** Un seul écart réel, les liens du menu déroulant.
+- **États vides.** `EtatVide.astro` remplace les trois impasses par un titre,
+  une explication, et l'action de sortie quand elle existe.
+- **Contraste.** Le lien d'évitement était à 2,78:1 en thème clair. Il passe à
+  10,66:1. C'était le seul échec du site.
+
+Deux points du périmètre initial n'appelaient pas de correction, la mesure ayant
+démenti le diagnostic :
+
+- **La grille d'espacement était déjà bonne.** Sept jetons `--space-*` sur huit
+  sont des multiples de 8, le huitième est un multiple de 4. La grille est
+  désormais documentée telle qu'elle est, en 4 points avec le pas de 8 préféré.
+- **`/comparer/` avait déjà son état vide**, complet, avec action de sortie.
+
+Reste ouvert : les jetons `--succes`, `--alerte` et `--danger` sont posés et
+mesurés mais sans usage, en attente des formulaires de la partie communauté.
+Les niveaux de texte restent à deux, faute d'un besoin réel pour un troisième.
 
 Hors périmètre : SF Pro, sous licence Apple et inutilisable sur le web, le
 retour haptique sans équivalent, et les conventions d'application que sont les
