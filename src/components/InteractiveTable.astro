@@ -25,6 +25,8 @@
  * texte, et 1000 passerait avant 90.
  */
 
+import EtatVide from './EtatVide.astro';
+
 interface Props {
   /** Texte d'invite du champ de recherche. Omettre le champ si absent. */
   recherche?: string;
@@ -43,6 +45,7 @@ interface Props {
 const { recherche, singulier = 'résultat', pluriel, total, barreDeTri } = Astro.props;
 const plurielFinal = pluriel ?? `${singulier}s`;
 const aFiltres = Astro.slots.has('filtres');
+const interactif = recherche !== undefined || aFiltres;
 ---
 
 <div
@@ -90,6 +93,24 @@ const aFiltres = Astro.slots.has('filtres');
   }
 
   <slot />
+
+  {
+    /*
+     * Masqué au rendu : au chargement la liste est complète, et sans
+     * JavaScript elle le reste. C'est le script qui l'affiche, et lui seul.
+     */
+    interactif && (
+      <div data-etat-vide hidden>
+        <EtatVide titre={`Aucun ${singulier} ne correspond`}>
+          Les critères actifs ne laissent rien passer. Élargissez-en un, ou
+          repartez de la liste entière.
+          <button type="button" data-tout-afficher slot="action">
+            Tout afficher
+          </button>
+        </EtatVide>
+      </div>
+    )
+  }
 </div>
 
 <script>
@@ -129,6 +150,7 @@ const aFiltres = Astro.slots.has('filtres');
 
     const champ = bloc.querySelector<HTMLInputElement>('[data-recherche]');
     const compteur = bloc.querySelector<HTMLElement>('[data-compteur]');
+    const etatVide = bloc.querySelector<HTMLElement>('[data-etat-vide]');
     const selects = Array.from(bloc.querySelectorAll<HTMLSelectElement>('[data-filtre]'));
 
     /*
@@ -330,6 +352,29 @@ const aFiltres = Astro.slots.has('filtres');
             ? 'Aucun résultat'
             : `${totalVisible} ${totalVisible > 1 ? pluriel : singulier}`;
       }
+
+      // L'état vide suit le même compte que le compteur : une seule source de
+      // vérité, sans quoi les deux finiraient par se contredire.
+      etatVide?.toggleAttribute('hidden', totalVisible > 0);
+    }
+
+    /**
+     * Remet la liste à zéro : filtres, recherche, et adresse.
+     *
+     * C'est l'action qui sort de l'état vide. Elle passe par les mêmes
+     * fonctions que les contrôles eux-mêmes, plutôt que de recharger la page :
+     * un rechargement perdrait la position de défilement et ferait clignoter
+     * l'écran pour une opération qui est purement locale.
+     */
+    function toutAfficher() {
+      for (const select of selects) select.value = '';
+      if (champ) champ.value = '';
+      ajusterOptions();
+      appliquer();
+      ecrireAdresse();
+      // Le focus revient sur le premier contrôle : au clavier, il serait sinon
+      // perdu sur un bouton qui vient de disparaître.
+      (champ ?? selects[0])?.focus();
     }
 
     /** Applique un tri et met à jour l'état annoncé aux lecteurs d'écran. */
@@ -410,6 +455,9 @@ const aFiltres = Astro.slots.has('filtres');
         ecrireAdresse();
       });
     }
+    bloc
+      .querySelector<HTMLButtonElement>('[data-tout-afficher]')
+      ?.addEventListener('click', toutAfficher);
 
     if (interactif) lireAdresse();
     ajusterOptions();

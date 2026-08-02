@@ -18,6 +18,7 @@
  * et donnerait l'illusion d'une progression qui n'existe pas.
  */
 import { dateCourte, kg, nombre } from '../lib/format';
+import EtatVide from './EtatVide.astro';
 
 export interface PointGraphe {
   date: string;
@@ -131,7 +132,10 @@ const aDeuxSeries = coordLocaux.length > 0 && coordExt.length > 0;
 
 {
   tries.length === 0 ? (
-    <p class="vide">Aucune donnée de progression.</p>
+    <EtatVide titre="Pas de courbe à tracer" encadre={false}>
+      Aucun résultat de cet athlète ne renseigne cette valeur. La courbe
+      apparaîtra dès qu'une compétition en fournira une.
+    </EtatVide>
   ) : (
     <figure class="graphe" data-vue="tout">
       {aDeuxSeries && (
@@ -356,8 +360,4 @@ const aDeuxSeries = coordLocaux.length > 0 && coordExt.length > 0;
     color: var(--muted);
   }
 
-  .vide {
-    color: var(--muted);
-    font-size: var(--step--1);
-  }
 </style>

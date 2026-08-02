@@ -1,0 +1,112 @@
+---
+/**
+ * État vide : ce qui s'affiche quand une liste ne renvoie rien.
+ *
+ * Le site en avait trois, et tous les trois étaient des impasses : « Aucun
+ * résultat », « Aucun athlète pour ces critères. », « Aucune donnée de
+ * progression. » Un constat, et rien d'autre. Le visiteur y apprend que la
+ * page est vide, ce qu'il voyait déjà, et reste sans savoir quoi faire.
+ *
+ * Un état vide utile tient en trois parties :
+ *   1. un titre qui nomme la situation,
+ *   2. une phrase qui dit POURQUOI c'est vide,
+ *   3. l'action qui en sort, quand elle existe.
+ *
+ * La troisième est facultative, et c'est important. Une fiche d'athlète qui
+ * n'a qu'une seule compétition n'a pas de courbe de progression, et aucun
+ * bouton n'y changera rien. Inventer une action là où il n'y en a pas serait
+ * une fausse promesse. Dans ce cas l'explication se suffit.
+ *
+ * Aucune illustration, aucune ombre, aucun dégradé : le système de marque du
+ * site tient aux aplats francs et aux angles nets.
+ */
+interface Props {
+  /** Nomme la situation. Court, sans point final. */
+  titre: string;
+  /**
+   * Dessine le cadre. À passer à `false` quand le bloc s'affiche DÉJÀ dans un
+   * conteneur bordé : deux cadres emboîtés de même rayon donnent exactement la
+   * discordance géométrique que le reste de ce chantier corrige.
+   */
+  encadre?: boolean;
+}
+
+const { titre, encadre = true } = Astro.props;
+const aAction = Astro.slots.has('action');
+---
+
+<div class="etat-vide" data-encadre={encadre ? '' : undefined}>
+  <p class="titre">{titre}</p>
+  <p class="explication"><slot /></p>
+  {
+    aAction && (
+      <div class="action">
+        <slot name="action" />
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .etat-vide {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-2);
+    padding: var(--space-8) var(--space-6);
+    text-align: center;
+  }
+
+  .etat-vide[data-encadre] {
+    padding-block: var(--space-12);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  /*
+   * Le centrage est réservé aux états vides et aux titres, jamais au texte
+   * courant : une colonne centrée oblige l'œil à retrouver le début de chaque
+   * ligne. Ici il n'y a que deux phrases courtes, et le centrage aide à voir
+   * que le bloc parle de l'absence de contenu plutôt qu'il n'EST le contenu.
+   */
+  .titre {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .explication {
+    margin: 0;
+    max-width: 46ch;
+    color: var(--muted);
+  }
+
+  .action {
+    margin-top: var(--space-4);
+  }
+
+  /*
+   * Rayon imbriqué : le conteneur fait --radius-lg, soit 14 px, et 24 px l'en
+   * séparent. La marge dépasse le rayon, l'action est visuellement détachée du
+   * coin, et --radius lui va sans calcul.
+   */
+  .action :global(button) {
+    min-height: var(--cible-min);
+    padding-inline: var(--space-6);
+    border: 2px solid var(--accent);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--accent);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .action :global(button:hover) {
+    background: var(--accent-fill);
+    border-color: var(--accent-fill);
+    color: var(--on-accent);
+  }
+</style>

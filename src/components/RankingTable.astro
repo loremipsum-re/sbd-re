@@ -23,6 +23,7 @@ import type { AthleteRanking } from '../lib/rankings';
 import { meetPath } from '../lib/slug';
 import BadgeOfficiel from './BadgeOfficiel.astro';
 import Coupe from './Coupe.astro';
+import EtatVide from './EtatVide.astro';
 
 interface Props {
   entries: AthleteRanking[];
@@ -113,7 +114,18 @@ const METAUX = ['or', 'argent', 'bronze'] as const;
     </tbody>
   </table>
 
-  {entries.length === 0 && <p class="vide">Aucun athlète pour ces critères.</p>}
+  {
+    /*
+     * Sans cadre : le bloc s'affiche déjà dans `.cadre`, et deux bordures
+     * emboîtées de même rayon divergeraient à l'œil.
+     */
+    entries.length === 0 && (
+      <EtatVide titre="Aucun athlète dans cette catégorie" encadre={false}>
+        Elle attend son premier résultat. Le classement se régénère chaque mois
+        depuis OpenPowerlifting.
+      </EtatVide>
+    )
+  }
 </div>
 
 <style>
@@ -127,13 +139,6 @@ const METAUX = ['or', 'argent', 'bronze'] as const;
   table {
     width: 100%;
     border-collapse: collapse;
-  }
-
-  .vide {
-    padding: var(--space-8);
-    text-align: center;
-    color: var(--muted);
-    margin: 0;
   }
 
   /* ---------- La carte ---------- */
