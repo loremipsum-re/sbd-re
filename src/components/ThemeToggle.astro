@@ -65,8 +65,11 @@
   .bascule {
     display: inline-grid;
     place-items: center;
-    inline-size: 2.5rem;
-    block-size: 2.5rem;
+    /* Carré, et de la taille d'une cible tactile. La règle globale de
+       tokens.css donne déjà la hauteur ; sans cette ligne la largeur resterait
+       à 2.5rem et le bouton deviendrait un rectangle de 40 sur 44. */
+    inline-size: var(--cible-min);
+    block-size: var(--cible-min);
     padding: 0;
     border: 1px solid var(--border);
     border-radius: var(--radius);

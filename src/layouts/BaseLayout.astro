@@ -495,8 +495,18 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     display: none;
   }
 
+  /*
+   * Les onglets s'affichent dès 52rem, soit 832 px : un iPad en paysage y est,
+   * et c'est un écran tactile. Ils relèvent donc bien de la règle des 44 px,
+   * qu'ils manquaient de 5 px.
+   *
+   * Le passage en `flex` sert uniquement à recentrer le libellé une fois la
+   * hauteur imposée ; sans lui il collerait en haut de l'onglet.
+   */
   nav a {
-    display: block;
+    display: flex;
+    align-items: center;
+    min-height: var(--cible-min);
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius);
     color: var(--muted);

@@ -452,6 +452,37 @@ svg {
   letter-spacing: -0.01em;
 }
 
+/*
+ * CIBLES TACTILES — la règle est ici, une seule fois, pas dans quinze feuilles.
+ *
+ * Chaque contrôle du site fait au moins 44 px de haut. Le sélecteur vise les
+ * éléments de formulaire natifs, qui sont partout : les quatre pages de listes
+ * répétaient chacune la même règle `select`, et aucune ne fixait de hauteur.
+ *
+ * `min-height` et non `height` : le texte reste libre de grandir si le
+ * visiteur agrandit la police de son navigateur. Une hauteur fixe le ferait
+ * déborder, ce qui échangerait un problème d'ergonomie contre un pire.
+ *
+ * Cases à cocher et boutons radio sont exclus : le navigateur les dessine
+ * lui-même et `min-height` ne ferait que décaler la case dans le vide. Leur
+ * cible se gagne par le `label`, qui est cliquable.
+ *
+ * Les boutons d'en-tête de tableau sont exclus aussi : ils occupent toute la
+ * cellule, qui donne déjà la hauteur, et 44 px de plus creuseraient un trou
+ * dans la ligne d'en-tête.
+ */
+button,
+select,
+summary,
+[role='button'],
+input:not([type='checkbox']):not([type='radio']) {
+  min-height: var(--cible-min);
+}
+
+.bouton-tri {
+  min-height: 0;
+}
+
 /* Visible uniquement pour les lecteurs d'écran. */
 .sr-only {
   position: absolute;
