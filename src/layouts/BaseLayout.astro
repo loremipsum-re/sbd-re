@@ -407,9 +407,24 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     overflow: visible;
   }
 
+  /*
+   * Rayon imbriqué : rayon intérieur = rayon extérieur moins la marge.
+   *
+   * Ces liens-ci, à la différence des onglets du bandeau, vivent DANS un
+   * conteneur arrondi : le menu déroulant, de rayon 14 px (--radius-lg), avec
+   * 9 px entre les deux, soit 8 px de rembourrage et 1 px de bordure. La règle
+   * donne 5 px, et non les 8 px de --radius dont ils héritaient.
+   *
+   * L'écart n'est que de 3 px mais il se voit : deux courbes concentriques
+   * dont les rayons ne concordent pas divergent à l'œil, et le fond teinté de
+   * l'onglet actif rend cette divergence lisible.
+   *
+   * Les onglets du bandeau gardent --radius : ils ne sont imbriqués dans rien.
+   */
   .menu-mobile nav a {
     display: block;
     padding: var(--space-3);
+    border-radius: calc(var(--radius-lg) - var(--space-2) - 1px);
     white-space: normal;
   }
 
