@@ -303,7 +303,18 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     left: -9999px;
     z-index: 10;
     padding: var(--space-3) var(--space-4);
-    background: var(--accent);
+    /*
+     * L'APLAT, pas l'accent de texte. La distinction est tout sauf cosmétique.
+     *
+     * Ce bloc posait --accent en fond sous --on-accent : en thème clair, du
+     * basalte #201e1d sur le jaune sombre #676700, soit 2.78:1. Sous le seuil,
+     * sur le tout premier élément qu'atteint une navigation au clavier.
+     *
+     * --accent-fill est le jaune franc #d6d600, dont tokens.css documente
+     * justement la paire avec le basalte. Mesuré après correction : 10.66:1.
+     * Le thème sombre était indemne, les deux jetons y valant la même couleur.
+     */
+    background: var(--accent-fill);
     color: var(--on-accent);
     border-radius: 0 0 var(--radius) 0;
   }
