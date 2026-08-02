@@ -196,6 +196,31 @@ $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";"
 3. **Nom de l'onglet Extérieur.** L'auteur proposait « International » ou
    « France ».
 
+**Audit ergonomique iOS, décidé le 2 août 2026**
+
+L'auteur veut appliquer au site les conventions d'ergonomie d'Apple, à partir
+des skills <https://github.com/quin566/ios-ui-design-skills>. À installer,
+puis auditer, puis corriger.
+
+**Il a explicitement écarté l'esthétique iOS.** Le système de marque
+*Modernist* installé le 30 juillet — aplats francs, bordures de 2 px, angles
+nets, aucune ombre — reste intact. Douceur, profondeur, ombres multicouches et
+matériaux translucides lui sont opposés et ne doivent pas être importés.
+
+Ce qui est dans le périmètre, parce que cela relève de l'usage et non du goût :
+
+- **Tailles de cible tactile**, 44 pt minimum. Jamais mesurées sur ce site.
+- **Grille d'espacement de 8 points.** Les jetons `--space-*` n'en suivent
+  aucune aujourd'hui.
+- **Rayons imbriqués** : rayon intérieur = rayon extérieur moins la marge.
+- **Couleurs sémantiques à quatre niveaux.** Le site en a deux, palette et rôles.
+- **États vides et d'erreur**, absents partout. La page `/comparer/` en a besoin,
+  et toute la partie communauté aussi.
+
+Hors périmètre : SF Pro, sous licence Apple et inutilisable sur le web, le
+retour haptique sans équivalent, et les conventions d'application que sont les
+barres d'onglets, les feuilles modales et les piles de navigation.
+
 **Chantier principal**
 
 La **partie communauté**, phases 4 à 7 du plan initial : classement
