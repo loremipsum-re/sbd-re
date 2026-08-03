@@ -8,8 +8,10 @@
  *    (la fédération) et avec SBD Apparel (la marque d'équipement), dont le nom
  *    ressemble à celui du site.
  */
+import Icone from './Icone.astro';
 import { periode, nombreAthletes, results } from '../lib/data';
 import { dateLongue } from '../lib/format';
+import { RUBRIQUES } from '../lib/navigation';
 
 const { debut, fin } = periode();
 ---
@@ -29,17 +31,23 @@ const { debut, fin } = periode();
         <ul>
           {/*
             L'en-tête ne porte que trois entrées ; ce menu recueille tout le
-            reste. C'est ici, et nulle part ailleurs, que se retrouvent les
-            rubriques sorties de la barre de navigation.
+            reste. Les huit rubriques viennent de lib/navigation, comme celles
+            du menu du téléphone : une seule liste, donc les mêmes libellés,
+            les mêmes adresses et les mêmes icônes des deux côtés.
+
+            `labelLong` quand il existe : la colonne offre ici la place d'être
+            explicite, là où la barre de navigation impose d'être bref.
           */}
-          <li><a href="/classement/">Classement officiel</a></li>
-          <li><a href="/communaute/">Communauté</a></li>
-          <li><a href="/comparer/">Comparer des athlètes</a></li>
-          <li><a href="/records/">Records</a></li>
-          <li><a href="/categories/">Catégories</a></li>
-          <li><a href="/competitions/">Compétitions</a></li>
-          <li><a href="/exterieur/">Extérieur</a></li>
-          <li><a href="/a-propos/">À propos</a></li>
+          {
+            RUBRIQUES.map((r) => (
+              <li>
+                <a href={r.href}>
+                  <Icone nom={r.icone} taille={18} />
+                  {r.labelLong ?? r.label}
+                </a>
+              </li>
+            ))
+          }
         </ul>
       </nav>
 
@@ -173,6 +181,9 @@ const { debut, fin } = periode();
   ul a {
     display: flex;
     align-items: center;
+    /* 18 px et non 20 comme dans le menu : le pied de page est en --step--1,
+       et une icône doit peser le poids de son texte, pas davantage. */
+    gap: var(--space-2);
     min-height: var(--cible-min);
     border-radius: var(--radius);
     color: var(--muted);

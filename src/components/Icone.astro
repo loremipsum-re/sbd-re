@@ -33,7 +33,9 @@
  * côté, l'icône devient la seule information et redevient un problème.
  */
 
-const TRACES = {
+import type { NomIcone } from '../lib/navigation';
+
+const TRACES: Record<NomIcone, readonly string[]> = {
   /* Une liste numérotée est littéralement un classement. */
   classement: [
     'M11 6h9',
@@ -83,9 +85,7 @@ const TRACES = {
     'M12.5 3a17 17 0 0 1 0 18',
   ],
   apropos: ['M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0', 'M12 9h.01', 'M11 12h1v4h1'],
-} as const;
-
-export type NomIcone = keyof typeof TRACES;
+};
 
 interface Props {
   nom: NomIcone;

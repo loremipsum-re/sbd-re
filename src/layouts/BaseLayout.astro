@@ -7,6 +7,7 @@ import Icone from '../components/Icone.astro';
 import Logo from '../components/Logo.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
+import { rubriquesPrincipales, rubriquesSecondaires } from '../lib/navigation';
 // Les déclarations de polices d'abord : tokens.css s'en sert immédiatement.
 import '../styles/fonts.css';
 import '../styles/tokens.css';
@@ -51,24 +52,17 @@ const CLARITY_ID = 'xtvqmm4cxo';
 /**
  * L'en-tête ne porte que les TROIS entrées principales.
  *
- * Le reste vit dans le pied de page. Une navigation qui montre tout ne met
- * rien en avant : huit rubriques alignées laissaient le visiteur choisir sans
- * indice, et débordaient de l'écran sur téléphone.
+ * Le reste vit dans le menu du téléphone et dans le pied de page. Une
+ * navigation qui montre tout ne met rien en avant : huit rubriques alignées
+ * laissaient le visiteur choisir sans indice, et débordaient de l'écran sur
+ * téléphone.
+ *
+ * Le partage entre principales et secondaires est déclaré dans
+ * lib/navigation, avec les libellés, les adresses et les icônes. Ajouter une
+ * rubrique au site se fait là-bas, et nulle part ailleurs.
  */
-const liensPrincipaux = [
-  { href: '/classement/', label: 'Classement officiel', icone: 'classement' },
-  { href: '/communaute/', label: 'Communauté', icone: 'communaute' },
-  { href: '/comparer/', label: 'Comparer', icone: 'comparer' },
-] as const;
-
-/** Rubriques secondaires : dans le menu du téléphone et dans le pied de page. */
-const liensSecondaires = [
-  { href: '/records/', label: 'Records', icone: 'records' },
-  { href: '/categories/', label: 'Catégories', icone: 'categories' },
-  { href: '/competitions/', label: 'Compétitions', icone: 'competitions' },
-  { href: '/exterieur/', label: 'Extérieur', icone: 'exterieur' },
-  { href: '/a-propos/', label: 'À propos', icone: 'apropos' },
-] as const;
+const liensPrincipaux = rubriquesPrincipales;
+const liensSecondaires = rubriquesSecondaires;
 
 const estActif = (href: string) => chemin === href || chemin.startsWith(href);
 ---
