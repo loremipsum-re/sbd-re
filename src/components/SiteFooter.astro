@@ -151,9 +151,6 @@ const { debut, fin } = periode();
      * gagner, alors que des lignes jointives se lisent comme une liste.
      */
     gap: 0;
-    /* Compense le rembourrage des liens, pour que la première ligne reste
-       alignée sur le titre de la colonne. */
-    margin-left: calc(-1 * var(--space-3));
   }
 
   /*
@@ -165,11 +162,18 @@ const { debut, fin } = periode();
    * taille, c'est la zone cliquable qui grandit autour de lui. Le pied de page
    * s'allonge, ce qui est le prix accepté d'une navigation utilisable.
    */
+  /*
+   * Aucun rembourrage horizontal, et c'est délibéré. La version précédente en
+   * posait 12 px et les compensait par une marge négative : la liste mesurait
+   * alors 355 px dans une colonne de 343, soit un débordement de 12 px hors de
+   * la zone de contenu. Sans rembourrage, le texte tombe pile sur l'axe du
+   * titre et la puce de survol occupe la largeur de la colonne, ce qui est
+   * aussi la forme d'une ligne de liste.
+   */
   ul a {
     display: flex;
     align-items: center;
     min-height: var(--cible-min);
-    padding-inline: var(--space-3);
     border-radius: var(--radius);
     color: var(--muted);
   }
