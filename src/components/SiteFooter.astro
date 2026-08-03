@@ -9,6 +9,17 @@
  *    ressemble à celui du site.
  */
 import Icone from './Icone.astro';
+/*
+ * La version vient de package.json, et de nulle part ailleurs.
+ *
+ * L'écrire en dur ici obligerait à la changer à deux endroits, et l'un des
+ * deux finirait par mentir. `npm version` met désormais à jour le badge du
+ * site en même temps que le paquet.
+ *
+ * La lecture se fait au build : le fichier n'est jamais servi au visiteur, et
+ * seul le numéro atterrit dans le HTML.
+ */
+import { version } from '../../package.json';
 import { periode, nombreAthletes, results } from '../lib/data';
 import { dateLongue } from '../lib/format';
 import { RUBRIQUES } from '../lib/navigation';
@@ -103,6 +114,14 @@ const { debut, fin } = periode();
       <p class="realisation">
         Une réalisation de{' '}
         <a href="https://loremipsum.re" rel="noopener">loremipsum.re</a>.
+      </p>
+      {/*
+        Dernière ligne du document, volontairement. C'est une information de
+        maintenance, utile pour situer ce qu'un visiteur a sous les yeux quand
+        il signale quelque chose. Elle ne mérite pas d'être vue avant le reste.
+      */}
+      <p class="version">
+        Version du site : <span class="badge">v{version}</span>
       </p>
     </div>
   </div>
@@ -269,6 +288,30 @@ const { debut, fin } = periode();
 
   .realisation {
     margin-top: var(--space-2);
+  }
+
+  .version {
+    margin-top: var(--space-4);
+    color: var(--muted);
+  }
+
+  /*
+   * Badge dans le vocabulaire Modernist : un aplat franc, un angle net, aucune
+   * ombre. Il reprend la forme des étiquettes de format des cartes de
+   * compétition, pour qu'un même objet visuel garde un même sens sur le site.
+   */
+  .badge {
+    display: inline-block;
+    padding: 1px var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    /* Les chiffres d'une version doivent s'aligner : c'est à ça que sert
+       .num-tab ailleurs sur le site, on reprend le même réglage. */
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    white-space: nowrap;
   }
 
   .mentions p {
