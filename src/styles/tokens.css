@@ -59,6 +59,13 @@
   --p-light-accent: #676700;
   --p-light-accent-hover: #404000;
   --p-light-accent-fill: #d6d600;
+  /*
+   * Survol d'un APLAT accentué. Il assombrit le jaune, il ne bascule pas vers
+   * --accent-hover, qui est un accent de TEXTE : posé en fond sous du basalte,
+   * celui-ci donnait 1,54:1, un bouton dont le libellé disparaissait au survol.
+   * Mesuré ici : 7,82 avec le basalte.
+   */
+  --p-light-accent-fill-hover: #b8b800;
   --p-light-on-accent: #201e1d;
   /* Le bleu sert au marquage « vérifié », jamais au texte courant. */
   --p-light-bleu: #2447b3;
@@ -97,6 +104,8 @@
   --p-dark-accent: #d1d100;
   --p-dark-accent-hover: #e8e83a;
   --p-dark-accent-fill: #d1d100;
+  /* Sur fond sombre le survol ÉCLAIRCIT l'aplat. Mesuré : 13,81. */
+  --p-dark-accent-fill-hover: #e8e83a;
   --p-dark-on-accent: #171614;
   --p-dark-bleu: #5b7fe0;
   /*
@@ -129,6 +138,7 @@
   --accent: var(--p-light-accent);
   --accent-hover: var(--p-light-accent-hover);
   --accent-fill: var(--p-light-accent-fill);
+  --accent-fill-hover: var(--p-light-accent-fill-hover);
   --on-accent: var(--p-light-on-accent);
   --bleu: var(--p-light-bleu);
   --rouge: var(--p-light-rouge);
@@ -274,6 +284,7 @@
     --accent: var(--p-dark-accent);
     --accent-hover: var(--p-dark-accent-hover);
     --accent-fill: var(--p-dark-accent-fill);
+    --accent-fill-hover: var(--p-dark-accent-fill-hover);
     --on-accent: var(--p-dark-on-accent);
     --bleu: var(--p-dark-bleu);
     /* Pas de rouge en sombre : le doré tient ce rôle. Voir la palette. */
@@ -307,6 +318,7 @@
   --accent: var(--p-dark-accent);
   --accent-hover: var(--p-dark-accent-hover);
   --accent-fill: var(--p-dark-accent-fill);
+  --accent-fill-hover: var(--p-dark-accent-fill-hover);
   --on-accent: var(--p-dark-on-accent);
   --bleu: var(--p-dark-bleu);
   /* Pas de rouge en sombre : le doré tient ce rôle. Voir la palette. */
