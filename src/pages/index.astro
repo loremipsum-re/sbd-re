@@ -35,16 +35,17 @@ const stats = [
 <BaseLayout
   titre="Classement des powerlifters à La Réunion"
   titreOnglet="SBD.re - Classement des Powerlifters à La Réunion"
-  description="Classements et records de force athlétique à La Réunion, à partir des résultats homologués en compétition. Un second classement accueille les barres soulevées en salle."
+  description="Site qui référence tous les athlètes officiels de force athlétique à La Réunion : records de squat, bench et deadlift, classements et résultats de compétition. Bientôt, le top des performances réunionnaises hors compétition."
 >
   <section class="hero wrap">
-    <p class="surtitre">Force athlétique à La Réunion</p>
     <h1>
-      Les records de l'île,<br />
-      <span class="accent">sur la barre.</span>
+      Les records de <span class="accent">Squat, Bench et Deadlift</span> à La
+      Réunion
     </h1>
     <p class="chapeau">
-      Tout ce qui est ici a été soulevé sur un plateau, devant trois juges.
+      Site qui référence tous les athlètes officiels de force athlétique à La
+      Réunion, et bientôt le top des performances réunionnaises hors
+      compétition.
     </p>
 
     <div class="actions">
@@ -90,9 +91,8 @@ const stats = [
       <div>
         <h2>Top 10 toutes catégories</h2>
         <p class="fin">
-          Aux points Dots, qui ramènent le total au poids de corps : un 59 kg
-          et un 120 kg se départagent sur la même échelle. Full power
-          uniquement.
+          Classement aux points Dots : le total ramené au poids de corps. Full
+          power uniquement.
         </p>
       </div>
       <a class="lien-plus lien-nu" href="/classement/">Classement complet →</a>
@@ -105,7 +105,7 @@ const stats = [
     <header class="titre-bloc">
       <div>
         <h2>Compétitions récentes</h2>
-        <p class="fin">Les derniers plateaux de l'île, barre par barre.</p>
+        <p class="fin">Les dernières compétitions disputées à La Réunion.</p>
       </div>
       <a class="lien-plus lien-nu" href="/competitions/">Toutes les compétitions →</a>
     </header>
@@ -142,10 +142,10 @@ const stats = [
   <section class="wrap bloc">
     <div class="communaute">
       <div>
-        <h2>Et vos barres de salle ?</h2>
+        <h2>Performances hors compétition</h2>
         <p class="fin">
-          Les performances d'entraînement et les compétitions non homologuées
-          ont leur propre classement, à côté de l'officiel.
+          Le top des performances réunionnaises réalisées en salle et en
+          compétition non homologuée. Bientôt disponible.
         </p>
       </div>
       <a class="bouton lien-nu" href="/communaute/">Voir le classement communauté</a>
@@ -158,17 +158,15 @@ const stats = [
     padding-block: var(--space-8) var(--space-12);
   }
 
-  .surtitre {
-    font-size: var(--step--1);
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: var(--space-3);
-  }
+  /*
+   * Le surtitre « Force athlétique à La Réunion » a été retiré : le titre le
+   * disait déjà mot pour mot, et le répéter juste au-dessus ne servait rien.
+   */
 
+  /* 24ch, contre 16 du temps où le titre tenait en trois mots et forçait sa
+     coupure avec un <br>. Il se coupe désormais tout seul, où il faut. */
   h1 {
-    max-width: 16ch;
+    max-width: 24ch;
   }
 
   .accent {
