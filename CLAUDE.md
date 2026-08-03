@@ -155,6 +155,11 @@ la première cause d'icônes dépareillées. Pour en ajouter une, reprendre le t
 depuis `tabler/tabler-icons`, `icons/outline/`, et conserver la mention de
 copyright en tête du composant, que la licence MIT impose.
 
+**Tout lien sortant porte une flèche ↗**, posée automatiquement par une règle
+de `tokens.css` sur `a[href^="http"]`. Ne pas l'ajouter à la main dans le
+balisage : un nouveau lien externe l'obtient sans rien demander. Les adresses
+`mailto:` en sont exclues, un courriel n'étant pas un site externe.
+
 **Les icônes du menu sont décoratives**, `aria-hidden="true"`, et accompagnent
 toujours un libellé texte. Une icône seule redeviendrait la seule information et
 donc un problème d'accès. Le contour sert à naviguer, le plein signale un état

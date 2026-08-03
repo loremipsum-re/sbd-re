@@ -443,6 +443,51 @@ a:hover {
   text-decoration: none;
 }
 
+/*
+ * LIENS SORTANTS — la flèche ↗, posée automatiquement.
+ *
+ * Le visiteur doit savoir qu'il quitte le site AVANT de cliquer, pas après.
+ * C'est vrai partout, et particulièrement sur les pages légales, où les liens
+ * vers la CNIL, Microsoft ou OVH mènent chez des tiers.
+ *
+ * La règle est en CSS et non dans le balisage, pour deux raisons. Elle attrape
+ * les liens à venir sans que personne ait à y penser, y compris ceux construits
+ * en JavaScript comme l'annonce de compétition. Et elle ne demande aucune
+ * modification des quelque vingt liens sortants déjà écrits.
+ *
+ * `mask` plutôt qu'une image de fond : la flèche prend `currentColor` et suit
+ * donc le thème, la couleur du lien et son survol, sans un jeton de plus.
+ *
+ * `mailto:` est exclu tout seul, ces adresses ne commençant pas par « http ».
+ * Un courriel n'est pas un site externe, et la flèche y mentirait.
+ *
+ * `content: ''` laisse la flèche muette pour les lecteurs d'écran, ce qui est
+ * voulu : elle est un repère visuel, et une annonce « lien externe » à chaque
+ * occurrence alourdirait la lecture des pages légales, qui en sont pleines.
+ */
+:root {
+  --icone-lien-sortant: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 7l-10 10'/%3E%3Cpath d='M8 7l9 0l0 9'/%3E%3C/svg%3E");
+}
+
+a[href^='http']:not([href*='//sbd.re'])::after {
+  content: '';
+  /*
+   * `inline-block` fait de la flèche une boîte atomique, dans laquelle le
+   * soulignement du lien ne se propage pas. Sans lui, tous les liens sortants
+   * du site porteraient un trait sous leur flèche.
+   */
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-left: 0.15em;
+  /* Légèrement relevée : une flèche montante posée sur la ligne de base
+     paraît tomber. */
+  vertical-align: 0.02em;
+  background-color: currentColor;
+  -webkit-mask: var(--icone-lien-sortant) center / contain no-repeat;
+  mask: var(--icone-lien-sortant) center / contain no-repeat;
+}
+
 img,
 svg {
   max-width: 100%;
