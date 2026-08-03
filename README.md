@@ -434,7 +434,11 @@ le modèle de données et le modèle de sécurité. Le schéma de base est prêt
 
 ## Crédits
 
-Données issues du projet [OpenPowerlifting](https://www.openpowerlifting.org),
-librement téléchargeables sur [data.openpowerlifting.org](https://data.openpowerlifting.org).
+Données issues du projet [OpenPowerlifting](https://www.openpowerlifting.org).
+
+Le dump employé par `npm run data:update` vient du miroir GitLab du projet,
+`openpowerlifting.gitlab.io/opl-csv/files/openpowerlifting-latest.zip`, qui est
+l'adresse vivante. Le domaine `data.openpowerlifting.org` ne répond plus et a
+été retiré du site le 3 août 2026.
 
 Site indépendant, non affilié à la FFForce ni à SBD Apparel.
