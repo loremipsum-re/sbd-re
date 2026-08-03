@@ -95,8 +95,20 @@ const parSexe: { sex: Sex; label: string; liste: typeof categories }[] = [
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    /*
+     * Le `min()` n'est pas décoratif. `minmax(15rem, 1fr)` impose 240 px à
+     * chaque colonne, y compris quand l'écran en offre moins : la grille
+     * déborde alors au lieu de se replier. `min(15rem, 100%)` laisse la
+     * colonne tomber à la largeur disponible sur les très petits écrans.
+     */
+    grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
     gap: var(--space-3);
+  }
+
+  /* Un élément de grille vaut `min-width: auto` : sans cette ligne il peut
+     dépasser sa colonne pour loger un nom un peu long. */
+  .grille > li {
+    min-width: 0;
   }
 
   .carte {
@@ -138,13 +150,19 @@ const parSexe: { sex: Sex; label: string; liste: typeof categories }[] = [
     font-weight: 600;
   }
 
+  /*
+   * Le nom du détenteur passe à la ligne au lieu d'être tronqué.
+   *
+   * « Christan Pounoussamy » et « Jean-Gérald Hoareau » y perdaient leur fin
+   * sur téléphone. Tronquer le nom d'un athlète est le pire endroit du site où
+   * le faire : c'est précisément l'information que la carte existe pour
+   * donner.
+   */
   .detenteur {
     display: block;
     font-weight: 400;
     color: var(--muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: break-word;
   }
 
   .note {

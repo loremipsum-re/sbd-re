@@ -98,8 +98,13 @@ const totalAthletes = categories.reduce((n, c) => n + c.athletes, 0);
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    /* Voir la note jumelle dans categories/index.astro. */
+    grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
     gap: var(--space-3);
+  }
+
+  .grille > li {
+    min-width: 0;
   }
 
   .carte {
@@ -141,12 +146,15 @@ const totalAthletes = categories.reduce((n, c) => n + c.athletes, 0);
     font-weight: 600;
   }
 
+  /*
+   * Le nom du détenteur passe à la ligne au lieu d'être tronqué. Voir la note
+   * jumelle dans categories/index.astro : tronquer le nom d'un athlète est le
+   * pire endroit du site où le faire.
+   */
   .detenteur {
     display: block;
     font-weight: 400;
     color: var(--muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: break-word;
   }
 </style>

@@ -205,7 +205,7 @@ import {
       /* auto-fit plutôt que trois colonnes figées : une quatrième famille de
          tranches un jour se placerait toute seule, et les listes gardent une
          largeur lisible sur les écrans intermédiaires. */
-      grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
     }
   }
 
