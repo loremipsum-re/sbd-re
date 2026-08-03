@@ -340,6 +340,24 @@
   box-sizing: border-box;
 }
 
+/*
+ * DÉCALAGE DES ANCRES, à cause de l'en-tête collante.
+ *
+ * Sans cette ligne, sauter à une ancre place la cible en haut de la fenêtre,
+ * c'est-à-dire SOUS l'en-tête, qui y est collée. Mesuré : le lien d'évitement
+ * « Aller au contenu » déposait le visiteur avec 69 px de contenu masqués. La
+ * fonctionnalité censée faire gagner du temps à qui navigue au clavier lui
+ * cachait donc le début de ce qu'elle promettait d'atteindre.
+ *
+ * L'en-tête mesure 69 px : 44 de contrôle, deux fois 12 de rembourrage, 1 de
+ * bordure. On arrondit à 5rem pour laisser la cible respirer.
+ *
+ * Sur `:root` et non sur `body` : c'est l'élément racine qui défile.
+ */
+:root {
+  scroll-padding-top: 5rem;
+}
+
 body {
   margin: 0;
   background: var(--bg);

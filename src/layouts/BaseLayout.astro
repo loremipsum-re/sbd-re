@@ -193,9 +193,23 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
   </head>
 
   <body>
+    {/*
+      Cible du bouton « retour en haut ».
+
+      Elle a sa propre balise, et surtout PAS l'en-tête. `id="top"` était posé
+      sur `.entete`, qui est en `position: sticky` : une fois la page défilée,
+      sa boîte est déjà collée en haut de la fenêtre. Le navigateur en concluait
+      qu'aucun défilement n'était nécessaire, et le bouton ne faisait rien. Il
+      écrivait bien « #top » dans l'adresse, ce qui donnait l'illusion d'un lien
+      valide, mais la page ne bougeait pas d'un pixel.
+
+      Une ancre de retour en haut ne doit jamais viser un élément collant.
+    */}
+    <span id="top"></span>
+
     <a class="evitement" href="#contenu">Aller au contenu</a>
 
-    <header class="entete" id="top">
+    <header class="entete">
       <div class="wrap barre">
         <a class="marque lien-nu" href="/" aria-label="SBD.re, accueil">
           <Logo />
