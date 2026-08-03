@@ -154,6 +154,14 @@ const nombreAthletes = athletes.length;
     </div>
 
     <div id="tableau" class="tableau-zone" hidden></div>
+    {/*
+      Masquée tant que le tableau tient dans l'écran. Le script la révèle
+      uniquement s'il déborde vraiment, pour ne pas annoncer un geste inutile.
+    */}
+    <p class="indication-defilement" data-indication-defilement hidden>
+      Le tableau est plus large que l'écran. Faites-le glisser vers la gauche
+      pour voir les colonnes suivantes.
+    </p>
 
     <h2>Ce que ces chiffres disent, et ce qu'ils ne disent pas</h2>
     <p>
@@ -183,6 +191,7 @@ const nombreAthletes = athletes.length;
     const bouton = document.getElementById('ajouter');
     const zoneSelection = document.getElementById('selection');
     const zoneTableau = document.getElementById('tableau');
+    const indication = document.querySelector('[data-indication-defilement]');
     const zoneVide = document.getElementById('vide');
 
     /** Les lignes du tableau. `dec` = nombre de décimales à l'affichage. */
@@ -249,6 +258,8 @@ const nombreAthletes = athletes.length;
 
       zoneVide.hidden = choisis.length > 0;
       zoneTableau.hidden = choisis.length === 0;
+      // Sans tableau, pas d'indication de défilement à afficher.
+      if (indication && !choisis.length) indication.hidden = true;
       if (!choisis.length) return;
 
       const enTetes = choisis
@@ -309,6 +320,37 @@ const nombreAthletes = athletes.length;
 
       zoneTableau.innerHTML =
         `<table class="comparaison"><thead><tr><th scope="col"><span class="sr-only">Mesure</span></th>${enTetes}</tr></thead><tbody>${corps}</tbody></table>`;
+
+      signalerDefilement();
+    }
+
+    /**
+     * Rend le défilement du tableau visible, et atteignable au clavier.
+     *
+     * À quatre athlètes sur téléphone, le tableau fait 544 px dans une zone de
+     * 328 : plus de 200 px existent hors de l'écran et RIEN ne le disait. Une
+     * information qu'on ne sait pas aller chercher n'existe pas.
+     *
+     * Deux manques comblés d'un coup. L'indication visible, qui n'apparaît que
+     * lorsqu'il y a vraiment quelque chose à atteindre. Et `tabindex="0"`, sans
+     * lequel une zone défilante reste inaccessible à qui n'a pas de souris :
+     * le clavier ne peut pas faire défiler un conteneur qu'il ne peut pas
+     * atteindre.
+     */
+    function signalerDefilement() {
+      const deborde = zoneTableau.scrollWidth > zoneTableau.clientWidth + 1;
+
+      if (deborde) {
+        zoneTableau.setAttribute('tabindex', '0');
+        zoneTableau.setAttribute('role', 'region');
+        zoneTableau.setAttribute('aria-label', 'Tableau de comparaison, défilant');
+      } else {
+        zoneTableau.removeAttribute('tabindex');
+        zoneTableau.removeAttribute('role');
+        zoneTableau.removeAttribute('aria-label');
+      }
+
+      if (indication) indication.hidden = !deborde;
     }
 
     function ajouter(nom) {
@@ -354,6 +396,12 @@ const nombreAthletes = athletes.length;
     // Les boutons Précédent et Suivant du navigateur doivent fonctionner :
     // l'adresse EST l'état.
     window.addEventListener('popstate', rendre);
+
+    // Une rotation de téléphone peut faire entrer le tableau dans l'écran, ou
+    // l'en faire sortir : l'indication doit suivre.
+    window.addEventListener('resize', () => {
+      if (!zoneTableau.hidden) signalerDefilement();
+    });
 
     rendre();
   })();
@@ -455,6 +503,28 @@ const nombreAthletes = athletes.length;
      dans son propre conteneur, jamais la page entière. */
   .tableau-zone {
     overflow-x: auto;
+  }
+
+  /* Le focus clavier doit se voir sur la zone défilante elle-même, sans quoi
+     on ne sait pas ce que les flèches vont déplacer. */
+  .tableau-zone:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 4px;
+  }
+
+  .indication-defilement {
+    margin: var(--space-3) 0 var(--space-12);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .indication-defilement[hidden] {
+    display: none;
+  }
+
+  /* Quand l'indication est masquée, c'est elle qui portait la marge basse :
+     la zone la reprend. */
+  .tableau-zone:not(:has(+ .indication-defilement:not([hidden]))) {
     margin-bottom: var(--space-12);
   }
 
