@@ -143,6 +143,23 @@ isolé et grand, `.num-tab` pour un chiffre dans une colonne.
 `min-height` et jamais `height` : le texte doit rester libre de grandir. Les
 trois exclusions sont écrites dans `tokens.css`, ne pas en ajouter sans mesurer.
 
+**Ne jamais tronquer du texte porteur de sens.** Pas de `text-overflow:
+ellipsis` sur un nom d'athlète, de compétition ou de commune : ce sont les
+informations que les cartes existent pour donner. Le texte passe à la ligne.
+`white-space: nowrap` reste bon pour une valeur courte et insécable, une date,
+un poids, un effectif.
+
+**Un élément de grille ou de flex vaut `min-width: auto`.** Il peut donc
+dépasser sa colonne pour loger son contenu, et un enfant en `nowrap` suffit à
+déclencher le débordement. Poser `min-width: 0` sur l'élément, et écrire les
+grilles en `minmax(min(15rem, 100%), 1fr)` plutôt qu'en `minmax(15rem, 1fr)`.
+C'est ce qui faisait sortir l'effectif d'athlètes de l'écran sur l'accueil.
+
+**Le débordement de page n'est pas le bon indicateur.** Un conteneur en
+`overflow: hidden` coupe sans que `scrollWidth` de la page ne bouge d'un pixel.
+Mesurer par élément : `scrollWidth > clientWidth`, et la largeur de la boîte
+comparée à celle de `.wrap`.
+
 **`--accent` est un accent de TEXTE, `--accent-fill` est l'aplat.** Poser
 `--accent` en fond sous `--on-accent` donne 2,78:1 en thème clair. L'erreur a
 déjà été commise une fois, sur le lien d'évitement. Le thème sombre ne la

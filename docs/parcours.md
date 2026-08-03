@@ -340,6 +340,36 @@ tableau, qui n'existent qu'au pointeur puisque l'en-tête est masquée en cartes
 Et les liens en ligne dans les cartes, noms d'athlètes et dates, qui sont des
 liens de prose dans une carte de 149 px et non des commandes.
 
+### Le second piège : une troncature qui élargit la carte
+
+Signalé par l'auteur après coup, sur une capture d'écran de téléphone : les
+cartes de compétition de l'accueil étaient coupées, et l'effectif d'athlètes
+avait disparu.
+
+La cause tient en une déclaration. Le nom de la compétition portait
+`white-space: nowrap` avec des points de suspension. On perd la fin du nom,
+c'est visible et c'était le but. Mais en `nowrap`, la largeur **minimale** de
+l'élément devient celle du texte entier. Le `li` qui le contient est un élément
+de grille, donc en `min-width: auto`, et il refuse de descendre sous cette
+largeur. La carte mesurait 433 px dans une colonne de 343, et sa partie droite
+sortait de l'écran.
+
+Une troncature censée faire tenir le contenu le faisait donc déborder.
+
+**Et la mesure de débordement employée jusque-là ne le voyait pas.** Le test
+`document.documentElement.scrollWidth > innerWidth` retournait `false`, parce
+qu'un conteneur en `overflow: hidden` coupe sans que la page ne s'élargisse.
+Ça ne déborde pas, ça disparaît. Il faut mesurer par élément, `scrollWidth`
+contre `clientWidth`, et comparer la largeur de chaque boîte à celle de
+`.wrap`.
+
+Le balayage ainsi corrigé a trouvé quatre choses : les cartes de l'accueil, les
+noms de détenteurs de records sur les deux pages de catégories, le tableau de
+comparaison qui cachait 216 px sans le dire, et **une régression introduite le
+jour même** dans le pied de page, où un rembourrage compensé par une marge
+négative élargissait la liste de 12 px au-delà de sa colonne. Elle était passée
+parce que la vérification portait sur la puce de survol, pas sur la boîte.
+
 ### Ce qui reste ouvert
 
 Les états d'erreur n'ont pas de cas d'emploi aujourd'hui : le site est statique
