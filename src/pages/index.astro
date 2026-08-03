@@ -314,6 +314,16 @@ const stats = [
     gap: var(--space-2);
   }
 
+  /*
+   * Garde-fou structurel : un élément de grille vaut `min-width: auto` par
+   * défaut, ce qui l'autorise à dépasser sa colonne pour loger son contenu.
+   * C'est exactement ce qui faisait sortir l'effectif de l'écran. Le passer à
+   * zéro rend la colonne souveraine, quoi qu'on mette dedans plus tard.
+   */
+  .recentes > li {
+    min-width: 0;
+  }
+
   .carte {
     display: flex;
     align-items: center;
@@ -355,12 +365,26 @@ const stats = [
     min-width: 0;
   }
 
+  /*
+   * Le nom PASSE À LA LIGNE, il n'est pas tronqué.
+   *
+   * Il portait `white-space: nowrap` avec des points de suspension. Sur
+   * téléphone, « Championnat de La Réunion DC/BP » y perdait sa fin, et
+   * surtout : en `nowrap`, sa largeur minimale devenait celle du texte entier.
+   * Le `li` qui la contient est un élément de grille, donc en `min-width:
+   * auto`, et refusait de descendre sous cette largeur. La carte mesurait
+   * alors 433 px dans une colonne de 343, et l'effectif d'athlètes sortait de
+   * l'écran sans que rien ne signale sa présence.
+   *
+   * Deux lignes de titre coûtent moins cher qu'une information invisible.
+   */
   .carte-nom {
     display: block;
     font-weight: 600;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    /* Un nom d'un seul tenant plus large que la carte se coupe plutôt que de
+       la faire déborder. Le cas ne se présente pas aujourd'hui ; il suffirait
+       d'une compétition au nom mal saisi. */
+    overflow-wrap: break-word;
   }
 
   .carte-meta {
