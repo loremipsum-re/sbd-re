@@ -143,6 +143,12 @@ isolé et grand, `.num-tab` pour un chiffre dans une colonne.
 `min-height` et jamais `height` : le texte doit rester libre de grandir. Les
 trois exclusions sont écrites dans `tokens.css`, ne pas en ajouter sans mesurer.
 
+**L'en-tête est collante, deux conséquences sur les ancres.** Une ancre de
+retour en haut ne doit jamais viser un élément collant : sa boîte étant déjà en
+haut de la fenêtre, le navigateur ne défile pas et le lien paraît mort. D'où le
+`<span id="top">` en tête de document. Et `scroll-padding-top` doit rester posé
+sur `:root`, sans quoi toute ancre dépose la cible sous l'en-tête.
+
 **Un seul jeu d'icônes : Tabler, variante `outline`**, licence MIT, tracé dans
 `Icone.astro`. Trait de 2 sur grille de 24. Ne jamais mélanger deux packs, c'est
 la première cause d'icônes dépareillées. Pour en ajouter une, reprendre le tracé
