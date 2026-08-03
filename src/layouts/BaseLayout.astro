@@ -3,6 +3,7 @@
  * Gabarit commun à toutes les pages : en-tête, navigation, pied de page, méta.
  */
 import BanniereConsentement from '../components/BanniereConsentement.astro';
+import Icone from '../components/Icone.astro';
 import Logo from '../components/Logo.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
@@ -55,19 +56,19 @@ const CLARITY_ID = 'xtvqmm4cxo';
  * indice, et débordaient de l'écran sur téléphone.
  */
 const liensPrincipaux = [
-  { href: '/classement/', label: 'Classement officiel' },
-  { href: '/communaute/', label: 'Communauté' },
-  { href: '/comparer/', label: 'Comparer' },
-];
+  { href: '/classement/', label: 'Classement officiel', icone: 'classement' },
+  { href: '/communaute/', label: 'Communauté', icone: 'communaute' },
+  { href: '/comparer/', label: 'Comparer', icone: 'comparer' },
+] as const;
 
 /** Rubriques secondaires : dans le menu du téléphone et dans le pied de page. */
 const liensSecondaires = [
-  { href: '/records/', label: 'Records' },
-  { href: '/categories/', label: 'Catégories' },
-  { href: '/competitions/', label: 'Compétitions' },
-  { href: '/exterieur/', label: 'Extérieur' },
-  { href: '/a-propos/', label: 'À propos' },
-];
+  { href: '/records/', label: 'Records', icone: 'records' },
+  { href: '/categories/', label: 'Catégories', icone: 'categories' },
+  { href: '/competitions/', label: 'Compétitions', icone: 'competitions' },
+  { href: '/exterieur/', label: 'Extérieur', icone: 'exterieur' },
+  { href: '/a-propos/', label: 'À propos', icone: 'apropos' },
+] as const;
 
 const estActif = (href: string) => chemin === href || chemin.startsWith(href);
 ---
@@ -210,6 +211,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
                     href={lien.href}
                     aria-current={estActif(lien.href) ? 'page' : undefined}
                   >
+                    <Icone nom={lien.icone} />
                     {lien.label}
                   </a>
                 </li>
@@ -241,6 +243,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
                       href={lien.href}
                       aria-current={estActif(lien.href) ? 'page' : undefined}
                     >
+                      <Icone nom={lien.icone} />
                       {lien.label}
                     </a>
                   </li>
@@ -422,7 +425,16 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
    * Les onglets du bandeau gardent --radius : ils ne sont imbriqués dans rien.
    */
   .menu-mobile nav a {
-    display: block;
+    /*
+     * `flex` et non `block` depuis l'arrivée des icônes : l'icône doit rester
+     * sur l'axe gauche et le libellé se replier à côté d'elle, pas dessous.
+     * `align-items: start` plutôt que `center` : sur un libellé qui passe à
+     * la ligne, une icône centrée verticalement flotterait entre les deux
+     * lignes au lieu de marquer le début de la rubrique.
+     */
+    display: flex;
+    align-items: start;
+    gap: var(--space-2);
     padding: var(--space-3);
     border-radius: calc(var(--radius-lg) - var(--space-2) - 1px);
     white-space: normal;
@@ -521,6 +533,9 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
   nav a {
     display: flex;
     align-items: center;
+    /* L'icône colle au libellé qu'elle accompagne : 8 px les lient sans les
+       confondre avec la rubrique voisine, qui est bien plus loin. */
+    gap: var(--space-2);
     min-height: var(--cible-min);
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius);

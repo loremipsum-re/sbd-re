@@ -1,0 +1,133 @@
+---
+/**
+ * Icônes de navigation, en SVG tracé dans la page.
+ *
+ * Source : Tabler Icons, jeu « outline », <https://tabler.io/icons>.
+ * Copyright (c) 2020-2026 Paweł Kuna, licence MIT.
+ * La licence MIT impose de conserver cette mention : ne pas la retirer.
+ *
+ * POURQUOI TABLER, ET POURQUOI CELUI-LÀ.
+ *
+ * Le trait fait 2 px sur une grille de 24, ce qui est exactement l'épaisseur
+ * des bordures du système Modernist. Les icônes ont donc rigoureusement le
+ * même trait que les cadres qui les entourent, et rien ne détonne.
+ *
+ * Le point mesuré qui a tranché : Phosphor nomme un de ses poids « Regular »,
+ * mais ramené à la grille de 24 son trait vaut 1,50. Il aurait paru plus fin
+ * que les bordures du site. Lucide est à 2,00 comme Tabler et faisait aussi
+ * l'affaire ; Tabler l'emporte sur l'étendue, sa catégorie Sport couvrant le
+ * vocabulaire dont la partie communauté aura besoin.
+ *
+ * TRACÉ DANS LA PAGE plutôt que servi en fichier. Les huit icônes pèsent
+ * 3 040 octets bruts et 559 après gzip : un fichier séparé économiserait
+ * quelques centaines d'octets par page contre une requête réseau et les
+ * subtilités de thème d'un `<use>` externe. C'est déjà le choix de Logo.astro
+ * et de Coupe.astro.
+ *
+ * DÉCORATIVES, TOUJOURS. Chaque icône accompagne un libellé texte qui dit
+ * déjà la rubrique. `aria-hidden` évite qu'un lecteur d'écran annonce
+ * « Records Records ». Le gain de ces icônes est visuel : on reconnaît une
+ * forme plus vite qu'on ne lit un mot. Il n'est pas d'accessibilité.
+ *
+ * Ne JAMAIS employer ce composant seul pour porter un sens : sans libellé à
+ * côté, l'icône devient la seule information et redevient un problème.
+ */
+
+const TRACES = {
+  /* Une liste numérotée est littéralement un classement. */
+  classement: [
+    'M11 6h9',
+    'M11 12h9',
+    'M12 18h8',
+    'M4 16a2 2 0 1 1 4 0c0 .591 -.5 1 -1 1.5l-3 2.5h4',
+    'M6 10v-6l-2 2',
+  ],
+  communaute: [
+    'M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0',
+    'M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2',
+    'M16 3.13a4 4 0 0 1 0 7.75',
+    'M21 21v-2a4 4 0 0 0 -3 -3.85',
+  ],
+  comparer: ['M21 17l-18 0', 'M6 10l-3 -3l3 -3', 'M3 7l18 0', 'M18 20l3 -3l-3 -3'],
+  /*
+   * Le trophée en CONTOUR, quand Coupe.astro dessine une coupe PLEINE dans les
+   * tableaux. Ce n'est pas une incohérence : le contour sert à naviguer, le
+   * plein signale un état dans la donnée. Le même objet dit la même chose aux
+   * deux endroits, avec deux rôles distincts.
+   */
+  records: [
+    'M8 21l8 0',
+    'M12 17l0 4',
+    'M7 4l10 0',
+    'M17 4v8a5 5 0 0 1 -10 0v-8',
+    'M3 9a2 2 0 1 0 4 0a2 2 0 1 0 -4 0',
+    'M17 9a2 2 0 1 0 4 0a2 2 0 1 0 -4 0',
+  ],
+  /* Les catégories sont des tranches de poids : un poids, donc. */
+  categories: [
+    'M9 6a3 3 0 1 0 6 0a3 3 0 1 0 -6 0',
+    'M6.835 9h10.33a1 1 0 0 1 .984 .821l1.637 9a1 1 0 0 1 -.984 1.179h-13.604a1 1 0 0 1 -.984 -1.179l1.637 -9a1 1 0 0 1 .984 -.821',
+  ],
+  competitions: [
+    'M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12',
+    'M16 3l0 4',
+    'M8 3l0 4',
+    'M4 11l16 0',
+    'M8 15h2v2h-2l0 -2',
+  ],
+  exterieur: [
+    'M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0',
+    'M3.6 9h16.8',
+    'M3.6 15h16.8',
+    'M11.5 3a17 17 0 0 0 0 18',
+    'M12.5 3a17 17 0 0 1 0 18',
+  ],
+  apropos: ['M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0', 'M12 9h.01', 'M11 12h1v4h1'],
+} as const;
+
+export type NomIcone = keyof typeof TRACES;
+
+interface Props {
+  nom: NomIcone;
+  /** En pixels. 20 est la taille du menu, contre 16 pour un usage en ligne. */
+  taille?: number;
+}
+
+const { nom, taille = 20 } = Astro.props;
+const traces = TRACES[nom];
+---
+
+<svg
+  class="icone"
+  width={taille}
+  height={taille}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+  focusable="false"
+>
+  {traces.map((d) => <path d={d} />)}
+</svg>
+
+<style>
+  /*
+   * `flex-shrink: 0` sans quoi l'icône s'écraserait quand le libellé est long,
+   * ce qui est précisément le cas de « Classement officiel » sur téléphone.
+   * Le chantier des troncatures a montré ce que coûte un élément qu'on laisse
+   * se déformer.
+   */
+  /*
+   * Le trait suit la taille, volontairement. Tabler dessine 2 unités sur une
+   * grille de 24, soit un rapport de 1/12 ; affichée à 20 px l'icône rend donc
+   * un trait de 1,67 px. Le figer à 2 px le rendrait proportionnellement plus
+   * lourd que ce que le pack dessine, et l'icône paraîtrait grasse à côté du
+   * texte. On garde la proportion voulue par le pack.
+   */
+  .icone {
+    flex-shrink: 0;
+  }
+</style>

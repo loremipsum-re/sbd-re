@@ -143,6 +143,18 @@ isolé et grand, `.num-tab` pour un chiffre dans une colonne.
 `min-height` et jamais `height` : le texte doit rester libre de grandir. Les
 trois exclusions sont écrites dans `tokens.css`, ne pas en ajouter sans mesurer.
 
+**Un seul jeu d'icônes : Tabler, variante `outline`**, licence MIT, tracé dans
+`Icone.astro`. Trait de 2 sur grille de 24. Ne jamais mélanger deux packs, c'est
+la première cause d'icônes dépareillées. Pour en ajouter une, reprendre le tracé
+depuis `tabler/tabler-icons`, `icons/outline/`, et conserver la mention de
+copyright en tête du composant, que la licence MIT impose.
+
+**Les icônes du menu sont décoratives**, `aria-hidden="true"`, et accompagnent
+toujours un libellé texte. Une icône seule redeviendrait la seule information et
+donc un problème d'accès. Le contour sert à naviguer, le plein signale un état
+dans la donnée : d'où le trophée en contour dans le menu et la coupe pleine de
+`Coupe.astro` dans les tableaux.
+
 **Ne jamais tronquer du texte porteur de sens.** Pas de `text-overflow:
 ellipsis` sur un nom d'athlète, de compétition ou de commune : ce sont les
 informations que les cartes existent pour donner. Le texte passe à la ligne.
