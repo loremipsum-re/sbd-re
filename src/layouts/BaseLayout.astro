@@ -95,14 +95,8 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
       )
     }
 
-    {/*
-      Favicon en SVG, servi comme fichier plutôt qu'en data-URI : il est mis en
-      cache une fois pour tout le site au lieu d'être répété dans les 437 pages.
-      Les navigateurs sans prise en charge du SVG retombent sur /favicon.ico
-      qu'ils demandent d'eux-mêmes ; en son absence ils n'affichent rien, ce qui
-      est sans conséquence.
-    */}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
 
     <!--
       Le navigateur ne découvre normalement une police qu'après avoir lu le CSS,
