@@ -160,6 +160,14 @@ de `tokens.css` sur `a[href^="http"]`. Ne pas l'ajouter à la main dans le
 balisage : un nouveau lien externe l'obtient sans rien demander. Les adresses
 `mailto:` en sont exclues, un courriel n'étant pas un site externe.
 
+**Une exception au pack unique : `Coupe.astro` et `Medaille.astro`.** Ce sont
+des tracés maison et PLEINS, antérieurs à Tabler, et ils le restent. Deux
+raisons. Ils marquent un état dans la donnée, pas une navigation, et le plein
+est ce qui porte cette distinction. Et Tabler n'a pas de médaille pleine,
+vérifié : `filled/trophy` et `filled/crown` existent, `filled/medal` et
+`filled/medal-2` non. Migrer donnerait un podium moitié Tabler, moitié maison,
+donc pire que deux tracés maison cohérents entre eux.
+
 **Les icônes du menu sont décoratives**, `aria-hidden="true"`, et accompagnent
 toujours un libellé texte. Une icône seule redeviendrait la seule information et
 donc un problème d'accès. Le contour sert à naviguer, le plein signale un état
