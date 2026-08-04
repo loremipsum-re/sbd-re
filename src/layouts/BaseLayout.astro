@@ -98,7 +98,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
 
-    <!--
+    {/*
       Le navigateur ne découvre normalement une police qu'après avoir lu le CSS,
       qu'il doit lui-même d'abord télécharger : le texte s'affiche donc deux fois,
       d'abord en police système puis en Archivo. `preload` lance le
@@ -112,7 +112,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
       domaine — sans lui le navigateur télécharge le fichier une seconde fois.
       Seuls les fichiers « latin » sont préchargés : « latin-ext » ne sert qu'à
       de rares caractères et reste chargé à la demande.
-    -->
+    */}
     <link
       rel="preload"
       href="/fonts/archivo-latin.woff2"
@@ -121,7 +121,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
       crossorigin
     />
 
-    <!--
+    {/*
       Applique le thème AVANT le premier rendu.
 
       `is:inline` demande à Astro de laisser ce script tel quel, sans le
@@ -129,7 +129,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
       tard, et la page apparaîtrait en blanc une fraction de seconde avant de
       basculer en sombre. C'est le fameux « flash » — visible, désagréable, et
       la première chose qu'on remarque sur un site mal fait.
-    -->
+    */}
     <script is:inline>
       (function () {
         try {
@@ -142,7 +142,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
       })();
     </script>
 
-    <!--
+    {/*
       Mesure d'audience Microsoft Clarity, SOUS CONDITION DE CONSENTEMENT.
 
       Le script n'est pas posé ici : seule la fonction qui sait le charger l'est.
@@ -153,7 +153,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
       aucun cookie n'est déposé. C'est ce que le RGPD et la doctrine de la CNIL
       exigent pour un outil qui enregistre les sessions et transmet les données
       à un tiers.
-    -->
+    */}
     <script is:inline define:vars={{ CLARITY_ID }}>
       window.sbdChargerMesure = function () {
         if (window.__sbdMesureChargee) return;
