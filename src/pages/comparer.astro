@@ -194,6 +194,25 @@ const nombreAthletes = athletes.length;
     const indication = document.querySelector('[data-indication-defilement]');
     const zoneVide = document.getElementById('vide');
 
+    /**
+     * Échappe une valeur avant de l'insérer dans du HTML construit à la main.
+     *
+     * Les noms d'athlètes viennent d'OpenPowerlifting, donc d'un tiers, et
+     * atterrissaient tels quels dans `innerHTML` : en contenu de balise, en
+     * texte de lien, et jusque dans un attribut `aria-label`. Aucun des 312
+     * noms actuels ne contient de caractère dangereux, mais le jeu de données
+     * est régénéré chaque mois et personne ne relit 312 noms.
+     *
+     * Un nom contenant un guillemet suffirait à sortir de l'attribut. Le coût
+     * de cette fonction est nul, celui de l'oubli ne l'est pas.
+     */
+    const echapper = (v) =>
+      String(v).replace(
+        /[&<>"']/g,
+        (c) =>
+          ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+      );
+
     /** Les lignes du tableau. `dec` = nombre de décimales à l'affichage. */
     const LIGNES = [
       // `rang: true` inverse tout : le meilleur est le PLUS PETIT, et l'écart
@@ -248,7 +267,7 @@ const nombreAthletes = athletes.length;
         ? choisis
             .map(
               (a) =>
-                `<span class="jeton">${a.n}<button type="button" data-retirer="${a.s}" aria-label="Retirer ${a.n}">×</button></span>`,
+                `<span class="jeton">${echapper(a.n)}<button type="button" data-retirer="${echapper(a.s)}" aria-label="Retirer ${echapper(a.n)}">×</button></span>`,
             )
             .join('') +
           (choisis.length > 1
@@ -265,7 +284,7 @@ const nombreAthletes = athletes.length;
       const enTetes = choisis
         .map(
           (a) =>
-            `<th scope="col"><a href="/athlete/${a.s}/">${a.n}</a><span class="sous">${a.c} kg · ${a.e}</span></th>`,
+            `<th scope="col"><a href="/athlete/${echapper(a.s)}/">${echapper(a.n)}</a><span class="sous">${echapper(a.c)} kg · ${echapper(a.e)}</span></th>`,
         )
         .join('');
 
