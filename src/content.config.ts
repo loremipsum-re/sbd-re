@@ -70,4 +70,39 @@ const athletes = defineCollection({
   }),
 });
 
-export const collections = { actualites, athletes };
+/**
+ * Partenaires.
+ *
+ * Des sponsors DIRECTS, jamais une régie. Une image et un lien hébergés ici,
+ * donc aucune requête vers un tiers, aucun pistage, et aucun consentement à
+ * demander. Une régie type AdSense tomberait derrière la bannière, serait
+ * invisible pour qui refuse, et contredirait la posture du site.
+ *
+ * Trois règles gouvernent l'affichage, appliquées dans lib/sponsors.ts :
+ *   1. UN SEUL emplacement par page, jamais deux.
+ *   2. JAMAIS dans une donnée : ni entre deux lignes de classement, ni dans un
+ *      tableau de résultats. Le classement est le produit.
+ *   3. JAMAIS au-dessus du contenu : le visiteur obtient ce qu'il est venu
+ *      chercher avant de voir un partenaire.
+ */
+const sponsors = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/sponsors' }),
+  schema: z.object({
+    nom: z.string(),
+    /** Chemin de l'image, servie depuis le site. */
+    logo: z.string(),
+    url: z.string(),
+    /**
+     * Où ce partenaire peut apparaître. Un partenaire sans emplacement ne
+     * s'affiche nulle part, ce qui est la façon simple de le mettre en pause.
+     */
+    emplacements: z
+      .array(z.enum(['competition', 'article', 'pied']))
+      .default([]),
+    actif: z.boolean().default(true),
+    /** Petit nombre en premier, dans le bandeau du pied de page. */
+    ordre: z.number().default(0),
+  }),
+});
+
+export const collections = { actualites, athletes, sponsors };

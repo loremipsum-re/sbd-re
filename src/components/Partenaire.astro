@@ -1,0 +1,88 @@
+---
+/**
+ * Un partenaire, en fin de page de compétition ou d'article.
+ *
+ * DEUX OBLIGATIONS, et ce ne sont pas des options.
+ *
+ * L'intitulé « Partenaire » est visible et lisible. La loi française impose
+ * qu'une publicité soit identifiable comme telle : un bloc qui ressemble à du
+ * contenu éditorial est une publicité déguisée.
+ *
+ * Le lien porte `rel="sponsored nofollow"`. Google l'exige pour tout lien
+ * rémunéré, et l'omettre expose le site à une pénalité de référencement, ce
+ * qui coûterait bien plus cher que le partenariat ne rapporte.
+ *
+ * La flèche des liens sortants vient en plus, posée par tokens.css.
+ */
+import type { Sponsor } from '../lib/sponsors';
+
+interface Props {
+  sponsor: Sponsor;
+}
+
+const { sponsor } = Astro.props;
+---
+
+<aside class="partenaire">
+  <p class="mention">Partenaire</p>
+  <a
+    class="bloc lien-nu"
+    href={sponsor.data.url}
+    rel="sponsored nofollow noopener"
+  >
+    <img src={sponsor.data.logo} alt={sponsor.data.nom} loading="lazy" />
+    <span class="nom">{sponsor.data.nom}</span>
+  </a>
+</aside>
+
+<style>
+  .partenaire {
+    max-width: 68ch;
+    margin-top: var(--space-12);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border);
+  }
+
+  /*
+   * Discret mais lisible. Un intitulé qu'on ne voit pas ne remplit pas
+   * l'obligation légale : c'est pour ça qu'il garde la taille du texte
+   * courant et le contraste du texte secondaire, mesuré à 5.38 en clair.
+   */
+  .mention {
+    margin: 0 0 var(--space-2);
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .bloc {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-height: var(--cible-min);
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    color: var(--text);
+  }
+  .bloc:hover {
+    border-color: var(--accent);
+  }
+
+  .bloc img {
+    width: 96px;
+    height: 48px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  .nom {
+    font-weight: 700;
+    /* Un nom de marque un peu long passe à la ligne au lieu de déborder. */
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+</style>

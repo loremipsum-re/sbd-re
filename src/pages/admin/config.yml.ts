@@ -140,6 +140,41 @@ ${optionsAthletes || '          []'}
           - { name: libelle, label: Libellé, widget: string }
           - { name: url, label: Adresse, widget: string }
       - { name: body, label: Présentation, widget: markdown, required: false }
+
+  # -------------------------------------------------------------------------
+  # Partenaires.
+  #
+  # Des sponsors DIRECTS, jamais une régie : une image et un lien hébergés ici,
+  # donc aucun script tiers et aucun pistage. Trois règles s'appliquent, et
+  # lib/sponsors.ts les fait respecter plutôt que de compter sur la vigilance :
+  # un seul emplacement par page, jamais dans une donnée, jamais au-dessus du
+  # contenu.
+  - name: sponsors
+    label: Partenaires
+    label_singular: Partenaire
+    folder: src/content/sponsors
+    create: true
+    delete: true
+    extension: md
+    format: frontmatter
+    slug: "{{nom}}"
+    summary: "{{nom}}"
+    fields:
+      - { name: nom, label: Nom, widget: string }
+      - { name: logo, label: Logo, widget: image, hint: "Format paysage, lisible en petit. Il s'affiche sur 96 × 48 px en page, 32 px de haut au pied." }
+      - { name: url, label: Adresse du site, widget: string }
+      - name: emplacements
+        label: Emplacements
+        widget: select
+        multiple: true
+        default: [pied]
+        hint: Sans emplacement, le partenaire ne s'affiche nulle part. C'est la façon simple de le mettre en pause.
+        options:
+          - { label: "Page de compétition, sous les résultats", value: "competition" }
+          - { label: "Fin d'article", value: "article" }
+          - { label: "Bandeau du pied de page", value: "pied" }
+      - { name: actif, label: Actif, widget: boolean, default: true }
+      - { name: ordre, label: Ordre dans le bandeau, widget: number, default: 0, value_type: int, hint: "Petit nombre en premier." }
 `;
 
   return new Response(yaml, {
