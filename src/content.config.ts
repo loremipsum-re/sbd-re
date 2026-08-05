@@ -44,4 +44,30 @@ const actualites = defineCollection({
   }),
 });
 
-export const collections = { actualites };
+/**
+ * Surcouches d'athlètes.
+ *
+ * Ce ne sont PAS les données des athlètes. Celles-ci viennent
+ * d'OpenPowerlifting et sont réécrites intégralement à chaque exécution de
+ * « npm run data:update » : une modification directe y serait effacée sans
+ * avertissement.
+ *
+ * Ce fichier-ci s'ajoute PAR-DESSUS et survit à la régénération. On y met ce
+ * que la donnée sportive ne contient pas : une photo, une présentation, des
+ * liens. Les performances restent ce que les juges ont validé.
+ *
+ * Le nom du fichier est le slug de l'athlète, celui que produit athleteSlug().
+ * Le CMS le pose lui-même, à partir d'une liste tirée des données.
+ */
+const athletes = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/athletes' }),
+  schema: z.object({
+    slug: z.string(),
+    photo: z.string().optional(),
+    liens: z
+      .array(z.object({ libelle: z.string(), url: z.string() }))
+      .default([]),
+  }),
+});
+
+export const collections = { actualites, athletes };

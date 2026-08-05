@@ -32,3 +32,6 @@ sbd-re-prive/
 *.log
 .DS_Store
 Thumbs.db
+
+# Copié depuis node_modules à chaque build par scripts/preparer-admin.mjs.
+public/admin/sveltia-cms.js

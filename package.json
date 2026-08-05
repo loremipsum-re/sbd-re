@@ -6,7 +6,9 @@
   "description": "Classements et records du powerlifting réunionnais",
   "scripts": {
     "dev": "astro dev",
+    "predev": "node scripts/preparer-admin.mjs",
     "build": "astro build",
+    "prebuild": "node scripts/preparer-admin.mjs",
     "preview": "astro preview",
     "check": "astro check",
     "data:explore": "node scripts/explore-meets.mjs",
@@ -24,6 +26,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@sveltia/cms": "^0.179.0",
     "typescript": "^6.0.3",
     "unzipper": "^0.12.5"
   }

@@ -9,6 +9,7 @@ import { results } from '../../lib/data';
 import { exterieurDe, paysFr } from '../../lib/exterieur';
 import { dateLongue, kg, nombre, place, points } from '../../lib/format';
 import { liensAthlete } from '../../lib/liens';
+import { presentationDe, surcoucheDe } from '../../lib/surcouche-athlete';
 import { libelleEvent } from '../../lib/meets';
 import { rangsDots } from '../../lib/rankings';
 import { cleRecord, clesRecords } from '../../lib/records';
@@ -49,6 +50,10 @@ export async function getStaticPaths() {
 const { name, lignes, slug } = Astro.props;
 const records = clesRecords();
 const liens = liensAthlete(slug);
+// Ce que le CMS ajoute par-dessus les données : photo, présentation, liens.
+// Absent pour la plupart des athlètes, et c'est le cas normal.
+const surcouche = await surcoucheDe(name);
+const Presentation = surcouche ? await presentationDe(surcouche) : null;
 
 const historique = [...lignes].sort((a, b) => a.date.localeCompare(b.date));
 const fullPower = historique.filter((r) => r.event === 'SBD' && (r.totalKg ?? 0) > 0);
@@ -177,6 +182,18 @@ const description =
     <p class="fil"><a href="/classement/">Retour au classement</a></p>
 
     <header class="entete-athlete">
+      {
+        surcouche?.data.photo && (
+          <img
+            class="portrait"
+            src={surcouche.data.photo}
+            alt={`Portrait de ${name}`}
+            width="120"
+            height="120"
+            loading="lazy"
+          />
+        )
+      }
       <div>
         <h1>
           {name}
@@ -241,8 +258,23 @@ const description =
             </a>
           ))
         }
+        {
+          surcouche?.data.liens.map((lien) => (
+            <a href={lien.url} rel="noopener me">
+              {lien.libelle}
+            </a>
+          ))
+        }
       </div>
     </header>
+
+    {
+      Presentation && (
+        <div class="presentation">
+          <Presentation />
+        </div>
+      )
+    }
 
     {
       estDistingue && rangs && (
@@ -792,6 +824,27 @@ const description =
   .intro-ext {
     color: var(--muted);
     max-width: 68ch;
+    margin-bottom: var(--space-4);
+  }
+  /* Photo et présentation viennent du CMS et n'existent que si quelqu'un les
+     a déposées. La fiche doit rester correcte sans elles, ce qui est le cas
+     de la quasi-totalité des athlètes. */
+  .portrait {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    flex-shrink: 0;
+  }
+
+  .presentation {
+    max-width: 68ch;
+    margin-bottom: var(--space-8);
+    color: var(--muted);
+  }
+
+  .presentation :global(p) {
     margin-bottom: var(--space-4);
   }
 </style>
