@@ -8,6 +8,7 @@ import Logo from '../components/Logo.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
 import { rubriquesPrincipales, rubriquesSecondaires } from '../lib/navigation';
+import { version } from '../../package.json';
 // Les déclarations de polices d'abord : tokens.css s'en sert immédiatement.
 import '../styles/fonts.css';
 import '../styles/tokens.css';
@@ -95,8 +96,19 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
       )
     }
 
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    {/*
+      L'empreinte de version dans l'adresse n'est pas de la coquetterie.
+
+      Ces deux fichiers ont un nom stable : leur contenu change, leur adresse
+      non. Un navigateur qui a déjà vu l'ancien favicon le garde, et le
+      `.htaccess` lui a longtemps interdit de revenir vérifier. Changer
+      l'adresse est le SEUL moyen d'atteindre les visiteurs déjà venus.
+
+      `version` vient de package.json, comme le badge du pied de page : un
+      `npm version` suffit à distribuer un nouveau favicon à tout le monde.
+    */}
+    <link rel="icon" href={`/favicon.svg?v=${version}`} type="image/svg+xml" />
+    <link rel="icon" href={`/favicon.ico?v=${version}`} sizes="32x32" />
 
     {/*
       Le navigateur ne découvre normalement une police qu'après avoir lu le CSS,

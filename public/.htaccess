@@ -42,12 +42,31 @@ ErrorDocument 404 /404.html
   Header set Referrer-Policy "strict-origin-when-cross-origin"
   Header set X-Frame-Options "SAMEORIGIN"
 
-  # Les fichiers générés par Astro portent une empreinte dans leur nom
-  # (par exemple _astro/index.C4f9a2.css). Leur contenu ne changera JAMAIS :
-  # une nouvelle version produit un nouveau nom de fichier. On peut donc les
-  # mettre en cache un an sans risque de servir une version périmée.
-  <FilesMatch "\.(css|js|woff2?|svg|png|jpe?g|webp|avif|ico)$">
+  # ---------------------------------------------------------------------------
+  # LE CACHE : deux régimes, selon que le nom porte une empreinte ou non.
+  #
+  # La règle qui vivait ici visait TOUTES les extensions et leur donnait un an
+  # avec `immutable`. Sa justification, l'empreinte dans le nom, ne valait que
+  # pour les fichiers d'Astro. Elle attrapait aussi favicon.svg, favicon.ico et
+  # les deux polices, dont le nom NE CHANGE JAMAIS quand le contenu change.
+  #
+  # Conséquence mesurée le 5 août 2026 : le nouveau favicon était bien déployé
+  # et bien servi, mais restait invisible. `immutable` dit au navigateur de ne
+  # jamais revenir vérifier, et il obéissait pendant un an.
+  # ---------------------------------------------------------------------------
+
+  # Fichiers à empreinte, produits par Astro : « BaseLayout.DHuf7a5e.css ».
+  # Huit caractères entre deux points. Leur contenu ne changera jamais, puisque
+  # toute modification produit un nom différent.
+  <FilesMatch "\.[A-Za-z0-9_-]{8}\.(css|js|woff2?|svg|png|jpe?g|webp|avif)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # Fichiers à nom STABLE : favicon.svg, favicon.ico, les polices. Une semaine
+  # de cache, et surtout `must-revalidate` au lieu d'`immutable` : passé ce
+  # délai le navigateur redemande, et une nouvelle version finit par arriver.
+  <FilesMatch "^(favicon\.(svg|ico)|.*\.woff2?)$">
+    Header set Cache-Control "public, max-age=604800, must-revalidate"
   </FilesMatch>
 
   # Le HTML, lui, doit être revérifié à chaque visite : c'est lui qui pointe
