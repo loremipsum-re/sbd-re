@@ -1,0 +1,244 @@
+---
+import Icone from '../../components/Icone.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  articles,
+  articlesLies,
+  cheminAthlete,
+  competitionDe,
+  verifierCompetitions,
+} from '../../lib/actualites';
+import { dateLongue } from '../../lib/format';
+import { libelleEvent } from '../../lib/meets';
+import { render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const liste = await articles();
+  verifierCompetitions(liste);
+  return liste.map((article) => ({ params: { slug: article.id }, props: { article } }));
+}
+
+const { article } = Astro.props;
+const { Content } = await render(article);
+
+const meet = competitionDe(article);
+const lies = await articlesLies(article);
+const jour = article.data.date.toISOString().slice(0, 10);
+---
+
+<BaseLayout titre={article.data.titre} description={article.data.description}>
+  <div class="wrap page">
+    <nav class="fil" aria-label="Fil d'Ariane">
+      <a href="/actualites/">Actualités</a>
+    </nav>
+
+    <article class="article">
+      <header>
+        <p class="date">
+          <time datetime={jour}>{dateLongue(jour)}</time>
+          {article.data.brouillon && <span class="brouillon">Brouillon</span>}
+        </p>
+        <h1>{article.data.titre}</h1>
+        <p class="chapeau">{article.data.description}</p>
+      </header>
+
+      <div class="corps">
+        <Content />
+      </div>
+    </article>
+
+    {
+      meet && (
+        <aside class="encart">
+          <h2>
+            <Icone nom="competitions" taille={20} />
+            La compétition
+          </h2>
+          <p class="nom">
+            <a href={`/competitions/${meet.chemin}/`}>{meet.meetName}</a>
+          </p>
+          <p class="details">
+            {dateLongue(meet.date)} à {meet.meetTown} · {meet.athletes} athlètes ·{' '}
+            {meet.events.map((e) => libelleEvent(e)).join(', ')}
+          </p>
+          <p class="fin">
+            Les résultats complets, barre par barre, sont sur la page de la
+            compétition.
+          </p>
+        </aside>
+      )
+    }
+
+    {
+      article.data.athletes.length > 0 && (
+        <section class="cites">
+          <h2>Athlètes cités</h2>
+          <ul>
+            {article.data.athletes.map((nom) => (
+              <li>
+                <a href={cheminAthlete(nom)}>{nom}</a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    {
+      lies.length > 0 && (
+        <section class="lies">
+          <h2>À lire aussi</h2>
+          <ul>
+            {lies.map((a) => (
+              <li>
+                <a href={`/actualites/${a.id}/`}>{a.data.titre}</a>
+                <span class="quand">{dateLongue(a.data.date.toISOString().slice(0, 10))}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    padding-block: var(--space-8) var(--space-16);
+  }
+
+  .fil {
+    margin-bottom: var(--space-6);
+    font-size: var(--step--1);
+  }
+
+  .article {
+    max-width: 68ch;
+  }
+
+  .date {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .brouillon {
+    padding: 1px var(--space-2);
+    border: 1px solid var(--alerte);
+    border-radius: var(--radius);
+    color: var(--alerte);
+    font-weight: 700;
+  }
+
+  .chapeau {
+    font-size: var(--step-1);
+    color: var(--muted);
+    margin-bottom: var(--space-8);
+  }
+
+  .corps :global(h2) {
+    font-size: var(--step-2);
+    margin-top: var(--space-8);
+  }
+  .corps :global(p) {
+    max-width: 68ch;
+  }
+  .corps :global(strong) {
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  /* Le lien RETOUR vers la compétition, qui est tout l'intérêt du champ
+     `competition` : il existe aussi dans l'autre sens, sur la page du meet. */
+  .encart {
+    max-width: 68ch;
+    margin-top: var(--space-12);
+    padding: var(--space-6);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .encart h2,
+  .cites h2,
+  .lies h2 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--step-1);
+    margin-bottom: var(--space-3);
+  }
+
+  .nom {
+    font-size: var(--step-1);
+    font-weight: 700;
+    margin-bottom: var(--space-1);
+  }
+
+  .details,
+  .fin {
+    margin: 0;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .fin {
+    margin-top: var(--space-3);
+  }
+
+  .cites,
+  .lies {
+    max-width: 68ch;
+    margin-top: var(--space-12);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border);
+  }
+
+  .cites ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .cites a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+    padding-inline: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    text-decoration: none;
+  }
+  .cites a:hover {
+    border-color: var(--accent);
+  }
+
+  .lies ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-1);
+  }
+  .lies > ul > li {
+    min-width: 0;
+  }
+
+  .lies li a {
+    display: flex;
+    align-items: center;
+    min-height: var(--cible-min);
+    font-weight: 600;
+  }
+
+  .quand {
+    display: block;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+</style>

@@ -12,6 +12,7 @@ import {
   parseWeightClass,
   sexLabel,
 } from '../../../lib/categories';
+import { articlesDeLaCompetition } from '../../../lib/actualites';
 import { dateLongue, nombre, place, points } from '../../../lib/format';
 import { editionsDe, libelleEvent, listeMeets, resultatsDuMeet } from '../../../lib/meets';
 import { cleRecord, clesRecords } from '../../../lib/records';
@@ -26,6 +27,7 @@ export async function getStaticPaths() {
 }
 
 const { meet } = Astro.props;
+const articlesDuMeet = await articlesDeLaCompetition(meet.chemin);
 const resultats = resultatsDuMeet(meet.key);
 const records = clesRecords();
 const autresEditions = editionsDe(meet.nomSlug).filter((e) => e.date !== meet.date);
@@ -312,6 +314,29 @@ const description =
           : ' Cette compétition portait sur un seul mouvement, le total et les points Dots ne s’y appliquent pas.'
       }
     </p>
+
+    {
+      /*
+        Le lien RETOUR vers les articles. Rien ne se saisit ici : la liste vient
+        du champ `competition` déclaré dans l'en-tête de chaque Markdown. Écrire
+        un article suffit à le faire apparaître sur la compétition qu'il traite.
+      */
+      articlesDuMeet.length > 0 && (
+        <section class="actus">
+          <h2>Sur cette compétition</h2>
+          <ul>
+            {articlesDuMeet.map((a) => (
+              <li>
+                <a href={`/actualites/${a.id}/`}>{a.data.titre}</a>
+                <span class="quand">
+                  {dateLongue(a.data.date.toISOString().slice(0, 10))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
   </div>
 </BaseLayout>
 
@@ -549,5 +574,42 @@ const description =
     font-size: var(--step--1);
     color: var(--muted);
     max-width: 68ch;
+  }
+  /* Articles rattachés à cette compétition. Le bloc n'existe que s'il y a
+     quelque chose à montrer : voir la condition dans le gabarit. */
+  .actus {
+    margin-top: var(--space-12);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border);
+  }
+
+  .actus h2 {
+    font-size: var(--step-1);
+    margin-bottom: var(--space-3);
+  }
+
+  .actus ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .actus > ul > li {
+    min-width: 0;
+  }
+
+  .actus li a {
+    display: flex;
+    align-items: center;
+    min-height: var(--cible-min);
+    font-weight: 600;
+  }
+
+  .actus .quand {
+    display: block;
+    font-size: var(--step--1);
+    color: var(--muted);
   }
 </style>

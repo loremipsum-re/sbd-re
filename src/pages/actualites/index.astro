@@ -1,0 +1,160 @@
+---
+import EtatVide from '../../components/EtatVide.astro';
+import Icone from '../../components/Icone.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { articles, competitionDe, verifierCompetitions } from '../../lib/actualites';
+import { dateLongue } from '../../lib/format';
+
+const liste = await articles();
+verifierCompetitions(liste);
+---
+
+<BaseLayout
+  titre="Actualités"
+  description="Les compétitions de force athlétique à La Réunion, racontées : résultats, records et performances marquantes."
+>
+  <div class="wrap page">
+    <h1>Actualités</h1>
+    <p class="chapeau">
+      Ce qui se passe sur les plateaux de l'île, compétition par compétition.
+    </p>
+
+    {
+      liste.length === 0 ? (
+        <EtatVide titre="Aucun article pour l'instant">
+          Les comptes rendus de compétition paraîtront ici. En attendant, les
+          résultats complets sont déjà consultables.
+          <a class="bouton lien-nu" href="/competitions/" slot="action">
+            Voir les compétitions
+          </a>
+        </EtatVide>
+      ) : (
+        <ul class="articles">
+          {liste.map((a) => {
+            const meet = competitionDe(a);
+            return (
+              <li>
+                <article>
+                  <p class="meta">
+                    <time datetime={a.data.date.toISOString().slice(0, 10)}>
+                      {dateLongue(a.data.date.toISOString().slice(0, 10))}
+                    </time>
+                    {a.data.brouillon && <span class="brouillon">Brouillon</span>}
+                  </p>
+                  <h2>
+                    <a href={`/actualites/${a.id}/`}>{a.data.titre}</a>
+                  </h2>
+                  <p class="resume">{a.data.description}</p>
+                  {meet && (
+                    <p class="rattachement">
+                      <Icone nom="competitions" taille={16} />
+                      {meet.meetName}, {meet.meetTown}
+                    </p>
+                  )}
+                </article>
+              </li>
+            );
+          })}
+        </ul>
+      )
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    padding-block: var(--space-8) var(--space-16);
+  }
+
+  .chapeau {
+    max-width: 58ch;
+    color: var(--muted);
+    font-size: var(--step-1);
+    margin-bottom: var(--space-12);
+  }
+
+  .articles {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  /* Un élément de grille vaut `min-width: auto` : sans cette ligne il peut
+     dépasser sa colonne pour loger un titre long. */
+  .articles > li {
+    min-width: 0;
+  }
+
+  article {
+    padding: var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-2);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .brouillon {
+    padding: 1px var(--space-2);
+    border: 1px solid var(--alerte);
+    border-radius: var(--radius);
+    color: var(--alerte);
+    font-weight: 700;
+  }
+
+  h2 {
+    font-size: var(--step-2);
+    margin-bottom: var(--space-2);
+  }
+
+  /* Le titre entier est cliquable, pas seulement quelques mots : c'est la
+     cible la plus grande et la plus évidente de la carte. */
+  h2 a {
+    color: var(--text);
+    text-decoration: none;
+  }
+  h2 a:hover {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+
+  .resume {
+    margin: 0;
+    color: var(--muted);
+    max-width: 68ch;
+  }
+
+  .rattachement {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: var(--space-4) 0 0;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .bouton {
+    display: inline-block;
+    padding: var(--space-3) var(--space-6);
+    border: 2px solid var(--accent);
+    border-radius: var(--radius);
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .bouton:hover {
+    background: var(--accent-fill);
+    border-color: var(--accent-fill);
+    color: var(--on-accent);
+  }
+</style>
