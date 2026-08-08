@@ -207,6 +207,13 @@ C'est ce qui faisait sortir l'effectif d'athlètes de l'écran sur l'accueil.
 Mesurer par élément : `scrollWidth > clientWidth`, et la largeur de la boîte
 comparée à celle de `.wrap`.
 
+**Le thème SOMBRE est le défaut, et le réglage du système n'est plus consulté.**
+Les rôles sombres vivent sur `:root`, le clair uniquement dans
+`:root[data-theme='light']`. Deux conséquences à ne pas casser. Sans
+JavaScript, aucun attribut n'est posé sur `<html>` : c'est `:root` qui
+s'applique, donc le défaut doit y vivre. Et le repli du bouton de bascule vaut
+`'dark'`, pas `'light'`.
+
 **`--accent` est un accent de TEXTE, `--accent-fill` est l'aplat.** Poser
 `--accent` en fond sous `--on-accent` donne 2,78:1 en thème clair. L'erreur a
 déjà été commise une fois, sur le lien d'évitement. Le thème sombre ne la
