@@ -105,4 +105,36 @@ const sponsors = defineCollection({
   }),
 });
 
-export const collections = { actualites, athletes, sponsors };
+/**
+ * Salles de sport de La Réunion.
+ *
+ * Les 41 fiches d'origine viennent d'OpenStreetMap, extraites UNE FOIS le
+ * 8 août 2026 puis versionnées ici. Elles ne se resynchronisent pas : une
+ * requête à chaque build ferait dépendre la génération d'un service extérieur,
+ * et surtout écraserait les corrections faites depuis le CMS.
+ *
+ * La donnée OSM est sous licence ODbL, qui impose l'attribution. Elle figure
+ * sur la page /salles/, comme le crédit OpenPowerlifting figure au pied de page.
+ *
+ * `actif` à false écarte une fiche de la page. Huit l'étaient à l'import :
+ * gymnases municipaux et lieux qui ne sont pas des salles de musculation. Le
+ * tri final revient à l'auteur, qui connaît la scène locale.
+ */
+const salles = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/salles' }),
+  schema: z.object({
+    nom: z.string(),
+    commune: z.string(),
+    lat: z.number(),
+    lon: z.number(),
+    rue: z.string().optional(),
+    site: z.string().optional(),
+    telephone: z.string().optional(),
+    horaires: z.string().optional(),
+    /** Référence de l'objet OSM d'origine, pour retrouver la source. */
+    osm: z.string().optional(),
+    actif: z.boolean().default(true),
+  }),
+});
+
+export const collections = { actualites, athletes, sponsors, salles };

@@ -1,0 +1,203 @@
+---
+/**
+ * Les salles de sport de La Réunion.
+ *
+ * La CARTE viendra se poser au-dessus de cette liste, sans la remplacer. La
+ * liste reste la version qui fonctionne partout : sans JavaScript, au lecteur
+ * d'écran, et quand on cherche simplement une salle près de chez soi.
+ */
+import EtatVide from '../components/EtatVide.astro';
+import InteractiveTable from '../components/InteractiveTable.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const toutes = await getCollection('salles');
+const salles = toutes
+  .filter((s) => s.data.actif)
+  .sort(
+    (a, b) =>
+      a.data.commune.localeCompare(b.data.commune, 'fr') ||
+      a.data.nom.localeCompare(b.data.nom, 'fr'),
+  );
+
+const communes = [...new Set(salles.map((s) => s.data.commune))].sort((a, b) =>
+  a.localeCompare(b, 'fr'),
+);
+---
+
+<BaseLayout
+  titre="Salles de sport à La Réunion"
+  description={`Les ${salles.length} salles de musculation et de force athlétique de La Réunion, par commune : adresse, horaires et contact.`}
+>
+  <div class="wrap page">
+    <h1>Salles de sport</h1>
+    <p class="chapeau">
+      Où s'entraîner à La Réunion. {salles.length} salles réparties sur {communes.length} communes.
+    </p>
+
+    {
+      salles.length === 0 ? (
+        <EtatVide titre="Aucune salle enregistrée">
+          La liste se remplit depuis l'espace d'administration.
+        </EtatVide>
+      ) : (
+        <InteractiveTable
+          recherche="Nom d'une salle"
+          singulier="salle"
+          pluriel="salles"
+          total={salles.length}
+          barreDeTri
+        >
+          <Fragment slot="filtres">
+            <div class="champ">
+              <label for="f-commune">Commune</label>
+              <select id="f-commune" data-filtre="commune">
+                <option value="">Toutes</option>
+                {communes.map((c) => <option value={c}>{c}</option>)}
+              </select>
+            </div>
+          </Fragment>
+
+          <div class="cadre">
+            <table data-tableau>
+              <thead class="sr-only">
+                <tr>
+                  <th scope="col" data-tri data-cle="nom">Nom</th>
+                  <th scope="col" data-tri data-cle="commune">Commune</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  salles.map((s) => (
+                    <tr
+                      data-recherche={`${s.data.nom} ${s.data.commune}`}
+                      data-nom={s.data.nom}
+                      data-commune={s.data.commune}
+                    >
+                      <td class="cellule">
+                        <span class="nom">{s.data.nom}</span>
+                        <span class="lieu">
+                          {s.data.commune}
+                          {s.data.rue && <> · {s.data.rue}</>}
+                        </span>
+                        {s.data.horaires && (
+                          <span class="horaires">{s.data.horaires}</span>
+                        )}
+                        <span class="contacts">
+                          {s.data.telephone && (
+                            <a href={`tel:${s.data.telephone.replace(/\s/g, '')}`}>
+                              {s.data.telephone}
+                            </a>
+                          )}
+                          {s.data.site && (
+                            <a href={s.data.site} rel="noopener nofollow">
+                              Site
+                            </a>
+                          )}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+        </InteractiveTable>
+      )
+    }
+
+    {/*
+      L'attribution n'est pas une politesse : la licence ODbL d'OpenStreetMap
+      l'impose, comme celle d'OpenPowerlifting impose le crédit du pied de page.
+    */}
+    <p class="note">
+      Les coordonnées de départ viennent d'{' '}
+      <a href="https://www.openstreetmap.org/copyright" rel="noopener">
+        OpenStreetMap
+      </a>, sous licence ODbL, complétées et corrigées à la main. Une salle
+      manque ou une information est fausse ?{' '}
+      <a href="/partenariats/">Signalez-le</a>.
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    padding-block: var(--space-8) var(--space-16);
+  }
+
+  .chapeau {
+    max-width: 58ch;
+    color: var(--muted);
+    font-size: var(--step-1);
+    margin-bottom: var(--space-8);
+  }
+
+  .cadre {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  /*
+   * Une ligne par salle, en carte : c'est le même parti que le classement, et
+   * pour la même raison. Le balisage reste un tableau, donc les données restent
+   * liées à leur intitulé pour qui navigue à l'oreille.
+   */
+  tbody tr {
+    display: block;
+    border-top: 1px solid var(--border);
+  }
+  tbody tr:first-child {
+    border-top: 0;
+  }
+
+  .cellule {
+    display: grid;
+    gap: var(--space-1);
+    padding: var(--space-4) var(--space-6);
+    /* Un élément de grille vaut min-width: auto et peut déborder sa colonne
+       pour loger un nom long. */
+    min-width: 0;
+  }
+
+  .nom {
+    font-weight: 700;
+    font-size: var(--step-0);
+    overflow-wrap: break-word;
+  }
+
+  .lieu,
+  .horaires {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .contacts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-top: var(--space-1);
+  }
+
+  .contacts a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+    font-size: var(--step--1);
+    font-weight: 600;
+  }
+
+  .note {
+    margin-top: var(--space-8);
+    font-size: var(--step--1);
+    color: var(--muted);
+    max-width: 68ch;
+  }
+</style>
