@@ -26,6 +26,7 @@ export type NomIcone =
   | 'competitions'
   | 'exterieur'
   | 'actualites'
+  | 'partenariats'
   | 'apropos';
 
 export interface Rubrique {
@@ -68,6 +69,7 @@ export const RUBRIQUES: readonly Rubrique[] = [
   { href: '/competitions/', label: 'Compétitions', icone: 'competitions' },
   { href: '/exterieur/', label: 'Extérieur', icone: 'exterieur' },
   { href: '/actualites/', label: 'Actualités', icone: 'actualites' },
+  { href: '/partenariats/', label: 'Partenariats', icone: 'partenariats' },
   { href: '/a-propos/', label: 'À propos', icone: 'apropos' },
 ];
 
