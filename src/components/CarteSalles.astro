@@ -1,0 +1,368 @@
+---
+/**
+ * Carte des salles de La Réunion, en SVG tracé dans la page.
+ *
+ * -----------------------------------------------------------------------------
+ * POURQUOI PAS UNE CARTE GLISSANTE
+ * -----------------------------------------------------------------------------
+ * Une carte Leaflet ou Google va chercher ses TUILES sur un serveur extérieur :
+ * l'adresse IP du visiteur y part à chaque déplacement. Ce site refuse les
+ * requêtes vers des tiers, donc la carte tomberait derrière la bannière de
+ * consentement et resterait invisible pour qui refuse.
+ *
+ * Réhéberger les tuiles d'OpenStreetMap est interdit par leur politique
+ * d'usage : « auto-hébergé » impose de les GÉNÉRER, ce qui suppose un extrait
+ * de l'île, un moteur de rendu et une chaîne de traitement.
+ *
+ * Le contour de l'île tient en 387 points, soit 4,5 Ko. Sur une île de 70 km
+ * avec 33 salles, il montre la même chose qu'une carte glissante : où sont les
+ * salles les unes par rapport aux autres, et de quel côté de l'île.
+ *
+ * Le tracé vient d'OpenStreetMap, licence ODbL, attribué sur la page.
+ *
+ * -----------------------------------------------------------------------------
+ * LA PROJECTION EST FAITE ICI, AVEC LES BORNES DU TRACÉ
+ * -----------------------------------------------------------------------------
+ * Les salles et la côte doivent employer EXACTEMENT la même règle, sinon les
+ * points flottent à côté de l'île. Les bornes sont donc lues depuis le fichier
+ * qui a produit le tracé, et non recalculées.
+ */
+import ile from '../data/ile-reunion.json';
+
+interface Salle {
+  nom: string;
+  commune: string;
+  lat: number;
+  lon: number;
+  rue?: string;
+  site?: string;
+  telephone?: string;
+  horaires?: string;
+}
+
+interface Props {
+  salles: Salle[];
+  communes: string[];
+}
+
+const { salles, communes } = Astro.props;
+const { x0, x1, y0, y1, kx } = ile.bornes;
+
+/** Même projection que celle qui a produit le tracé de la côte. */
+const enSvg = (lat: number, lon: number) => ({
+  x: ((lon * kx - x0) / (x1 - x0)) * ile.largeur,
+  y: ((-lat - y0) / (y1 - y0)) * ile.hauteur,
+});
+
+const points = salles.map((s) => ({ ...s, ...enSvg(s.lat, s.lon) }));
+---
+
+<div class="carte-zone" data-carte>
+  <div class="outils">
+    <div class="champ">
+      <label for="c-commune">Commune</label>
+      <select id="c-commune" data-filtre-commune>
+        <option value="">Toutes les communes</option>
+        {communes.map((c) => <option value={c}>{c}</option>)}
+      </select>
+    </div>
+    <p class="compteur" aria-live="polite" data-compteur>{salles.length} salles</p>
+  </div>
+
+  <div class="cadre">
+    <svg
+      viewBox={`-40 -40 ${ile.largeur + 80} ${ile.hauteur + 80}`}
+      role="group"
+      aria-label="Carte des salles de sport de La Réunion"
+    >
+      <path class="ile" d={ile.chemin} />
+
+      {
+        points.map((p, i) => (
+          <g
+            class="marqueur"
+            data-marqueur
+            data-commune={p.commune}
+            data-index={i}
+            transform={`translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})`}
+          >
+            {/*
+              Deux cercles : le grand est transparent et sert de CIBLE, le petit
+              est l'encre. C'est l'exception documentée à la règle des 44 px :
+              trente-trois cibles de 44 px sur une île de 70 km se recouvriraient
+              entièrement. Le grand cercle donne le plus de surface possible sans
+              que deux salles voisines deviennent indissociables.
+            */}
+            <circle class="cible" r="22" />
+            <circle class="point" r="9" />
+            <title>{p.nom}, {p.commune}</title>
+          </g>
+        ))
+      }
+    </svg>
+
+    {/*
+      Le panneau de détail. Vide au départ : il se remplit au clic sur un point.
+      `aria-live` le fait annoncer, ce qui est la façon dont une carte devient
+      utilisable autrement qu'à l'œil.
+    */}
+    <div class="details" data-details role="status" aria-live="polite">
+      <p class="invite">Touchez un point pour voir la salle.</p>
+    </div>
+  </div>
+
+  {/*
+    Les données brutes, pour le script. En JSON dans un script de type
+    `application/json` : rien n'est exécuté, et le contenu est échappé par
+    Astro, ce qui ferme l'injection par un nom de salle.
+  */}
+  <script is:inline type="application/json" data-salles set:html={JSON.stringify(points)} />
+</div>
+
+<script>
+  interface SallePoint {
+    nom: string;
+    commune: string;
+    rue?: string;
+    site?: string;
+    telephone?: string;
+    horaires?: string;
+  }
+
+  const zone = document.querySelector<HTMLElement>('[data-carte]');
+  if (zone) {
+    const brut = zone.querySelector<HTMLScriptElement>('[data-salles]')?.textContent ?? '[]';
+    const salles: SallePoint[] = JSON.parse(brut);
+    const marqueurs = [...zone.querySelectorAll<SVGGElement>('[data-marqueur]')];
+    const details = zone.querySelector<HTMLElement>('[data-details]')!;
+    const compteur = zone.querySelector<HTMLElement>('[data-compteur]')!;
+    const filtre = zone.querySelector<HTMLSelectElement>('[data-filtre-commune]')!;
+
+    /** Rend le panneau. On n'écrit que du TEXTE : jamais d'innerHTML avec une donnée. */
+    function afficher(s: SallePoint) {
+      details.textContent = '';
+      const titre = document.createElement('p');
+      titre.className = 'nom';
+      titre.textContent = s.nom;
+      details.append(titre);
+
+      const lignes: string[] = [];
+      lignes.push([s.rue, s.commune].filter(Boolean).join(', '));
+      if (s.horaires) lignes.push(s.horaires);
+      if (s.telephone) lignes.push(s.telephone);
+      for (const t of lignes.filter(Boolean)) {
+        const p = document.createElement('p');
+        p.textContent = t;
+        details.append(p);
+      }
+
+      if (s.site) {
+        const a = document.createElement('a');
+        a.href = s.site;
+        a.rel = 'noopener nofollow';
+        a.textContent = 'Site de la salle';
+        details.append(a);
+      }
+    }
+
+    function selectionner(g: SVGGElement) {
+      for (const m of marqueurs) m.removeAttribute('data-actif');
+      g.setAttribute('data-actif', '');
+      const i = Number(g.dataset.index);
+      const s = salles[i];
+      if (s) afficher(s);
+    }
+
+    for (const g of marqueurs) {
+      // Les marqueurs deviennent des commandes : atteignables au clavier et
+      // annoncés comme tels. Sans ça, la carte n'existe qu'à la souris.
+      g.setAttribute('tabindex', '0');
+      g.setAttribute('role', 'button');
+      g.addEventListener('click', () => selectionner(g));
+      g.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          selectionner(g);
+        }
+      });
+    }
+
+    filtre.addEventListener('change', () => {
+      const choix = filtre.value;
+      let visibles = 0;
+      for (const g of marqueurs) {
+        const garde = !choix || g.dataset.commune === choix;
+        g.toggleAttribute('hidden', !garde);
+        // `hidden` ne suffit pas en SVG selon les navigateurs : on retire aussi
+        // le marqueur du parcours au clavier, sinon on tabule dans le vide.
+        if (garde) g.setAttribute('tabindex', '0');
+        else g.removeAttribute('tabindex');
+        if (garde) visibles++;
+      }
+      compteur.textContent = `${visibles} salle${visibles > 1 ? 's' : ''}`;
+
+      const params = new URLSearchParams(location.search);
+      if (choix) params.set('commune', choix);
+      else params.delete('commune');
+      history.replaceState(null, '', params.toString() ? `?${params}` : location.pathname);
+    });
+
+    // L'adresse peut déjà porter un filtre : un lien partagé doit s'ouvrir filtré.
+    const initial = new URLSearchParams(location.search).get('commune');
+    if (initial && [...filtre.options].some((o) => o.value === initial)) {
+      filtre.value = initial;
+      filtre.dispatchEvent(new Event('change'));
+    }
+  }
+</script>
+
+<style>
+  .outils {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+  }
+
+  .champ {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  label {
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  select {
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+  }
+
+  .compteur {
+    margin: 0;
+    margin-left: auto;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .cadre {
+    display: grid;
+    gap: var(--space-6);
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  @media (min-width: 52rem) {
+    .cadre {
+      grid-template-columns: 1fr minmax(min(18rem, 100%), 22rem);
+      align-items: start;
+    }
+  }
+
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-width: 0;
+  }
+
+  /*
+   * L'île en aplat franc, comme le reste du site. Aucun dégradé, aucune ombre.
+   *
+   * Le trait de côte prend --muted et non --border. Mesuré : en thème sombre,
+   * --bg et --surface valent #171614 et #211f1c, soit 1,2:1 entre eux, et
+   * --border n'ajoute que 1,8:1. L'île disparaissait dans son cadre. --muted
+   * donne un trait franc, qui est aussi ce que demande un dessin au trait.
+   */
+  .ile {
+    fill: var(--bg);
+    stroke: var(--muted);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+  }
+
+  .cible {
+    fill: transparent;
+  }
+
+  .point {
+    fill: var(--accent);
+    stroke: var(--bg);
+    stroke-width: 3;
+    transition: r 0.12s;
+  }
+
+  .marqueur {
+    cursor: pointer;
+  }
+  .marqueur[hidden] {
+    display: none;
+  }
+
+  .marqueur:hover .point,
+  .marqueur:focus-visible .point {
+    fill: var(--accent-hover);
+    r: 12;
+  }
+
+  /* Le focus doit se voir sur la carte : c'est la seule façon de savoir où l'on
+     est quand on la parcourt au clavier. */
+  .marqueur:focus-visible {
+    outline: none;
+  }
+  .marqueur:focus-visible .cible {
+    fill: color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
+  .marqueur[data-actif] .point {
+    fill: var(--accent-fill);
+    r: 13;
+  }
+
+  .details {
+    align-self: start;
+    padding: var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    min-width: 0;
+  }
+
+  .details p {
+    margin: 0 0 var(--space-1);
+    font-size: var(--step--1);
+    color: var(--muted);
+    overflow-wrap: break-word;
+  }
+
+  .details :global(.nom) {
+    font-size: var(--step-1);
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: var(--space-2);
+  }
+
+  .details :global(a) {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+    font-weight: 600;
+  }
+
+  .invite {
+    margin: 0;
+  }
+</style>
