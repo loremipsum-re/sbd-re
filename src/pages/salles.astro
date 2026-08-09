@@ -80,11 +80,16 @@ const communes = [...new Set(salles.map((s) => s.commune))].sort((a, b) =>
       l'impose, pour le tracé de l'île comme pour les positions des salles.
     */}
     <p class="note">
-      Tracé de l'île et coordonnées des salles issus d'{' '}
-      <a href="https://www.openstreetmap.org/copyright" rel="noopener">
-        OpenStreetMap
-      </a>, sous licence ODbL, complétés et corrigés à la main. Une salle manque
-      ou une information est fausse ? <a href="/partenariats/">Signalez-le</a>.
+      {/*
+        Pas de `{' '}` après l'apostrophe : Astro n'y supprime aucune espace, et
+        en ajouter une donnait « issus d' OpenStreetMap ». La règle d'écrire
+        l'espace explicitement ne vaut QUE là où Astro l'aurait mangée.
+      */}
+      Tracé de l'île et coordonnées des salles issus d'<a
+        href="https://www.openstreetmap.org/copyright"
+        rel="noopener">OpenStreetMap</a
+      >, sous licence ODbL. Une salle manque ou une information est fausse ?{' '}
+      <a href="/partenariats/">Signalez-le</a>.
     </p>
   </div>
 </BaseLayout>
