@@ -291,9 +291,17 @@ const MARGE = 40;
     let bouge = 0;
 
     svg.addEventListener('pointerdown', (e) => {
-      svg.setPointerCapture(e.pointerId);
+      // L'état AVANT la capture, et la capture protégée. Elle échoue si le
+      // pointeur n'est plus actif, et l'exception faisait alors avorter tout
+      // le gestionnaire : ni glissé enregistré, ni distinction entre clic et
+      // déplacement. Le glissé doit survivre à l'échec de la capture.
       doigts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       bouge = 0;
+      try {
+        svg.setPointerCapture(e.pointerId);
+      } catch {
+        /* Pointeur déjà relâché : le glissé fonctionne sans la capture. */
+      }
       const l = [...doigts.values()];
       depart = {
         x: e.clientX,
@@ -398,12 +406,6 @@ const MARGE = 40;
     for (const g of marqueurs) {
       g.setAttribute('tabindex', '0');
       g.setAttribute('role', 'button');
-      g.addEventListener('click', () => {
-        // Un glissé de carte ne doit pas sélectionner la salle qu'il a
-        // effleurée : au-delà de quelques pixels, c'était un déplacement.
-        if (bouge > 6) return;
-        selectionner(g);
-      });
       g.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -411,6 +413,23 @@ const MARGE = 40;
         }
       });
     }
+
+    /*
+     * Le clic est écouté sur le SVG, pas sur chaque marqueur.
+     *
+     * `setPointerCapture`, nécessaire au glissé, détourne toute la séquence de
+     * pointeur vers le SVG : le marqueur ne recevait donc plus le clic, et
+     * cliquer un point ne faisait rien. Écouter en amont puis remonter au
+     * marqueur avec `closest` rend la capture sans effet sur la sélection.
+     */
+    svg.addEventListener('click', (e) => {
+      // Un glissé de carte ne doit pas sélectionner la salle qu'il a
+      // effleurée : au-delà de quelques pixels, c'était un déplacement.
+      if (bouge > 6) return;
+      const cible = e.target as Element | null;
+      const g = cible?.closest<SVGGElement>('[data-marqueur]');
+      if (g && !g.hasAttribute('hidden')) selectionner(g);
+    });
 
     // ---- Filtre par commune ---------------------------------------------
     filtre.addEventListener('change', () => {
