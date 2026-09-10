@@ -13,10 +13,14 @@ jobs:
     name: Régénérer results.json depuis OpenPowerlifting
     runs-on: ubuntu-latest
 
-    # Sans cette permission, le workflow peut lire le dépôt mais pas y écrire :
-    # le commit final échouerait.
+    # `contents` : sans elle, le workflow lit le dépôt mais ne peut pas y écrire,
+    # et le commit final échouerait.
+    #
+    # `actions` : nécessaire pour déclencher le déploiement à la fin. Voir la
+    # dernière étape, qui explique pourquoi il ne part pas tout seul.
     permissions:
       contents: write
+      actions: write
 
     steps:
       - name: Récupérer le dépôt
@@ -37,6 +41,7 @@ jobs:
         run: npm run data:update
 
       - name: Commiter uniquement s'il y a du changement
+        id: maj
         run: |
           FICHIERS="src/data/results.json data/meets-candidates.json"
 
@@ -45,6 +50,7 @@ jobs:
           # chaque mois — et donc un déploiement inutile.
           if git diff --quiet -- $FICHIERS; then
             echo "Données inchangées : aucun commit."
+            echo "change=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -54,7 +60,32 @@ jobs:
           git commit -m "données : mise à jour mensuelle depuis OpenPowerlifting"
           git push
 
-          echo "Données mises à jour — le workflow de déploiement va prendre le relais."
+          echo "change=true" >> "$GITHUB_OUTPUT"
+
+      # -----------------------------------------------------------------------
+      # LE DÉPLOIEMENT NE PART PAS TOUT SEUL, ET C'EST VOULU PAR GITHUB.
+      #
+      # Un push effectué avec le jeton par défaut `GITHUB_TOKEN` NE DÉCLENCHE
+      # AUCUN autre workflow. La règle existe pour empêcher les boucles infinies
+      # entre workflows qui se poussent l'un l'autre.
+      #
+      # Conséquence mesurée le 10 septembre 2026 : la mise à jour du 1er
+      # septembre avait bien été commitée, avec 86 résultats et 45 athlètes de
+      # plus, mais le site en ligne affichait toujours les données de mars. Rien
+      # ne le signalait : le workflow était au vert, le commit était là, et
+      # personne ne regardait la date en pied de page.
+      #
+      # On déclenche donc le déploiement explicitement. `workflow_dispatch` est
+      # déjà déclaré dans deploy.yml, et la permission `actions: write` suffit :
+      # aucun jeton personnel à créer ni à faire tourner.
+      # -----------------------------------------------------------------------
+      - name: Déclencher le déploiement
+        if: steps.maj.outputs.change == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run deploy.yml --ref "${{ github.ref_name }}"
+          echo "Déploiement demandé sur ${{ github.ref_name }}."
 
       - name: Signaler les compétitions à trier
         run: |
