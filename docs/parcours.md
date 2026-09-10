@@ -380,7 +380,50 @@ Les niveaux de texte restent à deux, `--text` et `--muted`, là où la
 convention en propose quatre. Rien n'en demande un troisième aujourd'hui, et un
 jeton sans usage est un jeton qui dérive.
 
-## 8. État au 30 juillet 2026
+## 8. Le premier PHP public, et l'envoi de courriel prouvé
+
+Jusqu'au 10 septembre 2026, `public/api/` ne contenait que des bibliothèques,
+toutes en 403. Le formulaire de partenariat y a ouvert la première porte.
+
+### Ce qui garde cette porte
+
+Le destinataire est écrit en dur et jamais lu depuis la requête. C'est la seule
+garantie sérieuse contre l'usage du serveur comme relais à spam.
+
+Aucune donnée du visiteur n'entre dans un en-tête. Le sujet vient d'une liste
+fermée, l'expéditeur est constant, tout le texte libre finit dans le corps.
+Seule exception, `Reply-To`, dont l'adresse passe `FILTER_VALIDATE_EMAIL` puis
+un nettoyage des retours à la ligne.
+
+Un champ appât hors écran et hors clavier, auquel on répond un faux succès. Un
+délai minimal de quatre secondes, l'horodatage étant posé par le script au
+chargement. Et trois envois par heure et par adresse IP.
+
+### Un défaut trouvé en testant, pas en relisant
+
+Le compteur d'envois montait APRÈS l'envoi. Un envoi en échec ne retenait donc
+rien, et la même requête pouvait être rejouée sans limite. Il monte désormais
+après la validation, avant l'envoi.
+
+Chaque garde-fou a été éprouvé par requête directe, injections d'en-tête
+comprises, par le courriel et par le nom.
+
+### L'envoi de courriel, sans SMTP
+
+Le serveur poste avec `mail()`, sans SMTP authentifié. Aucune boîte à créer,
+aucun mot de passe à déposer. En contrepartie l'expéditeur doit appartenir au
+domaine, `no-reply@sbd.re`, pour que le SPF reconnaisse l'envoi.
+
+**Testé en production le 10 septembre 2026 vers un domaine extérieur : le
+message arrive.** C'est le point qui débloque la partie communauté, dont
+l'inscription repose entièrement sur un courriel de vérification.
+
+Une limite demeure. Le formulaire ne se vérifie de bout en bout qu'en
+production : le serveur de développement sert les fichiers `.php` sans les
+exécuter. La logique s'éprouve donc séparément, par requêtes directes contre un
+`php -S`, et la jonction se prouve en ligne.
+
+## 9. État au 30 juillet 2026
 
 | | |
 |---|---|

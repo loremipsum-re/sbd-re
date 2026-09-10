@@ -326,7 +326,25 @@ modérées, tranches de poids et de taille.
 **Conception arrêtée le 30 juillet 2026**, à lire dans
 [docs/communaute.md](docs/communaute.md). Supabase est écarté au profit d'une
 **API PHP devant une base MySQL** sur l'hébergement OVH déjà payé. Le schéma est
-prêt dans [db/schema.sql](db/schema.sql) ; aucun code PHP n'existe encore.
+prêt dans [db/schema.sql](db/schema.sql).
+
+**Le premier point d'entrée PHP public existe depuis le 10 septembre 2026** :
+`public/api/contact.php`, derrière la page `/partenariats/`. Il sert de modèle
+aux suivants. Destinataire écrit en dur, aucune donnée du visiteur dans les
+en-têtes, champ appât, délai minimal, et trois envois par heure et par adresse
+IP comptés avant l'envoi. Les bibliothèques de `public/api/lib/` restent en 403,
+gardées par leur propre `.htaccess` et par `if (!defined('SBDRE_API'))`.
+
+**L'ENVOI DE COURRIEL EST PROUVÉ EN PRODUCTION**, et cela débloque la partie
+communauté, qui repose entièrement sur un courriel de vérification. Le serveur
+poste avec `mail()`, sans SMTP authentifié, donc sans boîte à créer ni mot de
+passe à déposer. L'expéditeur est `no-reply@sbd.re`, une adresse du domaine, ce
+qu'exige le SPF. Testé le 10 septembre 2026 vers un domaine extérieur : le
+message arrive.
+
+`db/verifier-envoi.php` rejoue cet envoi. Il refuse de tourner sur une machine
+de développement, `mail()` demandant un serveur de courrier local, et le dit au
+lieu d'échouer en silence.
 
 Deux conséquences à ne pas perdre de vue. MySQL n'a pas d'équivalent des
 politiques RLS : **toute l'autorisation vit dans le code PHP**, et c'est
