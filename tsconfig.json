@@ -1,7 +1,13 @@
 {
   "extends": "astro/tsconfigs/strict",
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist"],
+  "//": [
+    "public/admin contient le bundle de Sveltia CMS, 2,5 Mo de JavaScript",
+    "minifié copié depuis node_modules. Avec `allowJs`, TypeScript tentait de",
+    "l'analyser : `npm run check` saturait alors le tas, y compris porté à",
+    "8 Go. Ce n'est pas notre code, il n'a pas à être vérifié."
+  ],
+  "exclude": ["dist", "public/admin"],
   "compilerOptions": {
     "allowJs": true,
     "strictNullChecks": true

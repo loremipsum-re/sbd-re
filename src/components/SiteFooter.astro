@@ -8,6 +8,7 @@
  *    (la fédération) et avec SBD Apparel (la marque d'équipement), dont le nom
  *    ressemble à celui du site.
  */
+import BandeauPartenaires from './BandeauPartenaires.astro';
 import Icone from './Icone.astro';
 /*
  * La version vient de package.json, et de nulle part ailleurs.
@@ -71,13 +72,21 @@ const { debut, fin } = periode();
       </div>
     </div>
 
+    <BandeauPartenaires />
+
     <div class="soutien">
       <div>
         <p class="titre">Soutenir le projet</p>
+        {/*
+          « sans publicité » devenait faux dès le premier partenaire affiché.
+          La promesse qui tient, elle, est l'absence de RÉGIE : aucun script
+          tiers, aucun pistage. Un partenaire direct est une image et un lien
+          hébergés ici, ce qui ne suit personne.
+        */}
         <p class="fin">
-          Le site est gratuit et sans publicité. La mesure d'audience reste
-          facultative et se refuse en un clic. Un café aide à couvrir le nom de
-          domaine et l'hébergement.
+          Le site est gratuit et sans régie publicitaire : aucun script tiers ne
+          vous suit. La mesure d'audience reste facultative et se refuse en un
+          clic. Un café aide à couvrir le nom de domaine et l'hébergement.
         </p>
       </div>
       {/*

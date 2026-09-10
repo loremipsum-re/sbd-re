@@ -127,40 +127,57 @@
   --p-dark-alerte: #f0a854;
 
   /* ----------------------------------------------------------------------
-   * 2. RÔLES — thème clair par défaut.
+   * 2. RÔLES — le thème SOMBRE est celui par défaut.
+   *
+   * Il est posé sur :root et non derrière une media query, pour deux raisons.
+   *
+   * Le site est sombre par choix, plus par suivi du système. Une majorité de
+   * machines sortent d'usine en clair : suivre le réglage revenait à servir un
+   * site clair à presque tout le monde, alors que l'identité du projet tient au
+   * basalte et au jaune.
+   *
+   * Et sans JavaScript, aucun attribut n'est posé sur <html> : c'est donc CE
+   * bloc qui s'applique. Le thème par défaut doit y vivre, sinon un visiteur
+   * sans script verrait le clair quoi qu'on écrive ailleurs.
+   *
+   * Le visiteur garde la main : le bouton bascule en clair, et son choix est
+   * mémorisé. Voir :root[data-theme='light'] plus bas.
    * -------------------------------------------------------------------- */
-  color-scheme: light;
-  --bg: var(--p-light-bg);
-  --surface: var(--p-light-surface);
-  --border: var(--p-light-border);
-  --text: var(--p-light-text);
-  --muted: var(--p-light-muted);
-  --accent: var(--p-light-accent);
-  --accent-hover: var(--p-light-accent-hover);
-  --accent-fill: var(--p-light-accent-fill);
-  --accent-fill-hover: var(--p-light-accent-fill-hover);
-  --on-accent: var(--p-light-on-accent);
-  --bleu: var(--p-light-bleu);
-  --rouge: var(--p-light-rouge);
-  --or: var(--p-light-or);
-  --or-fill: var(--p-light-or-fill);
-  --argent: var(--p-light-argent);
-  --bronze: var(--p-light-bronze);
-  /* Les trois barres du logo, dans l'ordre squat, bench, soulevé de terre.
-     Sur fond clair, le rouge tient la barre pleine du centre. */
-  --logo-a: var(--p-bleu);
-  --logo-b: var(--p-rouge);
-  --logo-c: var(--p-jaune);
+  color-scheme: dark;
+  --bg: var(--p-dark-bg);
+  --surface: var(--p-dark-surface);
+  --border: var(--p-dark-border);
+  --text: var(--p-dark-text);
+  --muted: var(--p-dark-muted);
+  --accent: var(--p-dark-accent);
+  --accent-hover: var(--p-dark-accent-hover);
+  --accent-fill: var(--p-dark-accent-fill);
+  --accent-fill-hover: var(--p-dark-accent-fill-hover);
+  --on-accent: var(--p-dark-on-accent);
+  --bleu: var(--p-dark-bleu);
+  /* Pas de rouge en sombre : le doré tient ce rôle. Voir la palette. */
+  --rouge: var(--p-dark-or);
+  --or: var(--p-dark-or);
+  --or-fill: var(--p-dark-or-fill);
+  --argent: var(--p-dark-argent);
+  --bronze: var(--p-dark-bronze);
+  /* Sur fond sombre, c'est le JAUNE qui tient la barre pleine et le rouge qui
+     devient la plus petite. Le rouge cesse ainsi de dominer sur fond quasi
+     noir, ce qui est précisément l'image de SBD Apparel qu'on évite. */
+  --logo-a: #5b7fe0;
+  --logo-b: #d1d100;
+  --logo-c: #e03c3c;
   /*
-   * Écarts chiffrés : rouge en dessous, vert au-dessus.
+   * Écarts chiffrés : rouge en dessous, vert au-dessus. Désaturés ici pour
+   * rester lisibles sur fond sombre.
    *
    * Le signe reste TOUJOURS affiché à côté. La couleur seule exclurait les
    * daltoniens, pour qui rouge et vert sont précisément la paire indistincte.
-   * Contrastes mesurés — clair : 7.05 et 5.91 sur le fond, 6.50 et 5.45 sur
-   * une carte. Sombre : 8.91 et 10.41 sur le fond.
+   * Contrastes mesurés — sombre : 8.91 et 10.41 sur le fond. Clair : 7.05 et
+   * 5.91 sur le fond, 6.50 et 5.45 sur une carte.
    */
-  --negatif: #a31414;
-  --positif: #1a6b2a;
+  --negatif: #ff9b91;
+  --positif: #7dd88f;
 
   /*
    * ÉTATS SÉMANTIQUES — ce que le site fait, pas ce qu'un chiffre vaut.
@@ -169,13 +186,9 @@
    * et vivent dans un tableau. Ceux-ci disent l'ÉTAT D'UNE ACTION : une
    * soumission acceptée, un champ mal rempli, une modération en attente.
    *
-   * Ils sont posés maintenant, à vide, et c'est assumé. La partie communauté
-   * amène des formulaires et de la modération ; sans ces trois jetons mesurés,
-   * quelqu'un y inventera un rouge au jugé, et ce sera le mauvais rouge.
-   *
-   * Contrastes mesurés — clair : succès 5.91 sur le fond et 5.45 sur une carte,
-   * alerte 5.87 et 5.42, danger 7.05 et 6.50. Sombre : 10.41 et 9.47, 8.98 et
-   * 8.17, 8.91 et 8.10.
+   * Contrastes mesurés — sombre : succès 10.41 sur le fond et 9.47 sur une
+   * carte, alerte 8.98 et 8.17, danger 8.91 et 8.10. Clair : 5.91 et 5.45,
+   * 5.87 et 5.42, 7.05 et 6.50.
    *
    * En thème sombre, --danger reste le saumon désaturé de --negatif. L'écarlate
    * sur fond quasi noir est l'identité de SBD Apparel : voir la palette.
@@ -183,9 +196,9 @@
    * La couleur ne porte JAMAIS l'information seule : un mot ou une icône la
    * double, comme le signe double déjà l'écart chiffré.
    */
-  --succes: #1a6b2a;
-  --alerte: var(--p-light-alerte);
-  --danger: #a31414;
+  --succes: #7dd88f;
+  --alerte: var(--p-dark-alerte);
+  --danger: #ff9b91;
 
   /* ----------------------------------------------------------------------
    * 3. Typographie, espacements, rayons, communs aux deux thèmes.
@@ -269,77 +282,38 @@
 }
 
 /*
- * Thème sombre automatique : appliqué si le système est en sombre ET que le
- * visiteur n'a pas explicitement demandé le thème clair.
- * Ce cas couvre aussi la navigation sans JavaScript.
+ * Choix explicite du visiteur : le thème clair, demandé par le bouton.
+ *
+ * Il n'existe QUE sur demande. Le réglage du système n'est plus consulté :
+ * voir la note du bloc :root.
  */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    color-scheme: dark;
-    --bg: var(--p-dark-bg);
-    --surface: var(--p-dark-surface);
-    --border: var(--p-dark-border);
-    --text: var(--p-dark-text);
-    --muted: var(--p-dark-muted);
-    --accent: var(--p-dark-accent);
-    --accent-hover: var(--p-dark-accent-hover);
-    --accent-fill: var(--p-dark-accent-fill);
-    --accent-fill-hover: var(--p-dark-accent-fill-hover);
-    --on-accent: var(--p-dark-on-accent);
-    --bleu: var(--p-dark-bleu);
-    /* Pas de rouge en sombre : le doré tient ce rôle. Voir la palette. */
-    --rouge: var(--p-dark-or);
-    --or: var(--p-dark-or);
-    --or-fill: var(--p-dark-or-fill);
-    --argent: var(--p-dark-argent);
-    --bronze: var(--p-dark-bronze);
-    /* Voir la note du bloc [data-theme='dark'] : le jaune tient la barre
-       pleine, le rouge devient la plus petite. */
-    --logo-a: #5b7fe0;
-    --logo-b: #d1d100;
-    --logo-c: #e03c3c;
-    /* Voir la note du bloc [data-theme='dark']. */
-    --negatif: #ff9b91;
-    --positif: #7dd88f;
-    --succes: #7dd88f;
-    --alerte: var(--p-dark-alerte);
-    --danger: #ff9b91;
-  }
-}
-
-/* Choix explicite du visiteur via le bouton : il l'emporte sur le système. */
-:root[data-theme='dark'] {
-  color-scheme: dark;
-  --bg: var(--p-dark-bg);
-  --surface: var(--p-dark-surface);
-  --border: var(--p-dark-border);
-  --text: var(--p-dark-text);
-  --muted: var(--p-dark-muted);
-  --accent: var(--p-dark-accent);
-  --accent-hover: var(--p-dark-accent-hover);
-  --accent-fill: var(--p-dark-accent-fill);
-  --accent-fill-hover: var(--p-dark-accent-fill-hover);
-  --on-accent: var(--p-dark-on-accent);
-  --bleu: var(--p-dark-bleu);
-  /* Pas de rouge en sombre : le doré tient ce rôle. Voir la palette. */
-  --rouge: var(--p-dark-or);
-  --or: var(--p-dark-or);
-  --or-fill: var(--p-dark-or-fill);
-  --argent: var(--p-dark-argent);
-  --bronze: var(--p-dark-bronze);
-  /* Sur fond sombre, c'est le JAUNE qui tient la barre pleine et le rouge qui
-     devient la plus petite. Le rouge cesse ainsi de dominer sur fond quasi
-     noir, ce qui est précisément l'image de SBD Apparel qu'on évite. */
-  --logo-a: #5b7fe0;
-  --logo-b: #d1d100;
-  --logo-c: #e03c3c;
-  /* Rouge et vert désaturés, pour rester lisibles sur fond sombre sans
-     évoquer l'écarlate de SBD Apparel. Le signe reste affiché à côté. */
-  --negatif: #ff9b91;
-  --positif: #7dd88f;
-  --succes: #7dd88f;
-  --alerte: var(--p-dark-alerte);
-  --danger: #ff9b91;
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: var(--p-light-bg);
+  --surface: var(--p-light-surface);
+  --border: var(--p-light-border);
+  --text: var(--p-light-text);
+  --muted: var(--p-light-muted);
+  --accent: var(--p-light-accent);
+  --accent-hover: var(--p-light-accent-hover);
+  --accent-fill: var(--p-light-accent-fill);
+  --accent-fill-hover: var(--p-light-accent-fill-hover);
+  --on-accent: var(--p-light-on-accent);
+  --bleu: var(--p-light-bleu);
+  --rouge: var(--p-light-rouge);
+  --or: var(--p-light-or);
+  --or-fill: var(--p-light-or-fill);
+  --argent: var(--p-light-argent);
+  --bronze: var(--p-light-bronze);
+  /* Sur fond clair, le rouge tient la barre pleine du centre. */
+  --logo-a: var(--p-bleu);
+  --logo-b: var(--p-rouge);
+  --logo-c: var(--p-jaune);
+  --negatif: #a31414;
+  --positif: #1a6b2a;
+  --succes: #1a6b2a;
+  --alerte: var(--p-light-alerte);
+  --danger: #a31414;
 }
 
 /* ------------------------------------------------------------------------

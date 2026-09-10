@@ -1,0 +1,707 @@
+---
+/**
+ * Carte des salles de La Réunion : tracé dans la page, zoomable, avec noms.
+ *
+ * -----------------------------------------------------------------------------
+ * POURQUOI PAS UNE CARTE GLISSANTE CLASSIQUE
+ * -----------------------------------------------------------------------------
+ * Leaflet ou Google vont chercher leurs TUILES sur un serveur extérieur :
+ * l'adresse IP du visiteur y part à chaque déplacement. Ce site refuse les
+ * requêtes vers des tiers, donc la carte tomberait derrière la bannière de
+ * consentement et resterait invisible pour qui refuse.
+ *
+ * Réhéberger les tuiles d'OpenStreetMap est interdit par leur politique
+ * d'usage : « auto-hébergé » impose de les GÉNÉRER, ce qui suppose un extrait
+ * de l'île, un moteur de rendu et une chaîne de traitement.
+ *
+ * Le zoom et le déplacement se font donc sur le `viewBox` du SVG. C'est la même
+ * mécanique qu'une carte glissante — on déplace une fenêtre sur un plan plus
+ * grand — sans une seule requête réseau.
+ *
+ * -----------------------------------------------------------------------------
+ * LES NOMS APPARAISSENT PAR PALIERS
+ * -----------------------------------------------------------------------------
+ * Trente-trois noms affichés d'un coup sur une île de 70 km se chevauchent et
+ * ne se lisent plus. On montre donc les COMMUNES tant qu'on est loin, et les
+ * SALLES dès qu'on est assez près pour qu'elles ne se recouvrent plus. C'est ce
+ * que fait toute carte, à ceci près qu'ici le seuil est écrit noir sur blanc.
+ *
+ * -----------------------------------------------------------------------------
+ * LA PROJECTION EST PARTAGÉE AVEC LE TRACÉ
+ * -----------------------------------------------------------------------------
+ * Les salles et la côte doivent employer EXACTEMENT la même règle, sinon les
+ * points flottent à côté de l'île. Les bornes sont lues depuis le fichier qui a
+ * produit le tracé, jamais recalculées.
+ */
+import ile from '../data/ile-reunion.json';
+
+interface Salle {
+  nom: string;
+  commune: string;
+  lat: number;
+  lon: number;
+  rue?: string;
+  site?: string;
+  telephone?: string;
+  horaires?: string;
+}
+
+interface Props {
+  salles: Salle[];
+  communes: string[];
+}
+
+const { salles, communes } = Astro.props;
+const { x0, x1, y0, y1, kx } = ile.bornes;
+
+/** Même projection que celle qui a produit le tracé de la côte. */
+const enSvg = (lat: number, lon: number) => ({
+  x: ((lon * kx - x0) / (x1 - x0)) * ile.largeur,
+  y: ((-lat - y0) / (y1 - y0)) * ile.hauteur,
+});
+
+const points = salles.map((s) => ({ ...s, ...enSvg(s.lat, s.lon) }));
+
+/*
+ * Les étiquettes de commune se posent au barycentre de leurs salles, et non au
+ * centre administratif : c'est là que le nom sert, à côté de l'amas de points
+ * qu'il désigne.
+ */
+const etiquettesCommunes = communes.map((c) => {
+  const dedans = points.filter((p) => p.commune === c);
+  return {
+    nom: c,
+    x: dedans.reduce((t, p) => t + p.x, 0) / dedans.length,
+    y: dedans.reduce((t, p) => t + p.y, 0) / dedans.length,
+    nombre: dedans.length,
+  };
+});
+
+const MARGE = 40;
+---
+
+<div class="carte-zone" data-carte>
+  <div class="outils">
+    <div class="champ">
+      <label for="c-commune">Commune</label>
+      <select id="c-commune" data-filtre-commune>
+        <option value="">Toutes les communes</option>
+        {communes.map((c) => <option value={c}>{c}</option>)}
+      </select>
+    </div>
+    <p class="compteur" aria-live="polite" data-compteur>{salles.length} salles</p>
+  </div>
+
+  <div class="cadre">
+    <div class="scene">
+      <svg
+        data-svg
+        viewBox={`${-MARGE} ${-MARGE} ${ile.largeur + MARGE * 2} ${ile.hauteur + MARGE * 2}`}
+        role="group"
+        aria-label="Carte des salles de sport de La Réunion. Zoom à la molette ou aux boutons, déplacement au glissé."
+        tabindex="0"
+      >
+        <path class="ile" d={ile.chemin} />
+
+        {/* Étiquettes de commune : visibles de loin, effacées de près. */}
+        <g data-couche-communes>
+          {
+            etiquettesCommunes.map((e) => (
+              <text
+                class="etiquette-commune"
+                data-etiquette-commune
+                data-commune={e.nom}
+                x={e.x.toFixed(1)}
+                y={e.y.toFixed(1)}
+                aria-hidden="true"
+              >
+                {e.nom}
+              </text>
+            ))
+          }
+        </g>
+
+        {
+          points.map((p, i) => (
+            <g
+              class="marqueur"
+              data-marqueur
+              data-commune={p.commune}
+              data-index={i}
+              transform={`translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})`}
+            >
+              {/*
+                Deux cercles : le grand est transparent et sert de CIBLE, le
+                petit est l'encre. C'est l'exception documentée à la règle des
+                44 px : trente-trois cibles de cette taille sur une île de 70 km
+                se recouvriraient entièrement. Le zoom est la vraie réponse, et
+                il agrandit aussi l'écart entre deux salles voisines.
+              */}
+              <circle class="cible" data-cible r="22" />
+              <circle class="point" data-point r="9" />
+              {/* Le nom, effacé de loin, révélé de près ou au survol. */}
+              <text class="etiquette-salle" data-etiquette-salle y="-16" aria-hidden="true">
+                {p.nom}
+              </text>
+              <title>{p.nom}, {p.commune}</title>
+            </g>
+          ))
+        }
+      </svg>
+
+      {/*
+        Commandes de vue. En boutons et non seulement à la molette : sur
+        téléphone il n'y a pas de molette, et au clavier il faut une prise.
+      */}
+      <div class="commandes">
+        <button type="button" data-zoom="1.6" aria-label="Zoomer">+</button>
+        <button type="button" data-zoom="0.625" aria-label="Dézoomer">−</button>
+        <button type="button" data-reinitialiser aria-label="Revoir toute l'île">
+          Tout
+        </button>
+      </div>
+
+      <p class="echelle" data-echelle aria-hidden="true"></p>
+    </div>
+
+    <div class="details" data-details role="status" aria-live="polite">
+      <p class="invite">Touchez un point pour voir la salle.</p>
+    </div>
+  </div>
+
+  {/*
+    Les données pour le script, en JSON inerte. Astro échappe le contenu, ce
+    qui ferme l'injection par un nom de salle venu d'OSM.
+  */}
+  <script is:inline type="application/json" data-salles set:html={JSON.stringify(points)} />
+</div>
+
+<script>
+  interface SallePoint {
+    nom: string;
+    commune: string;
+    rue?: string;
+    site?: string;
+    telephone?: string;
+    horaires?: string;
+  }
+
+  const zone = document.querySelector<HTMLElement>('[data-carte]');
+  if (zone) {
+    const svg = zone.querySelector<SVGSVGElement>('[data-svg]')!;
+    const brut = zone.querySelector<HTMLScriptElement>('[data-salles]')?.textContent ?? '[]';
+    const salles: SallePoint[] = JSON.parse(brut);
+    const marqueurs = [...zone.querySelectorAll<SVGGElement>('[data-marqueur]')];
+    const details = zone.querySelector<HTMLElement>('[data-details]')!;
+    const compteur = zone.querySelector<HTMLElement>('[data-compteur]')!;
+    const filtre = zone.querySelector<HTMLSelectElement>('[data-filtre-commune]')!;
+    const echelle = zone.querySelector<HTMLElement>('[data-echelle]')!;
+
+    // La vue de départ, telle qu'écrite dans le balisage. Elle sert aussi de
+    // référence pour le facteur de zoom et pour le bouton « Tout ».
+    const d = svg.getAttribute('viewBox')!.split(/\s+/).map(Number);
+    const DEPART = { x: d[0], y: d[1], w: d[2], h: d[3] };
+    let vue = { ...DEPART };
+
+    const ZOOM_MAX = 14;
+    /** Au-delà de ce facteur, les noms de salle remplacent ceux des communes. */
+    const SEUIL_NOMS = 3;
+
+    /**
+     * Applique la vue, et redimensionne ce qui ne doit PAS grandir avec elle.
+     *
+     * Un point et un texte doivent garder leur taille à l'écran quel que soit
+     * le zoom : sans cette compensation, zoomer x10 donnerait des pastilles de
+     * la taille d'une commune. La taille est donc divisée par le facteur.
+     */
+    function appliquer() {
+      svg.setAttribute('viewBox', `${vue.x} ${vue.y} ${vue.w} ${vue.h}`);
+      const k = DEPART.w / vue.w;
+      svg.dataset.zoom = k.toFixed(2);
+
+      for (const g of marqueurs) {
+        g.querySelector<SVGCircleElement>('[data-point]')!.setAttribute('r', String(9 / k));
+        g.querySelector<SVGCircleElement>('[data-cible]')!.setAttribute('r', String(22 / k));
+        const t = g.querySelector<SVGTextElement>('[data-etiquette-salle]')!;
+        t.setAttribute('font-size', String(22 / k));
+        t.setAttribute('y', String(-16 / k));
+      }
+      for (const t of svg.querySelectorAll<SVGTextElement>('[data-etiquette-commune]')) {
+        t.setAttribute('font-size', String(30 / k));
+      }
+
+      // Les noms de salle prennent le relais des communes une fois assez près.
+      svg.dataset.noms = k >= SEUIL_NOMS ? 'salles' : 'communes';
+      echelle.textContent = k > 1.05 ? `Zoom ×${k.toFixed(1)}` : '';
+    }
+
+    /**
+     * Borne la vue : elle reste TOUJOURS à l'intérieur de l'étendue de départ.
+     *
+     * Une première version autorisait un débordement fixe d'une demi-vue, pour
+     * pouvoir amener une côte au centre. Défaut mesuré : la marge ne rétrécit
+     * pas avec le zoom, donc à pleine étendue la vue pouvait encore glisser de
+     * 540 unités et l'île sortait du centre après un dézoom insistant.
+     *
+     * La règle correcte est plus simple : la fenêtre ne sort jamais du plan.
+     * À pleine étendue elle s'y cale exactement, donc ne bouge plus du tout.
+     * Le tracé porte déjà 40 unités de marge autour de l'île, ce qui suffit à
+     * dégager les côtes.
+     */
+    function poser(x: number, y: number, w: number, h: number) {
+      const wMin = DEPART.w / ZOOM_MAX;
+      w = Math.min(DEPART.w, Math.max(wMin, w));
+      h = w * (DEPART.h / DEPART.w);
+      x = Math.min(DEPART.x + DEPART.w - w, Math.max(DEPART.x, x));
+      y = Math.min(DEPART.y + DEPART.h - h, Math.max(DEPART.y, y));
+      vue = { x, y, w, h };
+      appliquer();
+    }
+
+    /** Zoome d'un facteur, en gardant fixe le point visé. */
+    function zoomer(facteur: number, ancre?: { x: number; y: number }) {
+      const a = ancre ?? { x: vue.x + vue.w / 2, y: vue.y + vue.h / 2 };
+      const w = vue.w / facteur;
+      const h = vue.h / facteur;
+      poser(a.x - ((a.x - vue.x) * w) / vue.w, a.y - ((a.y - vue.y) * h) / vue.h, w, h);
+    }
+
+    /** Coordonnées SVG d'un événement, seule façon fiable de viser juste. */
+    function enSvg(e: { clientX: number; clientY: number }) {
+      const r = svg.getBoundingClientRect();
+      return {
+        x: vue.x + ((e.clientX - r.left) / r.width) * vue.w,
+        y: vue.y + ((e.clientY - r.top) / r.height) * vue.h,
+      };
+    }
+
+    // ---- Molette --------------------------------------------------------
+    svg.addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+        zoomer(e.deltaY < 0 ? 1.18 : 1 / 1.18, enSvg(e));
+      },
+      { passive: false },
+    );
+
+    // ---- Glissé et pincement -------------------------------------------
+    const doigts = new Map<number, { x: number; y: number }>();
+    let depart: { x: number; y: number; vue: typeof vue; ecart: number } | null = null;
+    let bouge = 0;
+
+    svg.addEventListener('pointerdown', (e) => {
+      // L'état AVANT la capture, et la capture protégée. Elle échoue si le
+      // pointeur n'est plus actif, et l'exception faisait alors avorter tout
+      // le gestionnaire : ni glissé enregistré, ni distinction entre clic et
+      // déplacement. Le glissé doit survivre à l'échec de la capture.
+      doigts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      bouge = 0;
+      try {
+        svg.setPointerCapture(e.pointerId);
+      } catch {
+        /* Pointeur déjà relâché : le glissé fonctionne sans la capture. */
+      }
+      const l = [...doigts.values()];
+      depart = {
+        x: e.clientX,
+        y: e.clientY,
+        vue: { ...vue },
+        ecart: l.length === 2 ? Math.hypot(l[0].x - l[1].x, l[0].y - l[1].y) : 0,
+      };
+    });
+
+    svg.addEventListener('pointermove', (e) => {
+      if (!doigts.has(e.pointerId) || !depart) return;
+      doigts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const l = [...doigts.values()];
+
+      if (l.length === 2 && depart.ecart > 0) {
+        // Pincement : le rapport des écarts donne le facteur.
+        const ecart = Math.hypot(l[0].x - l[1].x, l[0].y - l[1].y);
+        const milieu = { clientX: (l[0].x + l[1].x) / 2, clientY: (l[0].y + l[1].y) / 2 };
+        vue = { ...depart.vue };
+        zoomer(ecart / depart.ecart, enSvg(milieu));
+        bouge = 99;
+        return;
+      }
+
+      const r = svg.getBoundingClientRect();
+      const dx = ((e.clientX - depart.x) / r.width) * depart.vue.w;
+      const dy = ((e.clientY - depart.y) / r.height) * depart.vue.h;
+      bouge = Math.max(bouge, Math.hypot(e.clientX - depart.x, e.clientY - depart.y));
+      poser(depart.vue.x - dx, depart.vue.y - dy, depart.vue.w, depart.vue.h);
+    });
+
+    const relacher = (e: PointerEvent) => {
+      doigts.delete(e.pointerId);
+      if (doigts.size === 0) depart = null;
+    };
+    svg.addEventListener('pointerup', relacher);
+    svg.addEventListener('pointercancel', relacher);
+
+    // ---- Boutons --------------------------------------------------------
+    for (const b of zone.querySelectorAll<HTMLButtonElement>('[data-zoom]')) {
+      b.addEventListener('click', () => zoomer(Number(b.dataset.zoom)));
+    }
+    zone.querySelector<HTMLButtonElement>('[data-reinitialiser]')?.addEventListener('click', () => {
+      vue = { ...DEPART };
+      appliquer();
+    });
+
+    // ---- Clavier : la carte se parcourt sans souris ---------------------
+    svg.addEventListener('keydown', (e) => {
+      const pas = vue.w / 8;
+      const touches: Record<string, () => void> = {
+        ArrowLeft: () => poser(vue.x - pas, vue.y, vue.w, vue.h),
+        ArrowRight: () => poser(vue.x + pas, vue.y, vue.w, vue.h),
+        ArrowUp: () => poser(vue.x, vue.y - pas, vue.w, vue.h),
+        ArrowDown: () => poser(vue.x, vue.y + pas, vue.w, vue.h),
+        '+': () => zoomer(1.6),
+        '=': () => zoomer(1.6),
+        '-': () => zoomer(0.625),
+        Home: () => { vue = { ...DEPART }; appliquer(); },
+      };
+      const f = touches[e.key];
+      if (f) {
+        e.preventDefault();
+        f();
+      }
+    });
+
+    // ---- Sélection d'une salle ------------------------------------------
+    function afficher(s: SallePoint) {
+      details.textContent = '';
+      const titre = document.createElement('p');
+      titre.className = 'nom';
+      titre.textContent = s.nom;
+      details.append(titre);
+
+      const lignes = [
+        [s.rue, s.commune].filter(Boolean).join(', '),
+        s.horaires ?? '',
+        s.telephone ?? '',
+      ].filter(Boolean);
+      for (const t of lignes) {
+        const p = document.createElement('p');
+        p.textContent = t;
+        details.append(p);
+      }
+      if (s.site) {
+        const a = document.createElement('a');
+        a.href = s.site;
+        a.rel = 'noopener nofollow';
+        a.textContent = 'Site de la salle';
+        details.append(a);
+      }
+    }
+
+    function selectionner(g: SVGGElement) {
+      for (const m of marqueurs) m.removeAttribute('data-actif');
+      g.setAttribute('data-actif', '');
+      const s = salles[Number(g.dataset.index)];
+      if (s) afficher(s);
+    }
+
+    for (const g of marqueurs) {
+      g.setAttribute('tabindex', '0');
+      g.setAttribute('role', 'button');
+      g.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          selectionner(g);
+        }
+      });
+    }
+
+    /*
+     * Le clic est écouté sur le SVG, pas sur chaque marqueur.
+     *
+     * `setPointerCapture`, nécessaire au glissé, détourne toute la séquence de
+     * pointeur vers le SVG : le marqueur ne recevait donc plus le clic, et
+     * cliquer un point ne faisait rien. Écouter en amont puis remonter au
+     * marqueur avec `closest` rend la capture sans effet sur la sélection.
+     */
+    svg.addEventListener('click', (e) => {
+      // Un glissé de carte ne doit pas sélectionner la salle qu'il a
+      // effleurée : au-delà de quelques pixels, c'était un déplacement.
+      if (bouge > 6) return;
+      const cible = e.target as Element | null;
+      const g = cible?.closest<SVGGElement>('[data-marqueur]');
+      if (g && !g.hasAttribute('hidden')) selectionner(g);
+    });
+
+    // ---- Filtre par commune ---------------------------------------------
+    filtre.addEventListener('change', () => {
+      const choix = filtre.value;
+      let visibles = 0;
+      for (const g of marqueurs) {
+        const garde = !choix || g.dataset.commune === choix;
+        g.toggleAttribute('hidden', !garde);
+        // `hidden` ne suffit pas partout en SVG : on retire aussi du parcours
+        // clavier, sinon on tabule dans le vide.
+        if (garde) g.setAttribute('tabindex', '0');
+        else g.removeAttribute('tabindex');
+        if (garde) visibles++;
+      }
+      for (const t of svg.querySelectorAll<SVGTextElement>('[data-etiquette-commune]')) {
+        t.toggleAttribute('hidden', !!choix && t.dataset.commune !== choix);
+      }
+      compteur.textContent = `${visibles} salle${visibles > 1 ? 's' : ''}`;
+
+      const params = new URLSearchParams(location.search);
+      if (choix) params.set('commune', choix);
+      else params.delete('commune');
+      history.replaceState(null, '', params.toString() ? `?${params}` : location.pathname);
+    });
+
+    const initial = new URLSearchParams(location.search).get('commune');
+    if (initial && [...filtre.options].some((o) => o.value === initial)) {
+      filtre.value = initial;
+      filtre.dispatchEvent(new Event('change'));
+    }
+
+    appliquer();
+  }
+</script>
+
+<style>
+  .outils {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+  }
+
+  .champ {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  label {
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  select {
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+  }
+
+  .compteur {
+    margin: 0;
+    margin-left: auto;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .cadre {
+    display: grid;
+    gap: var(--space-6);
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  @media (min-width: 52rem) {
+    .cadre {
+      grid-template-columns: 1fr minmax(min(18rem, 100%), 22rem);
+      align-items: start;
+    }
+  }
+
+  .scene {
+    position: relative;
+    min-width: 0;
+  }
+
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-width: 0;
+    /* Sans quoi le navigateur s'approprie le pincement et le glissé, et la
+       carte ne bouge jamais sur téléphone. */
+    touch-action: none;
+    cursor: grab;
+  }
+  svg:active {
+    cursor: grabbing;
+  }
+
+  /*
+   * Le trait de côte prend --muted et non --border. Mesuré : en thème sombre,
+   * --bg et --surface valent #171614 et #211f1c, soit 1,2:1 entre eux, et
+   * --border n'ajoute que 1,8:1. L'île disparaissait dans son cadre.
+   *
+   * `non-scaling-stroke` garde le trait à la même épaisseur à tous les zooms :
+   * sans lui, un zoom ×10 donnerait une côte de vingt-cinq pixels de large.
+   */
+  .ile {
+    fill: var(--bg);
+    stroke: var(--muted);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .cible {
+    fill: transparent;
+  }
+
+  .point {
+    fill: var(--accent);
+    stroke: var(--surface);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .marqueur {
+    cursor: pointer;
+  }
+  .marqueur[hidden],
+  .etiquette-commune[hidden] {
+    display: none;
+  }
+
+  .marqueur:hover .point,
+  .marqueur:focus-visible .point {
+    fill: var(--accent-hover);
+  }
+
+  .marqueur:focus-visible {
+    outline: none;
+  }
+  .marqueur:focus-visible .cible {
+    fill: color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
+  .marqueur[data-actif] .point {
+    fill: var(--accent-fill);
+  }
+
+  /* ---- Les noms ---------------------------------------------------------
+   *
+   * Deux couches qui se relaient. Tant qu'on voit toute l'île, dix noms de
+   * commune se lisent ; trente-trois noms de salle, non. Le relais se fait au
+   * facteur 3, écrit dans SEUIL_NOMS.
+   */
+  text {
+    text-anchor: middle;
+    font-family: var(--font-body);
+    font-weight: 700;
+    paint-order: stroke;
+    stroke: var(--surface);
+    stroke-width: 4;
+    vector-effect: non-scaling-stroke;
+    pointer-events: none;
+  }
+
+  .etiquette-commune {
+    fill: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .etiquette-salle {
+    fill: var(--text);
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+
+  svg[data-noms='salles'] .etiquette-commune {
+    opacity: 0;
+  }
+  svg[data-noms='salles'] .etiquette-salle {
+    opacity: 1;
+  }
+
+  /* Le nom de la salle visée apparaît quel que soit le zoom : c'est la réponse
+     au chevauchement dans les communes denses. */
+  .marqueur:hover .etiquette-salle,
+  .marqueur:focus-visible .etiquette-salle,
+  .marqueur[data-actif] .etiquette-salle {
+    opacity: 1;
+  }
+
+  /* ---- Commandes de vue ------------------------------------------------- */
+  .commandes {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .commandes button {
+    min-width: var(--cible-min);
+    min-height: var(--cible-min);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-weight: 700;
+    font-size: var(--step-0);
+    cursor: pointer;
+  }
+  .commandes button:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .echelle {
+    position: absolute;
+    bottom: var(--space-2);
+    left: var(--space-2);
+    margin: 0;
+    font-size: var(--step--1);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+  }
+
+  /* ---- Panneau de détail ------------------------------------------------ */
+  .details {
+    align-self: start;
+    padding: var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    min-width: 0;
+  }
+
+  .details p {
+    margin: 0 0 var(--space-1);
+    font-size: var(--step--1);
+    color: var(--muted);
+    overflow-wrap: break-word;
+  }
+
+  .details :global(.nom) {
+    font-size: var(--step-1);
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: var(--space-2);
+  }
+
+  .details :global(a) {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+    font-weight: 600;
+  }
+
+  .invite {
+    margin: 0;
+  }
+</style>

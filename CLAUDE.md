@@ -155,6 +155,22 @@ la première cause d'icônes dépareillées. Pour en ajouter une, reprendre le t
 depuis `tabler/tabler-icons`, `icons/outline/`, et conserver la mention de
 copyright en tête du composant, que la licence MIT impose.
 
+**Les partenaires sont DIRECTS, jamais une régie.** Une image et un lien
+hébergés sur le site : aucun script tiers, aucun pistage, aucun consentement à
+demander. Une régie type AdSense tomberait derrière la bannière, serait
+invisible pour qui refuse, et contredirait la posture du site. Trois règles,
+appliquées dans `lib/sponsors.ts` et non laissées à la vigilance des gabarits :
+**un seul emplacement par page**, **jamais dans une donnée** (ni entre deux
+lignes de classement, ni dans un tableau de résultats), **jamais au-dessus du
+contenu**. Deux obligations en plus : `rel="sponsored nofollow"` sur le lien,
+qu'exige Google, et un intitulé « Partenaire » visible, qu'exige la loi
+française sur l'identification de la publicité. La fiche d'athlète est écartée :
+y afficher une marque prêterait à l'athlète une caution qu'il n'a pas donnée.
+
+**Ne jamais écrire que le site est « sans publicité ».** La promesse qui tient
+est l'absence de RÉGIE et de script tiers. Le pied de page dit donc « sans
+régie publicitaire », ce qui reste vrai avec des partenaires directs.
+
 **Tout lien sortant porte une flèche ↗**, posée automatiquement par une règle
 de `tokens.css` sur `a[href^="http"]`. Ne pas l'ajouter à la main dans le
 balisage : un nouveau lien externe l'obtient sans rien demander. Les adresses
@@ -190,6 +206,13 @@ C'est ce qui faisait sortir l'effectif d'athlètes de l'écran sur l'accueil.
 `overflow: hidden` coupe sans que `scrollWidth` de la page ne bouge d'un pixel.
 Mesurer par élément : `scrollWidth > clientWidth`, et la largeur de la boîte
 comparée à celle de `.wrap`.
+
+**Le thème SOMBRE est le défaut, et le réglage du système n'est plus consulté.**
+Les rôles sombres vivent sur `:root`, le clair uniquement dans
+`:root[data-theme='light']`. Deux conséquences à ne pas casser. Sans
+JavaScript, aucun attribut n'est posé sur `<html>` : c'est `:root` qui
+s'applique, donc le défaut doit y vivre. Et le repli du bouton de bascule vaut
+`'dark'`, pas `'light'`.
 
 **`--accent` est un accent de TEXTE, `--accent-fill` est l'aplat.** Poser
 `--accent` en fond sous `--on-accent` donne 2,78:1 en thème clair. L'erreur a

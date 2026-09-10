@@ -12,7 +12,9 @@ import {
   parseWeightClass,
   sexLabel,
 } from '../../../lib/categories';
+import Partenaire from '../../../components/Partenaire.astro';
 import { articlesDeLaCompetition } from '../../../lib/actualites';
+import { partenaireDeLaPage } from '../../../lib/sponsors';
 import { dateLongue, nombre, place, points } from '../../../lib/format';
 import { editionsDe, libelleEvent, listeMeets, resultatsDuMeet } from '../../../lib/meets';
 import { cleRecord, clesRecords } from '../../../lib/records';
@@ -28,6 +30,8 @@ export async function getStaticPaths() {
 
 const { meet } = Astro.props;
 const articlesDuMeet = await articlesDeLaCompetition(meet.chemin);
+// Un seul partenaire, et seulement s'il y en a un : voir lib/sponsors.
+const partenaire = await partenaireDeLaPage('competition', meet.chemin);
 const resultats = resultatsDuMeet(meet.key);
 const records = clesRecords();
 const autresEditions = editionsDe(meet.nomSlug).filter((e) => e.date !== meet.date);
@@ -314,6 +318,8 @@ const description =
           : ' Cette compétition portait sur un seul mouvement, le total et les points Dots ne s’y appliquent pas.'
       }
     </p>
+
+    {partenaire && <Partenaire sponsor={partenaire} />}
 
     {
       /*

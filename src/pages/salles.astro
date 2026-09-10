@@ -1,0 +1,167 @@
+---
+/**
+ * Les salles de sport de La Réunion, sur une carte.
+ *
+ * La carte est le contenu de la page. La liste subsiste, repliée, pour deux
+ * publics qu'une carte laisse dehors : ceux qui navigent sans JavaScript, où
+ * aucun point n'est cliquable, et ceux qui lisent à l'oreille, pour qui une
+ * position sur une île ne veut rien dire. Elle n'est pas la page, elle en est
+ * le filet.
+ */
+import CarteSalles from '../components/CarteSalles.astro';
+import EtatVide from '../components/EtatVide.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const toutes = await getCollection('salles');
+const salles = toutes
+  .filter((s) => s.data.actif)
+  .map((s) => s.data)
+  .sort(
+    (a, b) =>
+      a.commune.localeCompare(b.commune, 'fr') || a.nom.localeCompare(b.nom, 'fr'),
+  );
+
+const communes = [...new Set(salles.map((s) => s.commune))].sort((a, b) =>
+  a.localeCompare(b, 'fr'),
+);
+---
+
+<BaseLayout
+  titre="Carte des salles de sport à La Réunion"
+  description={`Les ${salles.length} salles de musculation et de force athlétique de La Réunion sur une carte, par commune : adresse, horaires et contact.`}
+>
+  <div class="wrap page">
+    <h1>Salles de sport</h1>
+    <p class="chapeau">
+      Où s'entraîner à La Réunion. {salles.length} salles sur {communes.length} communes.
+    </p>
+
+    {
+      salles.length === 0 ? (
+        <EtatVide titre="Aucune salle enregistrée">
+          La carte se remplit depuis l'espace d'administration.
+        </EtatVide>
+      ) : (
+        <>
+          <CarteSalles salles={salles} communes={communes} />
+
+          <details class="repli">
+            <summary>Voir la liste des {salles.length} salles</summary>
+            <ul>
+              {salles.map((s) => (
+                <li>
+                  <span class="nom">{s.nom}</span>
+                  <span class="lieu">
+                    {s.commune}
+                    {s.rue && <> · {s.rue}</>}
+                  </span>
+                  {s.horaires && <span class="lieu">{s.horaires}</span>}
+                  <span class="contacts">
+                    {s.telephone && (
+                      <a href={`tel:${s.telephone.replace(/\s/g, '')}`}>{s.telephone}</a>
+                    )}
+                    {s.site && (
+                      <a href={s.site} rel="noopener nofollow">
+                        Site
+                      </a>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        </>
+      )
+    }
+
+    {/*
+      L'attribution n'est pas une politesse : la licence ODbL d'OpenStreetMap
+      l'impose, pour le tracé de l'île comme pour les positions des salles.
+    */}
+    <p class="note">
+      {/*
+        Pas de `{' '}` après l'apostrophe : Astro n'y supprime aucune espace, et
+        en ajouter une donnait « issus d' OpenStreetMap ». La règle d'écrire
+        l'espace explicitement ne vaut QUE là où Astro l'aurait mangée.
+      */}
+      Tracé de l'île et coordonnées des salles issus d'<a
+        href="https://www.openstreetmap.org/copyright"
+        rel="noopener">OpenStreetMap</a
+      >, sous licence ODbL. Une salle manque ou une information est fausse ?{' '}
+      <a href="/partenariats/">Signalez-le</a>.
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    padding-block: var(--space-8) var(--space-16);
+  }
+
+  .chapeau {
+    max-width: 58ch;
+    color: var(--muted);
+    font-size: var(--step-1);
+    margin-bottom: var(--space-8);
+  }
+
+  .repli {
+    margin-top: var(--space-8);
+  }
+
+  .repli summary {
+    display: flex;
+    align-items: center;
+    min-height: var(--cible-min);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .repli ul {
+    list-style: none;
+    margin: var(--space-4) 0 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .repli > ul > li {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nom {
+    font-weight: 700;
+    overflow-wrap: break-word;
+  }
+
+  .lieu {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .contacts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+  }
+
+  .contacts a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+    font-size: var(--step--1);
+    font-weight: 600;
+  }
+
+  .note {
+    margin-top: var(--space-8);
+    font-size: var(--step--1);
+    color: var(--muted);
+    max-width: 68ch;
+  }
+</style>

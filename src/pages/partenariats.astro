@@ -1,0 +1,353 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { nombreAthletes, results } from '../lib/data';
+import { listeMeets } from '../lib/meets';
+
+const meets = listeMeets();
+---
+
+<BaseLayout
+  titre="Partenariats"
+  description="Marques de compléments, équipementiers, salles et organisateurs : proposer un partenariat à sbd.re, le site des classements et records de force athlétique à La Réunion."
+>
+  <div class="wrap page">
+    <h1>Partenariats</h1>
+    <p class="chapeau">
+      Le site est indépendant et gratuit. Un partenaire aide à couvrir le nom de
+      domaine, l'hébergement et le temps passé.
+    </p>
+
+    <section class="chiffres">
+      <h2>Ce que touche le site</h2>
+      <dl>
+        <div>
+          <dt>Athlètes recensés</dt>
+          <dd class="num">{nombreAthletes()}</dd>
+        </div>
+        <div>
+          <dt>Compétitions</dt>
+          <dd class="num">{meets.length}</dd>
+        </div>
+        <div>
+          <dt>Résultats publiés</dt>
+          <dd class="num">{results.length.toLocaleString('fr-FR')}</dd>
+        </div>
+      </dl>
+      <p class="fin">
+        Le public est celui de la force athlétique réunionnaise : pratiquants en
+        club, compétiteurs, entraîneurs et organisateurs.
+      </p>
+    </section>
+
+    <section class="regles">
+      <h2>Ce qu'un partenariat peut être</h2>
+      <p>
+        Une image et un lien, hébergés sur le site. Aucun script extérieur,
+        aucun pistage, aucune donnée de visiteur transmise à qui que ce soit.
+      </p>
+      <ul>
+        <li>Sous les résultats d'une compétition</li>
+        <li>En fin d'article</li>
+        <li>Dans le bandeau du pied de page, sur toutes les pages</li>
+      </ul>
+      <p class="fin">
+        Un seul emplacement par page, jamais au milieu d'un classement, jamais
+        au-dessus du contenu. Les emplacements portent la mention
+        « Partenaire », comme la loi l'exige.
+      </p>
+    </section>
+
+    <section class="formulaire">
+      <h2>Proposer un partenariat</h2>
+
+      <noscript>
+        <p class="repli">
+          Ce formulaire demande JavaScript. Écrivez directement à{' '}
+          <a href="mailto:hello@loremipsum.re">hello@loremipsum.re</a>.
+        </p>
+      </noscript>
+
+      <form id="contact" novalidate>
+        <div class="champ">
+          <label for="nom">Votre nom</label>
+          <input id="nom" name="nom" type="text" required maxlength="100" autocomplete="name" />
+        </div>
+
+        <div class="champ">
+          <label for="organisation">Organisation <span class="option">facultatif</span></label>
+          <input
+            id="organisation"
+            name="organisation"
+            type="text"
+            maxlength="120"
+            autocomplete="organization"
+          />
+        </div>
+
+        <div class="champ">
+          <label for="courriel">Adresse électronique</label>
+          <input
+            id="courriel"
+            name="courriel"
+            type="email"
+            required
+            maxlength="190"
+            autocomplete="email"
+          />
+        </div>
+
+        <div class="champ">
+          <label for="sujet">Objet</label>
+          <select id="sujet" name="sujet" required>
+            <option value="partenariat">Proposition de partenariat</option>
+            <option value="produit">Compléments ou équipement</option>
+            <option value="evenement">Compétition ou événement</option>
+            <option value="autre">Autre demande</option>
+          </select>
+        </div>
+
+        <div class="champ">
+          <label for="message">Votre demande</label>
+          <textarea id="message" name="message" required rows="7" maxlength="4000"></textarea>
+          <p class="aide">
+            Dites qui vous êtes, ce que vous proposez, et sur quelle durée.
+          </p>
+        </div>
+
+        {/*
+          Champ appât. Invisible pour un humain, rempli par un robot qui
+          complète tout ce qu'il trouve. Il est masqué en CSS et non par
+          `hidden` : certains robots ignorent les champs `hidden`, aucun ne
+          calcule le CSS. `aria-hidden` et `tabindex` l'écartent des lecteurs
+          d'écran et du parcours au clavier, pour qu'aucun humain ne tombe
+          dessus par accident.
+        */}
+        <div class="appat" aria-hidden="true">
+          <label for="site">Ne remplissez pas ce champ</label>
+          <input id="site" name="site" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+
+        {/*
+          Horodatage posé PAR LE SCRIPT au chargement, jamais à la génération.
+          Une valeur figée au build serait vieille de plusieurs jours à la
+          première visite, et le serveur rejetterait tout le monde.
+        */}
+        <input id="depuis" name="depuis" type="hidden" value="" />
+
+        <button type="submit">Envoyer la demande</button>
+
+        <p class="etat" data-etat role="status" aria-live="polite" hidden></p>
+
+        <p class="rgpd">
+          Votre nom et votre adresse servent uniquement à vous répondre. Ils ne
+          sont ni publiés, ni cédés. Voir la{' '}
+          <a href="/confidentialite/">page de confidentialité</a>.
+        </p>
+      </form>
+    </section>
+  </div>
+</BaseLayout>
+
+<script is:inline>
+  (() => {
+    const form = document.getElementById('contact');
+    if (!form) return;
+
+    const etat = form.querySelector('[data-etat]');
+    const bouton = form.querySelector('button[type="submit"]');
+    const depuis = form.querySelector('#depuis');
+
+    // L'horodatage se pose maintenant, à l'ouverture de la page.
+    depuis.value = String(Math.floor(Date.now() / 1000));
+
+    const afficher = (texte, ok) => {
+      etat.textContent = texte;
+      etat.dataset.ok = ok ? 'oui' : 'non';
+      etat.hidden = false;
+    };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      bouton.disabled = true;
+      afficher('Envoi en cours…', true);
+
+      try {
+        const reponse = await fetch('/api/contact.php', {
+          method: 'POST',
+          body: new FormData(form),
+        });
+        const donnees = await reponse.json();
+        afficher(donnees.message, donnees.ok === true);
+        if (donnees.ok) form.reset();
+      } catch {
+        afficher(
+          "L'envoi a échoué. Écrivez directement à hello@loremipsum.re.",
+          false,
+        );
+      } finally {
+        // Réactivé quoi qu'il arrive : un bouton mort après une panne réseau
+        // enferme le visiteur.
+        bouton.disabled = false;
+      }
+    });
+  })();
+</script>
+
+<style>
+  .page {
+    padding-block: var(--space-8) var(--space-16);
+  }
+
+  .chapeau {
+    max-width: 58ch;
+    color: var(--muted);
+    font-size: var(--step-1);
+    margin-bottom: var(--space-12);
+  }
+
+  section {
+    max-width: 68ch;
+    margin-bottom: var(--space-12);
+  }
+
+  .chiffres dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
+    gap: var(--space-6);
+    margin: 0 0 var(--space-4);
+    padding: var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+  .chiffres dt {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .chiffres dd {
+    margin: 0;
+    font-size: var(--step-3);
+    line-height: 1;
+  }
+
+  .regles ul {
+    margin: 0 0 var(--space-4);
+    padding-left: var(--space-6);
+  }
+  .regles li {
+    margin-bottom: var(--space-1);
+  }
+
+  .fin {
+    color: var(--muted);
+    max-width: 68ch;
+  }
+
+  form {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .champ {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  label {
+    font-weight: 700;
+  }
+
+  .option {
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  input,
+  select,
+  textarea {
+    min-height: var(--cible-min);
+    padding: var(--space-3);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    min-width: 0;
+  }
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    border-color: var(--accent);
+  }
+
+  textarea {
+    resize: vertical;
+    line-height: 1.6;
+  }
+
+  .aide {
+    margin: 0;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /*
+   * L'appât sort du flux sans `display: none`, que certains robots détectent.
+   * Il reste hors de l'écran, inatteignable au clavier grâce à tabindex="-1".
+   */
+  .appat {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  button[type='submit'] {
+    justify-self: start;
+    min-height: var(--cible-min);
+    padding-inline: var(--space-8);
+    border: 2px solid var(--accent-fill);
+    border-radius: var(--radius);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  button[type='submit']:hover {
+    background: var(--accent-fill-hover);
+    border-color: var(--accent-fill-hover);
+  }
+  button[type='submit']:disabled {
+    opacity: 0.6;
+    cursor: progress;
+  }
+
+  .etat {
+    margin: 0;
+    padding: var(--space-3) var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    font-weight: 700;
+  }
+  .etat[data-etat][data-ok='oui'] {
+    border-color: var(--succes);
+    color: var(--succes);
+  }
+  .etat[data-etat][data-ok='non'] {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+  .etat[hidden] {
+    display: none;
+  }
+
+  .rgpd,
+  .repli {
+    margin: 0;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+</style>

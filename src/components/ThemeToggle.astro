@@ -36,7 +36,10 @@
   const bouton = document.querySelector<HTMLButtonElement>('[data-bascule-theme]');
 
   function actualiserEtiquette() {
-    const actuel = document.documentElement.dataset.theme ?? 'light';
+    // Le secours vaut « dark », qui est le thème par défaut du site. En
+    // pratique le script du gabarit a déjà posé l'attribut ; cette valeur ne
+    // sert que s'il a échoué, et elle doit alors dire la vérité.
+    const actuel = document.documentElement.dataset.theme ?? 'dark';
     // L'étiquette annonce l'ACTION à venir, pas l'état courant : c'est ce
     // qu'attend une personne qui navigue au lecteur d'écran.
     bouton?.setAttribute(
@@ -46,7 +49,7 @@
   }
 
   bouton?.addEventListener('click', () => {
-    const actuel = document.documentElement.dataset.theme ?? 'light';
+    const actuel = document.documentElement.dataset.theme ?? 'dark';
     const suivant = actuel === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = suivant;
     try {

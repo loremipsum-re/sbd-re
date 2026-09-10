@@ -144,10 +144,16 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     */}
     <script is:inline>
       (function () {
+        /*
+         * Le sombre est le défaut, et le réglage du système n'est plus
+         * consulté. Une majorité de machines sortent d'usine en clair : le
+         * suivre revenait à servir un site clair à presque tout le monde.
+         *
+         * Seul un choix explicite, mémorisé par le bouton, fait autre chose.
+         */
         try {
-          var choix = localStorage.getItem('sbd-theme');
-          var systeme = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          document.documentElement.dataset.theme = choix || (systeme ? 'dark' : 'light');
+          document.documentElement.dataset.theme =
+            localStorage.getItem('sbd-theme') || 'dark';
         } catch (e) {
           document.documentElement.dataset.theme = 'dark';
         }

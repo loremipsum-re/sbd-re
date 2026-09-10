@@ -1,0 +1,85 @@
+---
+/**
+ * Bandeau des partenaires, en pied de page.
+ *
+ * Présent sur toutes les pages, donc volontairement sobre : des logos, un
+ * intitulé, rien de plus. C'est ce qu'un partenaire annuel attend, et ça ne
+ * dispute jamais l'attention au contenu puisque le pied de page arrive après.
+ *
+ * Le bloc n'existe pas s'il n'y a aucun partenaire : voir la condition
+ * ci-dessous. Un bandeau vide serait une place perdue qui dit au visiteur que
+ * personne ne soutient le site.
+ */
+import { partenairesDuPied } from '../lib/sponsors';
+
+const partenaires = await partenairesDuPied();
+---
+
+{
+  partenaires.length > 0 && (
+    <section class="bandeau" aria-label="Partenaires">
+      <p class="mention">Partenaires</p>
+      <ul>
+        {partenaires.map((p) => (
+          <li>
+            <a
+              class="lien-nu"
+              href={p.data.url}
+              rel="sponsored nofollow noopener"
+              title={p.data.nom}
+            >
+              <img src={p.data.logo} alt={p.data.nom} loading="lazy" />
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+<style>
+  .bandeau {
+    margin-top: var(--space-8);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border);
+  }
+
+  .mention {
+    margin: 0 0 var(--space-4);
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-6);
+  }
+
+  /* La cible fait 44 px de haut comme tout contrôle du site, même si le logo
+     est plus petit : c'est la zone cliquable qui compte, pas l'encre. */
+  li a {
+    display: flex;
+    align-items: center;
+    min-height: var(--cible-min);
+    padding-inline: var(--space-2);
+    border-radius: var(--radius);
+  }
+  li a:hover {
+    background: var(--bg);
+  }
+
+  li img {
+    width: auto;
+    height: 32px;
+    max-width: 140px;
+    object-fit: contain;
+  }
+</style>
