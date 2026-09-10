@@ -156,6 +156,28 @@ const partenaire = await partenaireDeLaPage('article', article.id);
     font-weight: 700;
   }
 
+  /*
+   * Le lien de fin d'article ferme la lecture par une action. Il en prend donc
+   * la forme et la cible de 44 px, là où un lien de prose garde la sienne.
+   * Le sélecteur vise le dernier paragraphe s'il ne contient QUE ce lien.
+   */
+  .corps :global(p:last-child > a:only-child) {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+    padding-inline: var(--space-6);
+    border: 2px solid var(--accent);
+    border-radius: var(--radius);
+    color: var(--accent);
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .corps :global(p:last-child > a:only-child:hover) {
+    background: var(--accent-fill);
+    border-color: var(--accent-fill);
+    color: var(--on-accent);
+  }
+
   /* Le lien RETOUR vers la compétition, qui est tout l'intérêt du champ
      `competition` : il existe aussi dans l'autre sens, sur la page du meet. */
   .encart {
