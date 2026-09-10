@@ -1,6 +1,6 @@
 ---
-titre: "Reunion Island Meet 2026 : 86 athlètes et cinq records"
-description: "La plus grosse compétition jamais recensée sur l'île s'est tenue le 18 juillet à Saint-Joseph."
+titre: "Reunion Island Meet 2026, 86 athlètes et cinq records"
+description: "Le plateau le plus fourni depuis 2017 s'est tenu le 18 juillet à Saint-Joseph."
 date: 2026-07-18
 competition: reunion-island-meet/2026-07-18
 athletes:
@@ -9,22 +9,22 @@ athletes:
   - Leena Waitzmann
 ---
 
-86 athlètes se sont présentés à Saint-Joseph le 18 juillet pour le Reunion
-Island Meet, dont 58 hommes et 28 femmes.
+86 athlètes ont concouru à Saint-Joseph le 18 juillet pour le Reunion Island
+Meet. Le plateau comptait 58 hommes et 28 femmes.
 
-## Cinq records de l'île sont tombés
+## Cinq records de l'île
 
-- **Gabriel Begue** porte le squat à 302,5 kg et le total à 807,5 kg
-- **Philippe René** porte le deadlift à 315 kg
-- **Leena Waitzmann** porte le deadlift femmes à 218 kg et le total à 490,5 kg
+- Gabriel Begue porte le squat à 302,5 kg
+- Gabriel Begue porte le total à 807,5 kg
+- Philippe René porte le deadlift à 315 kg
+- Leena Waitzmann porte le deadlift femmes à 218 kg
+- Leena Waitzmann porte le total femmes à 490,5 kg
 
-Ces cinq marques sont les meilleures jamais enregistrées en compétition à
-La Réunion.
+Ces cinq marques sont les meilleures enregistrées en compétition à La Réunion.
 
-## Le plateau le plus fourni de l'île
+## Le plus gros plateau depuis 2017
 
-Avec 86 athlètes, cette édition dépasse toutes les compétitions recensées depuis
-2017.
+L'édition 2025 comptait 54 athlètes. Le Championnat Régional FA/PL de décembre
+2024 en comptait 45.
 
-Les résultats complets, barre par barre, sont sur la page de la
-[compétition](/competitions/reunion-island-meet/2026-07-18/).
+[Voir les résultats complets](/competitions/reunion-island-meet/2026-07-18/)
