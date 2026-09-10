@@ -33,8 +33,17 @@ namespace SBDRE;
 // Réglages. Le destinataire et l'expéditeur ne se négocient pas depuis dehors.
 // -----------------------------------------------------------------------------
 
-/** Boîte de réception. Le postmaster du domaine, qui existe toujours chez OVH. */
-const DESTINATAIRE = 'postmaster@sbd.re';
+/**
+ * Boîte de réception des demandes.
+ *
+ * Provisoirement chez loremipsum.re : aucune boîte n'existe encore sur sbd.re,
+ * et une adresse qui ne reçoit pas est pire qu'un formulaire absent. À basculer
+ * vers sbd.re le jour où la boîte y sera créée.
+ *
+ * Écrite en dur, jamais lue depuis la requête : c'est la seule garantie
+ * sérieuse contre l'usage du serveur comme relais à spam.
+ */
+const DESTINATAIRE = 'hello@loremipsum.re';
 
 /** Expéditeur technique. Doit appartenir au domaine, pour le SPF. */
 const EXPEDITEUR = 'no-reply@sbd.re';
@@ -226,7 +235,7 @@ if (!$envoye) {
      * qu'un visiteur. L'adresse de repli permet à la personne d'aboutir quand
      * même, ce qui est le seul but.
      */
-    repondre(500, "L'envoi a échoué. Écrivez directement à contact@sbd.re.");
+    repondre(500, "L'envoi a échoué. Écrivez directement à hello@loremipsum.re.");
 }
 
 repondre(200, 'Message envoyé. Réponse sous quelques jours.', true);
