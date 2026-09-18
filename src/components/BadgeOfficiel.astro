@@ -8,10 +8,16 @@
  * glyphe est une marque déposée, et l'afficher laisserait entendre que la
  * vérification vient d'eux.
  *
- * La coche est un VRAI trou dans la pastille, obtenu par un masque SVG, et non
- * un trait posé par-dessus. Le fond de la page transparaît donc à travers, ce
- * qui fonctionne aussi bien sur une carte que sur le fond de page, en thème
- * clair comme en thème sombre.
+ * La coche est un VRAI trou dans la pastille, et non un trait posé par-dessus.
+ * Le fond de la page transparaît donc à travers, ce qui fonctionne aussi bien
+ * sur une carte que sur le fond de page, en thème clair comme en thème sombre.
+ *
+ * Le trou fait partie du tracé lui-même, sans masque SVG. Un masque exige un
+ * `id` unique par instance, or le badge revient plusieurs centaines de fois
+ * sur une page, et un même athlète plusieurs dizaines de fois sur /exterieur/ :
+ * aucun identifiant tiré des props n'y serait unique. Un `id` aléatoire, lui,
+ * changeait à chaque build et faisait renvoyer quelque 440 pages au serveur à
+ * chaque déploiement, sans le moindre changement réel.
  *
  * La couleur est celle du texte qu'elle accompagne (`currentColor`). Un blanc
  * fixe disparaîtrait purement et simplement sur le thème clair, où les cartes
@@ -25,12 +31,7 @@ interface Props {
 
 const { taille = 15, detail = 'Compétiteur officiel' } = Astro.props;
 
-/*
- * Identifiant unique par instance : le badge apparaît jusqu'à 266 fois sur une
- * même page, et deux masques partageant un `id` produiraient un document
- * invalide, avec un rendu imprévisible selon les navigateurs.
- */
-const idMasque = `coche-${Math.random().toString(36).slice(2, 9)}`;
+type Point = readonly [number, number];
 
 /*
  * Douze lobes répartis sur un cercle de rayon 9, centrés en (12, 12), reliés
@@ -50,22 +51,59 @@ const feston =
     .map(([x, y]) => `A 2.33 2.33 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)}`)
     .join(' ') +
   ' Z';
+
+/*
+ * La coche est un trait de 2,4 d'épaisseur, à bouts et à angle arrondis,
+ * passant par A, B et C. Pour la percer dans la pastille, on dessine le
+ * CONTOUR de ce trait, la forme exacte qu'il couvrirait : les deux bords
+ * décalés de 1,2 de part et d'autre, un demi-cercle à chaque bout, un arc
+ * autour de la pointe basse du V, et le creux où se rejoignent les deux bords
+ * intérieurs.
+ *
+ * Ce contour s'ajoute au feston dans un seul tracé, avec `fill-rule="evenodd"`.
+ * C'est le principe de la lettre O : une zone entourée deux fois reste vide.
+ * Le contour tourne aussi en sens inverse du feston, si bien que la règle de
+ * remplissage par défaut donnerait le même trou.
+ */
+const A: Point = [7.6, 12.2];
+const B: Point = [10.5, 15.1];
+const C: Point = [16.5, 8.5];
+const R = 1.2;
+
+const decale = ([x, y]: Point, [dx, dy]: Point, k: number): Point => [x + k * dx, y + k * dy];
+const direction = ([x1, y1]: Point, [x2, y2]: Point): Point => {
+  const longueur = Math.hypot(x2 - x1, y2 - y1);
+  return [(x2 - x1) / longueur, (y2 - y1) / longueur];
+};
+const point = ([x, y]: Point) => `${x.toFixed(2)} ${y.toFixed(2)}`;
+const arc = (p: Point) => `A ${R} ${R} 0 0 0 ${point(p)}`;
+
+const d1 = direction(A, B);
+const d2 = direction(B, C);
+// Perpendiculaires tournées vers l'extérieur du V, c'est-à-dire vers le bas.
+const n1: Point = [-d1[1], d1[0]];
+const n2: Point = [-d2[1], d2[0]];
+// Croisement des deux bords intérieurs, sur la bissectrice de l'angle en B.
+const creux = decale(B, [n1[0] + n2[0], n1[1] + n2[1]], -R / (1 + n1[0] * n2[0] + n1[1] * n2[1]));
+
+const coche = [
+  `M ${point(decale(A, n1, R))}`,
+  `L ${point(decale(B, n1, R))}`,
+  arc(decale(B, n2, R)),
+  `L ${point(decale(C, n2, R))}`,
+  arc(decale(C, d2, R)),
+  arc(decale(C, n2, -R)),
+  `L ${point(creux)}`,
+  `L ${point(decale(A, n1, -R))}`,
+  arc(decale(A, d1, -R)),
+  arc(decale(A, n1, R)),
+  'Z',
+].join(' ');
 ---
 
 <span class="badge" title={detail}>
   <svg width={taille} height={taille} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-    <mask id={idMasque}>
-      {/* Blanc : ce qui reste visible. Noir : ce qui est évidé. */}
-      <rect width="24" height="24" fill="white"></rect>
-      <path
-        d="M7.6 12.2 L10.5 15.1 L16.5 8.5"
-        fill="none"
-        stroke="black"
-        stroke-width="2.4"
-        stroke-linecap="round"
-        stroke-linejoin="round"></path>
-    </mask>
-    <path d={feston} fill="currentColor" mask={`url(#${idMasque})`}></path>
+    <path d={`${feston} ${coche}`} fill="currentColor" fill-rule="evenodd"></path>
   </svg>
   <span class="sr-only">{detail}</span>
 </span>
