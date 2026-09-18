@@ -32,6 +32,13 @@ d'intégration continue.
 - Annoncer et justifier tout écart par rapport à ce qui était prévu.
 - **Vérifier par la mesure avant d'affirmer.** Idempotence prouvée par empreinte, contrastes calculés, comportements testés dans le navigateur.
 - Toute la rédaction du site est en **français**.
+- **Chaque mise à jour livrée fait monter la version**, demande de l'auteur du
+  18 septembre 2026. Une rubrique ou une fonction visible nouvelle monte le
+  deuxième chiffre (1.1 vers 1.2). Des corrections ou des dépendances seules
+  montent le troisième (1.1 vers 1.1.1). Commande :
+  `npm version 1.2.0 --no-git-tag-version`, qui met à jour `package.json` et
+  `package-lock.json` sans créer d'étiquette git. Le pied de page affiche v1.2
+  tant que le troisième chiffre vaut zéro.
 
 ## Règles de contenu du site
 

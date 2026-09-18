@@ -423,6 +423,38 @@ production : le serveur de développement sert les fichiers `.php` sans les
 exécuter. La logique s'éprouve donc séparément, par requêtes directes contre un
 `php -S`, et la jonction se prouve en ligne.
 
+### Deux défauts que seul le message brut montrait
+
+La revue du 18 septembre 2026 a exécuté le vrai `contact.php` en local, avec
+`mail()` redirigé vers un faux `sendmail`. Ce faux `sendmail` est un script PHP
+qui écrit dans un fichier ce qu'il reçoit :
+
+```bash
+php -d sendmail_path="php capture.php" harnais.php
+```
+
+Le réglage `sendmail_path` fonctionne aussi sous Windows. Le harnais remplit
+`$_POST` et `$_SERVER`, puis inclut `contact.php`. On lit alors le courriel
+exactement tel qu'il partirait.
+
+**Le sujet n'était pas encodé.** Trois objets sur quatre portent des accents,
+qui partaient en octets bruts dans l'en-tête. Un en-tête ne contient que de
+l'ASCII : les accents s'y écrivent `=?UTF-8?B?...?=`, ce que fait
+`mb_encode_mimeheader`. Le test de production était passé parce que l'objet par
+défaut, « Proposition de partenariat », n'a pas d'accent.
+
+**Le corps dépassait la longueur de ligne.** Un paragraphe tapé sans retour à
+la ligne donnait 1 619 octets d'un seul tenant, pour une limite de 998. Le
+corps part désormais en quoted-printable, replié à 76 caractères. Piège de
+`quoted_printable_encode` : il ne reconnaît que CRLF comme fin de ligne, et
+code un `\n` seul en `=0A`. On unifie les fins de ligne avant d'encoder.
+
+**Le compteur se contournait par envois simultanés.** Il était lu au début et
+écrit plus loin. Une salve de dix envois depuis la même adresse en a fait
+passer cinq au lieu de trois. Un `flock` tient désormais le fichier de la
+lecture jusqu'à l'écriture. Cinq salves de dix envois donnent chacune trois
+acceptés.
+
 ## 9. État au 30 juillet 2026
 
 | | |
