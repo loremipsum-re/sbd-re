@@ -101,6 +101,12 @@ qui reste entre ici et la production.
 
 ### L'envoi de courriels passe par SMTP, et pas par choix
 
+> **Contredit le 10 septembre 2026, à trancher avant de coder l'inscription.**
+> Le formulaire de partenariat envoie avec `mail()`, et le message arrive.
+> Hypothèse : le refus ci-dessous visait le terminal SSH, pas le PHP appelé par
+> le site. Reste à lire, dans les en-têtes du courriel reçu, si le contrôle SPF
+> est passé. Voir [architecture.md](architecture.md), section 4.3.
+
 Mesuré le 30 juillet 2026 sur l'hébergement : **`mail()` est refusée au niveau
 du système.**
 
