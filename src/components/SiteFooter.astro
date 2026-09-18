@@ -19,8 +19,13 @@ import Icone from './Icone.astro';
  *
  * La lecture se fait au build : le fichier n'est jamais servi au visiteur, et
  * seul le numéro atterrit dans le HTML.
+ *
+ * npm exige trois chiffres, le pied de page en montre deux tant que le
+ * troisième vaut zéro : 1.1.0 s'affiche v1.1, un correctif 1.1.1 s'affiche en
+ * entier. Choix de l'auteur, qui voulait « v1.0 » dès le départ.
  */
 import { version } from '../../package.json';
+const versionAffichee = version.replace(/\.0$/, '');
 import { periode, nombreAthletes, results } from '../lib/data';
 import { dateLongue } from '../lib/format';
 import { RUBRIQUES } from '../lib/navigation';
@@ -125,7 +130,7 @@ const { debut, fin } = periode();
         il signale quelque chose. Elle ne mérite pas d'être vue avant le reste.
       */}
       <p class="version">
-        Version du site : <span class="badge">v{version}</span>
+        Version du site : <span class="badge">v{versionAffichee}</span>
       </p>
     </div>
   </div>
