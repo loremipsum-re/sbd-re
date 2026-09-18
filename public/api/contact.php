@@ -104,17 +104,32 @@ if ($origine !== '' && !in_array($origine, ['https://sbd.re', 'https://www.sbd.r
 //
 // Dans le dossier temporaire du système et non sous public/ : un compteur
 // accessible par le web se lit, et pire, se vide.
+//
+// Le fichier reste VERROUILLÉ de la lecture jusqu'à l'écriture. Sans verrou,
+// des envois simultanés lisaient tous le même état avant que l'un d'eux
+// n'écrive : mesuré, une salve de dix envois en faisait passer cinq au lieu
+// de trois. Le verrou les met en file, chacun lit l'état laissé par le
+// précédent. Il se libère seul à la fin du script, quelle que soit la sortie.
+//
+// Si le fichier ne s'ouvre pas, le formulaire fonctionne sans limite plutôt
+// que de refuser tout le monde : une panne du compteur ne doit pas fermer la
+// seule porte de contact du site.
 // -----------------------------------------------------------------------------
 
 $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? 'inconnue');
-$compteur = sys_get_temp_dir() . '/sbdre-contact-' . sha1($ip) . '.txt';
+$compteur = @fopen(sys_get_temp_dir() . '/sbdre-contact-' . sha1($ip) . '.txt', 'c+');
+
+if ($compteur !== false && !flock($compteur, LOCK_EX)) {
+    fclose($compteur);
+    $compteur = false;
+}
 
 $horodatages = [];
-if (is_readable($compteur)) {
-    $horodatages = array_filter(
-        array_map('intval', explode(',', (string) file_get_contents($compteur))),
+if ($compteur !== false) {
+    $horodatages = array_values(array_filter(
+        array_map('intval', explode(',', (string) stream_get_contents($compteur))),
         static fn (int $t): bool => $t > time() - FENETRE_SECONDES,
-    );
+    ));
 }
 
 if (count($horodatages) >= ENVOIS_MAX) {
@@ -241,15 +256,25 @@ $corps = quoted_printable_encode(preg_replace('/\r\n|\r|\n/', "\r\n", $corps) ??
 /*
  * Le compteur monte AVANT l'envoi, et non après.
  *
- * Le compter après paraissait logique — n'facturer que ce qui part — mais
+ * Le compter après paraissait logique, pour ne compter que ce qui part, mais
  * laissait une porte ouverte : si l'envoi échoue, par panne du serveur de
  * courriel par exemple, rien n'est retenu et la même requête peut être rejouée
  * sans limite. On compte donc les demandes qui ont PASSÉ LA VALIDATION, ce qui
  * est la ressource à protéger. Les requêtes malformées, elles, sont rejetées
  * avant et ne consomment rien.
+ *
+ * Le verrou est relâché juste après l'écriture, avant mail() : l'envoi peut
+ * prendre une seconde, et rien ne justifie de faire attendre les autres.
  */
-$horodatages[] = time();
-@file_put_contents($compteur, implode(',', $horodatages), LOCK_EX);
+if ($compteur !== false) {
+    $horodatages[] = time();
+    ftruncate($compteur, 0);
+    rewind($compteur);
+    fwrite($compteur, implode(',', $horodatages));
+    fflush($compteur);
+    flock($compteur, LOCK_UN);
+    fclose($compteur);
+}
 
 $envoye = @mail(DESTINATAIRE, $sujet, $corps, $entetes, '-f' . EXPEDITEUR);
 
