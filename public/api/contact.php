@@ -208,11 +208,35 @@ $entetes = implode("\r\n", [
     'From: ' . NOM_EXPEDITEUR . ' <' . EXPEDITEUR . '>',
     'Reply-To: ' . $courriel,
     'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: quoted-printable',
     'MIME-Version: 1.0',
     'X-Mailer: sbd.re',
 ]);
 
-$sujet = '[sbd.re] ' . SUJETS[$cleSujet];
+/*
+ * Un en-tête de courriel ne contient que de l'ASCII. Trois objets sur quatre
+ * portent des accents, qui partaient en octets bruts : sujet illisible chez
+ * certains destinataires, et point de spam en plus. mb_encode_mimeheader les
+ * écrit sous la forme codée =?UTF-8?B?...?= que tout client décode.
+ */
+$sujet = mb_encode_mimeheader('[sbd.re] ' . SUJETS[$cleSujet], 'UTF-8', 'B');
+
+/*
+ * Le corps passe en quoted-printable, pour deux raisons mesurées.
+ *
+ * La norme plafonne une ligne à 998 octets. Un paragraphe tapé sans retour à
+ * la ligne en faisait 1 619, que les serveurs de courriel coupent à leur façon.
+ * Le quoted-printable replie à 76 caractères, et le client recolle les lignes.
+ *
+ * Les accents deviennent de l'ASCII (é devient =C3=A9), ce qui rend l'encodage
+ * déclaré exact.
+ *
+ * PIÈGE : quoted_printable_encode ne reconnaît que CRLF comme fin de ligne. Un
+ * \n seul est codé =0A, un codage que la norme réserve aux données binaires :
+ * dans du texte, elle exige de vrais retours CRLF. Le corps est assemblé avec
+ * \n et le textarea envoie du CRLF : on unifie avant.
+ */
+$corps = quoted_printable_encode(preg_replace('/\r\n|\r|\n/', "\r\n", $corps) ?? $corps);
 
 /*
  * Le compteur monte AVANT l'envoi, et non après.
