@@ -171,8 +171,8 @@ code source lisibles, sans que rien d'autre ne change sur le site.
 ### Un invariant du projet tombe
 
 Le README affirmait « OVH ne fait que servir des fichiers HTML. Aucun code ne
-s'exécute sur le serveur ». Ce n'est plus vrai. Les 436 pages officielles
-restent du HTML statique généré par Astro, mais des fichiers PHP vivront à côté
+s'exécute sur le serveur ». Ce n'est plus vrai. Les pages officielles restent
+du HTML statique généré par Astro, mais des fichiers PHP vivront à côté
 d'elles.
 
 Cet écart est assumé et documenté ici. Le classement **officiel** reste, lui,
@@ -187,7 +187,7 @@ du projet et elle est préservée.
 ```
    Navigateur
       │
-      │  1. HTML statique, généré par Astro (436 pages officielles + pages communauté)
+      │  1. HTML statique, généré par Astro (pages officielles + pages communauté)
       │
       │  2. fetch('/api/...') en même origine, avec un cookie de session
       ▼

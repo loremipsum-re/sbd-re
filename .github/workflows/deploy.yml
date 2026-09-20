@@ -35,6 +35,14 @@ jobs:
       - name: Installer les dépendances
         run: npm ci
 
+      # `astro build` ne vérifie PAS les types : il génère le site même si un
+      # composant appelle une fonction qui n'existe pas, tant que la page se
+      # rend. C'est `astro check` qui les vérifie, et il doit donc être lancé à
+      # part. Placé ici, il arrête le workflow avant le dépôt : une erreur de
+      # type ne peut plus atteindre le serveur.
+      - name: Vérifier les types et les composants
+        run: npm run check
+
       # Aucune variable d'environnement n'est nécessaire ici, y compris pour la
       # partie communauté. Son API PHP vivant sur la MÊME ORIGINE que le site,
       # le navigateur n'a besoin d'aucune clé ni identifiant : un cookie de
