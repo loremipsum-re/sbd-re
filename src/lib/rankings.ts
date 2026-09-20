@@ -33,11 +33,14 @@ export interface AthleteRanking {
   /** Compétition où ce meilleur total a été réalisé. */
   date: string;
   meetName: string;
+  /** Commune de cette compétition. Elle qualifie le total, pas l'athlète. */
+  meetTown: string;
 
   /** Meilleur score Dots, qui peut venir d'une AUTRE compétition. */
   dots: number;
   dotsDate: string;
   dotsMeetName: string;
+  dotsMeetTown: string;
 
   bodyweightKg: number | null;
   weightClassKg: string;
@@ -103,10 +106,12 @@ export function meilleurTotalParAthlete(
       totalKg: meilleurTotal.totalKg as number,
       date: meilleurTotal.date,
       meetName: meilleurTotal.meetName,
+      meetTown: meilleurTotal.meetTown,
 
       dots: meilleurDots.dots ?? 0,
       dotsDate: meilleurDots.date,
       dotsMeetName: meilleurDots.meetName,
+      dotsMeetTown: meilleurDots.meetTown,
 
       bodyweightKg: meilleurTotal.bodyweightKg,
       weightClassKg: meilleurTotal.weightClassKg,
