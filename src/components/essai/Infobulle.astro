@@ -1,0 +1,139 @@
+---
+/**
+ * Terme du glossaire, avec son explication au survol.
+ *
+ * TROIS FAÇONS DE L'OUVRIR, et c'est le cœur du composant. Une infobulle qui
+ * n'apparaît qu'au survol de la souris n'existe pas pour qui navigue au
+ * clavier, ni pour qui lit sur un téléphone. D'où :
+ *
+ *   souris   `:hover` sur le bouton,
+ *   clavier  `:focus-within`, atteint par la tabulation,
+ *   doigt    le même `:focus-within`, le toucher donnant le focus au bouton.
+ *
+ * C'est un vrai `<button>` et non un `<span>` décoré : lui seul est atteignable
+ * à la tabulation sans qu'on lui ajoute un `tabindex`, et lui seul hérite des
+ * 44 px de cible tactile posés dans tokens.css.
+ *
+ * `aria-describedby` relie le bouton à son explication. Les lecteurs d'écran
+ * lisent la description d'un élément référencé même lorsqu'il est masqué
+ * visuellement, ce qui évite de dupliquer le texte pour eux.
+ *
+ * AUCUN JAVASCRIPT. Le survol et le focus sont des états CSS.
+ */
+import type { Terme } from '../../lib/glossaire';
+
+interface Props {
+  terme: Terme;
+}
+
+const { terme } = Astro.props;
+---
+
+<span class="terme">
+  <button type="button" aria-describedby={terme.id}>
+    {terme.terme}
+    <svg
+      class="marque"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {/* Tabler, outline/info-circle. Même tracé que l'icône « À propos ». */}
+      <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"></path>
+      <path d="M12 9h.01"></path>
+      <path d="M11 12h1v4h1"></path>
+    </svg>
+  </button>
+  <span class="bulle" id={terme.id} role="tooltip">{terme.definition}</span>
+</span>
+
+<style>
+  /*
+   * Volontairement SANS `position: relative`. La bulle se cale alors sur la
+   * bande de glossaire, qui est le bloc positionné, et non sur le terme.
+   *
+   * Pourquoi : ancrée au terme, une bulle de 22rem partant du bord droit
+   * sortait de l'écran. Et comme elle est masquée par `visibility`, sa boîte
+   * existe toujours : la page débordait donc horizontalement même bulle
+   * fermée. Mesuré sur téléphone, invisible à l'œil.
+   */
+  .terme {
+    display: inline-flex;
+  }
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    /* 44 px de haut, comme tout contrôle du site. J'avais d'abord posé
+       `min-height: 0` pour une bande plus fine : mesuré à 34 px, donc en
+       dessous du seuil, et ces pastilles sont bel et bien des cibles au
+       doigt puisque c'est le toucher qui ouvre la bulle. */
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    font-family: inherit;
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+    cursor: help;
+  }
+  button:hover,
+  button:focus-visible {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .marque {
+    opacity: 0.7;
+  }
+
+  .bulle {
+    position: absolute;
+    /* Sous la bande entière, et large comme elle : le panneau ne peut donc
+       jamais sortir de l'écran, quel que soit le terme ouvert. */
+    top: calc(100% + var(--space-2));
+    left: 0;
+    right: 0;
+    z-index: 20;
+    padding: var(--space-3);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    font-size: var(--step--1);
+    font-weight: 400;
+    line-height: 1.45;
+    color: var(--text);
+    text-align: left;
+    white-space: normal;
+    /* Masquée sans disparaître du document : `visibility` conserve la boîte,
+       ce qui évite un saut de mise en page à l'ouverture. Aucune ombre, le
+       système Modernist n'en emploie pas : c'est le filet de 2 px qui détache
+       la bulle du fond. */
+    visibility: hidden;
+    opacity: 0;
+    transition:
+      opacity 0.12s ease,
+      visibility 0.12s;
+  }
+
+  .terme:hover .bulle,
+  .terme:focus-within .bulle {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bulle {
+      transition: none;
+    }
+  }
+</style>

@@ -1,0 +1,63 @@
+---
+/**
+ * Bande de glossaire, posée au-dessus d'une liste.
+ *
+ * POURQUOI ICI ET PAS SUR CHAQUE LIGNE. Le classement compte plusieurs
+ * centaines de lignes et trois étiquettes par ligne : y accrocher une
+ * infobulle donnerait près de mille boutons, donc mille arrêts à la
+ * tabulation, pour six définitions distinctes. La bande les donne une fois,
+ * là où le regard passe avant d'entrer dans la liste.
+ *
+ * Les étiquettes des lignes gardent un attribut `title`, que le navigateur
+ * affiche au survol sans qu'on ait à le dessiner. Il ne serait pas suffisant
+ * seul, un `title` étant inatteignable au clavier comme au doigt, mais il
+ * complète bien la bande.
+ */
+import { GLOSSAIRE } from '../../lib/glossaire';
+import Infobulle from './Infobulle.astro';
+---
+
+<div class="glossaire">
+  <span class="intitule">Comprendre les termes</span>
+  <div class="termes">
+    {GLOSSAIRE.map((t) => <Infobulle terme={t} />)}
+  </div>
+</div>
+
+<style>
+  /* Bloc positionné de référence : les bulles se calent dessous, sur toute sa
+     largeur. Voir le commentaire d'Infobulle.astro, qui explique pourquoi
+     elles ne s'ancrent pas au terme lui-même. */
+  .glossaire {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+
+  .intitule {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .termes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    /* Sans cela, un élément de flex vaut `min-width: auto` et la bande
+       déborderait plutôt que de passer à la ligne sur un téléphone. */
+    min-width: 0;
+  }
+
+  /*
+   * PAS DE DÉFILEMENT HORIZONTAL ICI, et c'est un choix mesuré.
+   *
+   * Une bande d'une seule ligne qui défile ramènerait les 177 px qu'occupent
+   * huit pastilles sur un téléphone à 44 px. Mais un conteneur à défilement
+   * DÉCOUPE ce qui en sort : la bulle, posée en absolu, serait tranchée net.
+   * C'est le même piège que le cadre de la liste, qui est en `overflow:
+   * hidden`. La bande passe donc à la ligne, et reste entière.
+   */
+</style>

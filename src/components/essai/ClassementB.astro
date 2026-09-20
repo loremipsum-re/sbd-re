@@ -51,6 +51,7 @@
  */
 import { equipmentLabel, parseWeightClass } from '../../lib/categories';
 import { dateCourte, nombre, points } from '../../lib/format';
+import { resumeEquipement, terme } from '../../lib/glossaire';
 import type { AthleteRanking } from '../../lib/rankings';
 import { meetPath } from '../../lib/slug';
 import BadgeOfficiel from '../BadgeOfficiel.astro';
@@ -83,6 +84,14 @@ const { entries, id, presentation = 'standard' } = Astro.props;
  * non codé en dur, la page des catégories passant des sous-ensembles.
  */
 const meilleurTotal = Math.max(...entries.map((e) => e.totalKg), 1);
+
+/*
+ * Résumés du glossaire posés en `title` sur les étiquettes : le navigateur les
+ * affiche au survol sans code de notre part. La bande de glossaire, elle,
+ * porte l'explication complète et reste atteignable au clavier.
+ */
+const RESUME_CATEGORIE = terme('glossaire-categorie')?.resume;
+const RESUME_DOTS = terme('glossaire-dots')?.resume;
 ---
 
 <div class={`cadre p-${presentation}`}>
@@ -129,9 +138,15 @@ const meilleurTotal = Math.max(...entries.map((e) => e.totalKg), 1);
               </th>
 
               <td class="contexte">
-                <span class="etiquette">{equipmentLabel(e.equipmentGroup)}</span>
-                <span class="etiquette">{e.weightClassKg ? `${e.weightClassKg} kg` : 'cat. inconnue'}</span>
-                <span class="etiquette">{nombre(e.bodyweightKg)} kg de corps</span>
+                <span class="etiquette" title={resumeEquipement(e.equipmentGroup)}>
+                  {equipmentLabel(e.equipmentGroup)}
+                </span>
+                <span class="etiquette" title={RESUME_CATEGORIE}>
+                  {e.weightClassKg ? `${e.weightClassKg} kg` : 'cat. inconnue'}
+                </span>
+                <span class="etiquette" title="Poids de corps pesé le jour de la compétition">
+                  {nombre(e.bodyweightKg)} kg de corps
+                </span>
               </td>
 
               {/* Le lieu et la date appartiennent à la compétition : un seul lien. */}
@@ -162,7 +177,7 @@ const meilleurTotal = Math.max(...entries.map((e) => e.totalKg), 1);
                 </span>
                 {
                   memeCompetition ? (
-                    <span class="dots">
+                    <span class="dots" title={RESUME_DOTS}>
                       <span class="num-tab">{points(e.dots)}</span>
                       <span class="unite">Dots</span>
                     </span>

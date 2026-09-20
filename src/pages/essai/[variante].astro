@@ -10,6 +10,7 @@
 import ClassementA from '../../components/essai/ClassementA.astro';
 import ClassementB from '../../components/essai/ClassementB.astro';
 import ClassementC from '../../components/essai/ClassementC.astro';
+import Glossaire from '../../components/essai/Glossaire.astro';
 import InteractiveTable from '../../components/InteractiveTable.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import {
@@ -77,6 +78,8 @@ const tranchesAge = [...new Set(classement.map((e) => e.ageClass).filter(Boolean
         <a href="/classement/">Version en ligne</a>
       </nav>
     </header>
+
+    <Glossaire />
 
     <InteractiveTable
       recherche="Nom d'un athlète"
