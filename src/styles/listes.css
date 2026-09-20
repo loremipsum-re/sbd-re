@@ -1,0 +1,329 @@
+/* =============================================================================
+ * LA GRAMMAIRE DES LISTES
+ *
+ * Le site affiche sept listes : le classement, les résultats hors de La
+ * Réunion, les compétitions, les résultats d'une compétition, l'historique
+ * d'un athlète, ses records, et la grille des records de l'île. Chacune avait
+ * sa propre feuille de style, pour un total d'environ 1 100 lignes qui
+ * redisaient les mêmes choses avec de petits écarts : un cadre ici, pas là ;
+ * un en-tête en majuscules ici, en minuscules là ; des nombres alignés à
+ * droite sur trois pages, à gauche sur les autres.
+ *
+ * Ce fichier tient la grammaire commune. Les pages ne gardent que ce qui leur
+ * est PROPRE : une colonne de médailles, une pastille de format, une barre de
+ * progression.
+ *
+ * TOUT EST SOUS `.liste`, jamais sur `table` nu. Le site contient des tableaux
+ * qui ne sont pas des listes, celui de la page de comparaison par exemple, et
+ * une règle globale sur `table` les emporterait avec elle.
+ *
+ * DEUX RÉGIMES, séparés à 60rem :
+ *
+ *   au-dessus  un vrai tableau à colonnes, en-têtes visibles, nombres à
+ *              droite. C'est la forme qui permet de COMPARER une valeur d'une
+ *              ligne à l'autre, ce qu'aucune carte ne sait faire.
+ *   en dessous une carte par ligne, l'intitulé de chaque valeur étant repris
+ *              de l'attribut `data-libelle` de la cellule. Sans lui, un
+ *              nombre nu ne veut plus rien dire une fois la colonne partie.
+ * ========================================================================== */
+
+.liste {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.liste table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.liste td,
+.liste th {
+  padding: 0;
+  text-align: left;
+}
+
+/* ---------- Les en-têtes ---------- */
+
+.liste thead th {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--step--1);
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* ---------- Les rangées ---------- */
+
+.liste tbody tr {
+  border-bottom: 1px solid var(--border);
+}
+
+.liste tbody tr:last-child {
+  border-bottom: 0;
+}
+
+.liste tbody tr:hover {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+.liste tbody td,
+.liste tbody th {
+  padding: var(--space-3) var(--space-4);
+  vertical-align: middle;
+  /* Une liste est dense par nature : le texte courant y descend d'un cran,
+     le nom et les valeurs fortes gardant leur taille. Laissé à la taille du
+     corps, il donnait des lignes de 84 px et des cartes de 300 px. */
+  font-size: var(--step--1);
+}
+
+/* ---------- L'identité de la ligne ----------
+ * Le nom d'un athlète ou d'une compétition, en Oswald : c'est ce que l'œil
+ * cherche d'abord, et la police de titrage le distingue du reste sans qu'on
+ * ait à grossir le texte. */
+
+/*
+ * SURTOUT PAS `display: flex` ICI. Une cellule de tableau qui devient un
+ * conteneur flex sort de la mise en page tabulaire : elle cesse de compter
+ * comme colonne, et toutes les cellules suivantes de la ligne glissent d'un
+ * cran. Constaté sur /exterieur/, où la compétition s'affichait sous
+ * l'en-tête « Athlète ».
+ *
+ * La coche de compétiteur officiel s'aligne très bien sans cela : le composant
+ * est déjà en `inline-flex`, il suit donc la ligne de base du texte.
+ */
+.liste .nom {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--step-0);
+  line-height: 1.2;
+}
+
+.liste .nom a {
+  color: var(--text);
+}
+
+.liste .nom a:hover {
+  color: var(--accent);
+}
+
+/* ---------- Les nombres ----------
+ * Alignés à droite, en chiffres à largeur fixe : l'unité tombe au même
+ * endroit d'une ligne à l'autre, et l'écart se voit sans être lu. */
+
+.liste .nombre {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.liste thead .nombre {
+  text-align: right;
+}
+
+/* L'unité passe au second plan : « kg » répété trois cents fois n'apporte
+ * rien à la comparaison, ce sont les chiffres qui se comparent. */
+.liste .unite {
+  font-size: var(--step--1);
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.liste .fort {
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ---------- Le second plan ---------- */
+
+.liste .meta,
+.liste .date,
+.liste .ville {
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+
+.liste .date {
+  white-space: nowrap;
+}
+
+/* ---------- Le contexte, en pastilles ----------
+ * Même pastille que sur la fiche d'athlète et dans le classement : filet,
+ * angles ronds, gris. Sans aplat, car un fond teinté sous du texte gris
+ * tombe à 4,36:1 en thème clair, sous le seuil de 4,5. */
+
+.liste .etiquette {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.liste .etiquettes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  min-width: 0;
+}
+
+/* ---------- Le bloc compétition ----------
+ * Le nom, la commune et la date forment UN SEUL lien vers la compétition :
+ * le lieu appartient à l'événement, pas à la ligne qui le cite. */
+
+/* Le bloc existe avec ou sans lien : les compétitions disputées hors de
+   La Réunion n'ont pas de page sur le site, leur nom n'est donc pas cliquable.
+   La forme, elle, reste la même. */
+.liste .competition {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.liste .competition a {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.liste .competition a:hover .meet {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.liste .meet {
+  font-size: var(--step--1);
+  line-height: 1.25;
+}
+
+/*
+ * La ligne secondaire PEUT passer à la ligne. Posée en `nowrap`, comme elle
+ * l'était dans le classement où elle tient en deux mots, elle imposait 383 px
+ * à la colonne « Compétition » de /exterieur/ et poussait « Place » hors du
+ * cadre. Une valeur courte et insécable garde `nowrap`, une énumération non.
+ */
+.liste .ou {
+  font-size: var(--step--1);
+  line-height: 1.25;
+  color: var(--muted);
+}
+
+/* ---------- Au-delà de 60rem : le tableau respire ---------- */
+
+@media (min-width: 60rem) {
+  /*
+   * Le rembourrage reste MODÉRÉ à l'intérieur, et ne s'élargit qu'aux deux
+   * bords de la liste. Posé à 24 px partout, il mangeait 384 px sur un
+   * tableau de huit colonnes, et la dernière sortait du cadre. Mesuré sur
+   * /exterieur/, où la colonne « Place » était coupée.
+   */
+  .liste tbody td,
+  .liste tbody th {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .liste thead th:first-child,
+  .liste tbody tr > :first-child {
+    padding-left: var(--space-6);
+  }
+
+  .liste thead th:last-child,
+  .liste tbody tr > :last-child {
+    padding-right: var(--space-6);
+  }
+}
+
+/* =============================================================================
+ * SOUS 60rem : UNE CARTE PAR LIGNE
+ *
+ * Les en-têtes sortent de la vue mais restent dans le document, pour les
+ * lecteurs d'écran et pour le tri. Chaque cellule reprend son intitulé depuis
+ * `data-libelle` : un nombre nu, privé de sa colonne, ne veut plus rien dire.
+ * ========================================================================== */
+
+@media (max-width: 59.999rem) {
+  .liste thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  /*
+   * DEUX COLONNES, et non une seule. Huit valeurs empilées donnaient une
+   * carte de 300 px par résultat. Les valeurs chiffrées, courtes, vont par
+   * deux ; le texte garde toute la largeur.
+   */
+  .liste tbody tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-1) var(--space-3);
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .liste tbody tr > :not(.nombre) {
+    grid-column: 1 / -1;
+  }
+
+  .liste tbody td,
+  .liste tbody th {
+    padding: 0;
+  }
+
+  /* L'intitulé à gauche, la valeur à droite, sur une grille commune : les
+     valeurs s'alignent donc entre elles d'une ligne à l'autre de la carte. */
+  .liste tbody td[data-libelle] {
+    display: grid;
+    grid-template-columns: 7.5rem 1fr;
+    gap: var(--space-2);
+    align-items: baseline;
+  }
+
+  /* Les valeurs chiffrées, elles, partagent leur rangée : l'intitulé se serre
+     sur son propre contenu pour laisser la place au voisin. */
+  .liste tbody td[data-libelle].nombre {
+    grid-template-columns: auto 1fr;
+  }
+
+  /* Le bloc compétition compte DEUX enfants : sans cette règle, le second
+     retombe dans la colonne des intitulés et s'affiche décalé sous le mot
+     « Compétition ». Les deux tiennent la colonne des valeurs. */
+  .liste tbody td[data-libelle].competition > * {
+    grid-column: 2;
+  }
+
+  .liste tbody td[data-libelle]::before {
+    content: attr(data-libelle);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /* Les nombres cessent d'être alignés à droite : en carte, ils forment une
+     colonne avec les autres valeurs, et non plus avec les nombres. */
+  .liste .nombre {
+    text-align: left;
+  }
+
+  /* Le nom prend toute la largeur, au-dessus du reste. Ici le flex est sans
+     danger : la ligne est devenue une grille, ses cellules ne sont donc plus
+     des cellules de tableau mais des éléments de grille. */
+  .liste tbody .nom {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    min-width: 0;
+    font-size: var(--step-1);
+    margin-bottom: var(--space-1);
+  }
+}

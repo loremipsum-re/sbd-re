@@ -81,7 +81,7 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
         </div>
       </Fragment>
 
-      <div class="cadre">
+      <div class="liste">
         <table data-tableau>
           <thead>
             <tr>
@@ -110,15 +110,13 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
                     <td class="date" data-libelle="Date" data-valeur={r.date.replace(/-/g, '')}>
                       {dateCourte(r.date)}
                     </td>
-                    <th scope="row" class="athlete">
-                      <span class="nom-ligne">
-                        <a href={`/athlete/${athleteSlug(r.name)}/`}>{r.name}</a>
-                        <BadgeOfficiel taille={13} />
-                      </span>
+                    <th scope="row" class="nom">
+                      <a href={`/athlete/${athleteSlug(r.name)}/`}>{r.name}</a>
+                      <BadgeOfficiel taille={13} />
                     </th>
                     <td data-libelle="Compétition" class="competition">
-                      {r.meetName}
-                      <span class="meta">
+                      <span class="meet">{r.meetName}</span>
+                      <span class="ou">
                         {r.federation}
                         {r.meetTown && <> · {r.meetTown}</>}
                         {' · '}
@@ -183,131 +181,6 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
   .avertissement p:last-child {
     margin-bottom: 0;
     color: var(--muted);
-  }
-
-  .cadre {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    background: var(--surface);
-    overflow: hidden;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: var(--step--1);
-  }
-
-  th,
-  td {
-    text-align: left;
-    padding: var(--space-2) var(--space-3);
-  }
-
-  thead {
-    display: none;
-  }
-
-  .athlete {
-    font-weight: 600;
-  }
-
-  .nom-ligne {
-    display: inline-flex;
-    align-items: center;
-  }
-
-  .athlete a {
-    color: var(--text);
-  }
-  .athlete a:hover {
-    color: var(--accent);
-  }
-
-  .meta {
-    display: block;
-    font-size: var(--step--1);
-    font-weight: 400;
-    color: var(--muted);
-  }
-
-  .date {
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-    color: var(--muted);
-  }
-
-  /* ---------- Mobile : une carte par résultat ---------- */
-  @media (max-width: 61.999rem) {
-    tbody tr {
-      display: block;
-      padding: var(--space-4);
-      border-bottom: 1px solid var(--border);
-    }
-    tbody tr:last-child {
-      border-bottom: 0;
-    }
-
-    .athlete {
-      display: block;
-      padding: 0 0 var(--space-2);
-      font-size: var(--step-0);
-    }
-
-    td {
-      display: flex;
-      justify-content: space-between;
-      gap: var(--space-3);
-      padding: var(--space-1) 0;
-    }
-
-    td::before {
-      content: attr(data-libelle);
-      color: var(--muted);
-      font-weight: 600;
-    }
-
-    .competition {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-  }
-
-  /* ---------- Desktop ---------- */
-  @media (min-width: 62rem) {
-    thead {
-      display: table-header-group;
-    }
-
-    thead th {
-      font-size: var(--step--1);
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-
-    td.nombre,
-    th.nombre {
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
-
-    tbody tr {
-      border-bottom: 1px solid var(--border);
-    }
-    tbody tr:last-child {
-      border-bottom: 0;
-    }
-    tbody tr:hover {
-      background: color-mix(in srgb, var(--accent) 6%, transparent);
-    }
-
-    td::before {
-      display: none;
-    }
   }
 
   .note {
