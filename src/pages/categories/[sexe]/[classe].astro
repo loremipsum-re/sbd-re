@@ -1,6 +1,7 @@
 ---
 import Coupe from '../../../components/Coupe.astro';
 import InteractiveTable from '../../../components/InteractiveTable.astro';
+import Glossaire from '../../../components/Glossaire.astro';
 import RankingTable from '../../../components/RankingTable.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { EQUIPMENT_GROUPS, LIFTS, type EquipmentGroup } from '../../../lib/categories';
@@ -150,6 +151,8 @@ const description =
 
     <section class="bloc">
       <h2>Classement de la catégorie</h2>
+
+      <Glossaire />
 
       <InteractiveTable
         recherche="Nom d'un athlète"

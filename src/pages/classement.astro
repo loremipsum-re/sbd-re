@@ -1,5 +1,6 @@
 ---
 import InteractiveTable from '../components/InteractiveTable.astro';
+import Glossaire from '../components/Glossaire.astro';
 import RankingTable from '../components/RankingTable.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import {
@@ -64,8 +65,8 @@ const tranchesAge = [...new Set(classement.map((e) => e.ageClass).filter(Boolean
       <h1>Classement</h1>
       <p class="chapeau">
         Le meilleur total réalisé en compétition par chaque athlète, sur
-        l'ensemble des compétitions organisées à La Réunion. Cliquez sur un
-        en-tête de colonne pour trier, ou cherchez un nom directement.
+        l'ensemble des compétitions organisées à La Réunion. Cherchez un nom,
+        filtrez, ou changez le critère de tri.
       </p>
       <p class="chapeau">
         Ce classement porte sur le <strong>full power</strong>, où les trois
@@ -74,6 +75,8 @@ const tranchesAge = [...new Set(classement.map((e) => e.ageClass).filter(Boolean
         où leurs barres comptent pleinement.
       </p>
     </header>
+
+    <Glossaire />
 
     <InteractiveTable
       recherche="Nom d'un athlète"
@@ -135,9 +138,11 @@ const tranchesAge = [...new Set(classement.map((e) => e.ageClass).filter(Boolean
     </InteractiveTable>
 
     <p class="note">
-      Le pictogramme bleu signale un total qui constitue actuellement le record
-      de sa catégorie. Les athlètes invités figurent au classement : leur
-      performance a été réalisée en compétition, devant les mêmes juges.
+      La coche à côté d'un nom signale un compétiteur officiel. La compétition
+      indiquée est celle du meilleur total ; lorsque le meilleur score Dots
+      vient d'une autre compétition, il est souligné en pointillé et mène à
+      celle-ci. Les athlètes invités figurent au classement : leur performance
+      a été réalisée en compétition, devant les mêmes juges.
     </p>
   </div>
 </BaseLayout>
@@ -150,28 +155,6 @@ const tranchesAge = [...new Set(classement.map((e) => e.ageClass).filter(Boolean
   .chapeau {
     color: var(--muted);
     max-width: 68ch;
-  }
-
-  .champ {
-    display: grid;
-    gap: var(--space-1);
-    flex: 1 1 9rem;
-  }
-
-  label {
-    font-size: var(--step--1);
-    font-weight: 600;
-    color: var(--muted);
-  }
-
-  select {
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--bg);
-    color: var(--text);
-    font: inherit;
-    font-size: var(--step--1);
   }
 
   .note {

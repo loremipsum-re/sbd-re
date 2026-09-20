@@ -1,28 +1,53 @@
 ---
 /**
- * Classement des athlètes, en cartes de quatre lignes.
+ * Classement des athlètes, en lignes aérées à quatre colonnes.
  *
- *   🏆  Gabriel Begue ✓
- *       Raw • 9 comp. locales • 20 hors département
- *       93 kg • 91,3 kg • 24-34 ans
- *       782,5 kg • 502,4 Dots • 17/12/2022
+ *   1   Gabriel Begue ✓          Reunion Island Meet        807,5 kg
+ *       Raw · 93 kg · 91,1 kg    Saint-Joseph · 18/07/2026  519,0 Dots
  *
- * Le balisage reste un <table>, et l'en-tête existe toujours : simplement,
- * il n'est visible que des lecteurs d'écran. Ce sont des données tabulaires,
- * et les transformer en <div> ferait perdre le lien entre une valeur et son
- * intitulé pour qui navigue à l'oreille.
+ * Le balisage reste un <table>, et l'en-tête existe toujours : il n'est
+ * visible que des lecteurs d'écran. Ce sont des données tabulaires, et les
+ * transformer en <div> ferait perdre le lien entre une valeur et son intitulé
+ * pour qui navigue à l'oreille.
  *
- * Conséquence directe de cet affichage : les valeurs de tri vivent sur la
- * LIGNE, dans des attributs `data-`, et non plus dans les cellules. Trois
- * valeurs cohabitent par ligne, l'index de colonne ne veut donc plus rien dire.
- * Les en-têtes portent `data-cle` pour indiquer où lire.
+ * Conséquence directe : les valeurs de tri vivent sur la LIGNE, dans des
+ * attributs `data-`, et non dans les cellules. Plusieurs valeurs cohabitent
+ * par ligne, l'index de colonne ne veut donc rien dire. Les en-têtes portent
+ * `data-cle` pour indiquer où lire.
+ *
+ * QUATRE PARTIS PRIS, chacun issu d'une mesure faite dans le navigateur.
+ *
+ * 1. UN SEUL ÉLÉMENT DOMINE, le total. Les onze informations de la version
+ *    précédente avaient toutes le même poids visuel, dont trois lignes de gris
+ *    séparées par des puces : rien ne disait où regarder. La lecture se fait
+ *    maintenant sur quatre niveaux, du total au contexte.
+ *
+ * 2. LA COMPÉTITION EST UN BLOC LIÉ. Son nom, sa commune et sa date forment un
+ *    seul lien vers sa page : le lieu appartient à l'événement, pas à
+ *    l'athlète. Ils vivaient avant en miettes, la date perdue en fin de ligne
+ *    et la commune nulle part.
+ *
+ * 3. LA DATE AFFICHÉE EST CELLE DU TOTAL. C'était un vrai défaut : la carte
+ *    montrait la date du meilleur DOTS à la suite du meilleur TOTAL, alors que
+ *    les deux viennent de compétitions différentes pour 21 athlètes sur 312.
+ *    Quand c'est le cas, le score Dots devient lui-même un lien vers SA
+ *    compétition, signalé par un soulignement pointillé.
+ *
+ * 4. LE RANG EST UN NOMBRE, jamais une coupe. La coupe disait deux choses à la
+ *    fois : un record en cours ailleurs sur le site, un podium ici. Et le
+ *    podium devenait faux dès qu'on changeait de tri, trier par poids de corps
+ *    décernant l'or au plus léger. Un nombre reste vrai dans tous les cas,
+ *    puisqu'il ne dit rien d'autre que le rang dans l'affichage courant.
+ *
+ *    La coupe garde donc un seul sens sur le site, le record en cours, et la
+ *    médaille garde le sien, une place obtenue en compétition.
  */
 import { equipmentLabel, parseWeightClass } from '../lib/categories';
-import { dateCourte, kg, nombre, points } from '../lib/format';
+import { dateCourte, nombre, points } from '../lib/format';
+import { resumeEquipement, terme } from '../lib/glossaire';
 import type { AthleteRanking } from '../lib/rankings';
 import { meetPath } from '../lib/slug';
 import BadgeOfficiel from './BadgeOfficiel.astro';
-import Coupe from './Coupe.astro';
 import EtatVide from './EtatVide.astro';
 
 interface Props {
@@ -31,21 +56,24 @@ interface Props {
 }
 
 const { entries, id } = Astro.props;
-const METAUX = ['or', 'argent', 'bronze'] as const;
+
+/*
+ * Résumés du glossaire posés en `title` sur les étiquettes : le navigateur les
+ * affiche au survol sans code de notre part. La bande de glossaire, elle,
+ * porte l'explication complète et reste atteignable au clavier.
+ */
+const RESUME_CATEGORIE = terme('glossaire-categorie')?.resume;
+const RESUME_DOTS = terme('glossaire-dots')?.resume;
 ---
 
 <div class="cadre">
   <table id={id} data-tableau>
     <thead class="sr-only">
       <tr>
+        <th scope="col">Rang à La Réunion</th>
         <th scope="col" data-tri data-cle="nom">Nom</th>
         <th scope="col" data-tri data-cle="total" data-type="nombre">Total</th>
         <th scope="col" data-tri data-cle="dots" data-type="nombre">Dots</th>
-        {/*
-          `triCategorie` et non `categorie` : le filtre par catégorie lit déjà
-          `data-categorie`, qui porte la valeur brute (« 120+ »). Le tri, lui,
-          a besoin de la borne numérique. Deux usages, deux attributs.
-        */}
         <th scope="col" data-tri data-cle="triCategorie" data-type="nombre">Catégorie</th>
         <th scope="col" data-tri data-cle="poids" data-type="nombre">Poids de corps</th>
         <th scope="col" data-tri data-cle="competitions" data-type="nombre">Compétitions</th>
@@ -55,6 +83,8 @@ const METAUX = ['or', 'argent', 'bronze'] as const;
       {
         entries.map((e, i) => {
           const classe = parseWeightClass(e.weightClassKg);
+          const comps = e.competitions + e.competitionsExterieur;
+          const memeCompetition = e.date === e.dotsDate && e.meetName === e.dotsMeetName;
           return (
             <tr
               data-recherche={e.name}
@@ -63,20 +93,15 @@ const METAUX = ['or', 'argent', 'bronze'] as const;
               data-dots={e.dots}
               data-tri-categorie={classe?.kg ?? ''}
               data-poids={e.bodyweightKg ?? ''}
-              data-competitions={e.competitions + e.competitionsExterieur}
+              data-competitions={comps}
               data-sexe={e.sex}
               data-categorie={e.weightClassKg}
               data-equipement={e.equipmentGroup}
               data-division={e.division}
               data-age={e.ageClass}
             >
-              <td
-                class="rang"
-                data-podium={i < 3 ? METAUX[i] : undefined}
-                data-niveau={i < 50 ? 'haut' : 'bas'}
-              >
+              <td class="rang">
                 <span class="rang-num">{i + 1}</span>
-                <Coupe detail={`${i + 1}e du classement`} taille={26} />
               </td>
 
               <th scope="row" class="nom">
@@ -84,28 +109,52 @@ const METAUX = ['or', 'argent', 'bronze'] as const;
                 <BadgeOfficiel taille={14} />
               </th>
 
-              <td class="ligne contexte">
-                <span>{equipmentLabel(e.equipmentGroup)}</span>
-                <span>
-                  {e.competitions} comp. locale{e.competitions > 1 ? 's' : ''}
+              <td class="contexte">
+                <span class="etiquette" title={resumeEquipement(e.equipmentGroup)}>
+                  {equipmentLabel(e.equipmentGroup)}
                 </span>
-                <span>
-                  {e.competitionsExterieur} hors département
+                <span class="etiquette" title={RESUME_CATEGORIE}>
+                  {e.weightClassKg ? `${e.weightClassKg} kg` : 'cat. inconnue'}
+                </span>
+                <span class="etiquette" title="Poids de corps pesé le jour de la compétition">
+                  {nombre(e.bodyweightKg)} kg de corps
                 </span>
               </td>
 
-              <td class="ligne physique">
-                <span>{e.weightClassKg ? `${e.weightClassKg} kg` : 'catégorie inconnue'}</span>
-                <span>{nombre(e.bodyweightKg)} kg</span>
-                <span>{e.ageClass ? `${e.ageClass} ans` : 'âge inconnu'}</span>
-              </td>
-
-              <td class="ligne perf">
-                <span class="fort num-tab">{kg(e.totalKg)}</span>
-                <span class="fort num-tab">{points(e.dots)} Dots</span>
-                <a href={`/competitions/${meetPath(e.dotsDate, e.dotsMeetName)}/`}>
-                  {dateCourte(e.dotsDate)}
+              {/* Le lieu et la date appartiennent à la compétition : un seul lien. */}
+              <td class="competition">
+                <a href={`/competitions/${meetPath(e.date, e.meetName)}/`}>
+                  <span class="meet">{e.meetName}</span>
+                  <span class="ou">
+                    {e.meetTown}
+                    {' · '}
+                    {dateCourte(e.date)}
+                  </span>
                 </a>
+              </td>
+
+              <td class="chiffres">
+                <span class="total">
+                  <span class="valeur num-tab">{nombre(e.totalKg)}</span>
+                  <span class="unite">kg</span>
+                </span>
+                {
+                  memeCompetition ? (
+                    <span class="dots" title={RESUME_DOTS}>
+                      <span class="num-tab">{points(e.dots)}</span>
+                      <span class="unite">Dots</span>
+                    </span>
+                  ) : (
+                    <a
+                      class="dots ailleurs"
+                      href={`/competitions/${meetPath(e.dotsDate, e.dotsMeetName)}/`}
+                      title={`Meilleurs Dots obtenus à ${e.dotsMeetName}, ${e.dotsMeetTown}, le ${dateCourte(e.dotsDate)}`}
+                    >
+                      <span class="num-tab">{points(e.dots)}</span>
+                      <span class="unite">Dots</span>
+                    </a>
+                  )
+                }
               </td>
             </tr>
           );
@@ -141,138 +190,260 @@ const METAUX = ['or', 'argent', 'bronze'] as const;
     border-collapse: collapse;
   }
 
-  /* ---------- La carte ---------- */
-  tbody tr {
-    display: grid;
-    grid-template-columns: 3.25rem 1fr;
-    grid-template-areas:
-      'rang nom'
-      'rang contexte'
-      'rang physique'
-      'rang perf';
-    gap: var(--space-1) var(--space-3);
-    padding: var(--space-4);
-    border-bottom: 1px solid var(--border);
-  }
-  tbody tr:last-child {
-    border-bottom: 0;
-  }
-  tbody tr:hover {
-    background: color-mix(in srgb, var(--accent) 5%, transparent);
-  }
-
   td,
   th {
     padding: 0;
     text-align: left;
   }
 
+  /* =====================================================================
+     TÉLÉPHONE : trois rangées empilées.
+
+     Le nom occupe sa propre rangée. Partagée avec le total, il passait à la
+     ligne pour 48 athlètes sur 80, ce qui coûtait plus de hauteur que le gain
+     espéré. Mesuré, puis corrigé : un seul nom sur 80 passe encore à la ligne.
+     ===================================================================== */
+  tbody tr {
+    display: grid;
+    grid-template-columns: 2.5rem minmax(min(6rem, 100%), 1fr) auto;
+    /*
+     * Le total et les Dots sont SÉPARÉS sur un téléphone, chacun au bout de sa
+     * rangée. Côte à côte, ils formaient un bloc insécable de 200 px qui
+     * sortait de la carte : le mot « Dots » était coupé net. Le cadre étant en
+     * `overflow: hidden`, ni le débordement de page ni la mesure par élément
+     * ne le signalaient. Seule la comparaison du bord de la ligne avec celui
+     * du cadre le montre.
+     */
+    grid-template-areas:
+      'rang nom nom'
+      'rang contexte total'
+      'rang competition dots';
+    align-items: start;
+    gap: var(--space-1) var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr:last-child {
+    border-bottom: 0;
+  }
+  tbody tr:hover {
+    background: color-mix(in srgb, var(--accent) 7%, transparent);
+  }
+
+  /* ---------- Rang : un nombre, et rien d'autre ----------
+     Ni coupe, ni métal, ni seuil à cinquante : le rang dit la position dans
+     l'affichage courant, ce qui reste vrai quel que soit le tri. Le script de
+     tri le réécrit dans `.rang-num`, comme le veut le contrat des tableaux
+     interactifs. */
   .rang {
     grid-area: rang;
     align-self: start;
-    padding-top: 0.1em;
+    padding-top: 0.2em;
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: var(--step-2);
-    line-height: 1;
+    font-size: var(--step-0);
+    line-height: 1.3;
+    color: var(--muted);
     font-variant-numeric: tabular-nums;
   }
 
-  /* Les cinquante premiers en doré, les suivants en gris. */
-  .rang[data-niveau='haut'] {
-    color: var(--or);
-  }
-  .rang[data-niveau='bas'] {
-    color: var(--muted);
-  }
-
-  /* Sur le podium, la coupe remplace le chiffre et prend le métal de la place.
-     La coupe hérite de `color`, ce qui suffit à la teinter. */
-  .rang :global(.coupe) {
-    display: none;
-  }
-  .rang[data-podium] :global(.coupe) {
-    display: inline-flex;
-    margin-left: 0;
-  }
-  .rang[data-podium] .rang-num {
-    display: none;
-  }
-  .rang[data-podium='or'] {
-    color: var(--or);
-  }
-  .rang[data-podium='argent'] {
-    color: var(--argent);
-  }
-  .rang[data-podium='bronze'] {
-    color: var(--bronze);
-  }
-
+  /* ---------- Premier niveau : le nom et le total ---------- */
   .nom {
     grid-area: nom;
+    min-width: 0;
     display: flex;
     align-items: center;
+    /* Le nom et sa coche doivent pouvoir passer à la ligne ensemble : sans
+       cela, un nom long déborde de 13 px de sa colonne sur un téléphone.
+       Mesuré par élément, le débordement de page ne le montrait pas. */
+    flex-wrap: wrap;
     font-family: var(--font-display);
     font-weight: 700;
     font-size: var(--step-1);
     line-height: 1.15;
   }
   .nom a {
+    min-width: 0;
     color: var(--text);
+    overflow-wrap: break-word;
   }
   .nom a:hover {
     color: var(--accent);
   }
 
-  /* Les trois lignes d'information, séparées par des puces. */
-  .ligne {
+  /* `display: contents` : la cellule s'efface et ses deux enfants deviennent
+     des éléments de la grille de la ligne, ce qui permet de les poser sur deux
+     rangées différentes. Le tableau, lui, garde sa cellule. */
+  .chiffres {
+    display: contents;
+  }
+  .total {
+    grid-area: total;
+    justify-self: end;
+    align-self: center;
     display: flex;
-    flex-wrap: wrap;
     align-items: baseline;
-    gap: var(--space-1) var(--space-2);
-    font-size: var(--step--1);
-    color: var(--muted);
-  }
-
-  .contexte {
-    grid-area: contexte;
-  }
-  .physique {
-    grid-area: physique;
-  }
-  .perf {
-    grid-area: perf;
-    margin-top: var(--space-1);
-  }
-
-  /* Le séparateur est décoratif : il vit dans le CSS pour ne pas polluer le
-     texte lu par un lecteur d'écran, ni la recherche. */
-  .ligne > *:not(:last-child)::after {
-    content: '•';
-    margin-left: var(--space-2);
-    color: var(--border);
-  }
-
-  .fort {
+    gap: 0.25rem;
+    font-size: var(--step-2);
+    line-height: 1;
     color: var(--text);
-    font-weight: 700;
-    font-size: var(--step-0);
+    white-space: nowrap;
   }
-
-  .perf a {
+  /* L'unité passe au second plan : ce sont les chiffres qui se comparent, et
+     « kg » répété trois cents fois n'apporte rien à la comparaison. */
+  .unite {
+    font-size: var(--step--1);
+    font-weight: 400;
     color: var(--muted);
   }
-  .perf a:hover {
+  .dots {
+    grid-area: dots;
+    justify-self: end;
+    align-self: center;
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+    font-size: var(--step-0);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  /* Le pointillé signale que ce score vient d'une AUTRE compétition, et que le
+     lien n'y mène donc pas au même endroit que celui de la ligne. */
+  .dots.ailleurs {
+    color: var(--muted);
+    text-decoration: underline dotted;
+    text-underline-offset: 0.2em;
+  }
+  .dots.ailleurs:hover {
     color: var(--accent);
   }
 
+  /* ---------- Deuxième niveau : la compétition ---------- */
+  .competition {
+    grid-area: competition;
+    min-width: 0;
+  }
+  .competition a {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .competition a:hover .meet {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+  .meet {
+    font-size: var(--step--1);
+    line-height: 1.25;
+  }
+  .ou {
+    font-size: var(--step--1);
+    line-height: 1.25;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* ---------- Troisième niveau : le contexte ---------- */
+  .contexte {
+    grid-area: contexte;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-2);
+  }
+
+  /* Sur un téléphone, le poids de corps sort de la liste : trois pastilles
+     passent à la ligne et coûtent 26 px à chaque athlète. Il reste dans le
+     document pour le tri et les filtres, et sur la fiche. */
+  .etiquette:nth-of-type(3) {
+    display: none;
+  }
+
+  /*
+   * Même pastille que sur la fiche d'athlète : filet, angles ronds, gris.
+   * L'aplat essayé d'abord tombait à 4,36:1 en thème CLAIR une fois posé sur
+   * une ligne teintée, sous le seuil de 4,5. Sans fond, le texte se lit sur la
+   * ligne elle-même, soit 5,38:1 en clair et 7,58:1 en sombre. Et le site
+   * gagne une forme de moins à retenir.
+   */
+  .etiquette {
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* Dès qu'il y a la place, le poids de corps revient : il éclaire le Dots. */
   @media (min-width: 40rem) {
-    tbody tr {
-      grid-template-columns: 4rem 1fr;
-      padding: var(--space-4) var(--space-6);
+    .etiquette:nth-of-type(3) {
+      display: inline;
     }
+  }
+
+  /* =====================================================================
+     À PARTIR DE 60rem : quatre colonnes identiques d'une ligne à l'autre,
+     et des chiffres qui se voient de loin.
+
+     Les colonnes sont de largeur FIXE et non automatique : en automatique,
+     chaque ligne formait sa propre grille et les blocs ne démarraient pas à
+     la même abscisse. Mesuré à deux abscisses par colonne, une seule depuis.
+     ===================================================================== */
+  @media (min-width: 60rem) {
+    tbody tr {
+      grid-template-columns:
+        3.5rem
+        minmax(min(14rem, 100%), 1.1fr)
+        minmax(min(12rem, 100%), 1fr)
+        11rem;
+      grid-template-areas:
+        'rang nom competition chiffres'
+        'rang contexte competition chiffres';
+      gap: var(--space-2) var(--space-6);
+      padding: var(--space-6);
+    }
+    /* Le rang reste sous le nom : c'est un repère de position, pas une
+       performance. Il était à égalité avec le total, mesuré à 29 px chacun. */
     .rang {
+      font-size: var(--step-1);
+      padding-top: 0.35em;
+    }
+    .nom {
+      font-size: var(--step-2);
+    }
+    .competition {
+      align-self: center;
+    }
+    .meet {
+      font-size: var(--step-0);
+    }
+    /* Sur grand écran, la cellule redevient une vraie boîte : le total et les
+       Dots s'y empilent, alignés à droite, dans leur propre colonne. Les deux
+       enfants perdent donc leur placement de grille, qui ne vaut que pour la
+       mise en page du téléphone. */
+    .chiffres {
+      grid-area: chiffres;
+      display: flex;
+      flex-direction: column;
+      align-items: end;
+      gap: 0.15rem;
+      align-self: center;
+    }
+    .total,
+    .dots {
+      grid-area: auto;
+      justify-self: auto;
+      align-self: auto;
+    }
+    .total {
       font-size: var(--step-3);
+    }
+    .dots {
+      font-size: var(--step-1);
     }
   }
 </style>
