@@ -1,0 +1,55 @@
+name: Vérifier une pull request
+
+# POURQUOI CE WORKFLOW EXISTE
+#
+# Le déploiement ne se déclenche qu'à l'arrivée du code dans main, c'est-à-dire
+# APRÈS la fusion. S'il échouait là, le site serait déjà en ligne ou, pire,
+# partiellement déposé. Ce workflow fait les mêmes vérifications AVANT, sur la
+# branche proposée : la pull request affiche une coche verte ou une croix
+# rouge, et il n'y a plus à fusionner en espérant.
+#
+# Il ne touche jamais au serveur : ni secret, ni dépôt de fichiers. Il ne fait
+# que construire le site dans la machine jetable de GitHub, puis la jeter.
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Deux envois rapprochés sur la même branche : seule la dernière vérification
+# compte, la précédente est annulée plutôt que de tourner pour rien.
+concurrency:
+  group: verification-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verifier:
+    name: Types puis génération complète
+    runs-on: ubuntu-latest
+
+    # Lecture seule. Ce workflow n'écrit rien dans le dépôt, et le dire ici lui
+    # retire les droits correspondants.
+    permissions:
+      contents: read
+
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      # La même version de Node que le déploiement. Deux versions différentes
+      # feraient réussir ici ce qui échouerait là-bas.
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Vérifier les types et les composants
+        run: npm run check
+
+      # La génération complète est le test le plus large dont dispose le
+      # projet : elle exécute le code de chaque page, sur toutes les données.
+      - name: Construire le site
+        run: npm run build

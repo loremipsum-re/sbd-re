@@ -68,14 +68,19 @@ la mention « à compléter » tant que l'auteur ne les a pas fournis.
 | Adresse | Contenu |
 |---|---|
 | `/` | Accueil : top 10 aux Dots, compétitions récentes |
-| `/classement/` | 266 athlètes en cartes, filtrable et triable |
+| `/classement/` | Les athlètes classés, en cartes, filtrable et triable |
 | `/records/` | Grille par sexe et équipement, catégories en lignes |
 | `/categories/` | Les 17 catégories, puis `/categories/hommes/93/` |
 | `/competitions/` | Liste, puis `/competitions/<nom>/<date>/` |
 | `/exterieur/` | Résultats obtenus hors de La Réunion |
-| `/athlete/<slug>/` | 312 fiches |
+| `/athlete/<slug>/` | Une fiche par athlète |
 | `/communaute/` | Page d'attente du classement non-officiel |
 | `/confidentialite/`, `/mentions-legales/` | Pages légales |
+
+**Aucun effectif n'est écrit ici**, et c'est volontaire : les données sont
+régénérées chaque mois, si bien qu'un nombre cité dans un document est périmé à
+la première mise à jour. Trois chiffres l'étaient déjà. `npm run build` annonce
+le nombre de pages, et la page de classement affiche son effectif.
 
 Les URL de compétition sont bâties par `meetPath(date, nom)` et regroupent les
 éditions sous le nom de l'événement. Les anciennes adresses `date-nom`
@@ -122,7 +127,7 @@ constante `IMAGE_PARTAGE_DEFAUT` vaut `null`, et aucune balise `og:image` n'est
 serait mise en cache durablement par les réseaux sociaux.
 
 **Dès que le logo arrive** : déposer une image de 1200 × 630 en PNG ou JPEG
-dans `public/`, renseigner la constante, et les 436 pages en héritent.
+dans `public/`, renseigner la constante, et toutes les pages en héritent.
 
 ## Invariants à ne pas casser
 

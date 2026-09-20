@@ -2,7 +2,6 @@
 import { readFileSync, statSync } from 'node:fs';
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
-import svelte from '@astrojs/svelte';
 
 /** Reproduit meetNameSlug() et athleteSlug() de src/lib/slug.ts. */
 const slugifier = (/** @type {string} */ valeur) =>
@@ -127,9 +126,17 @@ export default defineConfig({
       },
     }),
 
-    // Svelte sert uniquement aux « îlots » : les rares zones réellement
-    // interactives de la future partie communauté. Les pages officielles sont
-    // du HTML pur, leurs tableaux étant pilotés en JavaScript natif.
-    svelte(),
+    // SVELTE A ÉTÉ RETIRÉ, et voici pourquoi le réinstaller ne coûte rien.
+    //
+    // L'intégration était posée d'avance pour les « îlots » de la future partie
+    // communauté, mais le projet n'a jamais contenu le moindre fichier .svelte :
+    // elle chargeait un greffon à chaque build et tirait trois paquets pour
+    // zéro ligne de code. Le site produit était identique avec et sans, vérifié
+    // par comparaison des builds.
+    //
+    // Le jour où une zone vraiment interactive arrive :
+    //   npx astro add svelte
+    // Les pages officielles, elles, restent du HTML pur, leurs tableaux étant
+    // pilotés en JavaScript natif.
   ],
 });
