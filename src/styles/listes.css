@@ -227,19 +227,196 @@
    * tableau de huit colonnes, et la dernière sortait du cadre. Mesuré sur
    * /exterieur/, où la colonne « Place » était coupée.
    */
-  .liste tbody td,
-  .liste tbody th {
+  .liste:not(.liste-perfs) tbody td,
+  .liste:not(.liste-perfs) tbody th {
     padding: var(--space-4) var(--space-3);
   }
 
   .liste thead th:first-child,
-  .liste tbody tr > :first-child {
+  .liste:not(.liste-perfs) tbody tr > :first-child {
     padding-left: var(--space-6);
   }
 
   .liste thead th:last-child,
-  .liste tbody tr > :last-child {
+  .liste:not(.liste-perfs) tbody tr > :last-child {
     padding-right: var(--space-6);
+  }
+}
+
+/* =============================================================================
+ * VARIANTE « PERFORMANCES » : `.liste.liste-perfs`
+ *
+ * Deux listes du site ne sont pas des tableaux de valeurs comparables mais des
+ * CLASSEMENTS : le classement de l'île, et les résultats d'une compétition.
+ * Une seule valeur y domine, le total, et le reste la qualifie. Elles
+ * partagent donc une autre forme : une rangée hiérarchisée, où le rang tient
+ * la gauche, le nom et son contexte le centre, et les chiffres la droite.
+ *
+ * Quatre niveaux de lecture : le total, le nom, le détail, le contexte. La
+ * version précédente les donnait tous au même poids, trois lignes de gris
+ * séparées par des puces, et rien ne disait où regarder.
+ *
+ * Les zones s'appellent `rang`, `nom`, `contexte`, `detail` et `chiffres`.
+ * `detail` accueille ce qui change d'une page à l'autre : la compétition où
+ * le total a été réalisé pour le classement, les trois barres du jour pour
+ * une compétition.
+ * ========================================================================== */
+
+.liste-perfs tbody tr {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(min(6rem, 100%), 1fr) auto;
+  grid-template-areas:
+    'rang nom nom'
+    'rang contexte total'
+    'rang detail dots';
+  align-items: start;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.liste-perfs tbody td,
+.liste-perfs tbody th {
+  padding: 0;
+  font-size: inherit;
+}
+
+.liste-perfs .rang {
+  grid-area: rang;
+  align-self: start;
+  padding-top: 0.2em;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--step-0);
+  line-height: 1.3;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.liste-perfs .nom {
+  grid-area: nom;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
+  font-size: var(--step-1);
+}
+
+.liste-perfs .nom a {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.liste-perfs .contexte {
+  grid-area: contexte;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+}
+
+.liste-perfs .detail {
+  grid-area: detail;
+  min-width: 0;
+}
+
+/* Le total et les Dots sont SÉPARÉS sur un téléphone, chacun au bout de sa
+   rangée. Côte à côte, ils formaient un bloc insécable de 200 px qui sortait
+   du cadre, et le cadre étant en `overflow: hidden`, il coupait « Dots » sans
+   que la page ne déborde d'un pixel. */
+.liste-perfs .chiffres {
+  display: contents;
+}
+
+.liste-perfs .total {
+  grid-area: total;
+  justify-self: end;
+  align-self: center;
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  font-size: var(--step-2);
+  line-height: 1;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.liste-perfs .dots {
+  grid-area: dots;
+  justify-self: end;
+  align-self: center;
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  font-size: var(--step-0);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Le pointillé signale une valeur qui vient d'une AUTRE compétition que celle
+   de la ligne, et dont le lien ne mène donc pas au même endroit. */
+.liste-perfs .dots.ailleurs {
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
+.liste-perfs .dots.ailleurs:hover {
+  color: var(--accent);
+}
+
+@media (min-width: 60rem) {
+  .liste-perfs tbody tr {
+    grid-template-columns:
+      3.5rem
+      minmax(min(14rem, 100%), 1.1fr)
+      minmax(min(12rem, 100%), 1fr)
+      11rem;
+    grid-template-areas:
+      'rang nom detail chiffres'
+      'rang contexte detail chiffres';
+    gap: var(--space-2) var(--space-6);
+    padding: var(--space-6);
+  }
+
+  /* Le rang reste sous le nom : c'est un repère de position, pas une
+     performance. Il était à égalité avec le total, mesuré à 29 px chacun. */
+  .liste-perfs .rang {
+    font-size: var(--step-1);
+    padding-top: 0.35em;
+  }
+
+  .liste-perfs .nom {
+    font-size: var(--step-2);
+  }
+
+  .liste-perfs .detail {
+    align-self: center;
+  }
+
+  /* La cellule redevient une vraie boîte : le total et les Dots s'y empilent,
+     alignés à droite. Les deux enfants perdent donc leur placement de grille,
+     qui ne vaut que pour la mise en page du téléphone. */
+  .liste-perfs .chiffres {
+    grid-area: chiffres;
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+    gap: 0.15rem;
+    align-self: center;
+  }
+
+  .liste-perfs .total,
+  .liste-perfs .dots {
+    grid-area: auto;
+    justify-self: auto;
+    align-self: auto;
+  }
+
+  .liste-perfs .total {
+    font-size: var(--step-3);
+  }
+
+  .liste-perfs .dots {
+    font-size: var(--step-1);
   }
 }
 
@@ -265,14 +442,14 @@
    * carte de 300 px par résultat. Les valeurs chiffrées, courtes, vont par
    * deux ; le texte garde toute la largeur.
    */
-  .liste tbody tr {
+  .liste:not(.liste-perfs) tbody tr {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--space-1) var(--space-3);
     padding: var(--space-3) var(--space-4);
   }
 
-  .liste tbody tr > :not(.nombre) {
+  .liste:not(.liste-perfs) tbody tr > :not(.nombre) {
     grid-column: 1 / -1;
   }
 
@@ -318,7 +495,7 @@
   /* Le nom prend toute la largeur, au-dessus du reste. Ici le flex est sans
      danger : la ligne est devenue une grille, ses cellules ne sont donc plus
      des cellules de tableau mais des éléments de grille. */
-  .liste tbody .nom {
+  .liste:not(.liste-perfs) tbody .nom {
     display: flex;
     align-items: center;
     flex-wrap: wrap;

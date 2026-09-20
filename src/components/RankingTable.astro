@@ -66,7 +66,7 @@ const RESUME_CATEGORIE = terme('glossaire-categorie')?.resume;
 const RESUME_DOTS = terme('glossaire-dots')?.resume;
 ---
 
-<div class="cadre">
+<div class="liste liste-perfs">
   <table id={id} data-tableau>
     <thead class="sr-only">
       <tr>
@@ -122,7 +122,7 @@ const RESUME_DOTS = terme('glossaire-dots')?.resume;
               </td>
 
               {/* Le lieu et la date appartiennent à la compétition : un seul lien. */}
-              <td class="competition">
+              <td class="detail competition">
                 <a href={`/competitions/${meetPath(e.date, e.meetName)}/`}>
                   <span class="meet">{e.meetName}</span>
                   <span class="ou">
@@ -178,181 +178,11 @@ const RESUME_DOTS = terme('glossaire-dots')?.resume;
 </div>
 
 <style>
-  .cadre {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    background: var(--surface);
-    overflow: hidden;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  td,
-  th {
-    padding: 0;
-    text-align: left;
-  }
-
-  /* =====================================================================
-     TÉLÉPHONE : trois rangées empilées.
-
-     Le nom occupe sa propre rangée. Partagée avec le total, il passait à la
-     ligne pour 48 athlètes sur 80, ce qui coûtait plus de hauteur que le gain
-     espéré. Mesuré, puis corrigé : un seul nom sur 80 passe encore à la ligne.
-     ===================================================================== */
-  tbody tr {
-    display: grid;
-    grid-template-columns: 2.5rem minmax(min(6rem, 100%), 1fr) auto;
-    /*
-     * Le total et les Dots sont SÉPARÉS sur un téléphone, chacun au bout de sa
-     * rangée. Côte à côte, ils formaient un bloc insécable de 200 px qui
-     * sortait de la carte : le mot « Dots » était coupé net. Le cadre étant en
-     * `overflow: hidden`, ni le débordement de page ni la mesure par élément
-     * ne le signalaient. Seule la comparaison du bord de la ligne avec celui
-     * du cadre le montre.
-     */
-    grid-template-areas:
-      'rang nom nom'
-      'rang contexte total'
-      'rang competition dots';
-    align-items: start;
-    gap: var(--space-1) var(--space-3);
-    padding: var(--space-3) var(--space-4);
-    border-bottom: 1px solid var(--border);
-  }
-  tbody tr:last-child {
-    border-bottom: 0;
-  }
-  tbody tr:hover {
-    background: color-mix(in srgb, var(--accent) 7%, transparent);
-  }
-
-  /* ---------- Rang : un nombre, et rien d'autre ----------
-     Ni coupe, ni métal, ni seuil à cinquante : le rang dit la position dans
-     l'affichage courant, ce qui reste vrai quel que soit le tri. Le script de
-     tri le réécrit dans `.rang-num`, comme le veut le contrat des tableaux
-     interactifs. */
-  .rang {
-    grid-area: rang;
-    align-self: start;
-    padding-top: 0.2em;
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: var(--step-0);
-    line-height: 1.3;
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* ---------- Premier niveau : le nom et le total ---------- */
-  .nom {
-    grid-area: nom;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    /* Le nom et sa coche doivent pouvoir passer à la ligne ensemble : sans
-       cela, un nom long déborde de 13 px de sa colonne sur un téléphone.
-       Mesuré par élément, le débordement de page ne le montrait pas. */
-    flex-wrap: wrap;
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: var(--step-1);
-    line-height: 1.15;
-  }
-  .nom a {
-    min-width: 0;
-    color: var(--text);
-    overflow-wrap: break-word;
-  }
-  .nom a:hover {
-    color: var(--accent);
-  }
-
-  /* `display: contents` : la cellule s'efface et ses deux enfants deviennent
-     des éléments de la grille de la ligne, ce qui permet de les poser sur deux
-     rangées différentes. Le tableau, lui, garde sa cellule. */
-  .chiffres {
-    display: contents;
-  }
-  .total {
-    grid-area: total;
-    justify-self: end;
-    align-self: center;
-    display: flex;
-    align-items: baseline;
-    gap: 0.25rem;
-    font-size: var(--step-2);
-    line-height: 1;
-    color: var(--text);
-    white-space: nowrap;
-  }
-  /* L'unité passe au second plan : ce sont les chiffres qui se comparent, et
-     « kg » répété trois cents fois n'apporte rien à la comparaison. */
-  .unite {
-    font-size: var(--step--1);
-    font-weight: 400;
-    color: var(--muted);
-  }
-  .dots {
-    grid-area: dots;
-    justify-self: end;
-    align-self: center;
-    display: flex;
-    align-items: baseline;
-    gap: 0.25rem;
-    font-size: var(--step-0);
-    color: var(--muted);
-    white-space: nowrap;
-  }
-  /* Le pointillé signale que ce score vient d'une AUTRE compétition, et que le
-     lien n'y mène donc pas au même endroit que celui de la ligne. */
-  .dots.ailleurs {
-    color: var(--muted);
-    text-decoration: underline dotted;
-    text-underline-offset: 0.2em;
-  }
-  .dots.ailleurs:hover {
-    color: var(--accent);
-  }
-
-  /* ---------- Deuxième niveau : la compétition ---------- */
-  .competition {
-    grid-area: competition;
-    min-width: 0;
-  }
-  .competition a {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    color: var(--text);
-    text-decoration: none;
-  }
-  .competition a:hover .meet {
-    color: var(--accent);
-    text-decoration: underline;
-  }
-  .meet {
-    font-size: var(--step--1);
-    line-height: 1.25;
-  }
-  .ou {
-    font-size: var(--step--1);
-    line-height: 1.25;
-    color: var(--muted);
-    white-space: nowrap;
-  }
-
-  /* ---------- Troisième niveau : le contexte ---------- */
-  .contexte {
-    grid-area: contexte;
-    min-width: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1) var(--space-2);
-  }
+  /*
+   * L'essentiel vit dans src/styles/listes.css, variante « perfs » : cette
+   * liste et les résultats d'une compétition partagent la même forme, donc la
+   * même implémentation. Ne restent ici que les règles propres au classement.
+   */
 
   /* Sur un téléphone, le poids de corps sort de la liste : trois pastilles
      passent à la ligne et coûtent 26 px à chaque athlète. Il reste dans le
@@ -361,89 +191,18 @@ const RESUME_DOTS = terme('glossaire-dots')?.resume;
     display: none;
   }
 
-  /*
-   * Même pastille que sur la fiche d'athlète : filet, angles ronds, gris.
-   * L'aplat essayé d'abord tombait à 4,36:1 en thème CLAIR une fois posé sur
-   * une ligne teintée, sous le seuil de 4,5. Sans fond, le texte se lit sur la
-   * ligne elle-même, soit 5,38:1 en clair et 7,58:1 en sombre. Et le site
-   * gagne une forme de moins à retenir.
-   */
-  .etiquette {
-    padding: var(--space-1) var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    font-size: var(--step--1);
-    font-weight: 600;
-    color: var(--muted);
-    white-space: nowrap;
-  }
-
-  /* Dès qu'il y a la place, le poids de corps revient : il éclaire le Dots. */
+  /* Dès qu'il y a la place, il revient : il éclaire le score Dots. */
   @media (min-width: 40rem) {
     .etiquette:nth-of-type(3) {
-      display: inline;
+      display: inline-block;
     }
   }
 
-  /* =====================================================================
-     À PARTIR DE 60rem : quatre colonnes identiques d'une ligne à l'autre,
-     et des chiffres qui se voient de loin.
-
-     Les colonnes sont de largeur FIXE et non automatique : en automatique,
-     chaque ligne formait sa propre grille et les blocs ne démarraient pas à
-     la même abscisse. Mesuré à deux abscisses par colonne, une seule depuis.
-     ===================================================================== */
+  /* Le nom de la compétition monte d'un cran sur grand écran : c'est le
+     deuxième niveau de lecture, après le total et le nom. */
   @media (min-width: 60rem) {
-    tbody tr {
-      grid-template-columns:
-        3.5rem
-        minmax(min(14rem, 100%), 1.1fr)
-        minmax(min(12rem, 100%), 1fr)
-        11rem;
-      grid-template-areas:
-        'rang nom competition chiffres'
-        'rang contexte competition chiffres';
-      gap: var(--space-2) var(--space-6);
-      padding: var(--space-6);
-    }
-    /* Le rang reste sous le nom : c'est un repère de position, pas une
-       performance. Il était à égalité avec le total, mesuré à 29 px chacun. */
-    .rang {
-      font-size: var(--step-1);
-      padding-top: 0.35em;
-    }
-    .nom {
-      font-size: var(--step-2);
-    }
-    .competition {
-      align-self: center;
-    }
     .meet {
       font-size: var(--step-0);
-    }
-    /* Sur grand écran, la cellule redevient une vraie boîte : le total et les
-       Dots s'y empilent, alignés à droite, dans leur propre colonne. Les deux
-       enfants perdent donc leur placement de grille, qui ne vaut que pour la
-       mise en page du téléphone. */
-    .chiffres {
-      grid-area: chiffres;
-      display: flex;
-      flex-direction: column;
-      align-items: end;
-      gap: 0.15rem;
-      align-self: center;
-    }
-    .total,
-    .dots {
-      grid-area: auto;
-      justify-self: auto;
-      align-self: auto;
-    }
-    .total {
-      font-size: var(--step-3);
-    }
-    .dots {
-      font-size: var(--step-1);
     }
   }
 </style>
