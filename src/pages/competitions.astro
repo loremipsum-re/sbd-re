@@ -49,7 +49,7 @@ const annees = [...new Set(meets.map((m) => m.date.slice(0, 4)))].sort().reverse
         </div>
       </Fragment>
 
-      <div class="cadre">
+      <div class="liste">
         <table data-tableau>
           <thead>
             <tr>
@@ -76,9 +76,11 @@ const annees = [...new Set(meets.map((m) => m.date.slice(0, 4)))].sort().reverse
                   </th>
                   <td data-libelle="Commune">{meet.meetTown || '—'}</td>
                   <td data-libelle="Format">
-                    {meet.events.map((e) => (
-                      <span class="format">{libelleEvent(e)}</span>
-                    ))}
+                    <span class="etiquettes">
+                      {meet.events.map((e) => (
+                        <span class="etiquette">{libelleEvent(e)}</span>
+                      ))}
+                    </span>
                   </td>
                   <td class="nombre num-tab" data-libelle="Athlètes" data-valeur={meet.athletes}>
                     {meet.athletes}
@@ -108,200 +110,6 @@ const annees = [...new Set(meets.map((m) => m.date.slice(0, 4)))].sort().reverse
   .chapeau {
     color: var(--muted);
     max-width: 68ch;
-  }
-
-  .champ {
-    display: grid;
-    gap: var(--space-1);
-    flex: 1 1 9rem;
-  }
-
-  label {
-    font-size: var(--step--1);
-    font-weight: 600;
-    color: var(--muted);
-  }
-
-  select {
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--bg);
-    color: var(--text);
-    font: inherit;
-    font-size: var(--step--1);
-  }
-
-  .cadre {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    background: var(--surface);
-    overflow: hidden;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: var(--step--1);
-  }
-
-  th,
-  td {
-    text-align: left;
-    padding: var(--space-3);
-  }
-
-  thead {
-    display: none;
-  }
-
-  .nom {
-    font-weight: 600;
-  }
-  .nom a {
-    color: var(--text);
-  }
-  .nom a:hover {
-    color: var(--accent);
-  }
-
-  .date {
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-    color: var(--muted);
-  }
-
-  .format {
-    display: inline-block;
-    font-size: var(--step--1);
-    padding: 2px var(--space-2);
-    margin-right: var(--space-1);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--muted);
-    white-space: nowrap;
-  }
-
-  /* ---------- Mobile : une carte par compétition ---------- */
-  @media (max-width: 47.999rem) {
-    /*
-     * Le <table> lui-même doit passer en bloc, pas seulement ses lignes.
-     *
-     * Une table garde sinon sa disposition tabulaire et refuse de descendre
-     * sous la largeur de son contenu : elle débordait donc du cadre, qui la
-     * rognait au lieu de la laisser défiler. Les colonnes de droite
-     * disparaissaient purement et simplement.
-     */
-    table,
-    tbody {
-      display: block;
-    }
-
-    /*
-     * Une carte, deux lignes : le nom, puis tout le reste à la suite.
-     *
-     * Les libellés « Commune » et « Format » sont retirés. Une date, un nom de
-     * commune et un format de compétition se reconnaissent sans être annoncés,
-     * et les annoncer coûtait quatre lignes par carte. Ils restent lisibles
-     * par les lecteurs d'écran grâce aux en-têtes de colonnes du tableau.
-     */
-    tbody tr {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      gap: 0 var(--space-2);
-      padding: var(--space-4);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .nom {
-      order: -1;
-      flex-basis: 100%;
-      padding: 0 0 var(--space-2);
-      font-size: var(--step-0);
-    }
-
-    td {
-      display: inline;
-      padding: 0;
-      color: var(--muted);
-    }
-
-    /* Un point médian sépare les valeurs. La date étant la première, elle n'en
-       porte pas. */
-    td:not(.date)::before {
-      content: '·';
-      margin-right: var(--space-2);
-      color: var(--border);
-    }
-
-    /* Le nombre seul ne veut rien dire une fois son libellé retiré. */
-    td.nombre::after {
-      content: ' athlètes';
-    }
-
-    /*
-     * Le format descend sur sa propre ligne, toujours.
-     *
-     * `order: 1` le fait passer APRÈS le nombre d'athlètes, alors qu'il le
-     * précède dans le tableau : l'ordre des colonnes sert la lecture sur grand
-     * écran, celui-ci sert la carte.
-     *
-     * Le résultat est une carte à hauteur constante — nom, texte, étiquettes —
-     * quelle que soit la longueur du nom de commune. Mélangés à la même ligne,
-     * les cadres des étiquettes se réalignaient à chaque carte et l'oeil
-     * n'accrochait plus rien.
-     */
-    td[data-libelle='Format'] {
-      order: 1;
-      flex-basis: 100%;
-      margin-top: var(--space-2);
-    }
-
-    td[data-libelle='Format']::before {
-      content: none;
-    }
-
-    .format {
-      margin-right: var(--space-1);
-    }
-  }
-
-  /* ---------- Desktop ---------- */
-  @media (min-width: 48rem) {
-    thead {
-      display: table-header-group;
-    }
-
-    thead th {
-      font-size: var(--step--1);
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-
-    td.nombre,
-    th.nombre {
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
-
-    tbody tr {
-      border-bottom: 1px solid var(--border);
-    }
-    tbody tr:last-child {
-      border-bottom: 0;
-    }
-    tbody tr:hover {
-      background: color-mix(in srgb, var(--accent) 6%, transparent);
-    }
-
-    td::before {
-      display: none;
-    }
   }
 
   .note {

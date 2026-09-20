@@ -212,7 +212,7 @@ const description =
         }
       </Fragment>
 
-      <div class="cadre">
+      <div class="liste liste-perfs">
         <table data-tableau>
           <thead class="sr-only">
             <tr>
@@ -265,39 +265,55 @@ const description =
                       <BadgeOfficiel taille={14} />
                     </th>
 
-                    <td class="ligne contexte">
-                      <span>{sexLabel(r.sex)}</span>
-                      <span>{equipmentLabel(equipmentGroup(r.equipment))}</span>
-                      {r.division && <span>{r.division}</span>}
-                      {r.ageClass && <span>{r.ageClass} ans</span>}
+                    <td class="contexte">
+                      <span class="etiquette secondaire">{sexLabel(r.sex)}</span>
+                      <span class="etiquette">{equipmentLabel(equipmentGroup(r.equipment))}</span>
+                      <span class="etiquette">
+                        {r.weightClassKg ? `${r.weightClassKg} kg` : 'cat. inconnue'}
+                      </span>
+                      <span class="etiquette">{nombre(r.bodyweightKg)} kg de corps</span>
+                      {r.division && <span class="etiquette secondaire">{r.division}</span>}
+                      {r.ageClass && <span class="etiquette secondaire">{r.ageClass} ans</span>}
                     </td>
 
-                    <td class="ligne physique">
-                      <span>{r.weightClassKg ? `${r.weightClassKg} kg` : 'catégorie inconnue'}</span>
-                      <span>{nombre(r.bodyweightKg)} kg de corps</span>
-                    </td>
-
-                    <td class="ligne barres">
+                    {/* Les trois barres du jour : c'est le détail propre à une
+                        compétition, là où le classement montre l'événement. */}
+                    <td class="detail barres">
                       <span>
-                        SQ <b class="num-tab">{nombre(r.bestSquatKg)}</b>
+                        <span class="intitule">SQ</span>
+                        <b class="num-tab">{nombre(r.bestSquatKg)}</b>
                         {r.bestSquatKg && estRecord(r, 'squat') && <Coupe metal="or" detail="Record du squat" taille={13} />}
                       </span>
                       <span>
-                        DC <b class="num-tab">{nombre(r.bestBenchKg)}</b>
+                        <span class="intitule">DC</span>
+                        <b class="num-tab">{nombre(r.bestBenchKg)}</b>
                         {r.bestBenchKg && estRecord(r, 'bench') && <Coupe metal="or" detail="Record du développé couché" taille={13} />}
                       </span>
                       <span>
-                        SDT <b class="num-tab">{nombre(r.bestDeadliftKg)}</b>
+                        <span class="intitule">SDT</span>
+                        <b class="num-tab">{nombre(r.bestDeadliftKg)}</b>
                         {r.bestDeadliftKg && estRecord(r, 'deadlift') && <Coupe metal="or" detail="Record du soulevé de terre" taille={13} />}
                       </span>
                     </td>
 
-                    <td class="ligne perf">
-                      <span class="fort num-tab">
-                        {estFullPower ? `${nombre(r.totalKg)} kg` : 'sans total'}
+                    <td class="chiffres">
+                      <span class="total">
+                        {estFullPower ? (
+                          <>
+                            <span class="num-tab">{nombre(r.totalKg)}</span>
+                            <span class="unite">kg</span>
+                          </>
+                        ) : (
+                          <span class="sans-total">sans total</span>
+                        )}
                         {estFullPower && estRecord(r, 'total') && <Coupe metal="or" detail="Record au total" taille={14} />}
                       </span>
-                      {estFullPower && <span class="fort num-tab">{points(r.dots)} Dots</span>}
+                      {estFullPower && (
+                        <span class="dots">
+                          <span class="num-tab">{points(r.dots)}</span>
+                          <span class="unite">Dots</span>
+                        </span>
+                      )}
                     </td>
                   </tr>
                 );
@@ -423,135 +439,44 @@ const description =
     line-height: 1;
   }
 
-  .champ {
-    display: grid;
-    gap: var(--space-1);
-    flex: 1 1 9rem;
-  }
+  /*
+   * La forme de la liste vit dans src/styles/listes.css, variante « perfs » :
+   * ces résultats et le classement de l île sont deux classements, ils
+   * partagent donc la même rangée hiérarchisée. Ne restent ici que les trois
+   * choses propres à une compétition.
+   */
 
-  label {
-    font-size: var(--step--1);
-    font-weight: 600;
-    color: var(--muted);
-  }
-
-  select {
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--bg);
-    color: var(--text);
-    font: inherit;
-    font-size: var(--step--1);
-  }
-
-  .cadre {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    background: var(--surface);
-    overflow: hidden;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  /* ---------- La carte, même structure que le classement ---------- */
-  tbody tr {
-    display: grid;
-    grid-template-columns: 3.25rem 1fr;
-    grid-template-areas:
-      'place nom'
-      'place contexte'
-      'place physique'
-      'place barres'
-      'place perf';
-    gap: var(--space-1) var(--space-3);
-    padding: var(--space-4);
-    border-bottom: 1px solid var(--border);
-  }
-  tbody tr:last-child {
-    border-bottom: 0;
-  }
-  tbody tr:hover {
-    background: color-mix(in srgb, var(--accent) 5%, transparent);
-  }
-
-  /* Une ligne de podium se remarque discrètement, sans écraser la liste. */
-  tr[data-podium='or'] {
-    background: color-mix(in srgb, var(--or) 7%, transparent);
-  }
-  tr[data-podium='argent'] {
-    background: color-mix(in srgb, var(--argent) 6%, transparent);
-  }
-  tr[data-podium='bronze'] {
-    background: color-mix(in srgb, var(--bronze) 6%, transparent);
-  }
-
-  td,
-  th {
-    padding: 0;
-    text-align: left;
-  }
-
+  /* LA PLACE, et non un rang calculé. Elle garde son propre nom de classe :
+     le script de tri réécrit « rang-num » à chaque tri, si bien que nommer
+     cette cellule comme celle du classement ferait remplacer la place
+     obtenue en compétition par le numéro de la ligne affichée. */
   .place {
-    grid-area: place;
+    grid-area: rang;
     align-self: start;
-    padding-top: 0.1em;
+    padding-top: 0.15em;
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: var(--step-2);
-    line-height: 1;
+    font-size: var(--step-0);
+    line-height: 1.3;
     color: var(--muted);
     font-variant-numeric: tabular-nums;
   }
 
-  .nom {
-    grid-area: nom;
-    display: flex;
-    align-items: center;
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: var(--step-1);
-    line-height: 1.15;
-  }
-  .nom a {
-    color: var(--text);
-  }
-  .nom a:hover {
-    color: var(--accent);
-  }
-
-  .ligne {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--space-1) var(--space-2);
+  /* Les trois barres du jour, alignées comme un mini-tableau : l intitulé à
+     gauche, la charge à droite, pour que les nombres se superposent d une
+     ligne à l autre. */
+  .barres {
+    display: grid;
+    gap: 0.1rem;
     font-size: var(--step--1);
     color: var(--muted);
   }
 
-  .contexte {
-    grid-area: contexte;
-  }
-  .physique {
-    grid-area: physique;
-  }
-  .barres {
-    grid-area: barres;
-  }
-  .perf {
-    grid-area: perf;
-    margin-top: var(--space-1);
-  }
-
-  /* Séparateur décoratif, dans le CSS pour ne polluer ni la lecture à voix
-     haute ni la recherche. */
-  .ligne > *:not(:last-child)::after {
-    content: '•';
-    margin-left: var(--space-2);
-    color: var(--border);
+  .barres > span {
+    display: grid;
+    grid-template-columns: 2.5rem auto;
+    gap: var(--space-2);
+    align-items: baseline;
   }
 
   .barres b {
@@ -559,20 +484,30 @@ const description =
     font-weight: 700;
   }
 
-  .fort {
-    color: var(--text);
-    font-weight: 700;
-    font-size: var(--step-0);
+  .intitule {
+    color: var(--muted);
+  }
+
+  /* Sur un téléphone, six pastilles occupent cinq rangées et donnent des
+     cartes de 297 px. Le sexe, la division et la tranche d âge en sortent :
+     ce sont des critères de FILTRE, offerts juste au-dessus, et non des
+     valeurs que l on compare d une ligne à l autre. Ils reviennent dès 40rem,
+     et restent dans le document pour le tri et les filtres. */
+  /* Deux classes, pour passer devant « .liste .etiquette » de la feuille
+     commune, qui compte elle aussi deux niveaux. */
+  .etiquette.secondaire {
+    display: none;
   }
 
   @media (min-width: 40rem) {
-    tbody tr {
-      grid-template-columns: 4rem 1fr;
-      padding: var(--space-4) var(--space-6);
+    .etiquette.secondaire {
+      display: inline-block;
     }
-    .place {
-      font-size: var(--step-3);
-    }
+  }
+
+  .sans-total {
+    font-size: var(--step-0);
+    color: var(--muted);
   }
 
   .note {
