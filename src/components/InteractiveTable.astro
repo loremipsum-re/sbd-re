@@ -56,38 +56,58 @@ const interactif = recherche !== undefined || aFiltres;
   {
     (recherche || aFiltres) && (
       <div class="outils">
-        {aFiltres && (
-          <div class="filtres">
-            <slot name="filtres" />
+        {/*
+          LA RECHERCHE D'ABORD, et c'est un choix. Sur une liste de plusieurs
+          centaines de lignes, chercher un nom est le geste le plus fréquent ;
+          il arrivait en dernier, tout à droite. L'ordre du document vaut aussi
+          ordre de tabulation : le champ le plus utile est désormais le premier
+          atteint au clavier.
+        */}
+        <div class="rangee-champs">
+          {recherche && (
+            <div class="champ recherche">
+              <label for="champ-recherche">Rechercher</label>
+              <input
+                id="champ-recherche"
+                type="search"
+                data-recherche
+                placeholder={recherche}
+                autocomplete="off"
+              />
+            </div>
+          )}
+
+          {aFiltres && (
+            <div class="filtres">
+              <slot name="filtres" />
+            </div>
+          )}
+        </div>
+
+        {/*
+          LE TRI ET LE COMPTEUR SUR LA MÊME RANGÉE, dans le même cadre que les
+          champs. Ils flottaient auparavant chacun de leur côté, le compteur
+          sous les filtres et la barre de tri sous le cadre : trois blocs de
+          contrôles pour une seule liste. Les deux décrivent l'état de la
+          liste, ils vivent donc ensemble.
+        */}
+        {(barreDeTri || total !== undefined) && (
+          <div class="rangee-etat">
+            {barreDeTri ? (
+              /* `hidden` par défaut : sans JavaScript, ces boutons ne feraient
+                 rien. Le script le retire une fois la barre construite. */
+              <div class="barre-tri" data-barre-tri hidden>
+                <span class="intitule">Trier par</span>
+              </div>
+            ) : (
+              <span />
+            )}
+
+            <p class="compteur" aria-live="polite" data-compteur>
+              {total !== undefined && `${total} ${total > 1 ? plurielFinal : singulier}`}
+            </p>
           </div>
         )}
-
-        {recherche && (
-          <div class="champ recherche">
-            <label for="champ-recherche">Rechercher</label>
-            <input
-              id="champ-recherche"
-              type="search"
-              data-recherche
-              placeholder={recherche}
-              autocomplete="off"
-            />
-          </div>
-        )}
-
-        <p class="compteur" aria-live="polite" data-compteur>
-          {total !== undefined && `${total} ${total > 1 ? plurielFinal : singulier}`}
-        </p>
-      </div>
-    )
-  }
-
-  {
-    barreDeTri && (
-      /* `hidden` par défaut : sans JavaScript, ces boutons ne feraient rien.
-         Le script le retire une fois la barre construite. */
-      <div class="barre-tri" data-barre-tri hidden>
-        <span class="intitule">Trier par</span>
       </div>
     )
   }
@@ -474,9 +494,8 @@ const interactif = recherche !== undefined || aFiltres;
 <style>
   .outils {
     display: none;
-    flex-wrap: wrap;
-    align-items: end;
-    gap: var(--space-4);
+    flex-direction: column;
+    gap: var(--space-3);
     padding: var(--space-4);
     margin-bottom: var(--space-4);
     border: 1px solid var(--border);
@@ -488,6 +507,48 @@ const interactif = recherche !== undefined || aFiltres;
     display: flex;
   }
 
+  /*
+   * UNE GRILLE, ET NON UN FLEX QUI S'ENROULE.
+   *
+   * En flex, les champs de la dernière rangée se partageaient toute la
+   * largeur restante : « Division » et « Âge » devenaient deux fois plus
+   * larges que « Sexe » juste au-dessus. La grille donne des colonnes égales,
+   * et les champs d'une rangée tombent sous ceux de la précédente.
+   *
+   * `min()` dans le `minmax` : sans lui, une colonne de 11rem ne peut pas
+   * rétrécir sous 11rem et déborde sur un petit téléphone.
+   */
+  .rangee-champs {
+    display: grid;
+    /* Largeur minimale resserrée par la mesure, et non choisie au jugé. À
+       11rem, 800 px de large ne laissaient tenir que trois colonnes, donc
+       trois rangées et une barre de 373 px. À 8,5rem, les six champs du
+       classement tiennent sur une seule rangée dès 1280 px. */
+    grid-template-columns: repeat(auto-fit, minmax(min(8.5rem, 100%), 1fr));
+    align-items: end;
+    gap: var(--space-3) var(--space-4);
+  }
+
+  /* La recherche vaut deux colonnes : c'est le champ où l'on écrit, et une
+     colonne de 11rem y tronquerait un nom à la saisie. Seulement quand il y a
+     la place, sans quoi elle créerait une colonne de plus que la grille. */
+  @media (min-width: 40rem) {
+    .champ.recherche {
+      grid-column: span 2;
+    }
+  }
+
+  /* Le tri à gauche, le compte à droite, séparés des champs par un filet. */
+  .rangee-etat {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-4);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border);
+  }
+
   .filtres {
     display: contents;
   }
@@ -495,11 +556,45 @@ const interactif = recherche !== undefined || aFiltres;
   .champ {
     display: grid;
     gap: var(--space-1);
-    flex: 1 1 9rem;
+    min-width: 0;
   }
 
-  .recherche {
-    flex: 2 1 14rem;
+  /*
+   * LES CHAMPS INSÉRÉS PAR LES PAGES, habillés ici et non plus chez elles.
+   *
+   * La portée d'Astro ne couvre que les éléments écrits dans le composant :
+   * les `.champ` arrivant par le slot portent la marque de la PAGE, et les
+   * règles ci-dessus ne les atteignaient pas. D'où quatre pages qui
+   * recopiaient les mêmes vingt-cinq lignes, et une cinquième, mes essais,
+   * qui les avait oubliées et affichait des champs nus.
+   *
+   * `:global()` limité à `.outils` : la règle ne sort pas de la barre.
+   */
+  .outils :global(.champ) {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  .outils :global(label) {
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .outils :global(select) {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: var(--step--1);
+  }
+
+  .outils :global(select:hover) {
+    border-color: var(--accent);
   }
 
   label {
@@ -519,7 +614,8 @@ const interactif = recherche !== undefined || aFiltres;
   }
 
   .compteur {
-    margin: 0 0 var(--space-2);
+    margin: 0;
+    /* Reste à droite même lorsque la rangée passe à la ligne. */
     margin-left: auto;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -532,7 +628,9 @@ const interactif = recherche !== undefined || aFiltres;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2);
-    margin-bottom: var(--space-4);
+    /* Plus de marge : la barre vit maintenant DANS le cadre des outils, dont
+       la rangée d'état donne déjà l'espacement. */
+    margin-bottom: 0;
   }
 
   .barre-tri[hidden] {
