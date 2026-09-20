@@ -1,0 +1,315 @@
+---
+/**
+ * ESSAI A — le classement en vraies colonnes sur grand écran.
+ *
+ * L'idée : une carte est la bonne forme sur un téléphone, où la largeur
+ * manque. Sur un écran de bureau, elle gâche 63 % de la largeur disponible et
+ * empile en hauteur ce que l'œil lirait mieux côte à côte. Ce composant garde
+ * la carte sous 60rem et redevient un tableau au-dessus.
+ *
+ * Ce que le tableau apporte et que la carte ne peut pas donner : la
+ * COMPARAISON. Les totaux forment une colonne, le regard descend et voit tout
+ * de suite l'écart entre le 4e et le 12e. En cartes, chaque valeur est noyée
+ * dans une phrase à puces.
+ *
+ * Le balisage ne change pas d'un iota par rapport au composant en production :
+ * mêmes attributs `data-` sur la LIGNE, donc tri et filtres fonctionnent sans
+ * rien savoir de la mise en forme.
+ */
+import { equipmentLabel, parseWeightClass } from '../../lib/categories';
+import { kg, nombre, points } from '../../lib/format';
+import type { AthleteRanking } from '../../lib/rankings';
+import BadgeOfficiel from '../BadgeOfficiel.astro';
+import Coupe from '../Coupe.astro';
+
+interface Props {
+  entries: AthleteRanking[];
+  id?: string;
+}
+
+const { entries, id } = Astro.props;
+const METAUX = ['or', 'argent', 'bronze'] as const;
+---
+
+<div class="cadre">
+  <table id={id} data-tableau>
+    <thead>
+      <tr>
+        <th scope="col" class="c-rang">Rang</th>
+        <th scope="col" class="c-nom" data-tri data-cle="nom">Athlète</th>
+        <th scope="col" class="c-eq">Équipement</th>
+        <th scope="col" class="c-cat" data-tri data-cle="triCategorie" data-type="nombre">Cat.</th>
+        <th scope="col" class="c-poids" data-tri data-cle="poids" data-type="nombre">Poids</th>
+        <th scope="col" class="c-total" data-tri data-cle="total" data-type="nombre">Total</th>
+        <th scope="col" class="c-dots" data-tri data-cle="dots" data-type="nombre">Dots</th>
+        <th scope="col" class="c-comp" data-tri data-cle="competitions" data-type="nombre">Comp.</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        entries.map((e, i) => {
+          const classe = parseWeightClass(e.weightClassKg);
+          return (
+            <tr
+              data-recherche={e.name}
+              data-nom={e.name}
+              data-total={e.totalKg}
+              data-dots={e.dots}
+              data-tri-categorie={classe?.kg ?? ''}
+              data-poids={e.bodyweightKg ?? ''}
+              data-competitions={e.competitions + e.competitionsExterieur}
+              data-sexe={e.sex}
+              data-categorie={e.weightClassKg}
+              data-equipement={e.equipmentGroup}
+              data-division={e.division}
+              data-age={e.ageClass}
+            >
+              <td
+                class="c-rang rang"
+                data-podium={i < 3 ? METAUX[i] : undefined}
+                data-niveau={i < 50 ? 'haut' : 'bas'}
+              >
+                <span class="rang-num">{i + 1}</span>
+                <Coupe detail={`${i + 1}e du classement`} taille={22} />
+              </td>
+
+              <th scope="row" class="c-nom nom">
+                <a href={`/athlete/${e.slug}/`}>{e.name}</a>
+                <BadgeOfficiel taille={14} />
+              </th>
+
+              <td class="c-eq">{equipmentLabel(e.equipmentGroup)}</td>
+              <td class="c-cat num-tab">{e.weightClassKg ? `${e.weightClassKg} kg` : '—'}</td>
+              <td class="c-poids num-tab">{nombre(e.bodyweightKg)} kg</td>
+              <td class="c-total num-tab">{kg(e.totalKg)}</td>
+              <td class="c-dots num-tab">{points(e.dots)}</td>
+              <td class="c-comp num-tab">{e.competitions + e.competitionsExterieur}</td>
+            </tr>
+          );
+        })
+      }
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .cadre {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  td,
+  th {
+    padding: 0;
+    text-align: left;
+  }
+
+  /* =====================================================================
+     SOUS 60rem : la carte, ramenée à DEUX lignes au lieu de quatre.
+     Le poids de corps et le nombre de compétitions restent dans le
+     document, pour le tri et les filtres, mais ne s'affichent pas : sur un
+     téléphone, ils passent après le total et la catégorie.
+     ===================================================================== */
+  thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  tbody tr {
+    display: grid;
+    grid-template-columns: 2.5rem auto 1fr auto;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr:last-child {
+    border-bottom: 0;
+  }
+  tbody tr:hover {
+    background: color-mix(in srgb, var(--accent) 5%, transparent);
+  }
+
+  .c-rang {
+    grid-row: 1 / span 2;
+    grid-column: 1;
+    align-self: start;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--step-1);
+    line-height: 1.3;
+    font-variant-numeric: tabular-nums;
+  }
+  .c-nom {
+    grid-row: 1;
+    grid-column: 2 / span 2;
+    display: flex;
+    align-items: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--step-0);
+    line-height: 1.2;
+  }
+  .c-total {
+    grid-row: 1;
+    grid-column: 4;
+    justify-self: end;
+    font-weight: 700;
+  }
+  .c-eq {
+    grid-row: 2;
+    grid-column: 2;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .c-cat {
+    grid-row: 2;
+    grid-column: 3;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .c-dots {
+    grid-row: 2;
+    grid-column: 4;
+    justify-self: end;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .c-dots::after {
+    content: ' Dots';
+  }
+  .c-poids,
+  .c-comp {
+    display: none;
+  }
+
+  .nom a {
+    color: var(--text);
+  }
+  .nom a:hover {
+    color: var(--accent);
+  }
+
+  /* Podium : la coupe remplace le chiffre, comme en production. */
+  .rang :global(.coupe) {
+    display: none;
+  }
+  .rang[data-podium] :global(.coupe) {
+    display: inline-flex;
+    margin-left: 0;
+  }
+  .rang[data-podium] .rang-num {
+    display: none;
+  }
+  .rang[data-niveau='haut'] {
+    color: var(--or);
+  }
+  .rang[data-niveau='bas'] {
+    color: var(--muted);
+  }
+  .rang[data-podium='or'] {
+    color: var(--or);
+  }
+  .rang[data-podium='argent'] {
+    color: var(--argent);
+  }
+  .rang[data-podium='bronze'] {
+    color: var(--bronze);
+  }
+
+  /* =====================================================================
+     AU-DELÀ DE 60rem : le tableau.
+     ===================================================================== */
+  @media (min-width: 60rem) {
+    thead {
+      position: static;
+      width: auto;
+      height: auto;
+      clip-path: none;
+    }
+
+    thead th {
+      padding: var(--space-3) var(--space-3);
+      border-bottom: 1px solid var(--border);
+      font-size: var(--step--1);
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      display: table-row;
+      padding: 0;
+    }
+
+    tbody td,
+    tbody th {
+      display: table-cell;
+      padding: var(--space-2) var(--space-3);
+      vertical-align: middle;
+    }
+
+    /* Les colonnes de chiffres se lisent alignées à droite : l'unité tombe au
+       même endroit d'une ligne à l'autre, et l'écart saute aux yeux. */
+    .c-cat,
+    .c-poids,
+    .c-total,
+    .c-dots,
+    .c-comp,
+    thead .c-cat,
+    thead .c-poids,
+    thead .c-total,
+    thead .c-dots,
+    thead .c-comp {
+      text-align: right;
+    }
+
+    .c-rang {
+      width: 4rem;
+      padding-left: var(--space-6);
+      font-size: var(--step-0);
+    }
+    .c-nom {
+      font-size: var(--step-0);
+    }
+    .c-eq {
+      font-size: var(--step--1);
+      color: var(--muted);
+    }
+    .c-cat,
+    .c-poids,
+    .c-dots,
+    .c-comp {
+      font-size: var(--step--1);
+      color: var(--muted);
+    }
+    .c-total {
+      font-size: var(--step-0);
+      color: var(--text);
+    }
+    .c-comp {
+      padding-right: var(--space-6);
+    }
+    .c-poids,
+    .c-comp {
+      display: table-cell;
+    }
+    /* Le suffixe « Dots » vit dans l'en-tête de colonne : le répéter sur 312
+       lignes ajouterait 312 fois le même mot. */
+    .c-dots::after {
+      content: '';
+    }
+  }
+</style>

@@ -1,0 +1,206 @@
+---
+/**
+ * BANC D'ESSAI — trois mises en forme du classement, mêmes données.
+ *
+ * Ces pages ne partent PAS en production : elles vivent sur la branche
+ * `essai-ux` et servent à trancher en regardant, plutôt qu'en imaginant.
+ * Les filtres, la recherche et le tri sont ceux de la vraie page, pour que
+ * la comparaison porte sur la mise en forme et sur rien d'autre.
+ */
+import ClassementA from '../../components/essai/ClassementA.astro';
+import ClassementB from '../../components/essai/ClassementB.astro';
+import ClassementC from '../../components/essai/ClassementC.astro';
+import InteractiveTable from '../../components/InteractiveTable.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  EQUIPMENT_GROUPS,
+  compareWeightClass,
+  parseWeightClass,
+  type EquipmentGroup,
+} from '../../lib/categories';
+import { fullPowerResults } from '../../lib/data';
+import { equipementsPresents } from '../../lib/records';
+import { meilleurTotalParAthlete } from '../../lib/rankings';
+import type { Sex } from '../../lib/types';
+
+const VARIANTES = {
+  a: {
+    titre: 'Essai A : vraies colonnes',
+    resume:
+      "Carte sur téléphone, tableau à partir de 60rem. Les totaux forment une colonne, l'œil descend et compare.",
+    perd: 'Rien. Le poids de corps et le nombre de compétitions se cachent seulement sur petit écran.',
+  },
+  b: {
+    titre: 'Essai B : carte hiérarchisée',
+    resume:
+      "La carte reste, mais une seule chose domine : le total, en gros, à droite, au même endroit sur chaque ligne. Le contexte passe en étiquettes.",
+    perd: 'Rien. Les onze informations sont toujours là, elles cessent de se disputer l’attention.',
+  },
+  c: {
+    titre: 'Essai C : ligne unique, détail au dépliage',
+    resume:
+      'Quatre valeurs par ligne, le reste derrière un chevron. La liste tient en trois fois moins de défilement.',
+    perd: "Rien n'est supprimé, mais quatre informations demandent un clic.",
+  },
+} as const;
+
+export function getStaticPaths() {
+  return [{ params: { variante: 'a' } }, { params: { variante: 'b' } }, { params: { variante: 'c' } }];
+}
+
+const { variante } = Astro.params as { variante: keyof typeof VARIANTES };
+const info = VARIANTES[variante];
+
+const classement = meilleurTotalParAthlete();
+
+const sexesParClasse = new Map<string, Set<Sex>>();
+for (const r of fullPowerResults) {
+  if (!r.weightClassKg) continue;
+  const set = sexesParClasse.get(r.weightClassKg) ?? new Set<Sex>();
+  set.add(r.sex);
+  sexesParClasse.set(r.weightClassKg, set);
+}
+
+const categories = [...sexesParClasse.entries()]
+  .map(([id, sexes]) => ({ id, classe: parseWeightClass(id)!, sexes: [...sexes].sort().join('') }))
+  .filter((c) => c.classe)
+  .sort((a, b) => compareWeightClass(a.classe, b.classe));
+
+const equipements = equipementsPresents(fullPowerResults);
+const libelleEquipement = (id: EquipmentGroup) => EQUIPMENT_GROUPS.find((e) => e.id === id)!;
+
+const divisions = [...new Set(classement.map((e) => e.division).filter(Boolean))].sort((a, b) =>
+  a.localeCompare(b, 'fr'),
+);
+
+const tranchesAge = [...new Set(classement.map((e) => e.ageClass).filter(Boolean))].sort(
+  (a, b) => Number.parseInt(a, 10) - Number.parseInt(b, 10),
+);
+---
+
+<BaseLayout titre={info.titre} description="Banc d'essai interne, hors production.">
+  <div class="wrap">
+    <header class="entete-page">
+      <p class="avertissement">Banc d'essai, hors production</p>
+      <h1>{info.titre}</h1>
+      <p class="chapeau">{info.resume}</p>
+      <p class="chapeau petit">Ce qui se perd : {info.perd}</p>
+
+      <nav class="bascule" aria-label="Changer d'essai">
+        {
+          Object.entries(VARIANTES).map(([cle, v]) => (
+            <a href={`/essai/${cle}/`} aria-current={cle === variante ? 'page' : undefined}>
+              {v.titre.split(' :')[0]}
+            </a>
+          ))
+        }
+        <a href="/classement/">Version en ligne</a>
+      </nav>
+    </header>
+
+    <InteractiveTable
+      recherche="Nom d'un athlète"
+      singulier="athlète"
+      pluriel="athlètes"
+      total={classement.length}
+      barreDeTri
+    >
+      <Fragment slot="filtres">
+        <div class="champ">
+          <label for="f-sexe">Sexe</label>
+          <select id="f-sexe" data-filtre="sexe">
+            <option value="">Tous</option>
+            <option value="M">Hommes</option>
+            <option value="F">Femmes</option>
+          </select>
+        </div>
+
+        <div class="champ">
+          <label for="f-categorie">Catégorie</label>
+          <select id="f-categorie" data-filtre="categorie" data-restreint-par="sexe">
+            <option value="">Toutes</option>
+            {
+              categories.map((c) => (
+                <option value={c.id} data-compatible={c.sexes}>
+                  {c.classe.label}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+
+        <div class="champ">
+          <label for="f-equipement">Équipement</label>
+          <select id="f-equipement" data-filtre="equipement">
+            <option value="">Tous</option>
+            {equipements.map((e) => <option value={e}>{libelleEquipement(e).label}</option>)}
+          </select>
+        </div>
+
+        <div class="champ">
+          <label for="f-division">Division</label>
+          <select id="f-division" data-filtre="division">
+            <option value="">Toutes</option>
+            {divisions.map((d) => <option value={d}>{d}</option>)}
+          </select>
+        </div>
+
+        <div class="champ">
+          <label for="f-age">Âge</label>
+          <select id="f-age" data-filtre="age">
+            <option value="">Tous</option>
+            {tranchesAge.map((a) => <option value={a}>{a} ans</option>)}
+          </select>
+        </div>
+      </Fragment>
+
+      {variante === 'a' && <ClassementA entries={classement} id="classement" />}
+      {variante === 'b' && <ClassementB entries={classement} id="classement" />}
+      {variante === 'c' && <ClassementC entries={classement} id="classement" />}
+    </InteractiveTable>
+  </div>
+</BaseLayout>
+
+<style>
+  .avertissement {
+    display: inline-block;
+    margin: 0 0 var(--space-2);
+    padding: 0.15rem var(--space-2);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    font-size: var(--step--1);
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .petit {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .bascule {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+  }
+  .bascule a {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--muted);
+    text-decoration: none;
+    font-size: var(--step--1);
+  }
+  .bascule a:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .bascule a[aria-current='page'] {
+    color: var(--on-accent);
+    background: var(--accent-fill);
+    border-color: var(--accent-fill);
+  }
+</style>

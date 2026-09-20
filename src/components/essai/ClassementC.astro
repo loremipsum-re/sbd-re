@@ -1,0 +1,301 @@
+---
+/**
+ * ESSAI C — une ligne par athlète, le détail au dépliage.
+ *
+ * L'hypothèse ici : sur une liste de plusieurs centaines d'athlètes, on
+ * cherche d'abord un NOM ou un RANG. Le poids de corps et le nombre de
+ * compétitions ne servent qu'une fois l'athlète trouvé. Les afficher sur
+ * chaque ligne coûte de la hauteur à tout le monde pour servir quelques-uns.
+ *
+ * Donc : quatre valeurs visibles, le reste derrière un dépliage. Rien n'est
+ * supprimé, tout est à un clic, et la liste tient en trois fois moins de
+ * défilement.
+ *
+ * Le dépliage est un `<details>` natif : il fonctionne sans JavaScript, se
+ * plie au clavier et s'annonce correctement aux lecteurs d'écran. La règle
+ * globale de `tokens.css` lui donne déjà ses 44 px de cible tactile.
+ */
+import { equipmentLabel, parseWeightClass } from '../../lib/categories';
+import { dateCourte, kg, nombre, points } from '../../lib/format';
+import type { AthleteRanking } from '../../lib/rankings';
+import { meetPath } from '../../lib/slug';
+import BadgeOfficiel from '../BadgeOfficiel.astro';
+import Coupe from '../Coupe.astro';
+
+interface Props {
+  entries: AthleteRanking[];
+  id?: string;
+}
+
+const { entries, id } = Astro.props;
+const METAUX = ['or', 'argent', 'bronze'] as const;
+---
+
+<div class="cadre">
+  <table id={id} data-tableau>
+    <thead class="sr-only">
+      <tr>
+        <th scope="col" data-tri data-cle="nom">Nom</th>
+        <th scope="col" data-tri data-cle="total" data-type="nombre">Total</th>
+        <th scope="col" data-tri data-cle="dots" data-type="nombre">Dots</th>
+        <th scope="col" data-tri data-cle="triCategorie" data-type="nombre">Catégorie</th>
+        <th scope="col" data-tri data-cle="poids" data-type="nombre">Poids de corps</th>
+        <th scope="col" data-tri data-cle="competitions" data-type="nombre">Compétitions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        entries.map((e, i) => {
+          const classe = parseWeightClass(e.weightClassKg);
+          const comps = e.competitions + e.competitionsExterieur;
+          return (
+            <tr
+              data-recherche={e.name}
+              data-nom={e.name}
+              data-total={e.totalKg}
+              data-dots={e.dots}
+              data-tri-categorie={classe?.kg ?? ''}
+              data-poids={e.bodyweightKg ?? ''}
+              data-competitions={comps}
+              data-sexe={e.sex}
+              data-categorie={e.weightClassKg}
+              data-equipement={e.equipmentGroup}
+              data-division={e.division}
+              data-age={e.ageClass}
+            >
+              <td
+                class="rang"
+                data-podium={i < 3 ? METAUX[i] : undefined}
+                data-niveau={i < 50 ? 'haut' : 'bas'}
+              >
+                <span class="rang-num">{i + 1}</span>
+                <Coupe detail={`${i + 1}e du classement`} taille={20} />
+              </td>
+
+              <th scope="row" class="nom">
+                <a href={`/athlete/${e.slug}/`}>{e.name}</a>
+                <BadgeOfficiel taille={13} />
+              </th>
+
+              <td class="cat num-tab">{e.weightClassKg ? `${e.weightClassKg} kg` : '—'}</td>
+              <td class="total num-tab">{kg(e.totalKg)}</td>
+              <td class="dots num-tab">{points(e.dots)}</td>
+
+              <td class="detail">
+                <details>
+                  <summary>
+                    <span class="sr-only">Détail de {e.name}</span>
+                    <span class="chevron" aria-hidden="true"></span>
+                  </summary>
+                  <dl>
+                    <div>
+                      <dt>Équipement</dt>
+                      <dd>{equipmentLabel(e.equipmentGroup)}</dd>
+                    </div>
+                    <div>
+                      <dt>Poids de corps</dt>
+                      <dd>{nombre(e.bodyweightKg)} kg</dd>
+                    </div>
+                    <div>
+                      <dt>Âge</dt>
+                      <dd>{e.ageClass ? `${e.ageClass} ans` : 'inconnu'}</dd>
+                    </div>
+                    <div>
+                      <dt>Compétitions</dt>
+                      <dd>
+                        {e.competitions} à La Réunion, {e.competitionsExterieur} ailleurs
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Meilleurs Dots</dt>
+                      <dd>
+                        {points(e.dots)} le{' '}
+                        <a href={`/competitions/${meetPath(e.dotsDate, e.dotsMeetName)}/`}>
+                          {dateCourte(e.dotsDate)}
+                        </a>
+                      </dd>
+                    </div>
+                  </dl>
+                </details>
+              </td>
+            </tr>
+          );
+        })
+      }
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .cadre {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  td,
+  th {
+    padding: 0;
+    text-align: left;
+  }
+
+  tbody tr {
+    position: relative;
+    display: grid;
+    /* La sixième piste ne contient rien : elle réserve la place du chevron,
+       qui est sorti du flux pour que le bloc déplié occupe toute la largeur. */
+    grid-template-columns: 2.25rem minmax(min(8rem, 100%), 1fr) auto auto auto 2.75rem;
+    align-items: center;
+    gap: 0 var(--space-3);
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-4);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr:last-child {
+    border-bottom: 0;
+  }
+  tbody tr:hover {
+    background: color-mix(in srgb, var(--accent) 5%, transparent);
+  }
+
+  .rang {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--step-0);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .rang[data-niveau='haut'] {
+    color: var(--or);
+  }
+  .rang[data-niveau='bas'] {
+    color: var(--muted);
+  }
+  .rang :global(.coupe) {
+    display: none;
+  }
+  .rang[data-podium] :global(.coupe) {
+    display: inline-flex;
+    margin-left: 0;
+  }
+  .rang[data-podium] .rang-num {
+    display: none;
+  }
+  .rang[data-podium='or'] {
+    color: var(--or);
+  }
+  .rang[data-podium='argent'] {
+    color: var(--argent);
+  }
+  .rang[data-podium='bronze'] {
+    color: var(--bronze);
+  }
+
+  .nom {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+    font-size: var(--step-0);
+  }
+  .nom a {
+    color: var(--text);
+  }
+  .nom a:hover {
+    color: var(--accent);
+  }
+
+  .cat,
+  .dots {
+    font-size: var(--step--1);
+    color: var(--muted);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .total {
+    font-size: var(--step-0);
+    color: var(--text);
+    text-align: right;
+    white-space: nowrap;
+  }
+  /* La catégorie passe après le nom sur un écran étroit : elle est la moins
+     utile des quatre valeurs, et c'est la seule à pouvoir partir sans rendre
+     la ligne muette. */
+  .cat {
+    display: none;
+  }
+
+  /* ---------- Le dépliage ----------
+     La cellule occupe toute la largeur de la ligne et se place sous les
+     valeurs. Fermée, elle ne mesure rien. Le chevron, lui, est posé en
+     absolu dans la piste réservée, à droite de la première ligne. */
+  .detail {
+    grid-column: 1 / -1;
+  }
+  summary {
+    position: absolute;
+    top: 0;
+    right: var(--space-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: var(--cible-min);
+    list-style: none;
+    cursor: pointer;
+    color: var(--muted);
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary:hover {
+    color: var(--accent);
+  }
+  .chevron {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg) translate(-0.1rem, -0.1rem);
+    transition: transform 0.15s ease;
+  }
+  details[open] .chevron {
+    transform: rotate(-135deg) translate(-0.15rem, -0.15rem);
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+    gap: var(--space-2) var(--space-4);
+    margin: 0 0 var(--space-3);
+    padding: var(--space-3) 0 0;
+    border-top: 1px solid var(--border);
+    font-size: var(--step--1);
+  }
+  dt {
+    color: var(--muted);
+  }
+  dd {
+    margin: 0;
+    color: var(--text);
+  }
+
+  @media (min-width: 30rem) {
+    .cat {
+      display: block;
+    }
+  }
+
+  @media (min-width: 60rem) {
+    tbody tr {
+      grid-template-columns: 3rem minmax(min(14rem, 100%), 1fr) 5rem 6rem 5rem 2.75rem;
+      padding: 0 var(--space-6);
+    }
+  }
+</style>

@@ -1,0 +1,255 @@
+---
+/**
+ * ESSAI B — la carte gardée, mais hiérarchisée.
+ *
+ * Le reproche fait à la carte en production n'est pas qu'elle soit une carte,
+ * c'est qu'elle aligne onze informations du même poids visuel, dont trois
+ * lignes de gris séparées par des puces. Rien ne dit où regarder.
+ *
+ * Ici, une seule chose domine : LE TOTAL, en gros, à droite, à la même
+ * position sur chaque carte. C'est la valeur qui classe, donc celle qu'on
+ * vient lire. Tout le reste descend d'un cran : le nom garde sa taille, le
+ * contexte passe en une seule ligne grise, la date devient un lien discret.
+ *
+ * Rien n'est perdu : les onze informations sont toujours là. Elles cessent
+ * seulement de se disputer l'attention.
+ */
+import { equipmentLabel, parseWeightClass } from '../../lib/categories';
+import { dateCourte, kg, nombre, points } from '../../lib/format';
+import type { AthleteRanking } from '../../lib/rankings';
+import { meetPath } from '../../lib/slug';
+import BadgeOfficiel from '../BadgeOfficiel.astro';
+import Coupe from '../Coupe.astro';
+
+interface Props {
+  entries: AthleteRanking[];
+  id?: string;
+}
+
+const { entries, id } = Astro.props;
+const METAUX = ['or', 'argent', 'bronze'] as const;
+---
+
+<div class="cadre">
+  <table id={id} data-tableau>
+    <thead class="sr-only">
+      <tr>
+        <th scope="col" data-tri data-cle="nom">Nom</th>
+        <th scope="col" data-tri data-cle="total" data-type="nombre">Total</th>
+        <th scope="col" data-tri data-cle="dots" data-type="nombre">Dots</th>
+        <th scope="col" data-tri data-cle="triCategorie" data-type="nombre">Catégorie</th>
+        <th scope="col" data-tri data-cle="poids" data-type="nombre">Poids de corps</th>
+        <th scope="col" data-tri data-cle="competitions" data-type="nombre">Compétitions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        entries.map((e, i) => {
+          const classe = parseWeightClass(e.weightClassKg);
+          const comps = e.competitions + e.competitionsExterieur;
+          return (
+            <tr
+              data-recherche={e.name}
+              data-nom={e.name}
+              data-total={e.totalKg}
+              data-dots={e.dots}
+              data-tri-categorie={classe?.kg ?? ''}
+              data-poids={e.bodyweightKg ?? ''}
+              data-competitions={comps}
+              data-sexe={e.sex}
+              data-categorie={e.weightClassKg}
+              data-equipement={e.equipmentGroup}
+              data-division={e.division}
+              data-age={e.ageClass}
+            >
+              <td
+                class="rang"
+                data-podium={i < 3 ? METAUX[i] : undefined}
+                data-niveau={i < 50 ? 'haut' : 'bas'}
+              >
+                <span class="rang-num">{i + 1}</span>
+                <Coupe detail={`${i + 1}e du classement`} taille={24} />
+              </td>
+
+              <th scope="row" class="nom">
+                <a href={`/athlete/${e.slug}/`}>{e.name}</a>
+                <BadgeOfficiel taille={14} />
+              </th>
+
+              {/* Une seule ligne de contexte, en étiquettes plutôt qu'en puces. */}
+              <td class="contexte">
+                <span class="etiquette">{equipmentLabel(e.equipmentGroup)}</span>
+                <span class="etiquette">{e.weightClassKg ? `${e.weightClassKg} kg` : 'cat. inconnue'}</span>
+                <span class="etiquette">{nombre(e.bodyweightKg)} kg de corps</span>
+                <span class="etiquette">{e.ageClass ? `${e.ageClass} ans` : 'âge inconnu'}</span>
+                <span class="etiquette">
+                  {comps} compétition{comps > 1 ? 's' : ''}
+                </span>
+              </td>
+
+              <td class="chiffres">
+                {/*
+                  `num-tab` et non `num` : ces totaux forment une colonne d'une
+                  carte à l'autre, et Oswald n'a pas de chiffres à largeur fixe.
+                */}
+                <span class="total num-tab">{kg(e.totalKg)}</span>
+                <span class="dots num-tab">{points(e.dots)} Dots</span>
+                <a class="quand" href={`/competitions/${meetPath(e.dotsDate, e.dotsMeetName)}/`}>
+                  {dateCourte(e.dotsDate)}
+                </a>
+              </td>
+            </tr>
+          );
+        })
+      }
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .cadre {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  td,
+  th {
+    padding: 0;
+    text-align: left;
+  }
+
+  tbody tr {
+    display: grid;
+    /* `min(...)` et non une valeur fixe : sans lui, la colonne de droite
+       imposerait sa largeur et ferait déborder la carte sur un petit écran. */
+    grid-template-columns: 2.75rem minmax(min(12rem, 100%), 1fr) auto;
+    grid-template-areas:
+      'rang nom chiffres'
+      'rang contexte chiffres';
+    align-items: start;
+    gap: var(--space-1) var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr:last-child {
+    border-bottom: 0;
+  }
+  tbody tr:hover {
+    background: color-mix(in srgb, var(--accent) 5%, transparent);
+  }
+
+  .rang {
+    grid-area: rang;
+    align-self: start;
+    padding-top: 0.15em;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--step-1);
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+  }
+  .rang[data-niveau='haut'] {
+    color: var(--or);
+  }
+  .rang[data-niveau='bas'] {
+    color: var(--muted);
+  }
+  .rang :global(.coupe) {
+    display: none;
+  }
+  .rang[data-podium] :global(.coupe) {
+    display: inline-flex;
+    margin-left: 0;
+  }
+  .rang[data-podium] .rang-num {
+    display: none;
+  }
+  .rang[data-podium='or'] {
+    color: var(--or);
+  }
+  .rang[data-podium='argent'] {
+    color: var(--argent);
+  }
+  .rang[data-podium='bronze'] {
+    color: var(--bronze);
+  }
+
+  .nom {
+    grid-area: nom;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--step-1);
+    line-height: 1.15;
+  }
+  .nom a {
+    color: var(--text);
+  }
+  .nom a:hover {
+    color: var(--accent);
+  }
+
+  .contexte {
+    grid-area: contexte;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-2);
+    margin-top: var(--space-1);
+  }
+
+  /* Des étiquettes plutôt que des puces : chaque information a son contour,
+     donc sa limite. La puce, elle, laissait cinq valeurs couler en une phrase. */
+  .etiquette {
+    padding: 0.1rem var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: var(--step--1);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .chiffres {
+    grid-area: chiffres;
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+    gap: 0.1rem;
+    text-align: right;
+  }
+  .total {
+    font-size: var(--step-2);
+    line-height: 1;
+    color: var(--text);
+  }
+  .dots {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .quand {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .quand:hover {
+    color: var(--accent);
+  }
+
+  @media (min-width: 40rem) {
+    tbody tr {
+      grid-template-columns: 3.5rem minmax(min(16rem, 100%), 1fr) auto;
+      padding: var(--space-4) var(--space-6);
+    }
+    .rang {
+      font-size: var(--step-2);
+    }
+  }
+</style>
