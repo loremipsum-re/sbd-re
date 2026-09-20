@@ -55,15 +55,37 @@ import type { AthleteRanking } from '../../lib/rankings';
 import { meetPath } from '../../lib/slug';
 import BadgeOfficiel from '../BadgeOfficiel.astro';
 
+/**
+ * QUATRE PRÉSENTATIONS, UN SEUL COMPOSANT.
+ *
+ * Le balisage, les attributs `data-` et le contrat de tri sont rigoureusement
+ * identiques d'une présentation à l'autre : seule la feuille de style change.
+ * C'est la seule façon de comparer honnêtement quatre mises en forme, et cela
+ * évite de maintenir quatre copies qui divergeraient dès la première retouche.
+ *
+ *   standard — la version que tu as retenue, quatre colonnes alignées.
+ *   compact  — la même, ramenée à une seule ligne par athlète sur grand écran.
+ *   barres   — la même, avec une barre proportionnelle au meilleur total.
+ *   aere     — la même, avec de l'air et des chiffres beaucoup plus grands.
+ */
+type Presentation = 'standard' | 'compact' | 'barres' | 'aere';
+
 interface Props {
   entries: AthleteRanking[];
   id?: string;
+  presentation?: Presentation;
 }
 
-const { entries, id } = Astro.props;
+const { entries, id, presentation = 'standard' } = Astro.props;
+
+/*
+ * Référence des barres : le meilleur total de la liste affichée. Calculé et
+ * non codé en dur, la page des catégories passant des sous-ensembles.
+ */
+const meilleurTotal = Math.max(...entries.map((e) => e.totalKg), 1);
 ---
 
-<div class="cadre">
+<div class={`cadre p-${presentation}`}>
   <table id={id} data-tableau>
     <thead class="sr-only">
       <tr>
@@ -122,6 +144,15 @@ const { entries, id } = Astro.props;
                     {dateCourte(e.date)}
                   </span>
                 </a>
+              </td>
+
+              {/*
+                Barre de comparaison, affichée par la seule présentation
+                « barres ». Décorative : le total est écrit juste à côté, donc
+                elle n'apporte rien à qui écoute la page.
+              */}
+              <td class="barre" aria-hidden="true">
+                <span style={`width: ${((e.totalKg / meilleurTotal) * 100).toFixed(1)}%`}></span>
               </td>
 
               <td class="chiffres">
@@ -246,6 +277,13 @@ const { entries, id } = Astro.props;
   }
   .nom a:hover {
     color: var(--accent);
+  }
+
+  /* La barre n'existe que pour la présentation « barres ». Ailleurs, elle
+     reste dans le document sans occuper un pixel. */
+  .barre {
+    grid-area: barre;
+    display: none;
   }
 
   /* Au téléphone, total et Dots tiennent sur une ligne : empilés, ils
@@ -391,6 +429,147 @@ const { entries, id } = Astro.props;
       align-items: end;
       gap: 0.15rem;
       align-self: center;
+    }
+  }
+
+  /* =====================================================================
+     PRÉSENTATION « COMPACT » — une seule ligne par athlète.
+
+     Pour qui parcourt la liste de haut en bas et cherche un nom ou un rang.
+     Tout tient sur une ligne au-delà de 60rem, sans rien retirer sauf le
+     poids de corps, qui est la valeur la moins regardée des trois étiquettes.
+     Sous 60rem, la présentation standard reprend la main : une ligne unique
+     sur un téléphone reviendrait à tronquer, ce que le projet s'interdit.
+     ===================================================================== */
+  @media (min-width: 60rem) {
+    .p-compact tbody tr {
+      /* La colonne des étiquettes est FIXE et non `auto` : en automatique,
+         elle prenait la largeur de son contenu, si bien que la compétition
+         démarrait à cinq abscisses différentes selon la ligne. Mesuré. */
+      grid-template-columns:
+        2.75rem
+        minmax(min(11rem, 100%), 1.1fr)
+        10rem
+        minmax(min(11rem, 100%), 1fr)
+        12rem;
+      grid-template-areas: 'rang nom contexte competition chiffres';
+      align-items: center;
+      gap: 0 var(--space-4);
+      padding: var(--space-2) var(--space-6);
+    }
+    .p-compact .rang {
+      align-self: center;
+      padding-top: 0;
+    }
+    .p-compact .nom {
+      font-size: var(--step-0);
+    }
+    .p-compact .contexte {
+      flex-wrap: nowrap;
+    }
+    .p-compact .etiquette:nth-of-type(3) {
+      display: none;
+    }
+    .p-compact .competition a {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0 var(--space-2);
+    }
+    .p-compact .chiffres {
+      flex-direction: row;
+      align-items: baseline;
+      justify-content: end;
+      gap: var(--space-3);
+    }
+    .p-compact .total {
+      font-size: var(--step-1);
+    }
+  }
+
+  /* =====================================================================
+     PRÉSENTATION « BARRES » — le classement se voit, au lieu de se lire.
+
+     Une barre proportionnelle au meilleur total de la liste. C'est ce qui
+     manque le plus à une liste de nombres : l'ÉCART. Entre le 4e et le 12e,
+     l'œil ne mesure rien sur « 720 » contre « 660 », alors qu'il voit tout
+     de suite deux barres de longueurs différentes.
+
+     La barre part de la droite, contre les chiffres : le regard descend le
+     long d'un bord commun plutôt que de suivre des longueurs flottantes.
+     ===================================================================== */
+  .p-barres tbody tr {
+    grid-template-areas:
+      'rang nom nom'
+      'rang contexte chiffres'
+      'rang competition competition'
+      'rang barre barre';
+  }
+  .p-barres .barre {
+    display: flex;
+    justify-content: flex-end;
+    align-self: center;
+    height: 0.4rem;
+    /* La piste montre le 100 %, sans quoi une barre courte ne se compare à
+       rien. Teinte franche et angles nets, comme le reste du système. */
+    background: color-mix(in srgb, var(--text) 8%, transparent);
+  }
+  .p-barres .barre span {
+    display: block;
+    height: 100%;
+    background: color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+
+  @media (min-width: 60rem) {
+    .p-barres tbody tr {
+      grid-template-columns:
+        3rem
+        minmax(min(13rem, 100%), 1.1fr)
+        minmax(min(10rem, 100%), 0.9fr)
+        7rem
+        8.5rem;
+      grid-template-areas:
+        'rang nom competition barre chiffres'
+        'rang contexte competition barre chiffres';
+    }
+  }
+
+  /* =====================================================================
+     PRÉSENTATION « AÉRÉE » — la liste comme une page de magazine.
+
+     Des chiffres qui se voient de loin, du blanc entre les lignes, et la
+     zébrure retirée : l'espace suffit alors à séparer deux athlètes. Coûte
+     du défilement, gagne en présence. À juger sur la page d'accueil autant
+     que sur le classement complet.
+     ===================================================================== */
+  .p-aere tbody tr:nth-child(even) {
+    background: transparent;
+  }
+
+  @media (min-width: 60rem) {
+    .p-aere tbody tr {
+      grid-template-columns:
+        3.5rem
+        minmax(min(14rem, 100%), 1.1fr)
+        minmax(min(12rem, 100%), 1fr)
+        11rem;
+      gap: var(--space-2) var(--space-6);
+      padding: var(--space-6);
+    }
+    .p-aere .rang {
+      font-size: var(--step-1);
+    }
+    .p-aere .nom {
+      font-size: var(--step-2);
+    }
+    .p-aere .meet {
+      font-size: var(--step-0);
+    }
+    .p-aere .total {
+      font-size: var(--step-3);
+    }
+    .p-aere .dots {
+      font-size: var(--step-1);
     }
   }
 </style>

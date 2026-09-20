@@ -1,6 +1,6 @@
 ---
 /**
- * BANC D'ESSAI — trois mises en forme du classement, mêmes données.
+ * BANC D'ESSAI — six mises en forme du classement, mêmes données.
  *
  * Ces pages ne partent PAS en production : elles vivent sur la branche
  * `essai-ux` et servent à trancher en regardant, plutôt qu'en imaginant.
@@ -22,34 +22,13 @@ import { fullPowerResults } from '../../lib/data';
 import { equipementsPresents } from '../../lib/records';
 import { meilleurTotalParAthlete } from '../../lib/rankings';
 import type { Sex } from '../../lib/types';
-
-const VARIANTES = {
-  a: {
-    titre: 'Essai A : vraies colonnes',
-    resume:
-      "Carte sur téléphone, tableau à partir de 60rem. Les totaux forment une colonne, l'œil descend et compare.",
-    perd: 'Rien. Le poids de corps et le nombre de compétitions se cachent seulement sur petit écran.',
-  },
-  b: {
-    titre: 'Essai B : carte hiérarchisée',
-    resume:
-      "Quatre colonnes alignées d'une ligne à l'autre. Le total domine seul, la compétition forme un bloc lié qui porte son nom, sa commune et sa date, le contexte passe en étiquettes.",
-    perd:
-      "La tranche d'âge et le nombre de compétitions, qui décrivent l'athlète et non la performance classée. La fiche les porte, les filtres les gardent.",
-  },
-  c: {
-    titre: 'Essai C : ligne unique, détail au dépliage',
-    resume:
-      'Quatre valeurs par ligne, le reste derrière un chevron. La liste tient en trois fois moins de défilement.',
-    perd: "Rien n'est supprimé, mais quatre informations demandent un clic.",
-  },
-} as const;
+import { PRESENTATIONS, VARIANTES, type CleVariante } from '../../components/essai/variantes';
 
 export function getStaticPaths() {
-  return [{ params: { variante: 'a' } }, { params: { variante: 'b' } }, { params: { variante: 'c' } }];
+  return Object.keys(VARIANTES).map((variante) => ({ params: { variante } }));
 }
 
-const { variante } = Astro.params as { variante: keyof typeof VARIANTES };
+const { variante } = Astro.params as { variante: CleVariante };
 const info = VARIANTES[variante];
 
 const classement = meilleurTotalParAthlete();
@@ -91,7 +70,7 @@ const tranchesAge = [...new Set(classement.map((e) => e.ageClass).filter(Boolean
         {
           Object.entries(VARIANTES).map(([cle, v]) => (
             <a href={`/essai/${cle}/`} aria-current={cle === variante ? 'page' : undefined}>
-              {v.titre.split(' :')[0]}
+              {v.onglet}
             </a>
           ))
         }
@@ -156,8 +135,21 @@ const tranchesAge = [...new Set(classement.map((e) => e.ageClass).filter(Boolean
       </Fragment>
 
       {variante === 'a' && <ClassementA entries={classement} id="classement" />}
-      {variante === 'b' && <ClassementB entries={classement} id="classement" />}
       {variante === 'c' && <ClassementC entries={classement} id="classement" />}
+      {
+        /*
+         * Les quatre déclinaisons du modèle B passent par le MÊME composant,
+         * avec une seule propriété qui change. Ce qui se compare est donc bien
+         * la mise en forme, et non quatre copies qui auraient dérivé.
+         */
+        variante.startsWith('b') && (
+          <ClassementB
+            entries={classement}
+            id="classement"
+            presentation={PRESENTATIONS[variante as keyof typeof PRESENTATIONS]}
+          />
+        )
+      }
     </InteractiveTable>
   </div>
 </BaseLayout>
