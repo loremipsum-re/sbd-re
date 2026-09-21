@@ -3,16 +3,26 @@
  * « Me situer » : où se placerait une performance dans le classement.
  *
  * L'IDÉE. Quelqu'un qui s'entraîne connaît ses barres mais pas ce qu'elles
- * valent sur un plateau réunionnais. Il saisit ses trois mouvements, sa
- * catégorie et son équipement, et la page lui rend sa place, les trois
+ * valent sur un plateau réunionnais. Il saisit ses trois mouvements, son
+ * équipement et son poids de corps, et la page lui rend sa place, les trois
  * athlètes devant, les trois derrière, et surtout LES KILOS QUI L'EN
  * SÉPARENT. C'est la question que l'on se pose vraiment : combien il me
  * manque pour passer devant.
  *
+ * LE FORMULAIRE EST EN DEUX GROUPES, ce qu'on choisit et ce qu'on chiffre.
+ * Mélangés sur une même rangée, un menu déroulant et un champ de saisie se
+ * ressemblent sans se comporter pareil : les séparer dit d'un coup d'œil
+ * quelle main est attendue où.
+ *
+ * LA CATÉGORIE N'EST PAS DEMANDÉE, elle est DÉDUITE du poids de corps, puis
+ * annoncée. C'est une information que le visiteur possède rarement de tête
+ * alors qu'elle se calcule sans lui. Il peut ensuite comparer dans une autre
+ * catégorie, une fois son résultat sous les yeux.
+ *
  * TOUT SE CALCULE DANS LE NAVIGATEUR. Aucune saisie ne part sur le réseau, ni
  * vers le serveur, ni ailleurs : le classement est déposé dans la page, et le
  * script le lit sur place. Le site n'a donc rien à recueillir, rien à
- * conserver, et rien à déclarer. C'est la même posture que le reste du site.
+ * conserver, et rien à déclarer.
  *
  * CE N'EST PAS UNE INSCRIPTION AU CLASSEMENT. Le classement officiel ne
  * recense que des performances réalisées en compétition homologuée. Cette
@@ -20,15 +30,10 @@
  */
 import Glossaire from '../components/Glossaire.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import {
-  EQUIPMENT_GROUPS,
-  compareWeightClass,
-  parseWeightClass,
-} from '../lib/categories';
+import { EQUIPMENT_GROUPS, weightClassesFor } from '../lib/categories';
 import { fullPowerResults } from '../lib/data';
 import { equipementsPresents } from '../lib/records';
 import { meilleurTotalParAthlete } from '../lib/rankings';
-import type { Sex } from '../lib/types';
 
 const classement = meilleurTotalParAthlete();
 
@@ -47,20 +52,23 @@ const donnees = classement.map((a) => ({
   e: a.equipmentGroup,
 }));
 
-/* Catégories réellement présentes, marquées par sexe comme sur le classement,
-   pour ne jamais proposer une catégorie qui ne renverrait personne. */
-const sexesParClasse = new Map<string, Set<Sex>>();
-for (const r of fullPowerResults) {
-  if (!r.weightClassKg) continue;
-  const set = sexesParClasse.get(r.weightClassKg) ?? new Set<Sex>();
-  set.add(r.sex);
-  sexesParClasse.set(r.weightClassKg, set);
-}
+/*
+ * CATÉGORIES EN USAGE, déduites des quatre dernières années de compétition et
+ * jamais codées en dur. Les classes ont changé au fil des réformes de la
+ * fédération : la catégorie 72 kg féminine, encore présente dans les données
+ * anciennes, a disparu des plateaux après 2022. Les figer ici ferait déduire
+ * une catégorie qui n'existe plus, et il faudrait y repenser à la prochaine
+ * réforme. Les lire dans les données récentes suit les réformes tout seul.
+ */
+const derniereAnnee = Number(
+  fullPowerResults.reduce((max, r) => (r.date > max ? r.date : max), '').slice(0, 4),
+);
+const recents = fullPowerResults.filter((r) => Number(r.date.slice(0, 4)) >= derniereAnnee - 3);
 
-const categories = [...sexesParClasse.entries()]
-  .map(([id, sexes]) => ({ id, classe: parseWeightClass(id)!, sexes: [...sexes].sort().join('') }))
-  .filter((c) => c.classe)
-  .sort((a, b) => compareWeightClass(a.classe, b.classe));
+const classesParSexe = {
+  M: weightClassesFor(recents, 'M').map((c) => ({ id: c.id, label: c.label, kg: c.kg, o: c.open })),
+  F: weightClassesFor(recents, 'F').map((c) => ({ id: c.id, label: c.label, kg: c.kg, o: c.open })),
+};
 
 const equipements = equipementsPresents(fullPowerResults);
 const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === id)?.label ?? id;
@@ -74,8 +82,8 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     <header class="entete-page">
       <h1>Me situer</h1>
       <p class="chapeau">
-        Renseignez vos trois barres, votre catégorie et votre équipement : la
-        page vous rend la place que ce total occuperait au classement de
+        Renseignez vos trois barres, votre équipement et votre poids de corps :
+        la page vous rend la place que ce total occuperait au classement de
         La Réunion, et surtout les kilos qui vous séparent des athlètes situés
         juste devant.
       </p>
@@ -90,55 +98,53 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     <Glossaire />
 
     <form class="formulaire" id="formulaire" autocomplete="off">
-      <div class="champs">
-        <div class="champ">
-          <label for="sexe">Sexe</label>
-          <select id="sexe" name="sexe">
-            <option value="M">Hommes</option>
-            <option value="F">Femmes</option>
-          </select>
-        </div>
+      {/* Ce qu'on CHOISIT dans une liste. */}
+      <fieldset class="groupe">
+        <legend>Votre profil</legend>
+        <div class="champs deux">
+          <div class="champ">
+            <label for="sexe">Sexe</label>
+            <select id="sexe" name="sexe">
+              <option value="M">Hommes</option>
+              <option value="F">Femmes</option>
+            </select>
+          </div>
 
-        <div class="champ">
-          <label for="categorie">Catégorie</label>
-          <select id="categorie" name="categorie">
-            {
-              categories.map((c) => (
-                <option value={c.id} data-compatible={c.sexes}>
-                  {c.classe.label}
-                </option>
-              ))
-            }
-          </select>
+          <div class="champ">
+            <label for="equipement">Équipement</label>
+            <select id="equipement" name="equipement">
+              {equipements.map((e) => <option value={e}>{libelleEquipement(e)}</option>)}
+            </select>
+          </div>
         </div>
+      </fieldset>
 
-        <div class="champ">
-          <label for="equipement">Équipement</label>
-          <select id="equipement" name="equipement">
-            {equipements.map((e) => <option value={e}>{libelleEquipement(e)}</option>)}
-          </select>
-        </div>
+      {/* Ce qu'on CHIFFRE au clavier. L'unité vit dans l'invite du champ,
+          en gris : elle dit quoi saisir sans encombrer l'intitulé. */}
+      <fieldset class="groupe">
+        <legend>Vos barres</legend>
+        <div class="champs quatre">
+          <div class="champ">
+            <label for="poids">Poids de corps</label>
+            <input id="poids" name="poids" type="number" min="30" max="250" step="0.1" inputmode="decimal" placeholder="kg" />
+          </div>
 
-        <div class="champ">
-          <label for="poids">Poids de corps</label>
-          <input id="poids" name="poids" type="number" min="30" max="250" step="0.1" inputmode="decimal" placeholder="kg" />
-        </div>
+          <div class="champ">
+            <label for="squat">Squat</label>
+            <input id="squat" name="squat" type="number" min="0" max="600" step="0.5" inputmode="decimal" placeholder="kg" />
+          </div>
 
-        <div class="champ">
-          <label for="squat">Squat</label>
-          <input id="squat" name="squat" type="number" min="0" max="600" step="0.5" inputmode="decimal" placeholder="kg" />
-        </div>
+          <div class="champ">
+            <label for="bench">Développé couché</label>
+            <input id="bench" name="bench" type="number" min="0" max="600" step="0.5" inputmode="decimal" placeholder="kg" />
+          </div>
 
-        <div class="champ">
-          <label for="bench">Développé couché</label>
-          <input id="bench" name="bench" type="number" min="0" max="600" step="0.5" inputmode="decimal" placeholder="kg" />
+          <div class="champ">
+            <label for="deadlift">Soulevé de terre</label>
+            <input id="deadlift" name="deadlift" type="number" min="0" max="600" step="0.5" inputmode="decimal" placeholder="kg" />
+          </div>
         </div>
-
-        <div class="champ">
-          <label for="deadlift">Soulevé de terre</label>
-          <input id="deadlift" name="deadlift" type="number" min="0" max="600" step="0.5" inputmode="decimal" placeholder="kg" />
-        </div>
-      </div>
+      </fieldset>
     </form>
 
     {/* `aria-live` : le résultat change sans rechargement, il doit donc
@@ -159,7 +165,7 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     type="application/json"
     id="donnees-classement"
     is:inline
-    set:html={JSON.stringify(donnees)}
+    set:html={JSON.stringify({ athletes: donnees, classes: classesParSexe })}
   />
 </BaseLayout>
 
@@ -169,6 +175,7 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
   const form = document.getElementById('formulaire') as HTMLFormElement | null;
   const sortie = document.getElementById('resultat');
   const brut = document.getElementById('donnees-classement');
+
   if (form && sortie && brut) {
     interface Athlete {
       n: string;
@@ -179,8 +186,20 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
       c: string;
       e: string;
     }
+    interface Classe {
+      id: string;
+      label: string;
+      kg: number;
+      o: boolean;
+    }
 
-    const athletes: Athlete[] = JSON.parse(brut.textContent ?? '[]');
+    const { athletes, classes } = JSON.parse(brut.textContent ?? '{}') as {
+      athletes: Athlete[];
+      classes: Record<'M' | 'F', Classe[]>;
+    };
+
+    /** Catégorie choisie à la main dans le résultat, sinon celle du poids. */
+    let categorieForcee: string | null = null;
 
     const nombre = (v: number, decimales = 1) =>
       Number(v.toFixed(decimales)).toLocaleString('fr-FR');
@@ -191,46 +210,31 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     const select = (id: string) => (document.getElementById(id) as HTMLSelectElement).value;
 
     /*
-     * Les catégories dépendent du sexe : celles qui n'existent pas chez l'un
-     * sont retirées plutôt que grisées, pour ne pas proposer un choix vide.
-     * Même principe que le filtre du classement.
+     * La catégorie d'un poids de corps : la plus légère dont la borne n'est
+     * pas dépassée. Au-delà de la dernière borne, c'est la catégorie ouverte,
+     * celle qui porte le « + ».
      */
-    const restreindreCategories = () => {
-      const sexe = select('sexe');
-      const liste = document.getElementById('categorie') as HTMLSelectElement;
-      let choixValide = false;
-      for (const option of Array.from(liste.options)) {
-        const compatible = (option.dataset.compatible ?? '').includes(sexe);
-        option.hidden = !compatible;
-        option.disabled = !compatible;
-        if (compatible && option.value === liste.value) choixValide = true;
-      }
-      if (!choixValide) {
-        const premier = Array.from(liste.options).find((o) => !o.disabled);
-        if (premier) liste.value = premier.value;
-      }
+    const categorieDuPoids = (poids: number, sexe: 'M' | 'F'): Classe | null => {
+      const liste = classes[sexe];
+      if (!liste?.length || poids <= 0) return null;
+      return liste.find((c) => !c.o && poids <= c.kg) ?? liste[liste.length - 1];
     };
 
-    const ligne = (a: Athlete, ecart: number | null) => `
+    const ligne = (a: Athlete, ecart: number) => `
       <li class="candidat">
-        <span class="place-nom">
-          <a href="/athlete/${a.s}/">${a.n}</a>
-        </span>
+        <span class="place-nom"><a href="/athlete/${a.s}/">${a.n}</a></span>
         <span class="place-total"><b class="num-tab">${nombre(a.t)}</b> <span class="unite">kg</span></span>
         <span class="place-ecart">${
-          ecart === null
-            ? '<span class="vous">c\'est vous</span>'
-            : ecart > 0
-              ? `<span class="manque">+${nombre(ecart)} kg pour passer devant</span>`
-              : ecart === 0
-                ? '<span class="egalite">à égalité</span>'
-                : `<span class="avance">${nombre(-ecart)} kg d\'avance</span>`
+          ecart > 0
+            ? `<span class="manque">+${nombre(ecart)} kg pour passer devant</span>`
+            : ecart === 0
+              ? '<span class="egalite">à égalité</span>'
+              : `<span class="avance">${nombre(-ecart)} kg d\'avance</span>`
         }</span>
       </li>`;
 
     const calculer = () => {
       const sexe = select('sexe') as 'M' | 'F';
-      const categorie = select('categorie');
       const equipement = select('equipement');
       const total = champ('squat') + champ('bench') + champ('deadlift');
       const poids = champ('poids');
@@ -241,11 +245,14 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
         return;
       }
 
+      const deduite = categorieDuPoids(poids, sexe);
+      const active = categorieForcee ?? deduite?.id ?? null;
+      const libelle = classes[sexe].find((c) => c.id === active)?.label ?? '';
+
       const pairs = athletes
-        .filter((a) => a.x === sexe && a.c === categorie && a.e === equipement)
+        .filter((a) => a.x === sexe && a.e === equipement && (active === null || a.c === active))
         .sort((a, b) => b.t - a.t);
 
-      // Rang : le nombre d'athlètes qui font STRICTEMENT mieux, plus un.
       const devant = pairs.filter((a) => a.t > total);
       const derriere = pairs.filter((a) => a.t <= total);
       const rang = devant.length + 1;
@@ -264,27 +271,64 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
       const score = poids > 0 ? dots(total, poids, sexe) : 0;
       const rangDots = score > 0 ? athletes.filter((a) => a.d > score).length + 1 : null;
 
+      /* La catégorie est ANNONCÉE, et le bouton n'ouvre les autres qu'ensuite :
+         le visiteur voit d'abord sa situation, puis compare s'il le souhaite. */
+      const annonce = deduite
+        ? categorieForcee && categorieForcee !== deduite.id
+          ? `Comparaison en <b>${libelle}</b>, alors que ${nombre(poids)} kg vous placent en <b>${deduite.label}</b>.`
+          : `Avec ${nombre(poids)} kg de poids de corps, vous concourez en <b>${deduite.label}</b>.`
+        : 'Renseignez votre poids de corps pour connaître votre catégorie.';
+
+      const choix = classes[sexe]
+        .map(
+          (c) =>
+            `<button type="button" class="categorie${c.id === active ? ' active' : ''}" data-categorie="${c.id}" aria-pressed="${c.id === active}">${c.label}</button>`,
+        )
+        .join('');
+
       sortie.innerHTML = `
         <div class="bilan">
           <p class="titre">
             Avec <b>${nombre(total)} kg</b>${score > 0 ? ` et <b>${nombre(score)} Dots</b>` : ''},
-            vous seriez <b>${rang}<sup>e</sup></b> de votre catégorie.
+            vous seriez <b>${rang}<sup>e</sup></b>${libelle ? ` en ${libelle}` : ''}.
           </p>
+          <p class="sous-titre">${annonce}</p>
           <p class="sous-titre">
             ${general}<sup>e</sup> au total sur l'ensemble des ${athletes.length} athlètes classés${
               rangDots ? `, et ${rangDots}<sup>e</sup> aux points Dots` : ''
             }.
           </p>
         </div>
-        <ol class="voisins">${voisins}</ol>`;
+
+        <ol class="voisins">${voisins}</ol>
+
+        <details class="autres">
+          <summary>Comparer dans une autre catégorie</summary>
+          <div class="categories">${choix}</div>
+        </details>`;
     };
+
+    /* Un seul écouteur sur la sortie, plutôt qu'un par bouton : les boutons
+       sont recréés à chaque calcul, et des écouteurs posés sur eux seraient
+       perdus à la première frappe. */
+    sortie.addEventListener('click', (evenement) => {
+      const bouton = (evenement.target as HTMLElement).closest<HTMLElement>('[data-categorie]');
+      if (!bouton) return;
+      const choisie = bouton.dataset.categorie ?? null;
+      const sexe = select('sexe') as 'M' | 'F';
+      const deduite = categorieDuPoids(champ('poids'), sexe);
+      // Rechoisir sa propre catégorie revient à ne rien forcer du tout.
+      categorieForcee = choisie === deduite?.id ? null : choisie;
+      calculer();
+      sortie.querySelector('details')?.setAttribute('open', '');
+    });
 
     form.addEventListener('input', calculer);
     form.addEventListener('change', () => {
-      restreindreCategories();
+      // Changer de sexe rend une catégorie forcée sans objet.
+      categorieForcee = null;
       calculer();
     });
-    restreindreCategories();
   }
 </script>
 
@@ -303,19 +347,54 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
   }
 
   .formulaire {
-    padding: var(--space-4);
     margin-bottom: var(--space-6);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     background: var(--surface);
   }
 
-  /* Même grille que la barre de filtres des listes : des colonnes égales qui
-     se réenroulent, plutôt qu'un flex où la dernière rangée s'étire. */
+  /*
+   * DEUX GROUPES SÉPARÉS PAR UN FILET : ce qu'on choisit, ce qu'on chiffre.
+   * Un `fieldset` et non un `div` : la légende nomme le groupe pour les
+   * lecteurs d'écran, qui annoncent alors « Vos barres, Squat » plutôt que
+   * « Squat » seul au milieu de sept champs.
+   */
+  .groupe {
+    margin: 0;
+    padding: var(--space-4);
+    border: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .groupe:last-child {
+    border-bottom: 0;
+  }
+
+  legend {
+    padding: 0 0 var(--space-2);
+    font-size: var(--step--1);
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
   .champs {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr));
     gap: var(--space-3) var(--space-4);
+  }
+
+  /* Sur grand écran, chaque groupe tient sur UNE rangée : deux colonnes pour
+     le profil, quatre pour les barres. En dessous, la grille se réenroule. */
+  @media (min-width: 48rem) {
+    .deux {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .quatre {
+      grid-template-columns: repeat(4, 1fr);
+    }
   }
 
   .champ {
@@ -345,6 +424,10 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
   input:hover,
   select:hover {
     border-color: var(--accent);
+  }
+
+  input::placeholder {
+    color: var(--muted);
   }
 
   .resultat {
@@ -469,6 +552,65 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
   .resultat :global(.egalite) {
     color: var(--muted);
     font-weight: 700;
+  }
+
+  /* Les autres catégories restent repliées : le visiteur voit d'abord sa
+     situation, et ne les ouvre que s'il veut se comparer ailleurs. */
+  .resultat :global(.autres) {
+    margin-top: var(--space-4);
+  }
+
+  .resultat :global(.autres summary) {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .resultat :global(.autres summary::-webkit-details-marker) {
+    display: none;
+  }
+
+  .resultat :global(.autres summary:hover) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .resultat :global(.categories) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+  }
+
+  .resultat :global(.categorie) {
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    font: inherit;
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .resultat :global(.categorie:hover) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .resultat :global(.categorie.active) {
+    border-color: var(--accent-fill);
+    background: var(--accent-fill);
+    color: var(--on-accent);
   }
 
   .note {
