@@ -404,7 +404,7 @@ const description =
         pluriel="compétitions"
         total={historique.length}
       >
-        <div class="liste">
+        <div class="liste liste-barres">
           <table data-tableau>
             <thead>
               <tr>
@@ -432,8 +432,8 @@ const description =
                         <span class="ou">{r.meetTown}</span>
                       </a>
                     </td>
-                    <td data-libelle="Format">
-                      <span class="format">{libelleEvent(r.event)}</span>
+                    <td data-libelle="Format" class="cellule-annexe">
+                      <span class="etiquette">{libelleEvent(r.event)}</span>
                     </td>
                     <td class="nombre num-tab" data-libelle="Squat" data-valeur={r.bestSquatKg ?? ''}>
                       <span class="v">
@@ -441,13 +441,13 @@ const description =
                         {r.bestSquatKg && estRecord(r, 'squat') && <Coupe metal="or" detail="Record du squat dans sa catégorie" taille={14} />}
                       </span>
                     </td>
-                    <td class="nombre num-tab" data-libelle="Développé couché" data-valeur={r.bestBenchKg ?? ''}>
+                    <td class="nombre num-tab" data-libelle="DC" data-valeur={r.bestBenchKg ?? ''}>
                       <span class="v">
                         {nombre(r.bestBenchKg)}
                         {r.bestBenchKg && estRecord(r, 'bench') && <Coupe metal="or" detail="Record du développé couché dans sa catégorie" taille={14} />}
                       </span>
                     </td>
-                    <td class="nombre num-tab" data-libelle="Soulevé de terre" data-valeur={r.bestDeadliftKg ?? ''}>
+                    <td class="nombre num-tab" data-libelle="SDT" data-valeur={r.bestDeadliftKg ?? ''}>
                       <span class="v">
                         {nombre(r.bestDeadliftKg)}
                         {r.bestDeadliftKg && estRecord(r, 'deadlift') && <Coupe metal="or" detail="Record du soulevé de terre dans sa catégorie" taille={14} />}
@@ -491,7 +491,7 @@ const description =
             réunionnais.
           </p>
 
-          <div class="liste">
+          <div class="liste liste-barres">
             <table>
               <thead>
                 <tr>
@@ -518,14 +518,16 @@ const description =
                         {r.meetTown && <> · {r.meetTown}</>}
                       </span>
                     </td>
-                    <td data-libelle="Pays">{paysFr(r.meetCountry)}</td>
+                    <td data-libelle="Pays" class="cellule-annexe">
+                      <span class="etiquette">{paysFr(r.meetCountry)}</span>
+                    </td>
                     <td class="nombre num-tab" data-libelle="Squat">
                       {nombre(r.bestSquatKg)}
                     </td>
-                    <td class="nombre num-tab" data-libelle="Développé couché">
+                    <td class="nombre num-tab" data-libelle="DC">
                       {nombre(r.bestBenchKg)}
                     </td>
-                    <td class="nombre num-tab" data-libelle="Soulevé de terre">
+                    <td class="nombre num-tab" data-libelle="SDT">
                       {nombre(r.bestDeadliftKg)}
                     </td>
                     <td class="nombre num-tab" data-libelle="Total">
@@ -774,24 +776,13 @@ const description =
   }
 
   /*
-   * La forme des deux tableaux vit dans src/styles/listes.css. Ne restent ici
-   * que les morceaux propres à la fiche : les trois barres d une ligne, et la
-   * pastille de format.
+   * La forme des deux tableaux vit dans src/styles/listes.css, pastille
+   * comprise. Ne reste ici que la largeur minimale des trois barres d une
+   * ligne, pour que les nombres ne dansent pas d une ligne à l autre.
    */
   .v {
     display: inline-block;
     min-width: 3ch;
-  }
-
-  .format {
-    display: inline-block;
-    padding: var(--space-1) var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    font-size: var(--step--1);
-    font-weight: 600;
-    color: var(--muted);
-    white-space: nowrap;
   }
 
   .note {
