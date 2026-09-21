@@ -110,7 +110,7 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
               {sexe.label} <span class="equip">{libelleEquipement(equipement)}</span>
             </h2>
 
-            <div class="cadre">
+            <div class="liste records">
               <table data-tableau>
                 <thead>
                   <tr>
@@ -205,23 +205,11 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
     border-radius: var(--radius);
   }
 
-  .cadre {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    background: var(--surface);
-    overflow: hidden;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  th,
-  td {
-    text-align: left;
-    padding: var(--space-3);
-  }
+  /*
+   * La forme de la liste vit dans src/styles/listes.css. Ne restent ici que
+   * les trois morceaux propres à une grille de records : la marque, son
+   * détenteur et son année, qui cohabitent dans une même cellule.
+   */
 
   .valeur {
     display: block;
@@ -258,90 +246,31 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
     white-space: nowrap;
   }
 
-  /* ---------- Mobile : une carte par catégorie ---------- */
-  @media (max-width: 55.999rem) {
-    thead {
-      display: none;
+  /*
+   * EN CARTES, UNE MARQUE PAR RANGÉE.
+   *
+   * La grammaire commune met les valeurs chiffrées deux par rangée, ce qui
+   * convient à des nombres courts. Une marque de record en tient trois : la
+   * charge, son détenteur et son année. Deux par rangée débordaient de 349 px
+   * hors du cadre, mesuré sur un téléphone.
+   *
+   * Et les trois éléments d une cellule tiennent la colonne des valeurs, sans
+   * quoi le deuxième retombe dans celle des intitulés.
+   */
+  @media (max-width: 59.999rem) {
+    .liste.records tbody tr {
+      grid-template-columns: 1fr;
     }
 
-    tbody tr {
-      display: block;
-      padding: var(--space-4);
-      border-bottom: 1px solid var(--border);
-    }
-    tbody tr:last-child {
-      border-bottom: 0;
+    /* Colonne d intitulés FIXE : en automatique, « Développé couché » la
+       tire plus loin que « Squat » et les charges cessent de s aligner d une
+       ligne à l autre de la carte. */
+    .liste.records tbody td[data-libelle] {
+      grid-template-columns: 9rem 1fr;
     }
 
-    .categorie {
-      display: block;
-      padding: 0 0 var(--space-3);
-      color: var(--accent);
-      font-size: var(--step-1);
-    }
-
-    td {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: baseline;
-      gap: var(--space-2);
-      padding: var(--space-2) 0;
-      border-top: 1px solid var(--border);
-    }
-
-    td::before {
-      content: attr(data-libelle);
-      font-size: var(--step--1);
-      font-weight: 600;
-      color: var(--muted);
-      grid-row: 1;
-    }
-
-    .valeur {
+    .liste.records tbody td[data-libelle] > * {
       grid-column: 2;
-      grid-row: 1;
-      text-align: right;
-    }
-
-    .detenteur,
-    .quand {
-      grid-column: 1 / -1;
-      text-align: left;
-    }
-
-    .quand {
-      display: none;
-    }
-  }
-
-  /* ---------- Desktop ---------- */
-  @media (min-width: 56rem) {
-    thead th {
-      font-size: var(--step--1);
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      border-bottom: 1px solid var(--border);
-    }
-
-    thead th.nombre,
-    tbody td.nombre {
-      text-align: right;
-    }
-
-    tbody tr {
-      border-bottom: 1px solid var(--border);
-    }
-    tbody tr:last-child {
-      border-bottom: 0;
-    }
-    tbody tr:hover {
-      background: color-mix(in srgb, var(--accent) 6%, transparent);
-    }
-
-    td::before {
-      display: none;
     }
   }
 
