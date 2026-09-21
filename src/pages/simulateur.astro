@@ -300,12 +300,12 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
           </p>
         </div>
 
-        <ol class="voisins">${voisins}</ol>
-
         <details class="autres">
           <summary>Comparer dans une autre catégorie</summary>
           <div class="categories">${choix}</div>
-        </details>`;
+        </details>
+
+        <ol class="voisins">${voisins}</ol>`;
     };
 
     /* Un seul écouteur sur la sortie, plutôt qu'un par bouton : les boutons
@@ -554,10 +554,11 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     font-weight: 700;
   }
 
-  /* Les autres catégories restent repliées : le visiteur voit d'abord sa
-     situation, et ne les ouvre que s'il veut se comparer ailleurs. */
+  /* Posé ENTRE le bilan et la liste, et non après elle : sous une liste de
+     sept lignes, il fallait défiler pour découvrir qu'on pouvait comparer
+     ailleurs. Replié, il ne coûte qu'une ligne à qui n'en a pas besoin. */
   .resultat :global(.autres) {
-    margin-top: var(--space-4);
+    margin-bottom: var(--space-3);
   }
 
   .resultat :global(.autres summary) {
