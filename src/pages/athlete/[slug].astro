@@ -67,6 +67,36 @@ const meilleurDots = fullPower.reduce<Result | null>(
   null,
 );
 
+/*
+ * ÉCART D'UNE COMPÉTITION À LA SUIVANTE, en points Dots.
+ *
+ * POURQUOI LES DOTS ET NON LE TOTAL. Un total se compare mal d'une
+ * compétition à l'autre dès que le poids de corps bouge : en descendant de
+ * catégorie, un athlète soulève moins et progresse quand même. C'est déjà
+ * l'invariant qui sépare le meilleur total du meilleur Dots plus haut sur
+ * cette page. Le Dots, lui, ramène toutes les barres à une même échelle, et
+ * c'est bien un écart de PERFORMANCE que la flèche doit dire.
+ *
+ * SEUL LE FULL POWER ENTRE DANS LA SUITE. Sur une compétition d'un seul
+ * mouvement, OpenPowerlifting renseigne quand même un total et donc un Dots,
+ * mais ils valent la seule barre disputée : l'écart serait un artefact.
+ * `fullPower` écarte déjà ces lignes, et la comparaison saute donc par-dessus.
+ *
+ * La carte est indexée par l'objet résultat lui-même, et non par une clé
+ * reconstruite : deux compétitions peuvent partager une date et un nom.
+ */
+const ecartDots = new Map<Result, number>();
+let dotsPrecedent: number | null = null;
+for (const r of fullPower) {
+  if (r.dots === null || r.dots === undefined) continue;
+  if (dotsPrecedent !== null) {
+    const ecart = Number((r.dots - dotsPrecedent).toFixed(1));
+    // Un écart nul ne dit rien qu'une flèche puisse porter.
+    if (ecart !== 0) ecartDots.set(r, ecart);
+  }
+  dotsPrecedent = r.dots;
+}
+
 const meilleures = {
   squat: Math.max(0, ...historique.map((r) => r.bestSquatKg ?? 0)),
   bench: Math.max(0, ...historique.map((r) => r.bestBenchKg ?? 0)),
@@ -421,7 +451,9 @@ const description =
             </thead>
             <tbody>
               {
-                [...historique].reverse().map((r) => (
+                [...historique].reverse().map((r) => {
+                  const ecart = ecartDots.get(r);
+                  return (
                   <tr data-recherche={r.meetName}>
                     <th scope="row" class="date" data-valeur={r.date.replace(/-/g, '')}>
                       {dateLongue(r.date)}
@@ -461,12 +493,23 @@ const description =
                     </td>
                     <td class="nombre" data-libelle="Dots" data-valeur={r.event === 'SBD' ? (r.dots ?? '') : ''}>
                       {r.event === 'SBD' ? points(r.dots) : '—'}
+                      {ecart !== undefined && (
+                        <span class="evolution" data-sens={ecart > 0 ? 'hausse' : 'baisse'}>
+                          <span aria-hidden="true">{ecart > 0 ? '▲' : '▼'}</span>
+                          {points(Math.abs(ecart))}
+                          <span class="sr-only">
+                            points {ecart > 0 ? 'gagnés' : 'perdus'} depuis la compétition
+                            précédente en full power
+                          </span>
+                        </span>
+                      )}
                     </td>
                     <td class="nombre" data-libelle="Place" data-valeur={Number.parseInt(r.place, 10) || 999}>
                       {place(r.place)}
                     </td>
                   </tr>
-                ))
+                  );
+                })
               }
             </tbody>
           </table>
@@ -477,7 +520,10 @@ const description =
         La coupe signale une barre qui constitue aujourd'hui le record de sa
         catégorie à La Réunion. Le total et les points Dots concernent le full
         power : sur une compétition à un seul mouvement, ils reprendraient
-        simplement la barre disputée.
+        simplement la barre disputée. La flèche sous les points Dots donne
+        l'écart avec la compétition en full power précédente : les Dots ramènent
+        toutes les barres à une même échelle, si bien qu'un changement de
+        catégorie ne fausse pas la comparaison.
       </p>
     </section>
 
@@ -783,6 +829,22 @@ const description =
   .v {
     display: inline-block;
     min-width: 3ch;
+  }
+
+  /*
+   * L'écart passe SOUS la valeur : la colonne des Dots mesure 86 px et ne
+   * peut pas tenir « 275,7 » et « ▲ 2,3 » sur une même ligne. Il suit
+   * l'alignement de sa cellule, à droite en tableau, à gauche en carte, où
+   * les nombres s'alignent sur leur intitulé.
+   */
+  .liste .nombre .evolution {
+    justify-content: flex-end;
+  }
+
+  @media (max-width: 59.999rem) {
+    .liste .nombre .evolution {
+      justify-content: flex-start;
+    }
   }
 
   .note {

@@ -139,6 +139,37 @@
   color: var(--text);
 }
 
+/* ---------- Le sens d'un écart ----------
+ * Les jetons --positif et --negatif ont été posés et mesurés pour dire « le
+ * SENS D'UN ÉCART chiffré dans un tableau ». Le négatif est un saumon désaturé
+ * et non un écarlate : l'écarlate sur fond quasi noir est l'identité de SBD
+ * Apparel.
+ *
+ * LA COULEUR NE PORTE JAMAIS L'INFORMATION SEULE. Le triangle la double pour
+ * qui ne sépare pas le vert du rouge, et un texte réservé aux lecteurs d'écran
+ * dit ce que l'écart mesure. Le marqueur sert au classement, où il compte des
+ * places gagnées sur douze mois, et à la fiche d'athlète, où il compte des
+ * points Dots gagnés d'une compétition à la suivante.
+ */
+
+.liste .evolution {
+  display: flex;
+  align-items: baseline;
+  gap: 0.15rem;
+  font-family: var(--font-body);
+  font-size: var(--step--1);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.liste .evolution[data-sens='hausse'] {
+  color: var(--positif);
+}
+
+.liste .evolution[data-sens='baisse'] {
+  color: var(--negatif);
+}
+
 /* ---------- Le second plan ---------- */
 
 .liste .meta,
