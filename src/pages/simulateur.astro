@@ -1,0 +1,490 @@
+---
+/**
+ * « Me situer » : où se placerait une performance dans le classement.
+ *
+ * L'IDÉE. Quelqu'un qui s'entraîne connaît ses barres mais pas ce qu'elles
+ * valent sur un plateau réunionnais. Il saisit ses trois mouvements, sa
+ * catégorie et son équipement, et la page lui rend sa place, les trois
+ * athlètes devant, les trois derrière, et surtout LES KILOS QUI L'EN
+ * SÉPARENT. C'est la question que l'on se pose vraiment : combien il me
+ * manque pour passer devant.
+ *
+ * TOUT SE CALCULE DANS LE NAVIGATEUR. Aucune saisie ne part sur le réseau, ni
+ * vers le serveur, ni ailleurs : le classement est déposé dans la page, et le
+ * script le lit sur place. Le site n'a donc rien à recueillir, rien à
+ * conserver, et rien à déclarer. C'est la même posture que le reste du site.
+ *
+ * CE N'EST PAS UNE INSCRIPTION AU CLASSEMENT. Le classement officiel ne
+ * recense que des performances réalisées en compétition homologuée. Cette
+ * page dit « tu SERAIS », jamais « tu ES », et la formulation compte.
+ */
+import Glossaire from '../components/Glossaire.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import {
+  EQUIPMENT_GROUPS,
+  compareWeightClass,
+  parseWeightClass,
+} from '../lib/categories';
+import { fullPowerResults } from '../lib/data';
+import { equipementsPresents } from '../lib/records';
+import { meilleurTotalParAthlete } from '../lib/rankings';
+import type { Sex } from '../lib/types';
+
+const classement = meilleurTotalParAthlete();
+
+/*
+ * Le classement déposé dans la page, en clés courtes : 312 athlètes pèsent
+ * ainsi une vingtaine de kilo-octets, contre le triple en clés lisibles. Le
+ * script est le seul à les lire, et il est juste en dessous.
+ */
+const donnees = classement.map((a) => ({
+  n: a.name,
+  s: a.slug,
+  t: a.totalKg,
+  d: a.dots,
+  x: a.sex,
+  c: a.weightClassKg,
+  e: a.equipmentGroup,
+}));
+
+/* Catégories réellement présentes, marquées par sexe comme sur le classement,
+   pour ne jamais proposer une catégorie qui ne renverrait personne. */
+const sexesParClasse = new Map<string, Set<Sex>>();
+for (const r of fullPowerResults) {
+  if (!r.weightClassKg) continue;
+  const set = sexesParClasse.get(r.weightClassKg) ?? new Set<Sex>();
+  set.add(r.sex);
+  sexesParClasse.set(r.weightClassKg, set);
+}
+
+const categories = [...sexesParClasse.entries()]
+  .map(([id, sexes]) => ({ id, classe: parseWeightClass(id)!, sexes: [...sexes].sort().join('') }))
+  .filter((c) => c.classe)
+  .sort((a, b) => compareWeightClass(a.classe, b.classe));
+
+const equipements = equipementsPresents(fullPowerResults);
+const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === id)?.label ?? id;
+---
+
+<BaseLayout
+  titre="Me situer dans le classement"
+  description="Saisissez vos trois mouvements et découvrez la place que votre total occuperait au classement réunionnais, et les kilos qui vous séparent des athlètes devant vous."
+>
+  <div class="wrap">
+    <header class="entete-page">
+      <h1>Me situer</h1>
+      <p class="chapeau">
+        Renseignez vos trois barres, votre catégorie et votre équipement : la
+        page vous rend la place que ce total occuperait au classement de
+        La Réunion, et surtout les kilos qui vous séparent des athlètes situés
+        juste devant.
+      </p>
+      <p class="chapeau petit">
+        Tout se calcule dans votre navigateur. Aucune valeur saisie ne part sur
+        le réseau, et le site n'en conserve aucune. Cette simulation ne vous
+        inscrit pas au classement officiel, qui ne recense que des performances
+        réalisées en compétition homologuée.
+      </p>
+    </header>
+
+    <Glossaire />
+
+    <form class="formulaire" id="formulaire" autocomplete="off">
+      <div class="champs">
+        <div class="champ">
+          <label for="sexe">Sexe</label>
+          <select id="sexe" name="sexe">
+            <option value="M">Hommes</option>
+            <option value="F">Femmes</option>
+          </select>
+        </div>
+
+        <div class="champ">
+          <label for="categorie">Catégorie</label>
+          <select id="categorie" name="categorie">
+            {
+              categories.map((c) => (
+                <option value={c.id} data-compatible={c.sexes}>
+                  {c.classe.label}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+
+        <div class="champ">
+          <label for="equipement">Équipement</label>
+          <select id="equipement" name="equipement">
+            {equipements.map((e) => <option value={e}>{libelleEquipement(e)}</option>)}
+          </select>
+        </div>
+
+        <div class="champ">
+          <label for="poids">Poids de corps</label>
+          <input id="poids" name="poids" type="number" min="30" max="250" step="0.1" inputmode="decimal" placeholder="kg" />
+        </div>
+
+        <div class="champ">
+          <label for="squat">Squat</label>
+          <input id="squat" name="squat" type="number" min="0" max="600" step="0.5" inputmode="decimal" placeholder="kg" />
+        </div>
+
+        <div class="champ">
+          <label for="bench">Développé couché</label>
+          <input id="bench" name="bench" type="number" min="0" max="600" step="0.5" inputmode="decimal" placeholder="kg" />
+        </div>
+
+        <div class="champ">
+          <label for="deadlift">Soulevé de terre</label>
+          <input id="deadlift" name="deadlift" type="number" min="0" max="600" step="0.5" inputmode="decimal" placeholder="kg" />
+        </div>
+      </div>
+    </form>
+
+    {/* `aria-live` : le résultat change sans rechargement, il doit donc
+        s'annoncer à qui ne voit pas l'écran. */}
+    <section class="resultat" id="resultat" aria-live="polite">
+      <p class="invite">Renseignez au moins une barre pour voir votre place.</p>
+    </section>
+
+    <p class="note">
+      Le classement retient le meilleur total réalisé en full power sur un
+      plateau réunionnais. Les athlètes affichés ici sont ceux de votre
+      catégorie et de votre équipement : un total équipé ne se compare pas à un
+      total raw, les textiles restituant une partie de l'effort.
+    </p>
+  </div>
+
+  <script
+    type="application/json"
+    id="donnees-classement"
+    is:inline
+    set:html={JSON.stringify(donnees)}
+  />
+</BaseLayout>
+
+<script>
+  import { dots } from '../lib/dots';
+
+  const form = document.getElementById('formulaire') as HTMLFormElement | null;
+  const sortie = document.getElementById('resultat');
+  const brut = document.getElementById('donnees-classement');
+  if (form && sortie && brut) {
+    interface Athlete {
+      n: string;
+      s: string;
+      t: number;
+      d: number;
+      x: 'M' | 'F';
+      c: string;
+      e: string;
+    }
+
+    const athletes: Athlete[] = JSON.parse(brut.textContent ?? '[]');
+
+    const nombre = (v: number, decimales = 1) =>
+      Number(v.toFixed(decimales)).toLocaleString('fr-FR');
+
+    const champ = (id: string) =>
+      Number.parseFloat((document.getElementById(id) as HTMLInputElement).value) || 0;
+
+    const select = (id: string) => (document.getElementById(id) as HTMLSelectElement).value;
+
+    /*
+     * Les catégories dépendent du sexe : celles qui n'existent pas chez l'un
+     * sont retirées plutôt que grisées, pour ne pas proposer un choix vide.
+     * Même principe que le filtre du classement.
+     */
+    const restreindreCategories = () => {
+      const sexe = select('sexe');
+      const liste = document.getElementById('categorie') as HTMLSelectElement;
+      let choixValide = false;
+      for (const option of Array.from(liste.options)) {
+        const compatible = (option.dataset.compatible ?? '').includes(sexe);
+        option.hidden = !compatible;
+        option.disabled = !compatible;
+        if (compatible && option.value === liste.value) choixValide = true;
+      }
+      if (!choixValide) {
+        const premier = Array.from(liste.options).find((o) => !o.disabled);
+        if (premier) liste.value = premier.value;
+      }
+    };
+
+    const ligne = (a: Athlete, ecart: number | null) => `
+      <li class="candidat">
+        <span class="place-nom">
+          <a href="/athlete/${a.s}/">${a.n}</a>
+        </span>
+        <span class="place-total"><b class="num-tab">${nombre(a.t)}</b> <span class="unite">kg</span></span>
+        <span class="place-ecart">${
+          ecart === null
+            ? '<span class="vous">c\'est vous</span>'
+            : ecart > 0
+              ? `<span class="manque">+${nombre(ecart)} kg pour passer devant</span>`
+              : ecart === 0
+                ? '<span class="egalite">à égalité</span>'
+                : `<span class="avance">${nombre(-ecart)} kg d\'avance</span>`
+        }</span>
+      </li>`;
+
+    const calculer = () => {
+      const sexe = select('sexe') as 'M' | 'F';
+      const categorie = select('categorie');
+      const equipement = select('equipement');
+      const total = champ('squat') + champ('bench') + champ('deadlift');
+      const poids = champ('poids');
+
+      if (total <= 0) {
+        sortie.innerHTML =
+          '<p class="invite">Renseignez au moins une barre pour voir votre place.</p>';
+        return;
+      }
+
+      const pairs = athletes
+        .filter((a) => a.x === sexe && a.c === categorie && a.e === equipement)
+        .sort((a, b) => b.t - a.t);
+
+      // Rang : le nombre d'athlètes qui font STRICTEMENT mieux, plus un.
+      const devant = pairs.filter((a) => a.t > total);
+      const derriere = pairs.filter((a) => a.t <= total);
+      const rang = devant.length + 1;
+
+      const voisins = [
+        ...devant.slice(-3).map((a) => ligne(a, a.t - total)),
+        `<li class="candidat moi">
+           <span class="place-nom"><b>Votre total</b></span>
+           <span class="place-total"><b class="num-tab">${nombre(total)}</b> <span class="unite">kg</span></span>
+           <span class="place-ecart"><span class="vous">${rang}<sup>e</sup> sur ${pairs.length + 1}</span></span>
+         </li>`,
+        ...derriere.slice(0, 3).map((a) => ligne(a, a.t - total)),
+      ].join('');
+
+      const general = athletes.filter((a) => a.t > total).length + 1;
+      const score = poids > 0 ? dots(total, poids, sexe) : 0;
+      const rangDots = score > 0 ? athletes.filter((a) => a.d > score).length + 1 : null;
+
+      sortie.innerHTML = `
+        <div class="bilan">
+          <p class="titre">
+            Avec <b>${nombre(total)} kg</b>${score > 0 ? ` et <b>${nombre(score)} Dots</b>` : ''},
+            vous seriez <b>${rang}<sup>e</sup></b> de votre catégorie.
+          </p>
+          <p class="sous-titre">
+            ${general}<sup>e</sup> au total sur l'ensemble des ${athletes.length} athlètes classés${
+              rangDots ? `, et ${rangDots}<sup>e</sup> aux points Dots` : ''
+            }.
+          </p>
+        </div>
+        <ol class="voisins">${voisins}</ol>`;
+    };
+
+    form.addEventListener('input', calculer);
+    form.addEventListener('change', () => {
+      restreindreCategories();
+      calculer();
+    });
+    restreindreCategories();
+  }
+</script>
+
+<style>
+  .entete-page {
+    margin-bottom: var(--space-6);
+  }
+
+  .chapeau {
+    color: var(--muted);
+    max-width: 68ch;
+  }
+
+  .petit {
+    font-size: var(--step--1);
+  }
+
+  .formulaire {
+    padding: var(--space-4);
+    margin-bottom: var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  /* Même grille que la barre de filtres des listes : des colonnes égales qui
+     se réenroulent, plutôt qu'un flex où la dernière rangée s'étire. */
+  .champs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr));
+    gap: var(--space-3) var(--space-4);
+  }
+
+  .champ {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  label {
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  input,
+  select {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: var(--step--1);
+  }
+
+  input:hover,
+  select:hover {
+    border-color: var(--accent);
+  }
+
+  .resultat {
+    margin-bottom: var(--space-6);
+  }
+
+  /*
+   * LE RÉSULTAT EST FABRIQUÉ PAR LE SCRIPT, et c'est ce qui impose `:global()`.
+   *
+   * Astro marque d'un attribut de portée les éléments écrits dans le gabarit,
+   * et ses règles ne visent que ceux-là. Les lignes créées en JavaScript ne
+   * portent pas cette marque : sans `:global()`, la liste s'affichait nue,
+   * avec la numérotation par défaut du navigateur et aucune couleur.
+   *
+   * La portée reste tenue par `.resultat`, qui est dans le gabarit : ces
+   * règles ne sortent donc pas de ce conteneur.
+   */
+  .resultat :global(.invite) {
+    margin: 0;
+    color: var(--muted);
+  }
+
+  .resultat :global(.bilan) {
+    margin-bottom: var(--space-4);
+  }
+
+  .resultat :global(.titre) {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--step-2);
+    line-height: 1.2;
+  }
+
+  .resultat :global(.sous-titre) {
+    margin: var(--space-1) 0 0;
+    color: var(--muted);
+  }
+
+  .resultat :global(.voisins) {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  /* Trois colonnes alignées d'une ligne à l'autre, comme le classement : le
+     nom, le total, puis l'écart qui est la réponse à la question posée. */
+  .resultat :global(.candidat) {
+    display: grid;
+    grid-template-columns: minmax(min(8rem, 100%), 1fr) auto;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .resultat :global(.candidat:last-child) {
+    border-bottom: 0;
+  }
+
+  .resultat :global(.place-nom) {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--step-0);
+    min-width: 0;
+  }
+
+  .resultat :global(.place-nom a) {
+    color: var(--text);
+  }
+
+  .resultat :global(.place-nom a:hover) {
+    color: var(--accent);
+  }
+
+  .resultat :global(.place-total) {
+    text-align: right;
+    white-space: nowrap;
+    font-size: var(--step-1);
+  }
+
+  .resultat :global(.place-ecart) {
+    grid-column: 1 / -1;
+    font-size: var(--step--1);
+  }
+
+  .resultat :global(.unite) {
+    font-size: var(--step--1);
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  /* La ligne du visiteur se distingue par un aplat d'accent, jamais par la
+     seule couleur du texte : le mot « Votre total » la nomme aussi. */
+  .resultat :global(.moi) {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
+  /* Les mêmes jetons que les flèches du classement : ce qui manque se lit en
+     saumon, l'avance en vert, et le mot double la couleur. */
+  .resultat :global(.manque) {
+    color: var(--negatif);
+    font-weight: 700;
+  }
+
+  .resultat :global(.avance) {
+    color: var(--positif);
+    font-weight: 700;
+  }
+
+  .resultat :global(.vous) {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* Un total identique n'est ni une avance ni un retard : « 0 kg d'avance »
+     se lisait comme une erreur de calcul. */
+  .resultat :global(.egalite) {
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  .note {
+    font-size: var(--step--1);
+    color: var(--muted);
+    max-width: 68ch;
+  }
+
+  @media (min-width: 40rem) {
+    .resultat :global(.candidat) {
+      grid-template-columns: minmax(min(12rem, 100%), 1fr) auto minmax(min(12rem, 100%), auto);
+    }
+
+    .resultat :global(.place-ecart) {
+      grid-column: auto;
+      text-align: right;
+    }
+  }
+</style>

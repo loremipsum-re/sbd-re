@@ -21,6 +21,7 @@ export type NomIcone =
   | 'classement'
   | 'communaute'
   | 'comparer'
+  | 'simulateur'
   | 'records'
   | 'categories'
   | 'competitions'
@@ -64,6 +65,12 @@ export const RUBRIQUES: readonly Rubrique[] = [
     labelLong: 'Comparer des athlètes',
     icone: 'comparer',
     principale: true,
+  },
+  {
+    href: '/simulateur/',
+    label: 'Me situer',
+    labelLong: 'Me situer dans le classement',
+    icone: 'simulateur',
   },
   { href: '/records/', label: 'Records', icone: 'records' },
   { href: '/categories/', label: 'Catégories', icone: 'categories' },
