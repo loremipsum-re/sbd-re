@@ -244,36 +244,49 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
         </nav>
 
         {/*
-          Menu du téléphone, en <details> plutôt qu'en JavaScript.
+          LE GRAND MENU, en <details> plutôt qu'en JavaScript.
 
           Le navigateur gère lui-même l'ouverture, la fermeture, le clavier et
           l'annonce aux lecteurs d'écran. Aucun piège au focus à écrire, et le
           menu fonctionne même si le JavaScript échoue. Il se referme tout seul
           au changement de page, puisque la page est rechargée.
+
+          IL EXISTE À TOUTES LES LARGEURS, et non plus sur téléphone seulement.
+          Les trois rubriques de la barre restent le chemin rapide ; les neuf
+          autres n'étaient atteignables, sur grand écran, que par le pied de
+          page. Chacune porte désormais une phrase qui dit ce qu'on y trouve :
+          un intitulé seul demande de deviner, ce qui est précisément ce qu'on
+          ne veut pas d'un menu.
         */}
-        <details class="menu-mobile">
+        <details class="menu">
           <summary aria-label="Ouvrir le menu">
             <span class="barres-menu" aria-hidden="true"></span>
             <span class="mot-menu">Menu</span>
           </summary>
-          <nav aria-label="Navigation">
-            <ul>
-              {
-                [...liensPrincipaux, ...liensSecondaires].map((lien) => (
-                  <li>
-                    <a
-                      class="lien-nu"
-                      href={lien.href}
-                      aria-current={estActif(lien.href) ? 'page' : undefined}
-                    >
-                      <Icone nom={lien.icone} />
-                      {lien.label}
-                    </a>
-                  </li>
-                ))
-              }
-            </ul>
-          </nav>
+
+          <div class="panneau">
+            <nav class="wrap" aria-label="Navigation">
+              <ul>
+                {
+                  [...liensPrincipaux, ...liensSecondaires].map((lien) => (
+                    <li>
+                      <a
+                        class="lien-nu"
+                        href={lien.href}
+                        aria-current={estActif(lien.href) ? 'page' : undefined}
+                      >
+                        <Icone nom={lien.icone} taille={22} />
+                        <span class="texte">
+                          <span class="intitule">{lien.labelLong ?? lien.label}</span>
+                          <span class="resume">{lien.resume}</span>
+                        </span>
+                      </a>
+                    </li>
+                  ))
+                }
+              </ul>
+            </nav>
+          </div>
         </details>
 
         <ThemeToggle />
@@ -301,7 +314,39 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
       </svg>
     </a>
 
+    {/*
+      FERMETURE DU GRAND MENU, en amélioration seulement.
+
+      Un `<details>` ne se referme ni à la touche Échap, ni au clic à côté :
+      le navigateur n'a rien prévu pour cela. Tant que le panneau était un
+      petit menu de 14rem, on pouvait s'en passer ; en pleine largeur il
+      couvre la page, et rester coincé dedans devient pénible.
+
+      Ces quelques lignes n'ajoutent RIEN d'indispensable : sans JavaScript,
+      le menu s'ouvre et se referme toujours par son propre bouton.
+    */}
     <script is:inline>
+      (() => {
+        const menu = document.querySelector('details.menu');
+        if (!menu) return;
+
+        const fermer = () => {
+          if (!menu.open) return;
+          menu.open = false;
+          // Le focus revient au bouton : sans cela il resterait dans un
+          // panneau devenu invisible, et la tabulation repartirait du début.
+          menu.querySelector('summary')?.focus();
+        };
+
+        document.addEventListener('keydown', (evenement) => {
+          if (evenement.key === 'Escape') fermer();
+        });
+
+        document.addEventListener('click', (evenement) => {
+          if (menu.open && !menu.contains(evenement.target)) fermer();
+        });
+      })();
+
       (() => {
         const bouton = document.querySelector('.haut');
         if (!bouton) return;
@@ -368,8 +413,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
    * chaque chargement.
    * -------------------------------------------------------------------- */
 
-  .menu-mobile {
-    position: relative;
+  .menu {
     /*
      * Pousse le menu ET le bouton de thème contre le bord droit.
      *
@@ -378,28 +422,39 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
      * automatique tout se tasserait à gauche contre le logo. Le bouton de
      * thème, dernier élément de la barre, se retrouve ainsi tout à droite et
      * le menu juste à sa gauche.
+     *
+     * VOLONTAIREMENT SANS `position: relative` : le panneau se cale alors sur
+     * l'en-tête, qui est collante et fait donc bloc de référence, et peut
+     * ainsi occuper toute la largeur de la fenêtre.
      */
     margin-left: auto;
   }
 
-  .menu-mobile summary {
+  .menu summary {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
+    /* 44 px de haut comme tout contrôle du site, et une taille de texte qui
+       ne demande pas d'effort : le bouton était à 14 px. */
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-4);
     border: 2px solid var(--border);
     border-radius: var(--radius);
     color: var(--text);
-    font-size: var(--step--1);
+    font-size: var(--step-0);
     font-weight: 700;
     cursor: pointer;
     /* Retire la flèche que Safari et Chrome ajoutent d'office. */
     list-style: none;
   }
-  .menu-mobile summary::-webkit-details-marker {
+  .menu summary::-webkit-details-marker {
     display: none;
   }
-  .menu-mobile[open] summary {
+  .menu summary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .menu[open] summary {
     border-color: var(--accent);
     color: var(--accent);
   }
@@ -415,39 +470,47 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
       linear-gradient(currentColor 0 0) 0 100% / 100% 2px no-repeat;
   }
 
-  .menu-mobile nav {
+  /*
+   * LE PANNEAU PREND TOUTE LA LARGEUR, sous l'en-tête.
+   *
+   * Il était un menu déroulant de 14rem accroché au bord droit : douze
+   * intitulés en colonne, sans rien dire de ce qu'ils contiennent. En pleine
+   * largeur, les rubriques tiennent en deux ou trois colonnes, chacune avec sa
+   * phrase, et l'ensemble se lit d'un coup d'œil.
+   *
+   * AUCUNE OMBRE PORTÉE. Il en avait une, héritée d'avant le système
+   * Modernist, qui n'en emploie nulle part : c'est le filet de 2 px et
+   * l'aplat de surface qui détachent le panneau du contenu.
+   */
+  .panneau {
     position: absolute;
+    left: 0;
     right: 0;
-    top: calc(100% + var(--space-2));
-    min-width: 14rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 12px 32px rgb(0 0 0 / 0.28);
-    padding: var(--space-2);
+    top: 100%;
     z-index: 10;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 2px solid var(--border);
+    padding: var(--space-4) 0 var(--space-6);
+    /* Sur un téléphone, douze rubriques dépassent la hauteur de l'écran : le
+       panneau défile au lieu de pousser le contenu hors de vue. */
+    max-height: calc(100vh - 100%);
+    overflow-y: auto;
   }
 
-  .menu-mobile nav ul {
-    display: block;
+  .menu nav ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+    gap: var(--space-2);
     overflow: visible;
   }
 
   /*
-   * Rayon imbriqué : rayon intérieur = rayon extérieur moins la marge.
-   *
-   * Ces liens-ci, à la différence des onglets du bandeau, vivent DANS un
-   * conteneur arrondi : le menu déroulant, de rayon 14 px (--radius-lg), avec
-   * 9 px entre les deux, soit 8 px de rembourrage et 1 px de bordure. La règle
-   * donne 5 px, et non les 8 px de --radius dont ils héritaient.
-   *
-   * L'écart n'est que de 3 px mais il se voit : deux courbes concentriques
-   * dont les rayons ne concordent pas divergent à l'œil, et le fond teinté de
-   * l'onglet actif rend cette divergence lisible.
-   *
-   * Les onglets du bandeau gardent --radius : ils ne sont imbriqués dans rien.
+   * Le rayon imbriqué n'a plus lieu d'être : le panneau occupe toute la
+   * largeur et ne porte donc pas d'angles arrondis dans lesquels ces liens
+   * seraient emboîtés. Ils reprennent le rayon ordinaire du site.
    */
-  .menu-mobile nav a {
+  .menu nav a {
     /*
      * `flex` et non `block` depuis l'arrivée des icônes : l'icône doit rester
      * sur l'axe gauche et le libellé se replier à côté d'elle, pas dessous.
@@ -457,20 +520,45 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
      */
     display: flex;
     align-items: start;
-    gap: var(--space-2);
+    gap: var(--space-3);
     padding: var(--space-3);
-    border-radius: calc(var(--radius-lg) - var(--space-2) - 1px);
+    border: 1px solid transparent;
+    border-radius: var(--radius);
     white-space: normal;
   }
 
-  /* Sous 52rem : le menu remplace les onglets. Au-dessus, l'inverse. */
+  /* La bordure existe déjà, transparente : sans elle, le survol décalerait le
+     texte d'un pixel en faisant apparaître un filet. */
+  .menu nav a:hover {
+    border-color: var(--accent);
+  }
+
+  .menu nav a[aria-current='page'] {
+    border-color: var(--border);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+
+  .menu .texte {
+    display: grid;
+    gap: 0.1rem;
+    min-width: 0;
+  }
+
+  .menu .intitule {
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .menu .resume {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /* Sous 52rem, les onglets cèdent la place au seul bouton de menu. Au-dessus,
+     les deux cohabitent : les trois rubriques principales en accès direct, et
+     le menu pour les neuf autres. */
   @media (max-width: 51.99rem) {
     .nav-large {
-      display: none;
-    }
-  }
-  @media (min-width: 52rem) {
-    .menu-mobile {
       display: none;
     }
   }
@@ -564,7 +652,10 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     border-radius: var(--radius);
     color: var(--muted);
     white-space: nowrap;
-    font-size: var(--step--1);
+    /* La taille du corps de texte, et non un cran en dessous : les rubriques
+       étaient à 14 px, ce qui les rendait moins lisibles que le contenu
+       qu'elles annoncent. */
+    font-size: var(--step-0);
     font-weight: 600;
   }
 
