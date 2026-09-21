@@ -119,29 +119,42 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
         </div>
       </fieldset>
 
-      {/* Ce qu'on CHIFFRE au clavier. L'unité vit dans l'invite du champ,
-          en gris : elle dit quoi saisir sans encombrer l'intitulé. */}
+      {/* Ce qu'on CHIFFRE au clavier. L'unité est POSÉE DANS LE CHAMP, et y
+          reste une fois la valeur saisie : en invite, elle disparaissait à la
+          première frappe, au moment précis où elle devient utile. */}
       <fieldset class="groupe">
         <legend>Vos barres</legend>
         <div class="champs quatre">
           <div class="champ">
-            <label for="poids">Poids de corps</label>
-            <input id="poids" name="poids" type="number" min="30" max="250" step="0.1" inputmode="decimal" placeholder="kg" />
+            <label for="poids">Poids de corps<span class="sr-only"> en kilogrammes</span></label>
+            <div class="saisie">
+              <input id="poids" name="poids" type="number" min="30" max="250" step="0.1" inputmode="decimal" />
+              <span class="suffixe" aria-hidden="true">kg</span>
+            </div>
           </div>
 
           <div class="champ">
-            <label for="squat">Squat</label>
-            <input id="squat" name="squat" type="number" min="0" max="600" step="0.5" inputmode="decimal" placeholder="kg" />
+            <label for="squat">Squat<span class="sr-only"> en kilogrammes</span></label>
+            <div class="saisie">
+              <input id="squat" name="squat" type="number" min="0" max="600" step="0.5" inputmode="decimal" />
+              <span class="suffixe" aria-hidden="true">kg</span>
+            </div>
           </div>
 
           <div class="champ">
-            <label for="bench">Développé couché</label>
-            <input id="bench" name="bench" type="number" min="0" max="600" step="0.5" inputmode="decimal" placeholder="kg" />
+            <label for="bench">Développé couché<span class="sr-only"> en kilogrammes</span></label>
+            <div class="saisie">
+              <input id="bench" name="bench" type="number" min="0" max="600" step="0.5" inputmode="decimal" />
+              <span class="suffixe" aria-hidden="true">kg</span>
+            </div>
           </div>
 
           <div class="champ">
-            <label for="deadlift">Soulevé de terre</label>
-            <input id="deadlift" name="deadlift" type="number" min="0" max="600" step="0.5" inputmode="decimal" placeholder="kg" />
+            <label for="deadlift">Soulevé de terre<span class="sr-only"> en kilogrammes</span></label>
+            <div class="saisie">
+              <input id="deadlift" name="deadlift" type="number" min="0" max="600" step="0.5" inputmode="decimal" />
+              <span class="suffixe" aria-hidden="true">kg</span>
+            </div>
           </div>
         </div>
       </fieldset>
@@ -426,8 +439,53 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     border-color: var(--accent);
   }
 
-  input::placeholder {
+  /*
+   * L'UNITÉ RESTE DANS LE CHAMP, une fois la valeur saisie.
+   *
+   * Elle était une invite, `placeholder` : elle disparaissait donc à la
+   * première frappe, c'est-à-dire au moment précis où un nombre nu devient
+   * ambigu. Elle est maintenant posée par-dessus le champ, à droite, et le
+   * rembourrage lui réserve sa place pour que les chiffres ne passent jamais
+   * dessous.
+   *
+   * `aria-hidden` sur le suffixe, et l'unité dite dans l'intitulé pour les
+   * lecteurs d'écran : « Squat, en kilogrammes ». Un texte décoratif répété
+   * quatre fois encombrerait l'écoute.
+   */
+  .saisie {
+    position: relative;
+    display: grid;
+  }
+
+  .saisie input {
+    padding-right: 2.75rem;
+  }
+
+  .suffixe {
+    position: absolute;
+    top: 50%;
+    right: var(--space-3);
+    transform: translateY(-50%);
+    font-size: var(--step--1);
     color: var(--muted);
+    /* Sans quoi un clic sur l'unité ne donnerait pas le focus au champ. */
+    pointer-events: none;
+  }
+
+  /*
+   * Les flèches natives du champ nombre sont retirées : elles occupaient
+   * exactement la place du suffixe, et se chevauchaient avec lui. Le champ
+   * reste `type="number"`, donc les flèches du CLAVIER continuent
+   * d'incrémenter, et le pavé numérique s'ouvre toujours sur téléphone.
+   */
+  input[type='number'] {
+    appearance: textfield;
+  }
+
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    appearance: none;
+    margin: 0;
   }
 
   .resultat {
