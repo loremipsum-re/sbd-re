@@ -51,6 +51,25 @@ export interface AthleteRanking {
   /** Tranche d'âge telle que publiée : « 24-34 », « 45-49 »… */
   ageClass: string;
 
+  /**
+   * Places gagnées, en positif, ou perdues, en négatif, au classement GÉNÉRAL
+   * sur les douze derniers mois.
+   *
+   * `null` dans deux cas, et c'est délibéré : l'athlète n'a pas concouru dans
+   * la fenêtre, ou il vient d'entrer au classement. Mesuré : sur 312 classés,
+   * 211 avaient « perdu » des places sans avoir soulevé une barre, simplement
+   * parce que 84 nouveaux s'étaient intercalés. Afficher cela les ferait
+   * passer pour des athlètes en perte de vitesse, ce qui serait faux.
+   *
+   * L'écart est calculé ici, et non dans le gabarit : sur une page de
+   * catégorie, le rang affiché est celui de la catégorie, alors que le
+   * mouvement, lui, porte sur le classement entier.
+   */
+  evolution: number | null;
+
+  /** Entré au classement pendant les douze derniers mois. */
+  nouveau: boolean;
+
   /** Compétitions full power disputées à La Réunion. */
   competitions: number;
   /** Compétitions disputées hors de l'île, tous formats confondus. */
@@ -65,6 +84,8 @@ export interface AthleteRanking {
  */
 export function meilleurTotalParAthlete(
   source: Result[] = fullPowerResults,
+  /** Faux pour le classement de référence, qui sert justement à la calculer. */
+  avecEvolution = true,
 ): AthleteRanking[] {
   // Nombre de compétitions disputées hors de l'île, par athlète.
   const horsIle = new Map<string, Set<string>>();
@@ -120,13 +141,68 @@ export function meilleurTotalParAthlete(
       division: meilleurTotal.division,
       ageClass: meilleurTotal.ageClass,
 
+      evolution: null,
+      nouveau: false,
+
       competitions: competitions.size,
       competitionsExterieur: horsIle.get(meilleurTotal.name)?.size ?? 0,
     });
   }
 
   // Tri par défaut : le total brut. Les autres tris sont proposés côté client.
-  return classement.sort((a, b) => b.totalKg - a.totalKg || a.name.localeCompare(b.name));
+  classement.sort((a, b) => b.totalKg - a.totalKg || a.name.localeCompare(b.name));
+
+  if (avecEvolution) {
+    const { rangs, actifs } = photoIlYaUnAn(source);
+    classement.forEach((e, i) => {
+      if (!actifs.has(e.name)) return;
+      const avant = rangs.get(e.name);
+      if (avant === undefined) {
+        e.nouveau = true;
+        return;
+      }
+      const ecart = avant - (i + 1);
+      e.evolution = ecart === 0 ? null : ecart;
+    });
+  }
+
+  return classement;
+}
+
+/**
+ * Rang de chaque athlète tel qu'il était DOUZE MOIS PLUS TÔT.
+ *
+ * ANCRÉ SUR LA DERNIÈRE DATE DES DONNÉES, jamais sur l'horloge. Avec
+ * `new Date()`, la fenêtre glisserait chaque jour : le HTML changerait sans
+ * qu'aucune donnée n'ait bougé, et la génération cesserait d'être
+ * reproductible. Ancrée sur les données, elle ne bouge qu'à la mise à jour
+ * mensuelle, ce qui est précisément le rythme de l'information.
+ *
+ * Le classement retenant le MEILLEUR total de chaque athlète, un rang ne
+ * baisse jamais par contre-performance : il baisse parce qu'un autre a
+ * progressé ou qu'un nouveau s'est intercalé. C'est bien un mouvement relatif.
+ */
+function photoIlYaUnAn(source: Result[]): {
+  rangs: Map<string, number>;
+  actifs: Set<string>;
+} {
+  const derniere = source.reduce((max, r) => (r.date > max ? r.date : max), '');
+  if (!derniere) return { rangs: new Map(), actifs: new Set() };
+
+  const seuil = new Date(`${derniere}T12:00:00Z`);
+  seuil.setUTCFullYear(seuil.getUTCFullYear() - 1);
+  const limite = seuil.toISOString().slice(0, 10);
+
+  // `false` : sans quoi le calcul de l'évolution s'appellerait lui-même.
+  const avant = meilleurTotalParAthlete(
+    source.filter((r) => r.date <= limite),
+    false,
+  );
+
+  return {
+    rangs: new Map(avant.map((e, i) => [e.name, i + 1])),
+    actifs: new Set(source.filter((r) => r.date > limite).map((r) => r.name)),
+  };
 }
 
 /**
