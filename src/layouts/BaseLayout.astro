@@ -264,6 +264,10 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
             <span class="mot-menu">Menu</span>
           </summary>
 
+          {/* Voile sur le contenu, décoratif : il n'apporte aucune
+              information, il retire seulement celle du dessous. */}
+          <div class="voile" aria-hidden="true"></div>
+
           <div class="panneau">
             <nav class="wrap" aria-label="Navigation">
               <ul>
@@ -342,8 +346,18 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
           if (evenement.key === 'Escape') fermer();
         });
 
+        /*
+         * On ferme dès que le clic tombe HORS DU PANNEAU ET HORS DU BOUTON.
+         *
+         * Et non « hors du <details> » : le voile est un enfant de ce dernier,
+         * si bien qu'un clic dessus aurait été compté comme un clic dedans.
+         * Or voiler la page, c'est précisément inviter à cliquer à côté.
+         */
         document.addEventListener('click', (evenement) => {
-          if (menu.open && !menu.contains(evenement.target)) fermer();
+          if (!menu.open) return;
+          const cible = evenement.target;
+          if (cible.closest('.panneau') || cible.closest('summary')) return;
+          fermer();
         });
       })();
 
@@ -482,14 +496,50 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
    * Modernist, qui n'en emploie nulle part : c'est le filet de 2 px et
    * l'aplat de surface qui détachent le panneau du contenu.
    */
+  /*
+   * VOILE. Mesuré : le panneau se détachait de l'en-tête par 1,28 et du
+   * contenu par 1,10, soit trois surfaces que l'œil confond. Un aplat sombre
+   * posé sur la page creuse l'écart sans rien changer aux couleurs du
+   * panneau, et dit du même coup que le reste attend.
+   *
+   * Ce n'est PAS une ombre portée, que le système Modernist proscrit : c'est
+   * un aplat franc, uniforme, sans dégradé ni flou.
+   *
+   * Posé sous l'en-tête et non par-dessus : la barre, le logo et le bouton
+   * restent nets, seule la page est voilée.
+   */
+  .voile {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    /*
+     * `100vh` moins la hauteur de l'en-tête, et non `100vh` tout court : le
+     * pourcentage se rapporte ici au bloc de référence, qui est l'en-tête.
+     *
+     * Mesuré : posé à 100vh, le voile dépassait de 72 px sous la fenêtre et
+     * allongeait d'autant une page courte, faisant apparaître une barre de
+     * défilement pour rien. Un élément en absolu ne prend pas de place dans
+     * le flux, mais il compte bien dans la zone défilable.
+     */
+    height: calc(100vh - 100%);
+    z-index: 9;
+    background: color-mix(in srgb, #000 55%, transparent);
+  }
+
   .panneau {
     position: absolute;
     left: 0;
     right: 0;
     top: 100%;
     z-index: 10;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
+    /* Une surface RELEVÉE, et non celle des cartes : le panneau flotte
+       au-dessus de la page, il doit donc être plus clair qu'elle en thème
+       sombre, et plus franc en thème clair. */
+    background: color-mix(in srgb, var(--text) 7%, var(--surface));
+    /* Le filet d'accent tient lieu de séparation avec l'en-tête : il dit que
+       ce panneau appartient au menu ouvert, et non à la page. */
+    border-top: 2px solid var(--accent);
     border-bottom: 2px solid var(--border);
     padding: var(--space-4) 0 var(--space-6);
     /* Sur un téléphone, douze rubriques dépassent la hauteur de l'écran : le
