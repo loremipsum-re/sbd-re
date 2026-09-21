@@ -279,11 +279,17 @@ const description =
     {
       estDistingue && rangs && (
         <div class="distinction" data-metal={metalDuRang ?? 'top'}>
-          <Coupe
-            metal={metalDuRang}
-            taille={34}
-            detail={`${ordinal(rangs.global.rang)} du classement Dots`}
-          />
+          {/*
+            LE RANG EN CHIFFRES, et non une coupe.
+
+            Une coupe signale un record en cours partout ailleurs sur le site :
+            sur /records/, dans les grilles de catégorie, dans les résultats de
+            compétition. Ici elle marquait une position au classement, ce qui
+            en faisait le même dessin pour deux notions. Le nombre dit la même
+            chose sans ambiguïté, et il porte l'information au lieu de
+            l'illustrer.
+          */}
+          <p class="rang-chiffre" aria-hidden="true">{rangs.global.rang}</p>
           <div>
             <p class="rang-titre">
               {ordinal(rangs.global.rang)} de La Réunion
@@ -301,11 +307,46 @@ const description =
       )
     }
 
-    <dl class="stats" data-distingue={estDistingue ? '' : undefined}>
+    {/*
+      DEUX GROUPES, et non une bande de sept mesures.
+
+      Les barres et le total d'un côté, la place dans le classement de
+      l'autre. La bande unique mettait sur la même ligne un poids soulevé et
+      un rang, et écrasait les trois barres dans une seule case intitulée
+      « Squat / DC / SDT », abréviations comprises.
+    */}
+    <dl class="barres" data-distingue={estDistingue ? '' : undefined}>
       <div>
-        <dt>Meilleur total</dt>
-        <dd class="num">{meilleurTotal ? kg(meilleurTotal.totalKg) : '—'}</dd>
+        <dt>Squat</dt>
+        <dd class="num">
+          {meilleures.squat ? nombre(meilleures.squat) : '—'}
+          {meilleures.squat && <span class="unite">kg</span>}
+        </dd>
       </div>
+      <div>
+        <dt>Développé couché</dt>
+        <dd class="num">
+          {meilleures.bench ? nombre(meilleures.bench) : '—'}
+          {meilleures.bench && <span class="unite">kg</span>}
+        </dd>
+      </div>
+      <div>
+        <dt>Soulevé de terre</dt>
+        <dd class="num">
+          {meilleures.deadlift ? nombre(meilleures.deadlift) : '—'}
+          {meilleures.deadlift && <span class="unite">kg</span>}
+        </dd>
+      </div>
+      <div class="cumul">
+        <dt>Meilleur total</dt>
+        <dd class="num">
+          {meilleurTotal ? nombre(meilleurTotal.totalKg) : '—'}
+          {meilleurTotal && <span class="unite">kg</span>}
+        </dd>
+      </div>
+    </dl>
+
+    <dl class="stats">
       <div>
         <dt>Meilleur Dots</dt>
         <dd class="num">{meilleurDots ? points(meilleurDots.dots) : '—'}</dd>
@@ -331,14 +372,6 @@ const description =
       <div>
         <dt>Compétitions</dt>
         <dd class="num">{meets}</dd>
-      </div>
-      <div>
-        <dt>Squat / DC / SDT</dt>
-        <dd class="triptyque">
-          <span class="num">{meilleures.squat ? nombre(meilleures.squat) : '—'}</span>
-          <span class="num">{meilleures.bench ? nombre(meilleures.bench) : '—'}</span>
-          <span class="num">{meilleures.deadlift ? nombre(meilleures.deadlift) : '—'}</span>
-        </dd>
       </div>
     </dl>
 
@@ -371,7 +404,7 @@ const description =
         pluriel="compétitions"
         total={historique.length}
       >
-        <div class="cadre">
+        <div class="liste">
           <table data-tableau>
             <thead>
               <tr>
@@ -394,8 +427,10 @@ const description =
                       {dateLongue(r.date)}
                     </th>
                     <td data-libelle="Compétition" class="competition">
-                      <a href={`/competitions/${meetPath(r.date, r.meetName)}/`}>{r.meetName}</a>
-                      <span class="ville">{r.meetTown}</span>
+                      <a href={`/competitions/${meetPath(r.date, r.meetName)}/`}>
+                        <span class="meet">{r.meetName}</span>
+                        <span class="ou">{r.meetTown}</span>
+                      </a>
                     </td>
                     <td data-libelle="Format">
                       <span class="format">{libelleEvent(r.event)}</span>
@@ -456,7 +491,7 @@ const description =
             réunionnais.
           </p>
 
-          <div class="cadre">
+          <div class="liste">
             <table>
               <thead>
                 <tr>
@@ -605,6 +640,29 @@ const description =
     border-left-color: var(--accent);
   }
 
+  /* Le rang tient la place qu'occupait la coupe. `aria-hidden` sur le nombre :
+     la phrase juste à côté dit déjà « 1er de La Réunion », et l'entendre deux
+     fois n'apprend rien. */
+  .rang-chiffre {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--step-4);
+    line-height: 1;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .distinction[data-metal='or'] .rang-chiffre {
+    color: var(--or);
+  }
+  .distinction[data-metal='argent'] .rang-chiffre {
+    color: var(--argent);
+  }
+  .distinction[data-metal='bronze'] .rang-chiffre {
+    color: var(--bronze);
+  }
+
   .rang-titre {
     font-family: var(--font-display);
     font-weight: 700;
@@ -623,27 +681,57 @@ const description =
     color: var(--muted);
   }
 
+  /*
+   * DEUX BLOCS, DEUX POIDS.
+   *
+   * Les barres et le total occupent le premier, en grand : ce sont les
+   * chiffres pour lesquels on ouvre une fiche d'athlète. La place au
+   * classement occupe le second, plus discret : elle situe, elle ne raconte
+   * pas la performance.
+   *
+   * Sept mesures alignées d'un seul tenant les mettaient toutes au même
+   * niveau, et il fallait abréger « Développé couché » en « DC » pour les
+   * faire tenir.
+   */
+  .barres,
   .stats {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
     gap: var(--space-4);
-    margin: 0 0 var(--space-12);
+    margin: 0 0 var(--space-4);
     padding: var(--space-6);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     background: var(--surface);
   }
 
-  @media (min-width: 48rem) {
-    .stats {
-      grid-template-columns: repeat(4, 1fr);
+  .barres {
+    grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
+  }
+
+  .stats {
+    grid-template-columns: repeat(auto-fit, minmax(min(7.5rem, 100%), 1fr));
+    margin-bottom: var(--space-12);
+  }
+
+  .barres dd {
+    font-size: var(--step-3);
+  }
+
+  /* Le total ferme la série, précédé d'un filet : il est la somme des trois
+     barres, et non une quatrième barre. */
+  @media (min-width: 40rem) {
+    .barres .cumul {
+      padding-left: var(--space-6);
+      border-left: 1px solid var(--border);
     }
   }
 
-  @media (min-width: 68rem) {
-    .stats {
-      grid-template-columns: repeat(7, 1fr);
-    }
+  .unite {
+    margin-left: 0.15rem;
+    font-family: var(--font-body);
+    font-size: var(--step--1);
+    font-weight: 400;
+    color: var(--muted);
   }
 
   .sur {
@@ -685,133 +773,25 @@ const description =
     margin-bottom: var(--space-12);
   }
 
-  .cadre {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    background: var(--surface);
-    overflow: hidden;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: var(--step--1);
-  }
-
-  th,
-  td {
-    text-align: left;
-    padding: var(--space-2) var(--space-3);
-  }
-
-  thead {
-    display: none;
-  }
-
-  .competition a {
-    color: var(--text);
-  }
-  .competition a:hover {
-    color: var(--accent);
-  }
-
-  .ville {
-    display: block;
-    color: var(--muted);
-  }
-
-  /* Regroupe la valeur et son badge : sans ce conteneur, la cellule en
-     `space-between` éparpillerait libellé, chiffre et badge sur toute la
-     largeur de la ligne. */
+  /*
+   * La forme des deux tableaux vit dans src/styles/listes.css. Ne restent ici
+   * que les morceaux propres à la fiche : les trois barres d une ligne, et la
+   * pastille de format.
+   */
   .v {
-    display: inline-flex;
-    align-items: center;
+    display: inline-block;
+    min-width: 3ch;
   }
 
   .format {
-    font-size: var(--step--1);
-    padding: 2px var(--space-2);
+    display: inline-block;
+    padding: var(--space-1) var(--space-3);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: 999px;
+    font-size: var(--step--1);
+    font-weight: 600;
     color: var(--muted);
     white-space: nowrap;
-  }
-
-  .date {
-    white-space: nowrap;
-    font-weight: 600;
-  }
-
-  /* ---------- Mobile : une carte par compétition ---------- */
-  @media (max-width: 61.999rem) {
-    tbody tr {
-      display: block;
-      padding: var(--space-4);
-      border-bottom: 1px solid var(--border);
-    }
-    tbody tr:last-child {
-      border-bottom: 0;
-    }
-
-    .date {
-      display: block;
-      padding: 0 0 var(--space-1);
-      color: var(--accent);
-    }
-
-    td {
-      display: flex;
-      justify-content: space-between;
-      gap: var(--space-3);
-      padding: var(--space-1) 0;
-    }
-
-    td::before {
-      content: attr(data-libelle);
-      color: var(--muted);
-      font-weight: 600;
-    }
-  }
-
-  /* ---------- Desktop ---------- */
-  @media (min-width: 62rem) {
-    thead {
-      display: table-header-group;
-    }
-
-    thead th {
-      font-size: var(--step--1);
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-
-    .nombre {
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
-
-    tbody tr {
-      border-bottom: 1px solid var(--border);
-    }
-    tbody tr:last-child {
-      border-bottom: 0;
-    }
-    tbody tr:hover {
-      background: color-mix(in srgb, var(--accent) 6%, transparent);
-    }
-
-    td::before {
-      display: none;
-    }
-
-    .ville {
-      display: inline;
-      margin-left: var(--space-2);
-    }
   }
 
   .note {

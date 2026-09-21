@@ -98,15 +98,40 @@ const graduations = [min, (min + max) / 2, max];
 const meilleur = toutes.reduce((a, b) => (b.value > a.value ? b : a), toutes[0]);
 
 /*
- * Étiquettes de valeur. Au-delà d'une dizaine de points, elles se
- * chevaucheraient : on les alterne alors au-dessus et en dessous de la courbe,
- * ce qui double l'espace disponible pour chacune.
+ * ÉTIQUETTES DE VALEUR, placées par évitement plutôt qu'en alternance.
+ *
+ * L'alternance une sur deux, au-dessus puis en dessous, doublait l'espace
+ * disponible mais ne regardait pas les voisines : deux compétitions disputées
+ * à quinze jours d'intervalle tombent au même endroit de l'axe du temps, et
+ * leurs étiquettes se chevauchaient quelle que soit la rangée.
+ *
+ * Chaque étiquette cherche donc une place libre, d'abord au-dessus de la
+ * courbe, puis en dessous. Faute de place, le point garde son cercle et son
+ * infobulle, et perd seulement son nombre écrit.
+ *
+ * L'ORDRE DE PASSAGE DÉCIDE QUI GARDE SON ÉTIQUETTE. La dernière performance,
+ * la meilleure et la première sont servies d'abord : ce sont elles qui
+ * racontent une progression. Les autres suivent dans l'ordre du temps.
  */
-const dense = toutes.length > 9;
-const etiquettes = toutes.map((p, i) => ({
-  ...p,
-  ty: dense && i % 2 === 1 ? p.cy + 17 : p.cy - 11,
-}));
+const LARGEUR_CARACTERE = 6.2;
+const ECART_MIN = 5;
+
+const occupe: Record<'haut' | 'bas', [number, number][]> = { haut: [], bas: [] };
+const libre = (rangee: 'haut' | 'bas', gauche: number, droite: number) =>
+  occupe[rangee].every(([a, b]) => droite < a - ECART_MIN || gauche > b + ECART_MIN);
+
+const prioritaires = [toutes[toutes.length - 1], meilleur, toutes[0]].filter(Boolean);
+const ordre = [...new Set([...prioritaires, ...toutes])];
+
+const etiquettes = ordre.flatMap((p) => {
+  const texte = nombre(p.value);
+  const demi = (texte.length * LARGEUR_CARACTERE) / 2;
+  const [gauche, droite] = [p.cx - demi, p.cx + demi];
+  const rangee = libre('haut', gauche, droite) ? 'haut' : libre('bas', gauche, droite) ? 'bas' : null;
+  if (!rangee) return [];
+  occupe[rangee].push([gauche, droite]);
+  return [{ ...p, ty: rangee === 'haut' ? p.cy - 11 : p.cy + 17 }];
+});
 
 /** Infobulle détaillée : tout ce qui situe la performance ce jour-là. */
 function infobulle(p: PointGraphe): string {
