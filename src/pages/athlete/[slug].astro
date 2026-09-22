@@ -348,7 +348,7 @@ const description =
       un rang, et écrasait les trois barres dans une seule case intitulée
       « Squat / DC / SDT », abréviations comprises.
     */}
-    <dl class="barres" data-distingue={estDistingue ? '' : undefined}>
+    <dl class="chiffres-cles barres" data-distingue={estDistingue ? '' : undefined}>
       <div>
         <dt>
           <IconeMouvement mouvement="squat" taille={24} />
@@ -388,7 +388,7 @@ const description =
       </div>
     </dl>
 
-    <dl class="stats">
+    <dl class="chiffres-cles stats">
       <div>
         <dt>Meilleur Dots</dt>
         <dd class="num">{meilleurDots ? points(meilleurDots.dots) : '—'}</dd>
@@ -777,10 +777,10 @@ const description =
    * niveau, et il fallait abréger « Développé couché » en « DC » pour les
    * faire tenir.
    */
+  /* La grammaire des blocs de chiffres vit dans tokens.css. Ne restent ici
+     que le nombre de colonnes, le cadre, et ce qui est propre à la fiche. */
   .barres,
   .stats {
-    display: grid;
-    gap: var(--space-4);
     margin: 0 0 var(--space-4);
     padding: var(--space-6);
     border: 1px solid var(--border);
@@ -789,11 +789,11 @@ const description =
   }
 
   .barres {
-    grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
+    --colonnes: 4;
   }
 
   .stats {
-    grid-template-columns: repeat(auto-fit, minmax(min(7.5rem, 100%), 1fr));
+    --colonnes: 5;
     margin-bottom: var(--space-12);
   }
 
