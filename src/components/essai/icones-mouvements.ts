@@ -81,10 +81,35 @@ export const FAMILLES: readonly Famille[] = [
        */
       // La cage : deux montants, deux pieds, la barre posée en haut.
       squat: ['M3 6.5h18', 'M5 4v5M19 4v5', 'M7 6.5v12.5M17 6.5v12.5', 'M5 20h4M15 20h4'],
-      // Le banc : une assise et deux pieds, la barre au-dessus.
-      bench: ['M3 11h18', 'M5 8.5v5M19 8.5v5', 'M5 16h14', 'M8 16v4M16 16v4'],
-      // La barre au sol, les disques posés sur la ligne.
-      deadlift: ['M3 16.5h18', 'M5 14v5M19 14v5', 'M3 20h18'],
+      /*
+       * Le banc : LES MÊMES MONTANTS QUE LA CAGE, qui partent du sol et
+       * portent la barre, et l'assise qui les traverse. Un banc posé seul sous
+       * une barre flottante donnait une table surmontée de rien.
+       *
+       * Les montants sont plus courts et la barre plus basse que sur la cage :
+       * c'est vrai d'un vrai banc, et c'est ce qui sépare les deux glyphes
+       * avant même qu'on distingue l'assise.
+       */
+      bench: [
+        'M3 10h18',
+        'M5 7.5v5M19 7.5v5',
+        'M7 10v9M17 10v9',
+        'M5 15h14',
+        'M5 20h4M15 20h4',
+      ],
+      /*
+       * La barre seule, posée bas. PAS DE LIGNE DE SOL : à côté de la cage et
+       * du banc, qui touchent tous deux le bas de la boîte, la position basse
+       * suffit à dire le sol, et le trait en plus ne faisait que fermer le
+       * dessin.
+       *
+       * ELLE REMONTE DE DEUX UNITÉS une fois le sol retiré. Le sol tenait le
+       * dessin au bas de la boîte ; sans lui, toute l'encre tombait dans le
+       * tiers inférieur, et le glyphe pendait sous la ligne de texte à côté
+       * duquel il sera posé. Il reste plus bas que les deux autres, ce qui est
+       * le propos, sans plus tirer vers le bas.
+       */
+      deadlift: ['M3 14h18', 'M5 11.5v5M19 11.5v5'],
     },
   },
   {
