@@ -21,8 +21,9 @@ import type { LiftKey } from '../lib/types';
 const mouvements = Object.keys(TRACES_MOUVEMENTS) as LiftKey[];
 ---
 
-{/* `hidden` et non `display: none` : le sprite ne se dessine pas lui-même. */}
-<svg xmlns="http://www.w3.org/2000/svg" hidden aria-hidden="true">
+{/* Masqué par la feuille de style : le sprite ne se dessine pas lui-même,
+    il ne fait que tenir les tracés que les `<use>` viennent chercher. */}
+<svg xmlns="http://www.w3.org/2000/svg" class="sprite-mouvements" aria-hidden="true">
   {
     mouvements.map((m) => (
       <symbol id={idSymbole(m)} viewBox="0 0 24 24">

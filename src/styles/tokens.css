@@ -611,12 +611,16 @@ input:not([type='checkbox']):not([type='radio']) {
 }
 
 /*
- * Le sprite des mouvements ne se dessine pas lui-même. L'attribut `hidden` ne
- * suffit pas sur un `<svg>` : la règle par défaut des navigateurs, écrite pour
- * les éléments HTML, ne l'atteint pas, et le sprite réservait 150 px en haut
- * de la fiche d'athlète. Mesuré, puis corrigé ici.
+ * Le sprite des mouvements ne se dessine pas lui-même.
+ *
+ * L'ATTRIBUT `hidden` NE SUFFIT PAS SUR UN `<svg>`, et pour deux raisons
+ * indépendantes. La règle par défaut des navigateurs, `[hidden] { display:
+ * none }`, est écrite pour les éléments HTML et ne l'atteint pas : le sprite
+ * réservait 150 px en haut de la fiche d'athlète, mesuré. Et `astro check` le
+ * refuse, `hidden` ne figurant pas dans les attributs typés d'un SVG. D'où une
+ * classe, qui dit la même chose et passe les deux obstacles.
  */
-svg[hidden] {
+.sprite-mouvements {
   display: none;
 }
 
