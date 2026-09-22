@@ -23,6 +23,13 @@
  * Et de profil, la barre devient un DISQUE, vu sur la tranche. Un cercle est
  * la forme la plus robuste du répertoire : il se reconnaît encore à 16 px,
  * quand un empilement de trois traits se referme sur lui-même.
+ *
+ * PUIS LE MATÉRIEL PLUTÔT QUE LE CORPS. Demande de l'auteur du 22 septembre
+ * 2026, après trois tours de silhouettes : montrer la cage, le banc et le sol,
+ * de face, avec la même barre posée à trois hauteurs. Un meuble n'a pas de
+ * posture à interpréter, donc rien à perdre en réduisant, et les trois
+ * situations se distinguent par ce qui porte la barre plutôt que par l'angle
+ * d'un genou.
  */
 
 export interface Famille {
@@ -54,21 +61,30 @@ const BARBELL_TABLER = [
 export const FAMILLES: readonly Famille[] = [
   {
     id: 'a',
-    nom: 'A. Le disque et son repère, de profil',
+    nom: 'A. Le matériel, vu de face',
     argument:
-      "Le disque vu sur la tranche, à la hauteur du mouvement, et le strict minimum pour dire laquelle : les cuisses pliées, le banc, le sol. Aucun corps. C'est la famille qui descend le plus bas en taille, un cercle restant un cercle à 16 px.",
+      "Pas de corps du tout : la cage avec la barre en haut, le banc avec la barre au-dessus, la barre au sol. La même barre aux trois endroits, et c'est le meuble qui nomme le mouvement. Aucun détail à perdre en réduisant, puisqu'il n'y en a aucun.",
     traces: {
       /*
-       * La barre TRAVERSE le disque. Sans elle, un cercle de rayon 4 posé en
-       * haut de la boîte se lit comme une tête, et le glyphe devient un
-       * bonhomme au lieu d'une fonte.
+       * LA MÊME BARRE AUX TROIS ENDROITS, posée à trois hauteurs, avec trois
+       * meubles différents dessous. C'est ce qui fait la famille : un seul
+       * objet reconnaissable, trois situations.
+       *
+       * La barre tient en deux traits, l'axe et les deux disques. Les disques
+       * débordent des montants, comme sur une vraie cage.
        */
-      // Disque haut, buste, cuisses pliées, sol. Masse de 3 à 20.
-      squat: [disque(12, 7, 4), 'M6 7h12', 'M12 11v4', 'M7 19l5 -4l5 4', 'M4 20h16'],
-      // Disque haut, banc dessiné d'un seul trait en U renversé.
-      bench: [disque(12, 7, 4), 'M6 7h12', 'M6 20v-5h12v5'],
-      // Disque posé au sol, et les bras qui descendent le chercher.
-      deadlift: [disque(12, 15, 4), 'M6 15h12', 'M12 4v7', 'M4 20h16'],
+      /*
+       * LA HAUTEUR DE LA BARRE SUIT LE MOUVEMENT : en haut de la cage, au
+       * milieu au-dessus du banc, au sol. Posées à la même hauteur, la cage et
+       * le banc ne se distinguaient plus que par la forme du meuble, ce qui est
+       * peu à 16 px.
+       */
+      // La cage : deux montants, deux pieds, la barre posée en haut.
+      squat: ['M3 6.5h18', 'M5 4v5M19 4v5', 'M7 6.5v12.5M17 6.5v12.5', 'M5 20h4M15 20h4'],
+      // Le banc : une assise et deux pieds, la barre au-dessus.
+      bench: ['M3 11h18', 'M5 8.5v5M19 8.5v5', 'M5 16h14', 'M8 16v4M16 16v4'],
+      // La barre au sol, les disques posés sur la ligne.
+      deadlift: ['M3 16.5h18', 'M5 14v5M19 14v5', 'M3 20h18'],
     },
   },
   {
@@ -137,17 +153,6 @@ export const FAMILLES: readonly Famille[] = [
       squat: BARBELL_TABLER,
       bench: BARBELL_TABLER,
       deadlift: BARBELL_TABLER,
-    },
-  },
-  {
-    id: 'd',
-    nom: 'D. De face, la version précédente',
-    argument:
-      "Gardée pour la comparaison. La barre vue de face, à trois hauteurs. Les trois glyphes partagent la même orientation horizontale, et c'est précisément ce qui les rend cousins : il faut les mettre côte à côte pour les séparer.",
-    traces: {
-      squat: ['M4 6h16', 'M8 4v4', 'M16 4v4', 'M7 19l5 -7l5 7'],
-      bench: ['M4 7h16', 'M8 5v4', 'M16 5v4', 'M6 19v-5h12v5'],
-      deadlift: ['M9 5v9', 'M15 5v9', 'M4 16h16', 'M8 13v6', 'M16 13v6', 'M3 20h18'],
     },
   },
 ];
