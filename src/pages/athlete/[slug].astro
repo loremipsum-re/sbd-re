@@ -492,6 +492,7 @@ const description =
                       <span class="intitule"><IconeMouvement mouvement="squat" taille={20} />Squat</span>
                       <span class="v">
                         {nombre(r.bestSquatKg)}
+                        {r.bestSquatKg ? <span class="unite">kg</span> : null}
                         {r.bestSquatKg && estRecord(r, 'squat') && <Coupe metal="or" detail="Record du squat dans sa catégorie" taille={20} />}
                       </span>
                     </td>
@@ -499,6 +500,7 @@ const description =
                       <span class="intitule"><IconeMouvement mouvement="bench" taille={20} />DC</span>
                       <span class="v">
                         {nombre(r.bestBenchKg)}
+                        {r.bestBenchKg ? <span class="unite">kg</span> : null}
                         {r.bestBenchKg && estRecord(r, 'bench') && <Coupe metal="or" detail="Record du développé couché dans sa catégorie" taille={20} />}
                       </span>
                     </td>
@@ -506,12 +508,14 @@ const description =
                       <span class="intitule"><IconeMouvement mouvement="deadlift" taille={20} />SDT</span>
                       <span class="v">
                         {nombre(r.bestDeadliftKg)}
+                        {r.bestDeadliftKg ? <span class="unite">kg</span> : null}
                         {r.bestDeadliftKg && estRecord(r, 'deadlift') && <Coupe metal="or" detail="Record du soulevé de terre dans sa catégorie" taille={20} />}
                       </span>
                     </td>
                     <td class="nombre num-tab" data-libelle="Total" data-valeur={r.event === 'SBD' ? (r.totalKg ?? '') : ''}>
                       <span class="v">
                         {r.event === 'SBD' ? nombre(r.totalKg) : '—'}
+                        {r.event === 'SBD' && r.totalKg ? <span class="unite">kg</span> : null}
                         {r.event === 'SBD' && estRecord(r, 'total') && <Coupe metal="or" detail="Record au total dans sa catégorie" taille={20} />}
                       </span>
                     </td>
@@ -603,17 +607,21 @@ const description =
                     <td class="nombre num-tab" data-libelle="Squat">
                       <span class="intitule"><IconeMouvement mouvement="squat" taille={20} />Squat</span>
                       {nombre(r.bestSquatKg)}
+                      {r.bestSquatKg ? <span class="unite">kg</span> : null}
                     </td>
                     <td class="nombre num-tab" data-libelle="DC">
                       <span class="intitule"><IconeMouvement mouvement="bench" taille={20} />DC</span>
                       {nombre(r.bestBenchKg)}
+                      {r.bestBenchKg ? <span class="unite">kg</span> : null}
                     </td>
                     <td class="nombre num-tab" data-libelle="SDT">
                       <span class="intitule"><IconeMouvement mouvement="deadlift" taille={20} />SDT</span>
                       {nombre(r.bestDeadliftKg)}
+                      {r.bestDeadliftKg ? <span class="unite">kg</span> : null}
                     </td>
                     <td class="nombre num-tab" data-libelle="Total">
                       {r.event === 'SBD' ? nombre(r.totalKg) : '—'}
+                      {r.event === 'SBD' && r.totalKg ? <span class="unite">kg</span> : null}
                     </td>
                     <td class="nombre" data-libelle="Place">
                       {place(r.place)}

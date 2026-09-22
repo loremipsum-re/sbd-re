@@ -324,7 +324,13 @@ const aDeuxSeries = locaux.length > 0 && exterieurs.length > 0;
                 text-anchor="end"
                 dy="0.32em"
               >
+                {/*
+                  L'UNITÉ NE FIGURE QUE SUR LA GRADUATION HAUTE. Un axe la
+                  porte une fois, sinon elle se répète sans rien apprendre.
+                  Sans elle nulle part, le graphe alignait des nombres nus.
+                */}
                 {Math.round(v)}
+                {v === max && ' kg'}
               </text>
             </>
           ))}

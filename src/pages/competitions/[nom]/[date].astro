@@ -282,16 +282,19 @@ const description =
                       <span>
                         <span class="intitule">SQ</span>
                         <b class="num-tab">{nombre(r.bestSquatKg)}</b>
+                        {r.bestSquatKg ? <span class="unite">kg</span> : null}
                         {r.bestSquatKg && estRecord(r, 'squat') && <Coupe metal="or" detail="Record du squat" taille={13} />}
                       </span>
                       <span>
                         <span class="intitule">DC</span>
                         <b class="num-tab">{nombre(r.bestBenchKg)}</b>
+                        {r.bestBenchKg ? <span class="unite">kg</span> : null}
                         {r.bestBenchKg && estRecord(r, 'bench') && <Coupe metal="or" detail="Record du développé couché" taille={13} />}
                       </span>
                       <span>
                         <span class="intitule">SDT</span>
                         <b class="num-tab">{nombre(r.bestDeadliftKg)}</b>
+                        {r.bestDeadliftKg ? <span class="unite">kg</span> : null}
                         {r.bestDeadliftKg && estRecord(r, 'deadlift') && <Coupe metal="or" detail="Record du soulevé de terre" taille={13} />}
                       </span>
                     </td>
