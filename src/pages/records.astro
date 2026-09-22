@@ -1,5 +1,7 @@
 ---
 import Coupe from '../components/Coupe.astro';
+import IconeMouvement from '../components/IconeMouvement.astro';
+import SpriteMouvements from '../components/SpriteMouvements.astro';
 import InteractiveTable from '../components/InteractiveTable.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import {
@@ -80,7 +82,8 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
   titre="Records de La Réunion"
   description="Records officiels de force athlétique à La Réunion, par mouvement, sexe, catégorie de poids et équipement. Squat, développé couché, soulevé de terre et total."
 >
-  <div class="wrap">
+  <SpriteMouvements />
+    <div class="wrap">
     <header class="entete-page">
       <h1>Records de La Réunion</h1>
       <p class="chapeau">
@@ -119,6 +122,7 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
                     </th>
                     {LIFTS.map((l) => (
                       <th scope="col" class="nombre" data-tri data-type="nombre">
+                        <IconeMouvement mouvement={l.id} taille={16} />
                         {l.label}
                       </th>
                     ))}

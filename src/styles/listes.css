@@ -139,6 +139,23 @@
   color: var(--text);
 }
 
+/* L'icône d'un en-tête de colonne se pose sur la ligne du texte : une icône
+   en ligne s'assoit sur la ligne de base et dépasse donc vers le bas. */
+.liste thead th svg {
+  vertical-align: -0.22em;
+  margin-right: 0.15em;
+}
+
+/* ---------- L'intitulé porté par la cellule ----------
+ * Certaines cellules écrivent leur intitulé en dur plutôt que de le laisser au
+ * pseudo-élément qui recopie `data-libelle` : c'est le seul moyen d'y glisser
+ * une icône, `content` ne sachant pas porter de SVG. En mode tableau il ne
+ * sert à rien, la colonne ayant son en-tête, donc il disparaît. */
+
+.liste .intitule {
+  display: none;
+}
+
 /* ---------- Le sens d'un écart ----------
  * Les jetons --positif et --negatif ont été posés et mesurés pour dire « le
  * SENS D'UN ÉCART chiffré dans un tableau ». Le négatif est un saumon désaturé
@@ -623,6 +640,24 @@
     display: block;
     text-align: left;
     font-size: var(--step-0);
+  }
+
+  /* En carte, l'intitulé réel prend la place de celui que le pseudo-élément
+     écrivait. `:has()` vise les seules cellules qui en portent un, les autres
+     gardant le mécanisme commun. */
+  .liste.liste-barres tbody td[data-libelle] .intitule {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 2px;
+    font-size: var(--step--1);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  .liste.liste-barres tbody td[data-libelle]:has(.intitule)::before {
+    content: none;
   }
 
   .liste.liste-barres tbody td[data-libelle].nombre::before {

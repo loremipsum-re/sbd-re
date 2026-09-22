@@ -552,6 +552,33 @@ input:not([type='checkbox']):not([type='radio']) {
   border-radius: 2px;
 }
 
+/*
+ * Le sprite des mouvements ne se dessine pas lui-même. L'attribut `hidden` ne
+ * suffit pas sur un `<svg>` : la règle par défaut des navigateurs, écrite pour
+ * les éléments HTML, ne l'atteint pas, et le sprite réservait 150 px en haut
+ * de la fiche d'athlète. Mesuré, puis corrigé ici.
+ */
+svg[hidden] {
+  display: none;
+}
+
+/*
+ * Icônes des trois mouvements, reprises du sprite par `<use>`.
+ *
+ * Les attributs de trait vivent ICI et non sur chaque balise : la fiche de
+ * Daisy Blondan en affiche 222, et répétés autant de fois ils pèseraient plus
+ * que les tracés eux-mêmes. Ils sont hérités par le contenu référencé, ce qui
+ * est justement ce qui rend `<use>` utilisable avec `currentColor`.
+ */
+.icone-mouvement {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
 .wrap {
   width: min(100% - 2 * var(--space-4), var(--width-content));
   margin-inline: auto;
