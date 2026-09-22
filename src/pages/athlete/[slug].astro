@@ -801,14 +801,26 @@ const description =
     font-size: var(--step-3);
   }
 
-  /* L'icône accompagne l'intitulé sans le pousser : `flex` plutôt qu'un SVG
-     en ligne, dont la ligne de base ne tombe jamais où on l'attend. Le total
-     n'en a pas, le composant ne rendant rien pour lui, et son intitulé
-     s'aligne donc à gauche comme les autres. */
+  /*
+   * L'ICÔNE SE POSE AU-DESSUS DE L'INTITULÉ, ET NON À SA GAUCHE.
+   *
+   * À sa gauche, elle prenait 32 px des 163 px de la cellule, et c'est elle
+   * qui faisait passer « Développé couché » sur deux lignes : l'intitulé le
+   * plus long du bloc était aussi le seul à se plier, et l'icône se retrouvait
+   * centrée dans le vide à côté de deux lignes de texte. Au-dessus, l'intitulé
+   * récupère toute la largeur et tient sur une ligne.
+   *
+   * `justify-content: flex-end` cale les intitulés sur le BAS de leur rangée.
+   * Sans quoi « Meilleur total », qui n'a pas d'icône, se placerait tout en
+   * haut pendant que les trois autres seraient poussés d'une hauteur d'icône.
+   */
   .barres dt {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: start;
+    justify-content: flex-end;
     gap: var(--space-2);
+    height: 100%;
   }
 
   /* Le total ferme la série, précédé d'un filet : il est la somme des trois
