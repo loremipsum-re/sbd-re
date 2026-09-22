@@ -351,7 +351,7 @@ const description =
     <dl class="barres" data-distingue={estDistingue ? '' : undefined}>
       <div>
         <dt>
-          <IconeMouvement mouvement="squat" taille={18} />
+          <IconeMouvement mouvement="squat" taille={24} />
           Squat
         </dt>
         <dd class="num">
@@ -361,7 +361,7 @@ const description =
       </div>
       <div>
         <dt>
-          <IconeMouvement mouvement="bench" taille={18} />
+          <IconeMouvement mouvement="bench" taille={24} />
           Développé couché
         </dt>
         <dd class="num">
@@ -371,7 +371,7 @@ const description =
       </div>
       <div>
         <dt>
-          <IconeMouvement mouvement="deadlift" taille={18} />
+          <IconeMouvement mouvement="deadlift" taille={24} />
           Soulevé de terre
         </dt>
         <dd class="num">
@@ -408,7 +408,7 @@ const description =
       <div>
         <dt>Records détenus</dt>
         <dd class="num">
-          {nbRecords > 0 ? <>{nbRecords}<Coupe metal="or" taille={18} detail="Records en cours" /></> : '0'}
+          {nbRecords > 0 ? <>{nbRecords}<Coupe metal="or" taille={24} detail="Records en cours" /></> : '0'}
         </dd>
       </div>
       <div>
@@ -454,15 +454,15 @@ const description =
                 <th scope="col" data-tri>Compétition</th>
                 <th scope="col" data-tri>Format</th>
                 <th scope="col" class="nombre" data-tri data-type="nombre">
-                  <IconeMouvement mouvement="squat" taille={16} />
+                  <IconeMouvement mouvement="squat" taille={20} />
                   Squat
                 </th>
                 <th scope="col" class="nombre" data-tri data-type="nombre">
-                  <IconeMouvement mouvement="bench" taille={16} />
+                  <IconeMouvement mouvement="bench" taille={20} />
                   DC
                 </th>
                 <th scope="col" class="nombre" data-tri data-type="nombre">
-                  <IconeMouvement mouvement="deadlift" taille={16} />
+                  <IconeMouvement mouvement="deadlift" taille={20} />
                   SDT
                 </th>
                 <th scope="col" class="nombre" data-tri data-type="nombre">Total</th>
@@ -489,30 +489,30 @@ const description =
                       <span class="etiquette">{libelleEvent(r.event)}</span>
                     </td>
                     <td class="nombre num-tab" data-libelle="Squat" data-valeur={r.bestSquatKg ?? ''}>
-                      <span class="intitule"><IconeMouvement mouvement="squat" taille={14} />Squat</span>
+                      <span class="intitule"><IconeMouvement mouvement="squat" taille={20} />Squat</span>
                       <span class="v">
                         {nombre(r.bestSquatKg)}
-                        {r.bestSquatKg && estRecord(r, 'squat') && <Coupe metal="or" detail="Record du squat dans sa catégorie" taille={14} />}
+                        {r.bestSquatKg && estRecord(r, 'squat') && <Coupe metal="or" detail="Record du squat dans sa catégorie" taille={20} />}
                       </span>
                     </td>
                     <td class="nombre num-tab" data-libelle="DC" data-valeur={r.bestBenchKg ?? ''}>
-                      <span class="intitule"><IconeMouvement mouvement="bench" taille={14} />DC</span>
+                      <span class="intitule"><IconeMouvement mouvement="bench" taille={20} />DC</span>
                       <span class="v">
                         {nombre(r.bestBenchKg)}
-                        {r.bestBenchKg && estRecord(r, 'bench') && <Coupe metal="or" detail="Record du développé couché dans sa catégorie" taille={14} />}
+                        {r.bestBenchKg && estRecord(r, 'bench') && <Coupe metal="or" detail="Record du développé couché dans sa catégorie" taille={20} />}
                       </span>
                     </td>
                     <td class="nombre num-tab" data-libelle="SDT" data-valeur={r.bestDeadliftKg ?? ''}>
-                      <span class="intitule"><IconeMouvement mouvement="deadlift" taille={14} />SDT</span>
+                      <span class="intitule"><IconeMouvement mouvement="deadlift" taille={20} />SDT</span>
                       <span class="v">
                         {nombre(r.bestDeadliftKg)}
-                        {r.bestDeadliftKg && estRecord(r, 'deadlift') && <Coupe metal="or" detail="Record du soulevé de terre dans sa catégorie" taille={14} />}
+                        {r.bestDeadliftKg && estRecord(r, 'deadlift') && <Coupe metal="or" detail="Record du soulevé de terre dans sa catégorie" taille={20} />}
                       </span>
                     </td>
                     <td class="nombre num-tab" data-libelle="Total" data-valeur={r.event === 'SBD' ? (r.totalKg ?? '') : ''}>
                       <span class="v">
                         {r.event === 'SBD' ? nombre(r.totalKg) : '—'}
-                        {r.event === 'SBD' && estRecord(r, 'total') && <Coupe metal="or" detail="Record au total dans sa catégorie" taille={14} />}
+                        {r.event === 'SBD' && estRecord(r, 'total') && <Coupe metal="or" detail="Record au total dans sa catégorie" taille={20} />}
                       </span>
                     </td>
                     <td class="nombre" data-libelle="Dots" data-valeur={r.event === 'SBD' ? (r.dots ?? '') : ''}>
@@ -569,15 +569,15 @@ const description =
                   <th scope="col">Compétition</th>
                   <th scope="col">Pays</th>
                   <th scope="col" class="nombre">
-                    <IconeMouvement mouvement="squat" taille={16} />
+                    <IconeMouvement mouvement="squat" taille={20} />
                     Squat
                   </th>
                   <th scope="col" class="nombre">
-                    <IconeMouvement mouvement="bench" taille={16} />
+                    <IconeMouvement mouvement="bench" taille={20} />
                     DC
                   </th>
                   <th scope="col" class="nombre">
-                    <IconeMouvement mouvement="deadlift" taille={16} />
+                    <IconeMouvement mouvement="deadlift" taille={20} />
                     SDT
                   </th>
                   <th scope="col" class="nombre">Total</th>
@@ -601,15 +601,15 @@ const description =
                       <span class="etiquette">{paysFr(r.meetCountry)}</span>
                     </td>
                     <td class="nombre num-tab" data-libelle="Squat">
-                      <span class="intitule"><IconeMouvement mouvement="squat" taille={14} />Squat</span>
+                      <span class="intitule"><IconeMouvement mouvement="squat" taille={20} />Squat</span>
                       {nombre(r.bestSquatKg)}
                     </td>
                     <td class="nombre num-tab" data-libelle="DC">
-                      <span class="intitule"><IconeMouvement mouvement="bench" taille={14} />DC</span>
+                      <span class="intitule"><IconeMouvement mouvement="bench" taille={20} />DC</span>
                       {nombre(r.bestBenchKg)}
                     </td>
                     <td class="nombre num-tab" data-libelle="SDT">
-                      <span class="intitule"><IconeMouvement mouvement="deadlift" taille={14} />SDT</span>
+                      <span class="intitule"><IconeMouvement mouvement="deadlift" taille={20} />SDT</span>
                       {nombre(r.bestDeadliftKg)}
                     </td>
                     <td class="nombre num-tab" data-libelle="Total">

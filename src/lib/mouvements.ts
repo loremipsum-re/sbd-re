@@ -37,13 +37,27 @@
  */
 import type { LiftKey } from './types';
 
+/*
+ * LES TRACÉS OCCUPENT LA BOÎTE DE 2 À 22, comme ceux de Tabler.
+ *
+ * Première version dessinée de 3 à 21 : le glyphe n'occupait que 75 % de sa
+ * boîte, donc 25 % de chaque icône était du vide. À 14 px, cela revenait à
+ * dessiner dans 10,5 px. Un dixième de plus en dimension se voit beaucoup à
+ * ces tailles-là.
+ */
 export const TRACES_MOUVEMENTS: Partial<Record<LiftKey, readonly string[]>> = {
   // La cage : la barre en haut, deux montants, deux pieds.
-  squat: ['M3 6.5h18', 'M5 4v5M19 4v5', 'M7 6.5v12.5M17 6.5v12.5', 'M5 20h4M15 20h4'],
+  squat: ['M2 6h20', 'M4 3v6M20 3v6', 'M6.5 6v13.5M17.5 6v13.5', 'M4 21h5M15 21h5'],
   // Le banc : les mêmes montants, plus courts, et l'assise qui les traverse.
-  bench: ['M3 10h18', 'M5 7.5v5M19 7.5v5', 'M7 10v9M17 10v9', 'M5 15h14', 'M5 20h4M15 20h4'],
+  bench: [
+    'M2 10h20',
+    'M4 7v6M20 7v6',
+    'M6.5 10v10M17.5 10v10',
+    'M4 15.5h16',
+    'M4 21h5M15 21h5',
+  ],
   // La barre seule, posée bas.
-  deadlift: ['M3 14h18', 'M5 11.5v5M19 11.5v5'],
+  deadlift: ['M2 14h20', 'M4 11v6M20 11v6'],
 };
 
 /** Identifiant du symbole dans le sprite, pour `<use href>`. */
