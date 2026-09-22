@@ -1,0 +1,42 @@
+---
+/**
+ * Icône d'un mouvement, reprise du sprite posé par `SpriteMouvements`.
+ *
+ * Les tracés et le raisonnement qui les a produits vivent dans
+ * src/lib/mouvements.ts. Ici ne reste que l'instance.
+ *
+ * LES ATTRIBUTS DE TRAIT SONT DANS LA FEUILLE DE STYLE, sur `.icone-mouvement`
+ * dans tokens.css, et non sur chaque balise : répétés deux cent fois, ils
+ * pesaient plus que les tracés eux-mêmes. Ils sont hérités par le contenu
+ * référencé, ce qui est justement la propriété qui rend `<use>` utilisable
+ * avec `currentColor`.
+ *
+ * DÉCORATIVE, TOUJOURS, comme les icônes du menu. `aria-hidden` est posé sans
+ * condition : chaque emploi accompagne un intitulé texte qui dit déjà le
+ * mouvement, et une icône seule redeviendrait la seule information.
+ */
+import { TRACES_MOUVEMENTS, idSymbole } from '../lib/mouvements';
+import type { LiftKey } from '../lib/types';
+
+interface Props {
+  mouvement: LiftKey;
+  /** Côté de la boîte, en pixels. 18 convient à côté d'un texte courant. */
+  taille?: number;
+}
+
+const { mouvement, taille = 18 } = Astro.props;
+
+/*
+ * `total` n'est pas un mouvement mais leur somme : aucune icône, et le
+ * composant ne rend rien plutôt que d'obliger chaque appel à tester.
+ */
+const existe = mouvement in TRACES_MOUVEMENTS;
+---
+
+{
+  existe && (
+    <svg class="icone-mouvement" width={taille} height={taille} aria-hidden="true">
+      <use href={`#${idSymbole(mouvement)}`} />
+    </svg>
+  )
+}

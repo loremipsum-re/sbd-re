@@ -426,14 +426,20 @@ const interactif = recherche !== undefined || aFiltres;
     // ----- Tri par clic sur l'en-tête -----
     for (const entete of entetes) {
       const index = entete.cellIndex;
-      const libelle = entete.textContent?.trim() ?? '';
+      /*
+       * LE CONTENU DE L'EN-TÊTE EST REPRIS TEL QUEL, et non aplati en texte.
+       * Un en-tête peut porter autre chose qu'un mot : les colonnes des trois
+       * mouvements contiennent une icône, que `textContent` jetait en silence.
+       * Rien n'est injecté d'ailleurs que du balisage écrit dans le gabarit.
+       */
+      const contenu = entete.innerHTML;
 
       // Un <button> et non un <th> cliquable : c'est ce qui rend le tri
       // accessible au clavier et annoncé comme une commande.
       const bouton = document.createElement('button');
       bouton.type = 'button';
       bouton.className = 'bouton-tri';
-      bouton.innerHTML = `<span>${libelle}</span><span class="fleche" aria-hidden="true"></span>`;
+      bouton.innerHTML = `<span>${contenu}</span><span class="fleche" aria-hidden="true"></span>`;
       entete.textContent = '';
       entete.appendChild(bouton);
       entete.setAttribute('aria-sort', 'none');
@@ -455,6 +461,8 @@ const interactif = recherche !== undefined || aFiltres;
         bouton.type = 'button';
         bouton.dataset.index = String(entete.cellIndex);
         bouton.setAttribute('aria-pressed', 'false');
+        // Texte seul ici : la barre est une file de boutons serrés, et
+        // l'icône y doublerait un intitulé déjà court.
         bouton.innerHTML = `<span>${entete.textContent?.trim() ?? ''}</span><span class="fleche" aria-hidden="true"></span>`;
         bouton.addEventListener('click', () => trierPar(entete.cellIndex, entete));
         barre.appendChild(bouton);

@@ -552,6 +552,95 @@ input:not([type='checkbox']):not([type='radio']) {
   border-radius: 2px;
 }
 
+/* ===========================================================================
+ * BLOCS DE CHIFFRES CLÉS
+ *
+ * Quatre blocs du site montrent la même chose : une série d'intitulés courts
+ * avec leur valeur. L'accueil, la fiche d'athlète deux fois, et la page des
+ * partenariats. Ils étaient écrits quatre fois avec quatre réglages
+ * différents, et c'est ce qui donnait au site son air de travers.
+ *
+ * DEUX RÈGLES, TIRÉES DE CE QUI CLOCHAIT.
+ *
+ * 1. LE NOMBRE DE COLONNES DIVISE LE NOMBRE D'ÉLÉMENTS. `auto-fit` laissait le
+ *    navigateur choisir : mesuré à 700 px sur une fiche, trois colonnes pour
+ *    quatre barres et quatre colonnes pour cinq statistiques, donc une
+ *    dernière rangée incomplète dans les deux cas, et deux rythmes différents
+ *    pour deux blocs superposés. Le compte est désormais posé par
+ *    `--colonnes`, et l'orphelin d'une grille à deux colonnes s'étale plutôt
+ *    que de laisser un trou.
+ *
+ * 2. LES INTITULÉS ET LES VALEURS PARTAGENT LEURS RANGÉES, par `subgrid`.
+ *    « Développé couché » tient sur deux lignes là où « Squat » en tient une :
+ *    la valeur d'à côté tombait plus bas, et le bloc paraissait de travers
+ *    alors que sa grille était juste. C'était le vrai défaut d'alignement, et
+ *    aucun réglage de colonnes ne l'aurait corrigé.
+ *
+ * Sans `subgrid`, dans un navigateur qui ne le connaît pas, la grille retombe
+ * sur le comportement d'avant : les valeurs cessent de s'aligner, rien ne
+ * casse. Aucun repli n'est donc écrit.
+ * ======================================================================== */
+
+.chiffres-cles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+@media (min-width: 40rem) {
+  .chiffres-cles {
+    grid-template-columns: repeat(var(--colonnes, 4), minmax(0, 1fr));
+  }
+}
+
+/* `min-width: 0` parce qu'un élément de grille vaut `min-width: auto` et
+   déborderait plutôt que de passer à la ligne. */
+.chiffres-cles > * {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 2;
+  min-width: 0;
+}
+
+/* Sur deux colonnes, un nombre impair d'éléments en laisse un seul à gauche
+   avec un trou à sa droite. Il prend la largeur. */
+@media (max-width: 39.999rem) {
+  .chiffres-cles > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+/*
+ * Le sprite des mouvements ne se dessine pas lui-même.
+ *
+ * L'ATTRIBUT `hidden` NE SUFFIT PAS SUR UN `<svg>`, et pour deux raisons
+ * indépendantes. La règle par défaut des navigateurs, `[hidden] { display:
+ * none }`, est écrite pour les éléments HTML et ne l'atteint pas : le sprite
+ * réservait 150 px en haut de la fiche d'athlète, mesuré. Et `astro check` le
+ * refuse, `hidden` ne figurant pas dans les attributs typés d'un SVG. D'où une
+ * classe, qui dit la même chose et passe les deux obstacles.
+ */
+.sprite-mouvements {
+  display: none;
+}
+
+/*
+ * Icônes des trois mouvements, reprises du sprite par `<use>`.
+ *
+ * Les attributs de trait vivent ICI et non sur chaque balise : la fiche de
+ * Daisy Blondan en affiche 222, et répétés autant de fois ils pèseraient plus
+ * que les tracés eux-mêmes. Ils sont hérités par le contenu référencé, ce qui
+ * est justement ce qui rend `<use>` utilisable avec `currentColor`.
+ */
+.icone-mouvement {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
 .wrap {
   width: min(100% - 2 * var(--space-4), var(--width-content));
   margin-inline: auto;

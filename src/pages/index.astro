@@ -53,12 +53,12 @@ const stats = [
       <a class="bouton lien-nu" href="/records/">Les records de La Réunion</a>
     </div>
 
-    <dl class="stats">
+    <dl class="chiffres-cles stats">
       {
         stats.map((s) => (
           <div>
-            <dt class="num">{s.valeur}</dt>
-            <dd>{s.libelle}</dd>
+            <dt>{s.libelle}</dt>
+            <dd class="num">{s.valeur}</dd>
           </div>
         ))
       }
@@ -213,33 +213,37 @@ const stats = [
     color: var(--on-accent);
   }
 
+  /* Colonnes et alignement des rangées : voir `.chiffres-cles` dans
+     tokens.css. Le bloc ne garde ici que son filet et son rythme propre. */
   .stats {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    --colonnes: 4;
     gap: var(--space-6);
     margin: 0;
     padding-top: var(--space-8);
     border-top: 1px solid var(--border);
   }
 
-  @media (min-width: 48rem) {
-    .stats {
-      grid-template-columns: repeat(4, 1fr);
-    }
-  }
-
+  /*
+   * L'INTITULÉ AU-DESSUS, LE CHIFFRE EN DESSOUS, comme les quatre autres blocs
+   * du site. L'accueil était le seul à les inverser, et deux conventions pour
+   * la même chose donnaient au site son air décousu.
+   *
+   * L'inversion corrige aussi la sémantique : dans une liste de définitions,
+   * `<dt>` porte le TERME et `<dd>` ce qui le décrit. « 357 » décrit par
+   * « athlètes » prenait le problème à l'envers.
+   */
   .stats dt {
-    font-size: var(--step-3);
-    line-height: 1;
-    color: var(--text);
-  }
-
-  .stats dd {
-    margin: var(--space-1) 0 0;
     color: var(--muted);
     font-size: var(--step--1);
     text-transform: uppercase;
     letter-spacing: 0.06em;
+  }
+
+  .stats dd {
+    margin: var(--space-1) 0 0;
+    font-size: var(--step-3);
+    line-height: 1;
+    color: var(--text);
   }
 
   .bloc {

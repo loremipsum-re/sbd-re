@@ -139,6 +139,54 @@
   color: var(--text);
 }
 
+/* L'icône d'un en-tête de colonne se pose sur la ligne du texte : une icône
+   en ligne s'assoit sur la ligne de base et dépasse donc vers le bas. */
+.liste thead th svg {
+  vertical-align: -0.22em;
+  margin-right: 0.15em;
+}
+
+/* ---------- L'intitulé porté par la cellule ----------
+ * Certaines cellules écrivent leur intitulé en dur plutôt que de le laisser au
+ * pseudo-élément qui recopie `data-libelle` : c'est le seul moyen d'y glisser
+ * une icône, `content` ne sachant pas porter de SVG. En mode tableau il ne
+ * sert à rien, la colonne ayant son en-tête, donc il disparaît. */
+
+.liste .intitule {
+  display: none;
+}
+
+/* ---------- Le sens d'un écart ----------
+ * Les jetons --positif et --negatif ont été posés et mesurés pour dire « le
+ * SENS D'UN ÉCART chiffré dans un tableau ». Le négatif est un saumon désaturé
+ * et non un écarlate : l'écarlate sur fond quasi noir est l'identité de SBD
+ * Apparel.
+ *
+ * LA COULEUR NE PORTE JAMAIS L'INFORMATION SEULE. Le triangle la double pour
+ * qui ne sépare pas le vert du rouge, et un texte réservé aux lecteurs d'écran
+ * dit ce que l'écart mesure. Le marqueur sert au classement, où il compte des
+ * places gagnées sur douze mois, et à la fiche d'athlète, où il compte des
+ * points Dots gagnés d'une compétition à la suivante.
+ */
+
+.liste .evolution {
+  display: flex;
+  align-items: baseline;
+  gap: 0.15rem;
+  font-family: var(--font-body);
+  font-size: var(--step--1);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.liste .evolution[data-sens='hausse'] {
+  color: var(--positif);
+}
+
+.liste .evolution[data-sens='baisse'] {
+  color: var(--negatif);
+}
+
 /* ---------- Le second plan ---------- */
 
 .liste .meta,
@@ -448,14 +496,14 @@
    * carte de 300 px par résultat. Les valeurs chiffrées, courtes, vont par
    * deux ; le texte garde toute la largeur.
    */
-  .liste:not(.liste-perfs) tbody tr {
+  .liste:not(.liste-perfs):not(.liste-barres) tbody tr {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--space-1) var(--space-3);
     padding: var(--space-3) var(--space-4);
   }
 
-  .liste:not(.liste-perfs) tbody tr > :not(.nombre) {
+  .liste:not(.liste-perfs):not(.liste-barres) tbody tr > :not(.nombre) {
     grid-column: 1 / -1;
   }
 
@@ -501,12 +549,121 @@
   /* Le nom prend toute la largeur, au-dessus du reste. Ici le flex est sans
      danger : la ligne est devenue une grille, ses cellules ne sont donc plus
      des cellules de tableau mais des éléments de grille. */
-  .liste:not(.liste-perfs) tbody .nom {
+  .liste:not(.liste-perfs):not(.liste-barres) tbody .nom {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     min-width: 0;
     font-size: var(--step-1);
     margin-bottom: var(--space-1);
+  }
+
+  /* ---------------------------------------------------------------------
+   * VARIANTE « BARRES » : l'historique d'une fiche d'athlète
+   *
+   * Neuf valeurs par carte, chacune précédée de son intitulé, donnaient un
+   * mur de texte : « Soulevé de terre 110 » voisinait « Total 270 » sans
+   * qu'aucun chiffre ne tombe sous un autre. Rien ne s'alignait, donc rien
+   * ne se comparait, et c'est bien ce qu'on demande à un historique.
+   *
+   * Les six chiffres tiennent désormais sur une grille de TROIS colonnes,
+   * en deux rangées qui ont chacune un sens : les trois barres disputées,
+   * puis les trois valeurs qui les résument. L'intitulé passe AU-DESSUS de
+   * sa valeur, en petites capitales : le nombre récupère toute la largeur
+   * de sa colonne, et les chiffres tombent les uns sous les autres d'une
+   * rangée à l'autre comme d'une carte à l'autre.
+   *
+   * L'ordre des cellules dans le tableau donne cette mise en page sans
+   * qu'on ait à placer quoi que ce soit : squat, développé couché, soulevé
+   * de terre, puis total, Dots et place.
+   * ------------------------------------------------------------------- */
+
+  /*
+   * SIX COLONNES POUR EN MONTRER TROIS. Les chiffres en occupent deux
+   * chacun, ce qui donne bien trois par rangée, mais la première rangée
+   * peut alors se partager en deux moitiés de 148 px. Sur une grille de
+   * trois colonnes, la pastille n'avait que 98 px : « Développé couché »
+   * en demande 131 et débordait de la carte.
+   */
+  .liste.liste-barres tbody tr {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: var(--space-2) var(--space-2);
+    padding: var(--space-4);
+  }
+
+  /* La date ouvre la carte et une cellule la qualifie, le format d'une
+     compétition ici, le pays ailleurs : elles partagent la première rangée,
+     placées explicitement pour ne pas dépendre de l'ordre des cellules du
+     tableau. */
+  .liste.liste-barres tbody .date {
+    grid-column: 1 / 4;
+    grid-row: 1;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--step-0);
+    color: var(--text);
+  }
+
+  .liste.liste-barres tbody .cellule-annexe {
+    grid-column: 4 / -1;
+    grid-row: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: start;
+  }
+
+  /* Le bloc compétition reprend sa forme habituelle, nom puis commune, et
+     tient la largeur de la carte. */
+  .liste.liste-barres tbody .competition {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Deux intitulés se taisent : « Compétition » au-dessus d'un nom de
+     compétition et « Format » au-dessus d'une pastille qui se lit seule
+     n'apprennent rien à personne. */
+  .liste.liste-barres tbody .competition::before,
+  .liste.liste-barres tbody .cellule-annexe::before {
+    display: none;
+  }
+
+  /* Sans cellule de qualification, la date prend toute la rangée plutôt que
+     de laisser une moitié vide. */
+  .liste.liste-barres tbody tr:not(:has(.cellule-annexe)) .date {
+    grid-column: 1 / -1;
+  }
+
+  .liste.liste-barres tbody td[data-libelle].nombre {
+    grid-column: span 2;
+    display: block;
+    text-align: left;
+    font-size: var(--step-0);
+  }
+
+  /* En carte, l'intitulé réel prend la place de celui que le pseudo-élément
+     écrivait. `:has()` vise les seules cellules qui en portent un, les autres
+     gardant le mécanisme commun. */
+  .liste.liste-barres tbody td[data-libelle] .intitule {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 2px;
+    font-size: var(--step--1);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  .liste.liste-barres tbody td[data-libelle]:has(.intitule)::before {
+    content: none;
+  }
+
+  .liste.liste-barres tbody td[data-libelle].nombre::before {
+    display: block;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 }

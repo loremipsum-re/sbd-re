@@ -1,28 +1,40 @@
 ---
 /**
- * Bande de glossaire, posée au-dessus d'une liste.
+ * Glossaire repliable, posé au-dessus d'une liste.
  *
  * POURQUOI ICI ET PAS SUR CHAQUE LIGNE. Le classement compte plusieurs
  * centaines de lignes et trois étiquettes par ligne : y accrocher une
  * infobulle donnerait près de mille boutons, donc mille arrêts à la
- * tabulation, pour six définitions distinctes. La bande les donne une fois,
+ * tabulation, pour huit définitions distinctes. Le bloc les donne une fois,
  * là où le regard passe avant d'entrer dans la liste.
+ *
+ * POURQUOI IL SE REPLIE. Huit pastilles de 44 px occupent 177 px sur un
+ * téléphone, soit 22 % de l'écran, avant même d'atteindre la liste. Replié,
+ * le bloc tient sur une ligne. Qui connaît déjà le vocabulaire ne le déplie
+ * jamais.
+ *
+ * Un `<details>` natif plutôt qu'un script : le navigateur gère l'ouverture,
+ * le clavier et l'annonce aux lecteurs d'écran, et le bloc fonctionne sans
+ * JavaScript.
  *
  * Les étiquettes des lignes gardent un attribut `title`, que le navigateur
  * affiche au survol sans qu'on ait à le dessiner. Il ne serait pas suffisant
  * seul, un `title` étant inatteignable au clavier comme au doigt, mais il
- * complète bien la bande.
+ * complète bien le glossaire.
  */
 import { GLOSSAIRE } from '../lib/glossaire';
 import Infobulle from './Infobulle.astro';
 ---
 
-<div class="glossaire">
-  <span class="intitule">Comprendre les termes</span>
+<details class="glossaire">
+  <summary>
+    <span class="chevron" aria-hidden="true"></span>
+    Comprendre les termes
+  </summary>
   <div class="termes">
     {GLOSSAIRE.map((t) => <Infobulle terme={t} />)}
   </div>
-</div>
+</details>
 
 <style>
   /* Bloc positionné de référence : les bulles se calent dessous, sur toute sa
@@ -30,23 +42,56 @@ import Infobulle from './Infobulle.astro';
      elles ne s'ancrent pas au terme lui-même. */
   .glossaire {
     position: relative;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2) var(--space-3);
     margin-bottom: var(--space-4);
   }
 
-  .intitule {
+  summary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: 999px;
     font-size: var(--step--1);
+    font-weight: 600;
     color: var(--muted);
+    cursor: pointer;
+    /* Retire la flèche que Safari et Chrome ajoutent d'office : le chevron
+       ci-dessous la remplace et tourne à l'ouverture. */
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .chevron {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg) translate(-0.1rem, -0.1rem);
+    transition: transform 0.15s ease;
+  }
+  .glossaire[open] .chevron {
+    transform: rotate(-135deg) translate(-0.15rem, -0.15rem);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chevron {
+      transition: none;
+    }
   }
 
   .termes {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
-    /* Sans cela, un élément de flex vaut `min-width: auto` et la bande
+    margin-top: var(--space-3);
+    /* Sans cela, un élément de flex vaut `min-width: auto` et le bloc
        déborderait plutôt que de passer à la ligne sur un téléphone. */
     min-width: 0;
   }
@@ -58,6 +103,6 @@ import Infobulle from './Infobulle.astro';
    * huit pastilles sur un téléphone à 44 px. Mais un conteneur à défilement
    * DÉCOUPE ce qui en sort : la bulle, posée en absolu, serait tranchée net.
    * C'est le même piège que le cadre de la liste, qui est en `overflow:
-   * hidden`. La bande passe donc à la ligne, et reste entière.
+   * hidden`. Le repli répond au même problème sans ce défaut.
    */
 </style>

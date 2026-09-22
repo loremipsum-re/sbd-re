@@ -1,0 +1,36 @@
+---
+/**
+ * Les trois tracés de mouvement, définis UNE FOIS par page.
+ *
+ * POURQUOI UN SPRITE ET PAS UN SVG PAR ICÔNE. Une fiche d'athlète bien remplie
+ * affiche l'icône trois fois par ligne, sur deux tableaux : 222 icônes sur la
+ * fiche de Daisy Blondan. Recopiées en entier, elles faisaient passer la page
+ * de 179 à 290 ko, mesuré. Référencées par `<use>`, elles coûtent une centaine
+ * d'octets pièce et les tracés ne sont écrits qu'une fois.
+ *
+ * Le sprite reste DANS la page, et non dans un fichier séparé : c'est déjà le
+ * choix d'`Icone.astro` et de `Logo.astro`. Un `<use>` vers un fichier externe
+ * demanderait une requête de plus et perdrait `currentColor`.
+ *
+ * À POSER UNE FOIS DANS TOUTE PAGE QUI EMPLOIE `IconeMouvement`. Sans lui, les
+ * `<use>` ne pointent vers rien et les icônes disparaissent sans bruit.
+ */
+import { TRACES_MOUVEMENTS, idSymbole } from '../lib/mouvements';
+import type { LiftKey } from '../lib/types';
+
+const mouvements = Object.keys(TRACES_MOUVEMENTS) as LiftKey[];
+---
+
+{/* Masqué par la feuille de style : le sprite ne se dessine pas lui-même,
+    il ne fait que tenir les tracés que les `<use>` viennent chercher. */}
+<svg xmlns="http://www.w3.org/2000/svg" class="sprite-mouvements" aria-hidden="true">
+  {
+    mouvements.map((m) => (
+      <symbol id={idSymbole(m)} viewBox="0 0 24 24">
+        {TRACES_MOUVEMENTS[m]!.map((d) => (
+          <path d={d} />
+        ))}
+      </symbol>
+    ))
+  }
+</svg>

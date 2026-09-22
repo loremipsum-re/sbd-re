@@ -1,6 +1,8 @@
 ---
 import BadgeOfficiel from '../../components/BadgeOfficiel.astro';
 import Coupe from '../../components/Coupe.astro';
+import IconeMouvement from '../../components/IconeMouvement.astro';
+import SpriteMouvements from '../../components/SpriteMouvements.astro';
 import InteractiveTable from '../../components/InteractiveTable.astro';
 import ProgressChart from '../../components/ProgressChart.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
@@ -66,6 +68,36 @@ const meilleurDots = fullPower.reduce<Result | null>(
   (a, b) => (a === null || (b.dots ?? 0) > (a.dots ?? 0) ? b : a),
   null,
 );
+
+/*
+ * ÉCART D'UNE COMPÉTITION À LA SUIVANTE, en points Dots.
+ *
+ * POURQUOI LES DOTS ET NON LE TOTAL. Un total se compare mal d'une
+ * compétition à l'autre dès que le poids de corps bouge : en descendant de
+ * catégorie, un athlète soulève moins et progresse quand même. C'est déjà
+ * l'invariant qui sépare le meilleur total du meilleur Dots plus haut sur
+ * cette page. Le Dots, lui, ramène toutes les barres à une même échelle, et
+ * c'est bien un écart de PERFORMANCE que la flèche doit dire.
+ *
+ * SEUL LE FULL POWER ENTRE DANS LA SUITE. Sur une compétition d'un seul
+ * mouvement, OpenPowerlifting renseigne quand même un total et donc un Dots,
+ * mais ils valent la seule barre disputée : l'écart serait un artefact.
+ * `fullPower` écarte déjà ces lignes, et la comparaison saute donc par-dessus.
+ *
+ * La carte est indexée par l'objet résultat lui-même, et non par une clé
+ * reconstruite : deux compétitions peuvent partager une date et un nom.
+ */
+const ecartDots = new Map<Result, number>();
+let dotsPrecedent: number | null = null;
+for (const r of fullPower) {
+  if (r.dots === null || r.dots === undefined) continue;
+  if (dotsPrecedent !== null) {
+    const ecart = Number((r.dots - dotsPrecedent).toFixed(1));
+    // Un écart nul ne dit rien qu'une flèche puisse porter.
+    if (ecart !== 0) ecartDots.set(r, ecart);
+  }
+  dotsPrecedent = r.dots;
+}
 
 const meilleures = {
   squat: Math.max(0, ...historique.map((r) => r.bestSquatKg ?? 0)),
@@ -178,7 +210,8 @@ const description =
 ---
 
 <BaseLayout titre={name} description={description}>
-  <div class="wrap">
+  <SpriteMouvements />
+    <div class="wrap">
     <p class="fil"><a href="/classement/">Retour au classement</a></p>
 
     <header class="entete-athlete">
@@ -279,11 +312,17 @@ const description =
     {
       estDistingue && rangs && (
         <div class="distinction" data-metal={metalDuRang ?? 'top'}>
-          <Coupe
-            metal={metalDuRang}
-            taille={34}
-            detail={`${ordinal(rangs.global.rang)} du classement Dots`}
-          />
+          {/*
+            LE RANG EN CHIFFRES, et non une coupe.
+
+            Une coupe signale un record en cours partout ailleurs sur le site :
+            sur /records/, dans les grilles de catégorie, dans les résultats de
+            compétition. Ici elle marquait une position au classement, ce qui
+            en faisait le même dessin pour deux notions. Le nombre dit la même
+            chose sans ambiguïté, et il porte l'information au lieu de
+            l'illustrer.
+          */}
+          <p class="rang-chiffre" aria-hidden="true">{rangs.global.rang}</p>
           <div>
             <p class="rang-titre">
               {ordinal(rangs.global.rang)} de La Réunion
@@ -301,11 +340,55 @@ const description =
       )
     }
 
-    <dl class="stats" data-distingue={estDistingue ? '' : undefined}>
+    {/*
+      DEUX GROUPES, et non une bande de sept mesures.
+
+      Les barres et le total d'un côté, la place dans le classement de
+      l'autre. La bande unique mettait sur la même ligne un poids soulevé et
+      un rang, et écrasait les trois barres dans une seule case intitulée
+      « Squat / DC / SDT », abréviations comprises.
+    */}
+    <dl class="chiffres-cles barres" data-distingue={estDistingue ? '' : undefined}>
       <div>
-        <dt>Meilleur total</dt>
-        <dd class="num">{meilleurTotal ? kg(meilleurTotal.totalKg) : '—'}</dd>
+        <dt>
+          <IconeMouvement mouvement="squat" taille={24} />
+          Squat
+        </dt>
+        <dd class="num">
+          {meilleures.squat ? nombre(meilleures.squat) : '—'}
+          {meilleures.squat && <span class="unite">kg</span>}
+        </dd>
       </div>
+      <div>
+        <dt>
+          <IconeMouvement mouvement="bench" taille={24} />
+          Développé couché
+        </dt>
+        <dd class="num">
+          {meilleures.bench ? nombre(meilleures.bench) : '—'}
+          {meilleures.bench && <span class="unite">kg</span>}
+        </dd>
+      </div>
+      <div>
+        <dt>
+          <IconeMouvement mouvement="deadlift" taille={24} />
+          Soulevé de terre
+        </dt>
+        <dd class="num">
+          {meilleures.deadlift ? nombre(meilleures.deadlift) : '—'}
+          {meilleures.deadlift && <span class="unite">kg</span>}
+        </dd>
+      </div>
+      <div class="cumul">
+        <dt>Meilleur total</dt>
+        <dd class="num">
+          {meilleurTotal ? nombre(meilleurTotal.totalKg) : '—'}
+          {meilleurTotal && <span class="unite">kg</span>}
+        </dd>
+      </div>
+    </dl>
+
+    <dl class="chiffres-cles stats">
       <div>
         <dt>Meilleur Dots</dt>
         <dd class="num">{meilleurDots ? points(meilleurDots.dots) : '—'}</dd>
@@ -325,20 +408,12 @@ const description =
       <div>
         <dt>Records détenus</dt>
         <dd class="num">
-          {nbRecords > 0 ? <>{nbRecords}<Coupe metal="or" taille={18} detail="Records en cours" /></> : '0'}
+          {nbRecords > 0 ? <>{nbRecords}<Coupe metal="or" taille={24} detail="Records en cours" /></> : '0'}
         </dd>
       </div>
       <div>
         <dt>Compétitions</dt>
         <dd class="num">{meets}</dd>
-      </div>
-      <div>
-        <dt>Squat / DC / SDT</dt>
-        <dd class="triptyque">
-          <span class="num">{meilleures.squat ? nombre(meilleures.squat) : '—'}</span>
-          <span class="num">{meilleures.bench ? nombre(meilleures.bench) : '—'}</span>
-          <span class="num">{meilleures.deadlift ? nombre(meilleures.deadlift) : '—'}</span>
-        </dd>
       </div>
     </dl>
 
@@ -371,16 +446,25 @@ const description =
         pluriel="compétitions"
         total={historique.length}
       >
-        <div class="cadre">
+        <div class="liste liste-barres">
           <table data-tableau>
             <thead>
               <tr>
                 <th scope="col" data-tri data-type="nombre">Date</th>
                 <th scope="col" data-tri>Compétition</th>
                 <th scope="col" data-tri>Format</th>
-                <th scope="col" class="nombre" data-tri data-type="nombre">Squat</th>
-                <th scope="col" class="nombre" data-tri data-type="nombre">DC</th>
-                <th scope="col" class="nombre" data-tri data-type="nombre">SDT</th>
+                <th scope="col" class="nombre" data-tri data-type="nombre">
+                  <IconeMouvement mouvement="squat" taille={20} />
+                  Squat
+                </th>
+                <th scope="col" class="nombre" data-tri data-type="nombre">
+                  <IconeMouvement mouvement="bench" taille={20} />
+                  DC
+                </th>
+                <th scope="col" class="nombre" data-tri data-type="nombre">
+                  <IconeMouvement mouvement="deadlift" taille={20} />
+                  SDT
+                </th>
                 <th scope="col" class="nombre" data-tri data-type="nombre">Total</th>
                 <th scope="col" class="nombre" data-tri data-type="nombre">Dots</th>
                 <th scope="col" class="nombre" data-tri data-type="nombre">Place</th>
@@ -388,50 +472,72 @@ const description =
             </thead>
             <tbody>
               {
-                [...historique].reverse().map((r) => (
+                [...historique].reverse().map((r) => {
+                  const ecart = ecartDots.get(r);
+                  return (
                   <tr data-recherche={r.meetName}>
                     <th scope="row" class="date" data-valeur={r.date.replace(/-/g, '')}>
                       {dateLongue(r.date)}
                     </th>
                     <td data-libelle="Compétition" class="competition">
-                      <a href={`/competitions/${meetPath(r.date, r.meetName)}/`}>{r.meetName}</a>
-                      <span class="ville">{r.meetTown}</span>
+                      <a href={`/competitions/${meetPath(r.date, r.meetName)}/`}>
+                        <span class="meet">{r.meetName}</span>
+                        <span class="ou">{r.meetTown}</span>
+                      </a>
                     </td>
-                    <td data-libelle="Format">
-                      <span class="format">{libelleEvent(r.event)}</span>
+                    <td data-libelle="Format" class="cellule-annexe">
+                      <span class="etiquette">{libelleEvent(r.event)}</span>
                     </td>
                     <td class="nombre num-tab" data-libelle="Squat" data-valeur={r.bestSquatKg ?? ''}>
+                      <span class="intitule"><IconeMouvement mouvement="squat" taille={20} />Squat</span>
                       <span class="v">
                         {nombre(r.bestSquatKg)}
-                        {r.bestSquatKg && estRecord(r, 'squat') && <Coupe metal="or" detail="Record du squat dans sa catégorie" taille={14} />}
+                        {r.bestSquatKg ? <span class="unite">kg</span> : null}
+                        {r.bestSquatKg && estRecord(r, 'squat') && <Coupe metal="or" detail="Record du squat dans sa catégorie" taille={20} />}
                       </span>
                     </td>
-                    <td class="nombre num-tab" data-libelle="Développé couché" data-valeur={r.bestBenchKg ?? ''}>
+                    <td class="nombre num-tab" data-libelle="DC" data-valeur={r.bestBenchKg ?? ''}>
+                      <span class="intitule"><IconeMouvement mouvement="bench" taille={20} />DC</span>
                       <span class="v">
                         {nombre(r.bestBenchKg)}
-                        {r.bestBenchKg && estRecord(r, 'bench') && <Coupe metal="or" detail="Record du développé couché dans sa catégorie" taille={14} />}
+                        {r.bestBenchKg ? <span class="unite">kg</span> : null}
+                        {r.bestBenchKg && estRecord(r, 'bench') && <Coupe metal="or" detail="Record du développé couché dans sa catégorie" taille={20} />}
                       </span>
                     </td>
-                    <td class="nombre num-tab" data-libelle="Soulevé de terre" data-valeur={r.bestDeadliftKg ?? ''}>
+                    <td class="nombre num-tab" data-libelle="SDT" data-valeur={r.bestDeadliftKg ?? ''}>
+                      <span class="intitule"><IconeMouvement mouvement="deadlift" taille={20} />SDT</span>
                       <span class="v">
                         {nombre(r.bestDeadliftKg)}
-                        {r.bestDeadliftKg && estRecord(r, 'deadlift') && <Coupe metal="or" detail="Record du soulevé de terre dans sa catégorie" taille={14} />}
+                        {r.bestDeadliftKg ? <span class="unite">kg</span> : null}
+                        {r.bestDeadliftKg && estRecord(r, 'deadlift') && <Coupe metal="or" detail="Record du soulevé de terre dans sa catégorie" taille={20} />}
                       </span>
                     </td>
                     <td class="nombre num-tab" data-libelle="Total" data-valeur={r.event === 'SBD' ? (r.totalKg ?? '') : ''}>
                       <span class="v">
                         {r.event === 'SBD' ? nombre(r.totalKg) : '—'}
-                        {r.event === 'SBD' && estRecord(r, 'total') && <Coupe metal="or" detail="Record au total dans sa catégorie" taille={14} />}
+                        {r.event === 'SBD' && r.totalKg ? <span class="unite">kg</span> : null}
+                        {r.event === 'SBD' && estRecord(r, 'total') && <Coupe metal="or" detail="Record au total dans sa catégorie" taille={20} />}
                       </span>
                     </td>
                     <td class="nombre" data-libelle="Dots" data-valeur={r.event === 'SBD' ? (r.dots ?? '') : ''}>
                       {r.event === 'SBD' ? points(r.dots) : '—'}
+                      {ecart !== undefined && (
+                        <span class="evolution" data-sens={ecart > 0 ? 'hausse' : 'baisse'}>
+                          <span aria-hidden="true">{ecart > 0 ? '▲' : '▼'}</span>
+                          {points(Math.abs(ecart))}
+                          <span class="sr-only">
+                            points {ecart > 0 ? 'gagnés' : 'perdus'} depuis la compétition
+                            précédente en full power
+                          </span>
+                        </span>
+                      )}
                     </td>
                     <td class="nombre" data-libelle="Place" data-valeur={Number.parseInt(r.place, 10) || 999}>
                       {place(r.place)}
                     </td>
                   </tr>
-                ))
+                  );
+                })
               }
             </tbody>
           </table>
@@ -442,7 +548,10 @@ const description =
         La coupe signale une barre qui constitue aujourd'hui le record de sa
         catégorie à La Réunion. Le total et les points Dots concernent le full
         power : sur une compétition à un seul mouvement, ils reprendraient
-        simplement la barre disputée.
+        simplement la barre disputée. La flèche sous les points Dots donne
+        l'écart avec la compétition en full power précédente : les Dots ramènent
+        toutes les barres à une même échelle, si bien qu'un changement de
+        catégorie ne fausse pas la comparaison.
       </p>
     </section>
 
@@ -456,16 +565,25 @@ const description =
             réunionnais.
           </p>
 
-          <div class="cadre">
+          <div class="liste liste-barres">
             <table>
               <thead>
                 <tr>
                   <th scope="col">Date</th>
                   <th scope="col">Compétition</th>
                   <th scope="col">Pays</th>
-                  <th scope="col" class="nombre">Squat</th>
-                  <th scope="col" class="nombre">DC</th>
-                  <th scope="col" class="nombre">SDT</th>
+                  <th scope="col" class="nombre">
+                    <IconeMouvement mouvement="squat" taille={20} />
+                    Squat
+                  </th>
+                  <th scope="col" class="nombre">
+                    <IconeMouvement mouvement="bench" taille={20} />
+                    DC
+                  </th>
+                  <th scope="col" class="nombre">
+                    <IconeMouvement mouvement="deadlift" taille={20} />
+                    SDT
+                  </th>
                   <th scope="col" class="nombre">Total</th>
                   <th scope="col" class="nombre">Place</th>
                 </tr>
@@ -483,18 +601,27 @@ const description =
                         {r.meetTown && <> · {r.meetTown}</>}
                       </span>
                     </td>
-                    <td data-libelle="Pays">{paysFr(r.meetCountry)}</td>
+                    <td data-libelle="Pays" class="cellule-annexe">
+                      <span class="etiquette">{paysFr(r.meetCountry)}</span>
+                    </td>
                     <td class="nombre num-tab" data-libelle="Squat">
+                      <span class="intitule"><IconeMouvement mouvement="squat" taille={20} />Squat</span>
                       {nombre(r.bestSquatKg)}
+                      {r.bestSquatKg ? <span class="unite">kg</span> : null}
                     </td>
-                    <td class="nombre num-tab" data-libelle="Développé couché">
+                    <td class="nombre num-tab" data-libelle="DC">
+                      <span class="intitule"><IconeMouvement mouvement="bench" taille={20} />DC</span>
                       {nombre(r.bestBenchKg)}
+                      {r.bestBenchKg ? <span class="unite">kg</span> : null}
                     </td>
-                    <td class="nombre num-tab" data-libelle="Soulevé de terre">
+                    <td class="nombre num-tab" data-libelle="SDT">
+                      <span class="intitule"><IconeMouvement mouvement="deadlift" taille={20} />SDT</span>
                       {nombre(r.bestDeadliftKg)}
+                      {r.bestDeadliftKg ? <span class="unite">kg</span> : null}
                     </td>
                     <td class="nombre num-tab" data-libelle="Total">
                       {r.event === 'SBD' ? nombre(r.totalKg) : '—'}
+                      {r.event === 'SBD' && r.totalKg ? <span class="unite">kg</span> : null}
                     </td>
                     <td class="nombre" data-libelle="Place">
                       {place(r.place)}
@@ -605,6 +732,29 @@ const description =
     border-left-color: var(--accent);
   }
 
+  /* Le rang tient la place qu'occupait la coupe. `aria-hidden` sur le nombre :
+     la phrase juste à côté dit déjà « 1er de La Réunion », et l'entendre deux
+     fois n'apprend rien. */
+  .rang-chiffre {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--step-4);
+    line-height: 1;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .distinction[data-metal='or'] .rang-chiffre {
+    color: var(--or);
+  }
+  .distinction[data-metal='argent'] .rang-chiffre {
+    color: var(--argent);
+  }
+  .distinction[data-metal='bronze'] .rang-chiffre {
+    color: var(--bronze);
+  }
+
   .rang-titre {
     font-family: var(--font-display);
     font-weight: 700;
@@ -623,27 +773,79 @@ const description =
     color: var(--muted);
   }
 
+  /*
+   * DEUX BLOCS, DEUX POIDS.
+   *
+   * Les barres et le total occupent le premier, en grand : ce sont les
+   * chiffres pour lesquels on ouvre une fiche d'athlète. La place au
+   * classement occupe le second, plus discret : elle situe, elle ne raconte
+   * pas la performance.
+   *
+   * Sept mesures alignées d'un seul tenant les mettaient toutes au même
+   * niveau, et il fallait abréger « Développé couché » en « DC » pour les
+   * faire tenir.
+   */
+  /* La grammaire des blocs de chiffres vit dans tokens.css. Ne restent ici
+     que le nombre de colonnes, le cadre, et ce qui est propre à la fiche. */
+  .barres,
   .stats {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-4);
-    margin: 0 0 var(--space-12);
+    margin: 0 0 var(--space-4);
     padding: var(--space-6);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     background: var(--surface);
   }
 
-  @media (min-width: 48rem) {
-    .stats {
-      grid-template-columns: repeat(4, 1fr);
+  .barres {
+    --colonnes: 4;
+  }
+
+  .stats {
+    --colonnes: 5;
+    margin-bottom: var(--space-12);
+  }
+
+  .barres dd {
+    font-size: var(--step-3);
+  }
+
+  /*
+   * L'ICÔNE SE POSE AU-DESSUS DE L'INTITULÉ, ET NON À SA GAUCHE.
+   *
+   * À sa gauche, elle prenait 32 px des 163 px de la cellule, et c'est elle
+   * qui faisait passer « Développé couché » sur deux lignes : l'intitulé le
+   * plus long du bloc était aussi le seul à se plier, et l'icône se retrouvait
+   * centrée dans le vide à côté de deux lignes de texte. Au-dessus, l'intitulé
+   * récupère toute la largeur et tient sur une ligne.
+   *
+   * `justify-content: flex-end` cale les intitulés sur le BAS de leur rangée.
+   * Sans quoi « Meilleur total », qui n'a pas d'icône, se placerait tout en
+   * haut pendant que les trois autres seraient poussés d'une hauteur d'icône.
+   */
+  .barres dt {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    height: 100%;
+  }
+
+  /* Le total ferme la série, précédé d'un filet : il est la somme des trois
+     barres, et non une quatrième barre. */
+  @media (min-width: 40rem) {
+    .barres .cumul {
+      padding-left: var(--space-6);
+      border-left: 1px solid var(--border);
     }
   }
 
-  @media (min-width: 68rem) {
-    .stats {
-      grid-template-columns: repeat(7, 1fr);
-    }
+  .unite {
+    margin-left: 0.15rem;
+    font-family: var(--font-body);
+    font-size: var(--step--1);
+    font-weight: 400;
+    color: var(--muted);
   }
 
   .sur {
@@ -685,132 +887,29 @@ const description =
     margin-bottom: var(--space-12);
   }
 
-  .cadre {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    background: var(--surface);
-    overflow: hidden;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: var(--step--1);
-  }
-
-  th,
-  td {
-    text-align: left;
-    padding: var(--space-2) var(--space-3);
-  }
-
-  thead {
-    display: none;
-  }
-
-  .competition a {
-    color: var(--text);
-  }
-  .competition a:hover {
-    color: var(--accent);
-  }
-
-  .ville {
-    display: block;
-    color: var(--muted);
-  }
-
-  /* Regroupe la valeur et son badge : sans ce conteneur, la cellule en
-     `space-between` éparpillerait libellé, chiffre et badge sur toute la
-     largeur de la ligne. */
+  /*
+   * La forme des deux tableaux vit dans src/styles/listes.css, pastille
+   * comprise. Ne reste ici que la largeur minimale des trois barres d une
+   * ligne, pour que les nombres ne dansent pas d une ligne à l autre.
+   */
   .v {
-    display: inline-flex;
-    align-items: center;
+    display: inline-block;
+    min-width: 3ch;
   }
 
-  .format {
-    font-size: var(--step--1);
-    padding: 2px var(--space-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--muted);
-    white-space: nowrap;
+  /*
+   * L'écart passe SOUS la valeur : la colonne des Dots mesure 86 px et ne
+   * peut pas tenir « 275,7 » et « ▲ 2,3 » sur une même ligne. Il suit
+   * l'alignement de sa cellule, à droite en tableau, à gauche en carte, où
+   * les nombres s'alignent sur leur intitulé.
+   */
+  .liste .nombre .evolution {
+    justify-content: flex-end;
   }
 
-  .date {
-    white-space: nowrap;
-    font-weight: 600;
-  }
-
-  /* ---------- Mobile : une carte par compétition ---------- */
-  @media (max-width: 61.999rem) {
-    tbody tr {
-      display: block;
-      padding: var(--space-4);
-      border-bottom: 1px solid var(--border);
-    }
-    tbody tr:last-child {
-      border-bottom: 0;
-    }
-
-    .date {
-      display: block;
-      padding: 0 0 var(--space-1);
-      color: var(--accent);
-    }
-
-    td {
-      display: flex;
-      justify-content: space-between;
-      gap: var(--space-3);
-      padding: var(--space-1) 0;
-    }
-
-    td::before {
-      content: attr(data-libelle);
-      color: var(--muted);
-      font-weight: 600;
-    }
-  }
-
-  /* ---------- Desktop ---------- */
-  @media (min-width: 62rem) {
-    thead {
-      display: table-header-group;
-    }
-
-    thead th {
-      font-size: var(--step--1);
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-
-    .nombre {
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
-
-    tbody tr {
-      border-bottom: 1px solid var(--border);
-    }
-    tbody tr:last-child {
-      border-bottom: 0;
-    }
-    tbody tr:hover {
-      background: color-mix(in srgb, var(--accent) 6%, transparent);
-    }
-
-    td::before {
-      display: none;
-    }
-
-    .ville {
-      display: inline;
-      margin-left: var(--space-2);
+  @media (max-width: 59.999rem) {
+    .liste .nombre .evolution {
+      justify-content: flex-start;
     }
   }
 

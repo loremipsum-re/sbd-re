@@ -129,6 +129,7 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
                     </td>
                     <td class="nombre num-tab" data-libelle="Total" data-valeur={r.event === 'SBD' ? (r.totalKg ?? '') : ''}>
                       {r.event === 'SBD' ? nombre(r.totalKg) : '—'}
+                      {r.event === 'SBD' && r.totalKg ? <span class="unite">kg</span> : null}
                     </td>
                     <td class="nombre" data-libelle="Dots" data-valeur={r.event === 'SBD' ? (r.dots ?? '') : ''}>
                       {r.event === 'SBD' ? points(r.dots) : '—'}

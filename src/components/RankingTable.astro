@@ -225,30 +225,11 @@ const RESUME_DOTS = terme('glossaire-dots')?.resume;
   }
 
   /*
-   * LE MOUVEMENT DE L'ANNÉE, sous le rang.
-   *
-   * Les jetons --positif et --negatif existaient depuis l'origine sans usage,
-   * posés et mesurés pour dire « le SENS D'UN ÉCART chiffré dans un tableau ».
-   * C'est leur premier emploi. Le négatif est un saumon désaturé et non un
-   * écarlate : l'écarlate sur fond quasi noir est l'identité de SBD Apparel.
+   * LE MOUVEMENT DE L'ANNÉE vit dans src/styles/listes.css, avec le reste de
+   * la grammaire commune : la fiche d'athlète emploie le même marqueur pour
+   * dire l'écart de points d'une compétition à la suivante, et deux copies
+   * finiraient par diverger.
    */
-  .evolution {
-    display: flex;
-    align-items: baseline;
-    gap: 0.15rem;
-    font-family: var(--font-body);
-    font-size: var(--step--1);
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .evolution[data-sens='hausse'] {
-    color: var(--positif);
-  }
-
-  .evolution[data-sens='baisse'] {
-    color: var(--negatif);
-  }
 
   .nouveau {
     font-family: var(--font-body);

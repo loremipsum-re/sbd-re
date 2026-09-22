@@ -8,6 +8,17 @@
  * s'affiche instantanément, se met à l'échelle sans pixelliser, et suit le
  * thème clair ou sombre par `currentColor`.
  *
+ * LIGNE BRISÉE ET JAMAIS LISSÉE. Une courbe adoucie inventerait des valeurs
+ * entre deux compétitions, alors qu'il n'existe que des points de mesure
+ * espacés de plusieurs mois. La ligne droite entre deux points ne prétend
+ * rien d'autre que les relier.
+ *
+ * DEUX TRACÉS, UN PAR FORMAT D'ÉCRAN. Le repère mesurait 640 unités de large,
+ * étiré à la largeur du conteneur : sur un téléphone, la colonne de 343 px
+ * divisait tout par 1,87 et un texte de 11 unités tombait à 5,9 px, illisible.
+ * Le composant dessine donc deux fois la même donnée, dans un repère large et
+ * dans un repère étroit, et le CSS n'en montre qu'un.
+ *
  * Deux séries cohabitent : les compétitions réunionnaises, en couleur
  * d'accent, et celles disputées ailleurs, en gris. Le gris n'est pas un choix
  * esthétique, il dit quelque chose : ces performances ne comptent ni pour le
@@ -39,12 +50,6 @@ interface Props {
 
 const { points, legende = 'Progression du total' } = Astro.props;
 
-// Repère interne du SVG. Les unités n'ont pas d'importance : le viewBox se met
-// à l'échelle de son conteneur.
-const L = 640;
-const H = 250;
-const MARGE = { haut: 34, bas: 38, gauche: 54, droite: 24 };
-
 const tries = [...points].sort((a, b) => a.date.localeCompare(b.date));
 const locaux = tries.filter((p) => !p.exterieur);
 const exterieurs = tries.filter((p) => p.exterieur);
@@ -59,9 +64,6 @@ const amplitude = max - min || Math.max(max * 0.1, 10);
 const basse = min - amplitude * 0.15;
 const haute = max + amplitude * 0.15;
 
-const largeurUtile = L - MARGE.gauche - MARGE.droite;
-const hauteurUtile = H - MARGE.haut - MARGE.bas;
-
 // L'axe horizontal est chronologique : deux compétitions espacées de trois ans
 // doivent être espacées à l'écran, sinon la courbe ment sur le rythme.
 const premier = new Date(`${tries[0]?.date ?? '2000-01-01'}T12:00:00Z`).getTime();
@@ -70,46 +72,18 @@ const dernier = new Date(
 ).getTime();
 const etendue = dernier - premier || 1;
 
-const x = (date: string) =>
-  tries.length === 1
-    ? MARGE.gauche + largeurUtile / 2
-    : MARGE.gauche +
-      ((new Date(`${date}T12:00:00Z`).getTime() - premier) / etendue) * largeurUtile;
+const meilleurPoint = tries.reduce((a, b) => (b.value > a.value ? b : a), tries[0]);
 
-const y = (v: number) =>
-  MARGE.haut + hauteurUtile - ((v - basse) / (haute - basse)) * hauteurUtile;
-
-interface Coord extends PointGraphe {
-  cx: number;
-  cy: number;
-}
-
-const placer = (liste: PointGraphe[]): Coord[] =>
-  liste.map((p) => ({ ...p, cx: x(p.date), cy: y(p.value) }));
-
-const coordLocaux = placer(locaux);
-const coordExt = placer(exterieurs);
-const toutes = placer(tries);
-
-const ligneDe = (c: Coord[]) =>
-  c.map((p) => `${p.cx.toFixed(1)},${p.cy.toFixed(1)}`).join(' ');
-
-const graduations = [min, (min + max) / 2, max];
-const meilleur = toutes.reduce((a, b) => (b.value > a.value ? b : a), toutes[0]);
-
-/*
- * Étiquettes de valeur. Au-delà d'une dizaine de points, elles se
- * chevaucheraient : on les alterne alors au-dessus et en dessous de la courbe,
- * ce qui double l'espace disponible pour chacune.
+/**
+ * Détail complet d'une performance, affiché sous la courbe à la sélection.
+ *
+ * ÉCRIT UNE SEULE FOIS DANS LA PAGE, dans l'îlot JSON plus bas, et retrouvé
+ * par un numéro. La première version le répétait quatre fois par point, en
+ * `aria-label` et en `data-detail`, dans le tracé large comme dans l'étroit :
+ * la fiche de Daisy Blondan, 48 compétitions, pesait 58 ko de plus. Le
+ * numéro seul en rend 22.
  */
-const dense = toutes.length > 9;
-const etiquettes = toutes.map((p, i) => ({
-  ...p,
-  ty: dense && i % 2 === 1 ? p.cy + 17 : p.cy - 11,
-}));
-
-/** Infobulle détaillée : tout ce qui situe la performance ce jour-là. */
-function infobulle(p: PointGraphe): string {
+function detail(p: PointGraphe): string {
   const morceaux = [dateCourte(p.date), kg(p.value)];
   if (p.meetName) morceaux.push(p.meetName);
   if (p.weightClassKg) morceaux.push(`catégorie ${p.weightClassKg} kg`);
@@ -127,7 +101,170 @@ function infobulle(p: PointGraphe): string {
   return morceaux.join(' · ');
 }
 
-const aDeuxSeries = coordLocaux.length > 0 && coordExt.length > 0;
+const rang = new Map(tries.map((p, i) => [p, i]));
+
+interface Coord extends PointGraphe {
+  cx: number;
+  cy: number;
+  /** Rang chronologique dans `tries`, qui sert de clé vers le détail. */
+  i: number;
+}
+
+interface Marge {
+  haut: number;
+  bas: number;
+  gauche: number;
+  droite: number;
+}
+
+/**
+ * Calcule un tracé complet pour un repère donné.
+ *
+ * Appelé deux fois, avec deux formats. Tout ce qui dépend de la géométrie vit
+ * ici : la position des points, celle des étiquettes, et la place restante
+ * pour les écrire.
+ */
+function tracer(L: number, H: number, MARGE: Marge) {
+  const largeurUtile = L - MARGE.gauche - MARGE.droite;
+  const hauteurUtile = H - MARGE.haut - MARGE.bas;
+
+  const x = (date: string) =>
+    tries.length === 1
+      ? MARGE.gauche + largeurUtile / 2
+      : MARGE.gauche +
+        ((new Date(`${date}T12:00:00Z`).getTime() - premier) / etendue) * largeurUtile;
+
+  const y = (v: number) =>
+    MARGE.haut + hauteurUtile - ((v - basse) / (haute - basse)) * hauteurUtile;
+
+  const placer = (liste: PointGraphe[]): Coord[] =>
+    liste.map((p) => ({ ...p, i: rang.get(p) ?? 0, cx: x(p.date), cy: y(p.value) }));
+
+  const coordLocaux = placer(locaux);
+  const coordExt = placer(exterieurs);
+  const toutes = placer(tries);
+  const meilleur = toutes.reduce((a, b) => (b.value > a.value ? b : a), toutes[0]);
+
+  /*
+   * ÉTIQUETTES DE VALEUR, placées par évitement plutôt qu'en alternance.
+   *
+   * L'alternance une sur deux, au-dessus puis en dessous, doublait l'espace
+   * disponible mais ne regardait pas les voisines : deux compétitions
+   * disputées à quinze jours d'intervalle tombent au même endroit de l'axe du
+   * temps, et leurs étiquettes se chevauchaient quelle que soit la rangée.
+   *
+   * Chaque étiquette cherche donc une place libre, d'abord au-dessus de son
+   * point, puis en dessous. Faute de place, le point garde son cercle et son
+   * détail, et perd seulement son nombre écrit.
+   *
+   * LA COMPARAISON SE FAIT EN DEUX DIMENSIONS, pas par rangée. « Au-dessus »
+   * et « en dessous » se mesurent depuis le point, qui monte et descend avec
+   * la performance : l'étiquette posée au-dessus d'un petit total tombe à la
+   * même hauteur que celle posée sous un gros. Ne comparer que les abscisses
+   * laissait deux chevauchements sur trente étiquettes, mesurés dans le
+   * navigateur.
+   *
+   * L'ORDRE DE PASSAGE DÉCIDE QUI GARDE SON ÉTIQUETTE. La dernière
+   * performance, la meilleure et la première sont servies d'abord : ce sont
+   * elles qui racontent une progression.
+   */
+  const LARGEUR_CARACTERE = 6.2;
+  const ECART_MIN = 4;
+  // Hauteur d'un chiffre au-dessus de la ligne de base, et talon sous elle.
+  const MONTANT = 8;
+  const TALON = 3;
+  type Boite = { g: number; d: number; h: number; b: number };
+  const posees: Boite[] = [];
+  const libre = (n: Boite) =>
+    posees.every(
+      (o) =>
+        n.d < o.g - ECART_MIN ||
+        n.g > o.d + ECART_MIN ||
+        n.b < o.h - ECART_MIN ||
+        n.h > o.b + ECART_MIN,
+    );
+
+  const ordre = [
+    ...new Set([toutes[toutes.length - 1], meilleur, toutes[0], ...toutes]),
+  ].filter(Boolean);
+
+  const etiquettes = ordre.flatMap((p) => {
+    const texte = nombre(p.value);
+    const demi = (texte.length * LARGEUR_CARACTERE) / 2;
+    const boite = (ty: number): Boite => ({
+      g: p.cx - demi,
+      d: p.cx + demi,
+      h: ty - MONTANT,
+      b: ty + TALON,
+    });
+    const candidates = [boite(p.cy - 11), boite(p.cy + 17)];
+    const retenue = candidates.find(libre);
+    if (!retenue) return [];
+    posees.push(retenue);
+    return [{ ...p, ty: retenue.h + MONTANT }];
+  });
+
+  const ligneDe = (c: Coord[]) =>
+    c.map((p) => `${p.cx.toFixed(1)},${p.cy.toFixed(1)}`).join(' ');
+
+  return {
+    L,
+    H,
+    MARGE,
+    y,
+    coordLocaux,
+    coordExt,
+    meilleur,
+    etiquettes,
+    ligneLocaux: ligneDe(coordLocaux),
+    ligneExt: ligneDe(coordExt),
+  };
+}
+
+/*
+ * DEUX FORMATS, DIMENSIONNÉS PAR LA MESURE.
+ *
+ * Un SVG à viewBox se met à l'échelle en bloc : le texte grandit et rétrécit
+ * avec le dessin. La taille lisible d'une étiquette dépend donc du rapport
+ * entre la largeur du repère et celle du conteneur. La colonne du site mesure
+ * 1088 px au plus large, et 800 px au seuil de bascule ; un repère de 880
+ * unités y tient entre 0,91 et 1,24 fois sa taille, soit un texte rendu de 10
+ * à 13,6 px.
+ *
+ * Sur téléphone, la colonne tombe à 343 px. Le repère étroit mesure donc 340
+ * unités, soit une échelle de 1, et son plafond de 460 px dans la feuille de
+ * style empêche le texte de grossir démesurément entre les deux seuils.
+ */
+const formats =
+  tries.length === 0
+    ? []
+    : [
+        {
+          nom: 'large',
+          ...tracer(880, 300, { haut: 34, bas: 40, gauche: 54, droite: 24 }),
+        },
+        {
+          nom: 'etroit',
+          ...tracer(340, 280, { haut: 26, bas: 36, gauche: 40, droite: 12 }),
+        },
+      ];
+
+/*
+ * RAYON DE LA ZONE DE TOUCHE, en unités du repère.
+ *
+ * La règle du site veut 44 px pour tout contrôle. Un point de donnée ne peut
+ * pas l'honorer : trente-cinq compétitions réparties sur 288 unités de tracé
+ * laissent six unités entre deux voisins, et des cibles de 44 px se
+ * recouvriraient sur dix points d'affilée. Le halo prend donc la plus grande
+ * taille qui reste lisible, 22 unités de diamètre, soit 22 px sur téléphone
+ * contre 7 px pour le cercle visible. Le panneau de détail nomme la
+ * compétition choisie : une erreur de touche se voit et se corrige d'un
+ * second appui.
+ */
+const HALO = 11;
+
+const graduations = [min, (min + max) / 2, max];
+const aDeuxSeries = locaux.length > 0 && exterieurs.length > 0;
 ---
 
 {
@@ -138,77 +275,136 @@ const aDeuxSeries = coordLocaux.length > 0 && coordExt.length > 0;
     </EtatVide>
   ) : (
     <figure class="graphe" data-vue="tout">
-      {aDeuxSeries && (
-        <div class="controles" role="group" aria-label="Compétitions affichées">
-          <button type="button" data-vue-cible="tout" aria-pressed="true">
-            Tout
-          </button>
-          <button type="button" data-vue-cible="locaux" aria-pressed="false">
-            La Réunion
-          </button>
-          <button type="button" data-vue-cible="exterieur" aria-pressed="false">
-            Hors de l'île
-          </button>
-        </div>
-      )}
-
-      <svg viewBox={`0 0 ${L} ${H}`} role="img" aria-labelledby="titre-graphe">
-        <title id="titre-graphe">
-          {legende} : {tries.length} points, de {kg(min)} à {kg(max)}.
-        </title>
-
-        {graduations.map((v) => (
-          <>
-            <line class="grille" x1={MARGE.gauche} x2={L - MARGE.droite} y1={y(v)} y2={y(v)} />
-            <text class="axe" x={MARGE.gauche - 8} y={y(v)} text-anchor="end" dy="0.32em">
-              {Math.round(v)}
-            </text>
-          </>
-        ))}
-
-        <g class="serie serie-ext">
-          {coordExt.length > 1 && <polyline class="ligne" points={ligneDe(coordExt)} />}
-          {coordExt.map((p) => (
-            <circle class="point" cx={p.cx} cy={p.cy} r="3.5">
-              <title>{infobulle(p)}</title>
-            </circle>
-          ))}
-        </g>
-
-        <g class="serie serie-loc">
-          {coordLocaux.length > 1 && <polyline class="ligne" points={ligneDe(coordLocaux)} />}
-          {coordLocaux.map((p) => (
-            <circle
-              class={p === meilleur ? 'point meilleur' : 'point'}
-              cx={p.cx}
-              cy={p.cy}
-              r={p === meilleur ? 5 : 3.5}
-            >
-              <title>{infobulle(p)}</title>
-            </circle>
-          ))}
-        </g>
-
-        {etiquettes.map((p) => (
-          <text
-            class={`valeur ${p.exterieur ? 'ext' : 'loc'}${p.value === meilleur.value ? ' record' : ''}`}
-            x={p.cx}
-            y={p.ty}
-            text-anchor="middle"
-          >
-            {nombre(p.value)}
-          </text>
-        ))}
-
-        <text class="axe" x={MARGE.gauche} y={H - 10}>
-          {tries[0].date.slice(0, 4)}
-        </text>
-        {tries.length > 1 && (
-          <text class="axe" x={L - MARGE.droite} y={H - 10} text-anchor="end">
-            {tries[tries.length - 1].date.slice(0, 4)}
-          </text>
+      <div class="controles">
+        {aDeuxSeries && (
+          <div class="groupe" role="group" aria-label="Compétitions affichées">
+            <button type="button" data-vue-cible="tout" aria-pressed="true">
+              Tout
+            </button>
+            <button type="button" data-vue-cible="locaux" aria-pressed="false">
+              La Réunion
+            </button>
+            <button type="button" data-vue-cible="exterieur" aria-pressed="false">
+              Hors de l'île
+            </button>
+          </div>
         )}
-      </svg>
+
+        {/*
+          Bascule des chiffres. Allumée d'office sur grand écran, où les
+          étiquettes tiennent sans se chevaucher ; éteinte sur téléphone, où
+          le détail au clic les remplace avantageusement. C'est le script qui
+          règle cet état de départ, le CSS ne sachant pas écrire d'attribut.
+        */}
+        <button type="button" class="bascule" data-chiffres aria-pressed="false">
+          Afficher les chiffres
+        </button>
+      </div>
+
+      {formats.map((f) => (
+        <svg
+          class={`toile ${f.nom}`}
+          viewBox={`0 0 ${f.L} ${f.H}`}
+          role="img"
+          aria-label={`${legende} : ${tries.length} points, de ${kg(min)} à ${kg(max)}.`}
+        >
+          {graduations.map((v) => (
+            <>
+              <line
+                class="grille"
+                x1={f.MARGE.gauche}
+                x2={f.L - f.MARGE.droite}
+                y1={f.y(v)}
+                y2={f.y(v)}
+              />
+              <text
+                class="axe"
+                x={f.MARGE.gauche - 8}
+                y={f.y(v)}
+                text-anchor="end"
+                dy="0.32em"
+              >
+                {/*
+                  L'UNITÉ NE FIGURE QUE SUR LA GRADUATION HAUTE. Un axe la
+                  porte une fois, sinon elle se répète sans rien apprendre.
+                  Sans elle nulle part, le graphe alignait des nombres nus.
+                */}
+                {Math.round(v)}
+                {v === max && ' kg'}
+              </text>
+            </>
+          ))}
+
+          <g class="serie serie-ext">
+            {f.coordExt.length > 1 && <polyline class="ligne" points={f.ligneExt} />}
+            {f.coordExt.map((p) => (
+              <g class="point" data-i={p.i}>
+                <circle class="halo" cx={p.cx} cy={p.cy} r={HALO} />
+                <circle class="pastille" cx={p.cx} cy={p.cy} r="3.5" />
+              </g>
+            ))}
+          </g>
+
+          <g class="serie serie-loc">
+            {f.coordLocaux.length > 1 && <polyline class="ligne" points={f.ligneLocaux} />}
+            {f.coordLocaux.map((p) => (
+              <g
+                class={p.value === meilleurPoint.value ? 'point meilleur' : 'point'}
+                data-i={p.i}
+              >
+                <circle class="halo" cx={p.cx} cy={p.cy} r={HALO} />
+                <circle
+                  class="pastille"
+                  cx={p.cx}
+                  cy={p.cy}
+                  r={p.value === meilleurPoint.value ? 5 : 3.5}
+                />
+              </g>
+            ))}
+          </g>
+
+          {f.etiquettes.map((p) => (
+            <text
+              class={`valeur ${p.exterieur ? 'ext' : 'loc'}${p.value === meilleurPoint.value ? ' record' : ''}`}
+              x={p.cx}
+              y={p.ty}
+              text-anchor="middle"
+            >
+              {nombre(p.value)}
+            </text>
+          ))}
+
+          <text class="axe" x={f.MARGE.gauche} y={f.H - 10}>
+            {tries[0].date.slice(0, 4)}
+          </text>
+          {tries.length > 1 && (
+            <text class="axe" x={f.L - f.MARGE.droite} y={f.H - 10} text-anchor="end">
+              {tries[tries.length - 1].date.slice(0, 4)}
+            </text>
+          )}
+        </svg>
+      ))}
+
+      {/*
+        Les détails, un par compétition, dans l'ordre chronologique. Un îlot
+        JSON plutôt que des attributs : le navigateur ne lit pas ce bloc, le
+        script y puise par le numéro que chaque point porte.
+      */}
+      <script
+        is:inline
+        type="application/json"
+        class="details"
+        set:html={JSON.stringify(tries.map(detail))}
+      />
+
+      {/*
+        Détail du point choisi. `aria-live` : il change sans rechargement, il
+        doit donc s'annoncer. Le texte de départ dit quoi faire, plutôt que de
+        laisser une zone vide dont on ignore l'usage.
+      */}
+      <p class="detail" data-detail-point aria-live="polite">
+        Touchez un point de la courbe pour voir le détail de la compétition.
+      </p>
 
       <figcaption>
         {legende} sur {tries.length} compétition{tries.length > 1 ? 's' : ''}. Meilleure
@@ -225,20 +421,121 @@ const aDeuxSeries = coordLocaux.length > 0 && coordExt.length > 0;
 }
 
 <script>
-  document.querySelectorAll<HTMLElement>('.graphe .controles').forEach((groupe) => {
-    const figure = groupe.closest<HTMLElement>('.graphe');
-    if (!figure) return;
-
-    const boutons = Array.from(groupe.querySelectorAll<HTMLButtonElement>('[data-vue-cible]'));
+  document.querySelectorAll<HTMLElement>('.graphe').forEach((figure) => {
+    /* ---------- Filtre des séries ---------- */
+    const boutons = Array.from(figure.querySelectorAll<HTMLButtonElement>('[data-vue-cible]'));
     for (const bouton of boutons) {
       bouton.addEventListener('click', () => {
-        const cible = bouton.dataset.vueCible!;
-        figure.dataset.vue = cible;
+        figure.dataset.vue = bouton.dataset.vueCible!;
         // `aria-pressed` plutôt qu'une simple classe : c'est ce qui annonce
         // l'état à un lecteur d'écran.
         for (const autre of boutons) {
           autre.setAttribute('aria-pressed', String(autre === bouton));
         }
+      });
+    }
+
+    /* ---------- Bascule des chiffres ---------- */
+    const bascule = figure.querySelector<HTMLButtonElement>('[data-chiffres]');
+    if (bascule) {
+      const appliquer = (actif: boolean) => {
+        figure.dataset.chiffres = actif ? 'oui' : 'non';
+        bascule.setAttribute('aria-pressed', String(actif));
+        bascule.textContent = actif ? 'Masquer les chiffres' : 'Afficher les chiffres';
+      };
+
+      // Allumée d'office là où les étiquettes tiennent, éteinte ailleurs.
+      appliquer(window.matchMedia('(min-width: 48rem)').matches);
+      bascule.addEventListener('click', () => {
+        appliquer(figure.dataset.chiffres !== 'oui');
+      });
+    }
+
+    /* ---------- Détail du point choisi ----------
+       Un seul écouteur sur la figure plutôt qu'un par point : une fiche
+       d'athlète en compte jusqu'à quarante-huit, dessinés deux fois. */
+    const sortie = figure.querySelector<HTMLElement>('[data-detail-point]');
+    const invite = sortie?.textContent ?? '';
+
+    // Les détails vivent dans un îlot JSON ; chaque point porte son numéro.
+    const details: string[] = JSON.parse(
+      figure.querySelector('.details')?.textContent || '[]',
+    );
+    const texteDe = (p: SVGElement) => details[Number(p.dataset.i)] ?? invite;
+
+    const choisir = (cible: SVGElement | null) => {
+      if (!sortie) return;
+      for (const p of figure.querySelectorAll('.point.choisi')) p.classList.remove('choisi');
+      if (!cible) {
+        delete figure.dataset.choisi;
+        sortie.textContent = invite;
+        return;
+      }
+      cible.classList.add('choisi');
+      figure.dataset.choisi = 'oui';
+      sortie.textContent = texteDe(cible);
+    };
+
+    figure.addEventListener('click', (evenement) => {
+      const point = (evenement.target as Element).closest<SVGElement>('.point');
+      choisir(point);
+    });
+
+    /* ---------- Clavier ----------
+       UN SEUL ARRÊT DE TABULATION PAR TRACÉ, puis les flèches. Rendre chaque
+       point tabulable donnerait quarante-huit arrêts sur la fiche de Daisy
+       Blondan, à traverser avant d'atteindre le reste de la page. Le premier
+       point est donc seul tabulable, et les flèches déplacent ce privilège :
+       c'est le schéma que suivent les listes et les barres d'outils. */
+    for (const toile of figure.querySelectorAll('svg')) {
+      const points = Array.from(toile.querySelectorAll<SVGElement>('.point')).sort(
+        (a, b) => Number(a.dataset.i) - Number(b.dataset.i),
+      );
+      if (points.length === 0) continue;
+
+      /* LE RÔLE ET LE NOM SONT POSÉS ICI, pas au build. Sans JavaScript, rien
+         ne répond au clic : annoncer quarante-huit boutons dans ce cas serait
+         une promesse non tenue, et les nommer obligerait à réécrire chaque
+         détail dans la page. Sans script, ces points restent donc de simples
+         dessins, et la courbe garde le résumé porté par le `<svg>`. */
+      for (const point of points) {
+        point.setAttribute('role', 'button');
+        point.setAttribute('tabindex', '-1');
+        point.setAttribute('aria-label', texteDe(point));
+      }
+      points[0].setAttribute('tabindex', '0');
+
+      const deplacer = (vers: number) => {
+        const cible = points[Math.min(Math.max(vers, 0), points.length - 1)];
+        for (const p of points) p.setAttribute('tabindex', '-1');
+        cible.setAttribute('tabindex', '0');
+        cible.focus();
+        // Le détail suit le focus : parcourir la courbe aux flèches la raconte
+        // sans qu'il faille valider chaque point.
+        choisir(cible);
+      };
+
+      toile.addEventListener('keydown', (evenement) => {
+        const clavier = evenement as KeyboardEvent;
+        const point = (clavier.target as Element).closest<SVGElement>('.point');
+        if (!point) return;
+        const ici = points.indexOf(point);
+
+        if (clavier.key === 'Enter' || clavier.key === ' ') {
+          clavier.preventDefault();
+          choisir(point);
+          return;
+        }
+
+        const pas: Record<string, number> = {
+          ArrowRight: ici + 1,
+          ArrowLeft: ici - 1,
+          Home: 0,
+          End: points.length - 1,
+        };
+        if (!(clavier.key in pas)) return;
+        clavier.preventDefault();
+        deplacer(pas[clavier.key]);
       });
     }
   });
@@ -252,8 +549,15 @@ const aDeuxSeries = coordLocaux.length > 0 && coordExt.length > 0;
   .controles {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-1);
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
     margin-bottom: var(--space-3);
+  }
+
+  .groupe {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
   }
 
   .controles button {
@@ -274,15 +578,50 @@ const aDeuxSeries = coordLocaux.length > 0 && coordExt.length > 0;
   }
 
   .controles button[aria-pressed='true'] {
-    border-color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 12%, transparent);
-    color: var(--accent);
+    border-color: var(--accent-fill);
+    background: var(--accent-fill);
+    color: var(--on-accent);
   }
 
-  svg {
+  /* La bascule se détache du groupe de filtres : elle ne choisit pas QUOI
+     afficher, mais COMMENT. Ce décalage n'a de sens que sur une ligne assez
+     large pour les contenir tous : replié sur un téléphone, il laisserait un
+     bouton seul et flottant à droite. */
+  @media (min-width: 52rem) {
+    .bascule {
+      margin-left: auto;
+    }
+  }
+
+  /*
+   * UN TRACÉ PAR FORMAT. Les deux sont dans le document, le CSS n'en montre
+   * qu'un : la géométrie est calculée au build, elle ne peut pas s'adapter à
+   * la largeur réelle.
+   */
+  .toile {
     width: 100%;
     height: auto;
     overflow: visible;
+  }
+
+  .toile.large {
+    display: none;
+  }
+
+  /* Plafond du tracé étroit : sans lui, il s'étirerait jusqu'au seuil de
+     bascule et son texte atteindrait 23 px. */
+  .toile.etroit {
+    max-width: 460px;
+    margin-inline: auto;
+  }
+
+  @media (min-width: 52rem) {
+    .toile.large {
+      display: block;
+    }
+    .toile.etroit {
+      display: none;
+    }
   }
 
   .grille {
@@ -298,60 +637,118 @@ const aDeuxSeries = coordLocaux.length > 0 && coordExt.length > 0;
 
   .ligne {
     fill: none;
-    stroke-width: 2.5;
+    stroke-width: 2;
     stroke-linejoin: round;
     stroke-linecap: round;
   }
 
-  /* Série réunionnaise : couleur d'accent, celle du site. */
   .serie-loc .ligne {
     stroke: var(--accent);
   }
-  .serie-loc .point {
-    fill: var(--surface);
-    stroke: var(--accent);
-    stroke-width: 2.5;
-  }
-  .serie-loc .meilleur {
-    fill: var(--accent);
-  }
 
-  /* Série extérieure : gris, et trait discontinu. La couleur seule ne suffit
-     pas à distinguer deux séries pour qui perçoit mal les couleurs. */
   .serie-ext .ligne {
     stroke: var(--muted);
     stroke-dasharray: 5 4;
-    opacity: 0.85;
   }
-  .serie-ext .point {
-    fill: var(--surface);
-    stroke: var(--muted);
+
+  .point {
+    cursor: pointer;
+    /* `fill-box` fait tourner l'agrandissement autour du centre du groupe.
+       Sans lui, un `transform` en SVG s'applique depuis l'origine du repère,
+       et le point choisi partirait en haut à gauche. */
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 0.12s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .point {
+      transition: none;
+    }
+  }
+
+  /* Zone de touche. `pointer-events: all` la rend cliquable bien qu'elle ne
+     peigne rien : sans cette ligne, un remplissage transparent ne reçoit
+     aucun clic. */
+  .halo {
+    fill: transparent;
+    stroke: none;
+    pointer-events: all;
+  }
+
+  .pastille {
     stroke-width: 2;
+  }
+
+  .serie-loc .pastille {
+    fill: var(--bg);
+    stroke: var(--accent);
+  }
+
+  .serie-ext .pastille {
+    fill: var(--bg);
+    stroke: var(--muted);
+  }
+
+  .point.meilleur .pastille {
+    fill: var(--accent);
+  }
+
+  /* Le point choisi grossit au lieu de changer de couleur : la couleur dit
+     déjà à quelle série il appartient. */
+  .point.choisi .pastille {
+    stroke-width: 1.5;
+  }
+
+  .point.choisi {
+    transform: scale(1.7);
+  }
+
+  /* `:focus` et non `:focus-visible` : ces points ne se reçoivent au clavier
+     que par les flèches, et l'anneau doit se voir à chaque déplacement. */
+  .point:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 999px;
   }
 
   .valeur {
     font-family: var(--font-body);
     font-size: 11px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
-  .valeur.loc {
+    font-weight: 700;
     fill: var(--text);
   }
+
   .valeur.ext {
     fill: var(--muted);
   }
+
   .valeur.record {
     fill: var(--accent);
-    font-weight: 700;
   }
 
-  /* Bascule d'affichage, pilotée par un attribut sur la figure. */
-  .graphe[data-vue='locaux'] .serie-ext,
-  .graphe[data-vue='locaux'] .valeur.ext,
-  .graphe[data-vue='exterieur'] .serie-loc,
-  .graphe[data-vue='exterieur'] .valeur.loc {
+  /* Les chiffres ne s'affichent que sur demande. Sans cet attribut, c'est-à-dire
+     sans JavaScript, ils restent visibles : la page reste lisible sans script. */
+  .graphe[data-chiffres='non'] .valeur {
     display: none;
+  }
+
+  /* Le détail et la légende sont deux textes gris qui se suivent : sans
+     marque, on les lit comme un seul paragraphe. Le filet à gauche sépare, et
+     passe à l'accent dès qu'un point est choisi, pour signaler que cette
+     ligne-là répond à un geste. */
+  .detail {
+    margin: var(--space-3) 0 0;
+    padding: var(--space-1) 0 var(--space-1) var(--space-3);
+    border-left: 2px solid var(--border);
+    min-height: 1.5em;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .graphe[data-choisi] .detail {
+    border-left-color: var(--accent);
+    color: var(--text);
   }
 
   figcaption {
@@ -360,4 +757,11 @@ const aDeuxSeries = coordLocaux.length > 0 && coordExt.length > 0;
     color: var(--muted);
   }
 
+  /* Filtre des séries : masquer une série ne recalcule pas l'échelle. */
+  .graphe[data-vue='locaux'] .serie-ext,
+  .graphe[data-vue='locaux'] .valeur.ext,
+  .graphe[data-vue='exterieur'] .serie-loc,
+  .graphe[data-vue='exterieur'] .valeur.loc {
+    display: none;
+  }
 </style>
