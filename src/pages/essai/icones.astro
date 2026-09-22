@@ -1,0 +1,311 @@
+---
+/**
+ * PAGE D'ESSAI, à supprimer une fois le choix fait.
+ *
+ * Elle n'est liée depuis aucune navigation : elle existe pour comparer trois
+ * familles d'icônes de mouvement dans les conditions réelles, aux tailles
+ * réelles, et dans les deux thèmes.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { FAMILLES, MOUVEMENTS, TAILLES } from '../../components/essai/icones-mouvements';
+---
+
+<BaseLayout
+  titre="Essai : icônes des mouvements"
+  description="Comparaison de trois familles d'icônes pour le squat, le développé couché et le soulevé de terre."
+>
+  <div class="wrap">
+    <h1>Icônes des trois mouvements</h1>
+
+    <p class="intro">
+      Tabler n'a pas d'icône de squat, de développé couché ni de soulevé de terre.
+      Vérifié dans le dépôt du pack : <code>barbell</code>, <code>weight</code> et
+      <code>dumbbell</code> existent, <code>squat</code>, <code>bench-press</code> et
+      <code>deadlift</code> répondent 404. Il faut donc les dessiner, sur la grille
+      de Tabler pour ne pas dépareiller, ou renoncer.
+    </p>
+
+    <p class="intro">
+      À juger d'abord sur la colonne de 16 px : c'est la taille qui convient à côté
+      d'un intitulé de carte. Le reste est du confort.
+    </p>
+
+    {
+      FAMILLES.map((f) => (
+        <section class="famille">
+          <h2>{f.nom}</h2>
+          <p class="argument">{f.argument}</p>
+
+          <div class="grille">
+            {MOUVEMENTS.map((m) => (
+              <div class="colonne">
+                <p class="titre">{m.long}</p>
+                <div class="tailles">
+                  {TAILLES.map((t) => (
+                    <div class="essai-taille">
+                      <svg
+                        width={t}
+                        height={t}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        {f.traces[m.cle].map((d) => (
+                          <path d={d} />
+                        ))}
+                      </svg>
+                      <span class="px">{t}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* En situation : la rangée de chiffres d'une carte d'historique. */}
+          <div class="contexte">
+            <p class="contexte-titre">Dans une carte d'historique</p>
+            <div class="carte">
+              <p class="date">18 juillet 2026</p>
+              <p class="meet">
+                Reunion Island Meet<br />
+                <span class="ou">Saint-Joseph</span>
+              </p>
+              <div class="chiffres">
+                {MOUVEMENTS.map((m) => (
+                  <div class="chiffre">
+                    <p class="libelle">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        {f.traces[m.cle].map((d) => (
+                          <path d={d} />
+                        ))}
+                      </svg>
+                      {m.court}
+                    </p>
+                    <p class="valeur">{m.valeur}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* En situation : le bloc de statistiques en tête de fiche. */}
+          <div class="contexte">
+            <p class="contexte-titre">Dans le bloc de tête d'une fiche</p>
+            <div class="barres">
+              {MOUVEMENTS.map((m) => (
+                <div class="barre">
+                  <p class="libelle-long">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      {f.traces[m.cle].map((d) => (
+                        <path d={d} />
+                      ))}
+                    </svg>
+                    {m.long}
+                  </p>
+                  <p class="grand">
+                    {m.valeur}
+                    <span class="unite">kg</span>
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      ))
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  h1 {
+    margin-bottom: var(--space-4);
+  }
+
+  .intro {
+    max-width: 68ch;
+    margin-bottom: var(--space-4);
+    color: var(--muted);
+  }
+
+  code {
+    font-family: monospace;
+    font-size: 0.9em;
+    color: var(--text);
+  }
+
+  .famille {
+    margin-top: var(--space-12);
+    padding-top: var(--space-6);
+    border-top: 2px solid var(--border);
+  }
+
+  h2 {
+    margin-bottom: var(--space-2);
+  }
+
+  .argument {
+    max-width: 68ch;
+    margin-bottom: var(--space-6);
+    color: var(--muted);
+  }
+
+  .grille {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+  }
+
+  .colonne {
+    min-width: 0;
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .titre {
+    margin-bottom: var(--space-4);
+    font-family: var(--font-display);
+    font-weight: 700;
+  }
+
+  .tailles {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-4);
+  }
+
+  .essai-taille {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-1);
+    color: var(--text);
+  }
+
+  .px {
+    font-size: var(--step--1);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .contexte {
+    margin-bottom: var(--space-6);
+  }
+
+  .contexte-titre {
+    margin-bottom: var(--space-2);
+    font-size: var(--step--1);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  /* Reprend la carte de l'historique, largeur d'un téléphone comprise. */
+  .carte {
+    max-width: 343px;
+    padding: var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .date {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--step-0);
+  }
+
+  .meet {
+    font-size: var(--step--1);
+    line-height: 1.25;
+    margin-bottom: var(--space-3);
+  }
+
+  .ou {
+    color: var(--muted);
+  }
+
+  .chiffres {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
+  }
+
+  .libelle {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: var(--step--1);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  .valeur {
+    font-size: var(--step-0);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .barres {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+    gap: var(--space-4);
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .barre {
+    min-width: 0;
+  }
+
+  .libelle-long {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .grand {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--step-3);
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .unite {
+    font-size: var(--step--1);
+    font-weight: 400;
+    color: var(--muted);
+    margin-left: 0.15em;
+  }
+</style>
