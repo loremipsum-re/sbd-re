@@ -151,12 +151,23 @@ Le symptôme est reconnaissable : une règle écrite dans le fichier n'a aucun
 effet, et l'inspecteur montre à sa place une règle supprimée depuis.
 **Redémarrer le serveur avant de soupçonner le CSS.**
 
-### `hidden` ne masque pas un `<svg>`
+### `hidden` est inutilisable sur un `<svg>`, pour deux raisons
 
-Le sprite des icônes de mouvement, marqué `hidden`, réservait 150 px en haut de
-chaque fiche d'athlète. La règle par défaut des navigateurs, `[hidden] { display:
-none }`, est écrite pour les éléments HTML et n'atteint pas un élément SVG. Une
-règle explicite dans `tokens.css` la remplace.
+Le sprite des icônes de mouvement portait l'attribut `hidden`. Il réservait
+150 px en haut de chaque fiche d'athlète : la règle par défaut des navigateurs,
+`[hidden] { display: none }`, est écrite pour les éléments HTML et n'atteint pas
+un élément SVG.
+
+Une règle `svg[hidden]` dans `tokens.css` a d'abord corrigé l'affichage, puis
+`astro check` a refusé l'attribut lui-même, `hidden` ne figurant pas dans les
+attributs typés d'un SVG. Le sprite porte donc une CLASSE, et c'est elle qui le
+masque. Une seule ligne, qui lève les deux obstacles.
+
+**Et la vérification d'intégration a vu ce que la vérification locale avait
+laissé passer.** `npm run check` annonçait zéro erreur parce que le cache de
+types dans `.astro` datait d'avant la création du composant. Vider `.astro`
+reproduit l'échec. **Avant de pousser un composant neuf, lancer le contrôle sur
+un cache vide.**
 
 ### Le tri réécrivait les en-têtes et jetait leur contenu
 

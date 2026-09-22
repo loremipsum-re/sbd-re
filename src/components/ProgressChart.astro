@@ -301,6 +301,13 @@ const aDeuxSeries = locaux.length > 0 && exterieurs.length > 0;
         </button>
       </div>
 
+      {/*
+        `role="img"` DÉCRIT L'ÉTAT SANS JAVASCRIPT, où le tracé n'est qu'une
+        image : un résumé chiffré, et rien à manipuler. Le script le remplace
+        par `role="group"` dès qu'il rend les points cliquables, car un
+        `role="img"` rend tout son contenu présentationnel et ne peut donc pas
+        abriter quarante-huit boutons focalisables. Voir le script plus bas.
+      */}
       {formats.map((f) => (
         <svg
           class={`toile ${f.nom}`}
@@ -493,11 +500,27 @@ const aDeuxSeries = locaux.length > 0 && exterieurs.length > 0;
       );
       if (points.length === 0) continue;
 
-      /* LE RÔLE ET LE NOM SONT POSÉS ICI, pas au build. Sans JavaScript, rien
-         ne répond au clic : annoncer quarante-huit boutons dans ce cas serait
-         une promesse non tenue, et les nommer obligerait à réécrire chaque
-         détail dans la page. Sans script, ces points restent donc de simples
-         dessins, et la courbe garde le résumé porté par le `<svg>`. */
+      /*
+       * LE TRACÉ CESSE D'ÊTRE UNE IMAGE POUR DEVENIR UN GROUPE DE COMMANDES.
+       *
+       * `role="img"` rend tout le contenu d'un élément PRÉSENTATIONNEL : ses
+       * descendants sortent de l'arbre d'accessibilité. Y loger quarante-huit
+       * boutons focalisables était une contradiction, que les audits ARIA
+       * signalent à juste titre : les points étaient atteignables au clavier
+       * mais invisibles aux technologies d'assistance.
+       *
+       * Le rôle bascule donc ici, au moment précis où les points deviennent
+       * manipulables, et pas avant. Le `aria-label` du tracé reste, et nomme
+       * désormais le groupe.
+       */
+      toile.setAttribute('role', 'group');
+
+      /* LE RÔLE ET LE NOM DES POINTS SONT POSÉS ICI, pas au build. Sans
+         JavaScript, rien ne répond au clic : annoncer quarante-huit boutons
+         dans ce cas serait une promesse non tenue, et les nommer obligerait à
+         réécrire chaque détail dans la page. Sans script, ces points restent
+         donc de simples dessins, et la courbe garde le résumé porté par le
+         `<svg>`. */
       for (const point of points) {
         point.setAttribute('role', 'button');
         point.setAttribute('tabindex', '-1');
