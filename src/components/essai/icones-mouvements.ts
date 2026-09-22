@@ -77,17 +77,46 @@ export const FAMILLES: readonly Famille[] = [
     argument:
       "Un corps vu de côté, dans la position du mouvement. C'est ce que dessinent les applications de salle, et de profil la posture se lit enfin : le squat se plie vers l'arrière, le couché s'allonge, le soulevé de terre se casse en deux.",
     traces: {
-      // Buste vertical, barre sur les épaules, jambe repliée vers l'arrière.
+      /*
+       * LE DISQUE EST LE FIL DE LA FAMILLE. Les trois glyphes portent le même
+       * disque de rayon 2,5, à la hauteur où la barre se trouve dans le
+       * mouvement : sur le dos, au-dessus de la poitrine, au sol. Deuxième
+       * version du squat et du couché, la première ayant été refusée.
+       *
+       * SQUAT, troisième version. Deux corrections. La cuisse est À
+       * L'HORIZONTALE et le tibia à la verticale : c'est l'angle droit du
+       * genou qui fait lire un squat, et les versions précédentes gardaient
+       * une jambe presque tendue. Et la barre RELIE le disque au corps : posé
+       * seul derrière l'épaule, le disque flottait comme un objet sans rapport
+       * avec la silhouette.
+       */
       squat: [
-        disque(13, 4, 1.5),
-        'M8 7.5h8',
-        'M13 6v5',
-        'M13 11l-4 3',
-        'M9 14v5',
-        'M4 20h16',
+        disque(11.5, 4, 1.5),
+        'M9 7.5h5',
+        disque(16, 7.5, 2),
+        'M11 5.5l2.5 6.5',
+        'M13.5 12l-6 1',
+        'M7.5 13v6',
+        'M3 20h18',
       ],
-      // Corps allongé, bras tendu, barre au-dessus, banc dessous.
-      bench: [disque(5, 14.5, 1.5), 'M6.5 15h7', 'M11 15v-4', 'M7 10h9', 'M5 20v-3h12v3'],
+      /*
+       * COUCHÉ. Troisième version. La barre devient un DISQUE au-dessus de la
+       * poitrine : trois horizontales empilées, le corps, la barre et le banc,
+       * se lisaient comme une table. Et les JAMBES DESCENDENT AU SOL, pliées
+       * au genou, ce qui donne au glyphe l'angle qui lui manquait : sans elles,
+       * un corps de profil n'est qu'un trait horizontal de plus.
+       */
+      bench: [
+        'M6 10.5h8',
+        'M6.5 8.5v4M13.5 8.5v4',
+        'M9 15v-2.5',
+        disque(5, 15.5, 1.5),
+        'M6.5 16h6',
+        'M12.5 16l2 1.5v2.5',
+        // Le banc pose ses pieds au sol : une ligne de sol en plus doublerait
+        // l'horizontale la plus basse et fermerait le dessin en petit.
+        'M4 20v-3h9v3',
+      ],
       // Dos cassé vers l'avant, bras tendu, disque au sol.
       deadlift: [
         disque(8, 5, 1.5),

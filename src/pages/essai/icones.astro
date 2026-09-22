@@ -66,6 +66,37 @@ import { FAMILLES, MOUVEMENTS, TAILLES } from '../../components/essai/icones-mou
             ))}
           </div>
 
+          {/*
+            AGRANDISSEMENT. Une icône se juge à deux tailles : celle où elle
+            servira, et une où le tracé se voit. Sans la seconde, on corrige à
+            l'aveugle un dessin qu'on n'a jamais vu.
+          */}
+          <div class="contexte">
+            <p class="contexte-titre">Le tracé, en grand</p>
+            <div class="agrandi">
+              {MOUVEMENTS.map((m) => (
+                <div class="grand-glyphe">
+                  <svg
+                    width="112"
+                    height="112"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    {f.traces[m.cle].map((d) => (
+                      <path d={d} />
+                    ))}
+                  </svg>
+                  <p class="px">{m.long}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* En situation : la rangée de chiffres d'une carte d'historique. */}
           <div class="contexte">
             <p class="contexte-titre">Dans une carte d'historique</p>
@@ -216,6 +247,22 @@ import { FAMILLES, MOUVEMENTS, TAILLES } from '../../components/essai/icones-mou
 
   .contexte {
     margin-bottom: var(--space-6);
+  }
+
+  .agrandi {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+  }
+
+  .grand-glyphe {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
   }
 
   .contexte-titre {
