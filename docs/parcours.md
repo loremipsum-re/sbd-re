@@ -140,6 +140,42 @@ la luminosité. Aucune valeur de rouge ne satisfait les deux thèmes à la fois 
 
 Un bloc `run:` enregistré avec des retours chariot CRLF échoue sous Linux.
 `.gitattributes` force le LF dans le dépôt.
+### Le rechargement à chaud sert parfois une feuille de style périmée
+
+Trois fois dans la même journée de travail, le serveur de développement a servi
+le nouveau balisage avec l'ANCIENNE feuille de style. Les règles existaient dans
+la source, elles étaient absentes de `document.styleSheets`. On corrige alors un
+défaut qui n'existe plus, et on en invente un autre.
+
+Le symptôme est reconnaissable : une règle écrite dans le fichier n'a aucun
+effet, et l'inspecteur montre à sa place une règle supprimée depuis.
+**Redémarrer le serveur avant de soupçonner le CSS.**
+
+### `hidden` ne masque pas un `<svg>`
+
+Le sprite des icônes de mouvement, marqué `hidden`, réservait 150 px en haut de
+chaque fiche d'athlète. La règle par défaut des navigateurs, `[hidden] { display:
+none }`, est écrite pour les éléments HTML et n'atteint pas un élément SVG. Une
+règle explicite dans `tokens.css` la remplace.
+
+### Le tri réécrivait les en-têtes et jetait leur contenu
+
+`InteractiveTable` remplaçait le contenu de chaque en-tête triable par son seul
+TEXTE, pour le poser dans un bouton. Une icône glissée dans un en-tête
+disparaissait donc à l'exécution, sans erreur ni avertissement. Le composant
+reprend désormais le balisage tel quel. **Un composant qui reconstruit du
+balisage doit le recopier, pas le résumer.**
+
+### `overflow: hidden` coupe sans que rien ne le signale
+
+Un conteneur en `overflow: hidden` tronque son contenu sans que le `scrollWidth`
+de la page bouge d'un pixel, et sans que l'élément coupé signale quoi que ce
+soit. Les deux indicateurs habituels sont donc muets.
+
+La mesure qui fonctionne compare le bord droit de la rangée à celui du cadre qui
+la contient. C'est ainsi qu'a été trouvé le « Dots » tronqué du classement sur
+téléphone.
+
 
 ---
 
@@ -504,3 +540,108 @@ Elle repose aussi sur une hypothèse jamais vérifiée, à savoir que des athlè
 veuillent déclarer leurs performances de salle. Un premier retour d'un
 powerlifter a été positif sur la partie officielle ; rien ne dit encore que la
 partie communauté trouvera son public.
+
+---
+
+## 10. La série visuelle de septembre 2026
+
+Une dizaine d'allers-retours avec l'auteur, tous partis de la même remarque :
+l'information était juste mais mal donnée. Ce qui suit est ce qu'il faut savoir
+avant d'y toucher.
+
+### La courbe de progression : deux tracés, un par format
+
+Un SVG à `viewBox` se met à l'échelle EN BLOC. Le texte grandit et rétrécit avec
+le dessin, si bien qu'un repère de 640 unités étiré dans une colonne de 343 px
+rendait un texte de 11 unités à 5,9 px.
+
+Le composant calcule donc deux fois la même donnée, dans deux repères, et le CSS
+n'en montre qu'un : 880 unités pour la colonne large, 340 pour l'étroite, avec
+un plafond de 460 px sur celle-ci. Texte rendu entre 10 et 13,6 px d'un côté,
+11,1 px mesurés de l'autre.
+
+**Corollaire pour toute icône et tout graphe : la taille rendue ne se devine
+pas, elle se calcule à partir du rapport entre le repère et son conteneur.**
+
+### Le placement des étiquettes se compare en deux dimensions
+
+Les étiquettes de valeur cherchaient une place libre au-dessus puis en dessous
+de leur point, en ne comparant que les abscisses. Or « au-dessus » se mesure
+depuis un point qui monte avec la performance : l'étiquette posée sur un petit
+total tombe à la hauteur de celle posée sous un gros. Deux chevauchements sur
+trente, mesurés.
+
+Le test compare maintenant des rectangles. Résultat : zéro chevauchement, et 42
+étiquettes placées au lieu de 30. **Comparer en deux dimensions place plus
+d'étiquettes, pas moins.**
+
+### Les cartes : des colonnes plutôt qu'une liste d'intitulés
+
+Sous 60rem, une liste se replie en cartes, et chaque valeur reprenait son
+intitulé À SA GAUCHE. Les intitulés n'ayant ni la même longueur ni la même
+place, aucun chiffre ne tombait sous un autre.
+
+La variante `liste-barres` range les six chiffres sur trois colonnes, en deux
+rangées qui ont chacune un sens, les trois barres puis les trois valeurs qui les
+résument, avec l'intitulé AU-DESSUS de sa valeur. La grille compte six colonnes
+et non trois, chaque chiffre en occupant deux : la première rangée peut alors se
+partager en deux moitiés, la date à gauche et la pastille à droite.
+
+### Les icônes des trois mouvements : le matériel plutôt que le corps
+
+Tabler n'a ni squat, ni développé couché, ni soulevé de terre. Vérifié en
+interrogeant son dépôt : `barbell`, `weight`, `dumbbell`, `stretching`, `yoga`
+et `treadmill` répondent 200, les autres 404. Les tracés sont donc maison, sur
+la grille du pack, comme `Coupe.astro` et `Medaille.astro` avant eux.
+
+Trois tours de silhouettes ont été dessinés puis écartés. **Une posture est ce
+qui demande le plus de traits et ce qui se perd le plus vite en réduisant** : à
+16 px, un athlète en squat et un athlète debout sont la même tache. Le mobilier
+n'a pas ce défaut, d'où la cage, le banc et la barre au sol, vus de face, avec
+la même barre posée à trois hauteurs.
+
+Deux réglages ont été trouvés par le rendu et non par le raisonnement. Les
+tracés occupent la boîte de 2 à 22 et non de 3 à 21, sans quoi un quart de
+chaque icône est du vide. Et la taille rendue est montée de 14 à 20 px : le site
+est bâti sur un trait de 2 px, or une icône de 14 px sur une grille de 24 rend
+ce trait à 1,17 px, moitié moins que la bordure d'à côté.
+
+**Une icône se juge à deux tailles, celle où elle servira et une où le tracé se
+voit.** Les deux premiers tours ont corrigé à l'aveugle un dessin jamais regardé
+en grand.
+
+### Le poids d'une icône répétée
+
+La fiche la plus chargée du site affiche 222 icônes. Recopiées en entier, elles
+la faisaient passer de 179 à 290 ko. Un sprite posé une fois par page et
+référencé par `<use>` la ramène à 224 ko, soit 21,2 ko compressés contre 20,1
+avant les icônes. Les attributs de trait vivent dans la feuille de style et non
+sur chaque balise, où ils pesaient plus que les tracés eux-mêmes.
+
+### Les blocs de chiffres : les rangées avant les colonnes
+
+Cinq blocs du site montrent une série d'intitulés courts avec leur valeur. Ils
+étaient écrits cinq fois avec cinq réglages différents.
+
+Le défaut d'alignement ne venait pas des colonnes. « Développé couché » tient
+sur deux lignes là où « Squat » en tient une : la valeur d'à côté tombait plus
+bas, et le bloc paraissait de travers alors que sa grille était juste. Chaque
+cellule s'aligne désormais sur les mêmes deux rangées du parent, par `subgrid`.
+
+Les colonnes sont comptées et non devinées. `auto-fit` donnait, à 700 px, trois
+colonnes pour quatre barres et quatre colonnes pour cinq statistiques, soit une
+dernière rangée incomplète dans les deux cas. Le compte est posé par
+`--colonnes` et choisi pour DIVISER le nombre d'éléments ; sur deux colonnes, un
+nombre impair laisse un orphelin qui prend la largeur.
+
+**Avant de régler des colonnes, vérifier que les rangées s'alignent.**
+
+### Les unités reviennent sur les charges
+
+Le site écrivait « 105 kg » dans le bloc de tête d'une fiche et « 95 » deux
+blocs plus bas. Sur téléphone c'est pire : la liste se replie en cartes, donc
+même l'en-tête de colonne disparaît. Quatre pages étaient concernées.
+
+Les Dots et la place n'en reçoivent pas : « Dots » est déjà le nom de l'unité,
+et une place est un rang. Sur la courbe, l'unité ne figure que sur la graduation
+haute, un axe la portant une fois.
