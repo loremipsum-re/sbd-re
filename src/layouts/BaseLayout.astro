@@ -269,6 +269,30 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
           <div class="voile" aria-hidden="true"></div>
 
           <div class="panneau">
+            {/*
+              LA BASCULE DE THÈME VIT DANS LE MENU, demande de l'auteur du
+              1er octobre 2026. Elle occupait un bouton permanent de l'en-tête,
+              à côté du menu, pour un réglage qu'on change une fois et qu'on
+              oublie : la barre du haut est rendue à ce qu'on y cherche
+              vraiment, le logo et l'accès aux rubriques.
+              Elle est posée DANS le panneau, et non à côté : le script de
+              fermeture ne referme le menu que sur un clic hors du panneau, si
+              bien que le changement de thème se voit sans que le menu se
+              dérobe.
+
+              EN TÊTE DU PANNEAU, ET NON EN PIED. Mesuré sur un téléphone de
+              375 px : le panneau montre 738 px de ses 1313, et la rangée posée
+              après les treize rubriques demandait 575 px de défilement pour un
+              réglage qui tenait auparavant à un seul appui.
+            */}
+            <div class="reglages wrap">
+              {/* Le bouton garde son propre nom accessible, « Changer de
+                  thème » : l'intitulé visible situe la rangée, il ne nomme pas
+                  la commande. */}
+              <span class="intitule-reglage">Apparence</span>
+              <ThemeToggle />
+            </div>
+
             <nav class="wrap" aria-label="Navigation">
               <ul>
                 {
@@ -290,10 +314,9 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
                 }
               </ul>
             </nav>
+
           </div>
         </details>
-
-        <ThemeToggle />
       </div>
     </header>
 
@@ -546,6 +569,27 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
        panneau défile au lieu de pousser le contenu hors de vue. */
     max-height: calc(100vh - 100%);
     overflow-y: auto;
+  }
+
+  /*
+   * La rangée de réglage ferme le panneau, séparée des rubriques par un filet.
+   * Elle n'est pas un lien : on y agit sans quitter la page, d'où une forme
+   * différente de celle des entrées du menu.
+   */
+  .reglages {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .intitule-reglage {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--step-0);
   }
 
   .menu nav ul {
