@@ -1,5 +1,4 @@
 ---
-import Coupe from '../components/Coupe.astro';
 import IconeMouvement from '../components/IconeMouvement.astro';
 import SpriteMouvements from '../components/SpriteMouvements.astro';
 import InteractiveTable from '../components/InteractiveTable.astro';
@@ -74,6 +73,19 @@ const totalLignes = grilles.reduce((n, g) => n + g.categories.length, 0);
 const libelleEquipement = (id: EquipmentGroup) =>
   EQUIPMENT_GROUPS.find((e) => e.id === id)?.label ?? id;
 
+/*
+ * Intitulés COURTS pour les cartes. « Développé couché » tient sur deux lignes
+ * dans une colonne de 140 px, et l'en-tête de colonne qui le portait en entier
+ * disparaît justement en mode carte. Mêmes abréviations que l'historique d'une
+ * fiche, pour qu'un visiteur ne réapprenne rien d'une page à l'autre.
+ */
+const COURT: Record<LiftKey, string> = {
+  squat: 'Squat',
+  bench: 'DC',
+  deadlift: 'SDT',
+  total: 'Total',
+};
+
 const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: EquipmentGroup) =>
   index.get(`${lift}|${sex}|${categorie}|${equipement}`);
 ---
@@ -113,7 +125,7 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
               {sexe.label} <span class="equip">{libelleEquipement(equipement)}</span>
             </h2>
 
-            <div class="liste records">
+            <div class="liste liste-barres records">
               <table data-tableau>
                 <thead>
                   <tr>
@@ -138,12 +150,13 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
                         const rec = recordDe(l.id, sexe.id, cat.id, equipement);
                         return (
                           <td class="nombre" data-libelle={l.label} data-valeur={rec?.valueKg ?? ''}>
+                            <span class="intitule">
+                              <IconeMouvement mouvement={l.id} taille={18} />
+                              {COURT[l.id]}
+                            </span>
                             {rec ? (
                               <>
-                                <span class="valeur num">
-                                  {kg(rec.valueKg)}
-                                  <Coupe metal="or" detail={`Record de La Réunion, ${l.label}`} taille={15} />
-                                </span>
+                                <span class="valeur num">{kg(rec.valueKg)}</span>
                                 <a class="detenteur" href={`/athlete/${rec.slug}/`}>
                                   {rec.holder}
                                 </a>
@@ -243,38 +256,61 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
     font-size: var(--step-1);
   }
 
+  /*
+   * LA CATÉGORIE EST L'IDENTITÉ DE LA RANGÉE, et elle était ce qu'il y avait
+   * de plus faible à l'écran : un petit texte dans une colonne étroite, à
+   * côté de quatre cellules denses. Elle passe en gros caractères et reçoit un
+   * filet d'accent, qui sert de repère quand l'œil descend les vingt-six
+   * catégories.
+   */
   .categorie {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: var(--step-0);
+    font-size: var(--step-1);
     white-space: nowrap;
   }
 
   /*
-   * EN CARTES, UNE MARQUE PAR RANGÉE.
-   *
-   * La grammaire commune met les valeurs chiffrées deux par rangée, ce qui
-   * convient à des nombres courts. Une marque de record en tient trois : la
-   * charge, son détenteur et son année. Deux par rangée débordaient de 349 px
-   * hors du cadre, mesuré sur un téléphone.
-   *
-   * Et les trois éléments d une cellule tiennent la colonne des valeurs, sans
-   * quoi le deuxième retombe dans celle des intitulés.
+   * La colonne des catégories se détache par un APLAT DISCRET plutôt que par
+   * un filet d'accent. Vingt-six rangées par tableau et quatre tableaux font
+   * cent quatre filets, soit un rail jaune continu sur toute la page : la
+   * couleur d'accent perd son sens à être répétée autant.
    */
+  @media (min-width: 60rem) {
+    .liste.records tbody .categorie {
+      background: color-mix(in srgb, var(--text) 5%, transparent);
+    }
+  }
+
+  /*
+   * DEUX MARQUES PAR RANGÉE EN CARTES, et non une seule.
+   *
+   * Une marque tient trois lignes, la charge, son détenteur et son année. Les
+   * empiler une par rangée donnait des cartes de 395 px et une page de
+   * 12 757 px sur un téléphone, mesuré. Rangées deux par deux, avec l'intitulé
+   * et son icône au-dessus, les quatre marques tiennent en deux rangées.
+   */
+  .liste.liste-barres.records {
+    --pas: 3;
+  }
+
   @media (max-width: 59.999rem) {
-    .liste.records tbody tr {
-      grid-template-columns: 1fr;
+    /* La catégorie ouvre la carte sur toute sa largeur, comme la date ouvre
+       celle d'un historique. */
+    .liste.records tbody .categorie {
+      grid-column: 1 / -1;
+      font-size: var(--step-1);
     }
 
-    /* Colonne d intitulés FIXE : en automatique, « Développé couché » la
-       tire plus loin que « Squat » et les charges cessent de s aligner d une
-       ligne à l autre de la carte. */
-    .liste.records tbody td[data-libelle] {
-      grid-template-columns: 9rem 1fr;
+    /* Les trois éléments d'une marque s'empilent dans leur colonne. */
+    .liste.records tbody td[data-libelle] .valeur,
+    .liste.records tbody td[data-libelle] .detenteur,
+    .liste.records tbody td[data-libelle] .quand {
+      display: block;
     }
 
-    .liste.records tbody td[data-libelle] > * {
-      grid-column: 2;
+    .liste.records tbody td[data-libelle] .quand {
+      margin-top: 2px;
     }
   }
 
