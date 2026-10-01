@@ -552,6 +552,43 @@ input:not([type='checkbox']):not([type='radio']) {
   border-radius: 2px;
 }
 
+/* ---------- Le sens d'un écart ----------
+ * CE MARQUEUR N'APPARTIENT PLUS AUX LISTES. Il vivait dans listes.css tant que
+ * seuls le classement et les tableaux l'employaient ; la chronologie d'un
+ * record, sur une page de catégorie, n'est pas une liste et en a le même
+ * besoin. Il monte donc ici, avec les autres marques communes.
+ *
+ * Les jetons --positif et --negatif ont été posés et mesurés pour dire « le
+ * SENS D'UN ÉCART chiffré dans un tableau ». Le négatif est un saumon désaturé
+ * et non un écarlate : l'écarlate sur fond quasi noir est l'identité de SBD
+ * Apparel.
+ *
+ * LA COULEUR NE PORTE JAMAIS L'INFORMATION SEULE. Le triangle la double pour
+ * qui ne sépare pas le vert du rouge, et un texte réservé aux lecteurs d'écran
+ * dit ce que l'écart mesure. Trois emplois à ce jour : les places gagnées sur
+ * douze mois au classement, les points Dots gagnés d'une compétition à la
+ * suivante sur une fiche, et les kilos arrachés au record précédent dans la
+ * chronologie d'une catégorie.
+ */
+
+.evolution {
+  display: flex;
+  align-items: baseline;
+  gap: 0.15rem;
+  font-family: var(--font-body);
+  font-size: var(--step--1);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.evolution[data-sens='hausse'] {
+  color: var(--positif);
+}
+
+.evolution[data-sens='baisse'] {
+  color: var(--negatif);
+}
+
 /* ===========================================================================
  * BLOCS DE CHIFFRES CLÉS
  *

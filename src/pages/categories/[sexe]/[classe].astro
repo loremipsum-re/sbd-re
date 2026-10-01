@@ -131,7 +131,13 @@ const description =
                     <a href={`/competitions/${meetPath(etape.date, etape.meetName)}/`}>
                       {dateLongue(etape.date)}
                     </a>
-                    {etape.gainKg > 0 && <span class="gain">+{nombre(etape.gainKg)} kg</span>}
+                    {etape.gainKg > 0 && (
+                      <span class="evolution" data-sens="hausse">
+                        <span aria-hidden="true">▲</span>
+                        {`${nombre(etape.gainKg)} kg`}
+                        <span class="sr-only">de plus que la marque précédente</span>
+                      </span>
+                    )}
                     {etape.jours !== null && (
                       <span>
                         a tenu {etape.jours < 365
@@ -316,10 +322,9 @@ const description =
     color: var(--muted);
   }
 
-  .gain {
-    color: var(--accent);
-    font-weight: 600;
-  }
+  /* Le marqueur d'écart est commun au site et vit dans tokens.css. Rien à
+     régler ici : `.chrono-meta` est déjà une rangée flex, le marqueur y est
+     donc un élément parmi les autres et tient sa ligne. */
 
   .encours {
     font-weight: 600;
