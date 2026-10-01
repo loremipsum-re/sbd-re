@@ -76,6 +76,7 @@ la mention « à compléter » tant que l'auteur ne les a pas fournis.
 | `/exterieur/` | Résultats obtenus hors de La Réunion |
 | `/athlete/<slug>/` | Une fiche par athlète |
 | `/communaute/` | Page d'attente du classement non-officiel |
+| `/mises-a-jour/` | Journal des changements : chiffres des données calculés, entrées du site écrites dans `src/lib/journal.ts` |
 | `/confidentialite/`, `/mentions-legales/` | Pages légales |
 
 **Aucun effectif n'est écrit ici**, et c'est volontaire : les données sont
