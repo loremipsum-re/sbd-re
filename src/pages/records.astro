@@ -11,6 +11,7 @@ import {
   type WeightClass,
 } from '../lib/categories';
 import { annee, kg } from '../lib/format';
+import { SEXE_SLUG, classeSlug, listeCategories } from '../lib/categoriesPages';
 import { equipementsPresents, recordsPour, type RecordEntry } from '../lib/records';
 import { meetPath } from '../lib/slug';
 import type { LiftKey, Sex } from '../lib/types';
@@ -70,6 +71,31 @@ const grilles = equipements
  */
 const totalLignes = grilles.reduce((n, g) => n + g.categories.length, 0);
 
+/*
+ * LES CATÉGORIES DU FILTRE SONT L'UNION DE CELLES DES QUATRE GRILLES, chacune
+ * portant les sexes où elle existe. Le composant s'en sert pour masquer une
+ * option devenue sans objet : choisir « Femmes » puis « −105 kg » donnerait
+ * sinon une page vide sans qu'on comprenne pourquoi.
+ */
+const categoriesFiltre = [...
+  grilles
+    .flatMap((g) => g.categories.map((c) => ({ classe: c, sexe: g.sexe.id })))
+    .reduce((acc, { classe, sexe }) => {
+      const vue = acc.get(classe.id) ?? { classe, sexes: new Set<Sex>() };
+      vue.sexes.add(sexe);
+      return acc.set(classe.id, vue);
+    }, new Map<string, { classe: WeightClass; sexes: Set<Sex> }>())
+    .values(),
+].sort((a, b) => compareWeightClass(a.classe, b.classe));
+
+/*
+ * Une catégorie n'a sa propre page que si elle a été disputée en full power.
+ * Les catégories qui n'existent qu'au développé couché n'en ont donc pas, et
+ * leur libellé reste du texte : un lien mort vaut moins qu'un mot.
+ */
+const pagesCategories = new Set(listeCategories().map((c) => c.chemin));
+const cheminCategorie = (sex: Sex, id: string) => `${SEXE_SLUG[sex]}/${classeSlug(id)}`;
+
 const libelleEquipement = (id: EquipmentGroup) =>
   EQUIPMENT_GROUPS.find((e) => e.id === id)?.label ?? id;
 
@@ -118,6 +144,54 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
       pluriel="catégories"
       total={totalLignes}
     >
+      {/*
+        TROIS FILTRES, ET LA PAGE RESTE ENTIÈRE PAR DÉFAUT. Les cent quatre
+        rangées sont toutes affichées au chargement : qui veut comparer le raw
+        et l'équipé, ou simplement lire, ne perd rien. Qui cherche une
+        catégorie précise la ramène à une seule rangée en deux choix.
+
+        Des onglets auraient fait l'inverse : ils cachent la taxonomie, privent
+        le navigateur de sa propre recherche sur la page, et n'existent nulle
+        part ailleurs sur le site.
+
+        Les filtres s'écrivent dans l'adresse, si bien qu'une grille filtrée se
+        partage par un lien.
+      */}
+      <Fragment slot="filtres">
+        <div class="champ">
+          <label for="f-sexe">Sexe</label>
+          <select id="f-sexe" data-filtre="sexe">
+            <option value="">Tous</option>
+            {sexes.map((s) => <option value={s.id}>{s.label}</option>)}
+          </select>
+        </div>
+
+        <div class="champ">
+          <label for="f-equipement">Équipement</label>
+          <select id="f-equipement" data-filtre="equipement">
+            <option value="">Tous</option>
+            {
+              equipements.map((e) => (
+                <option value={e}>{libelleEquipement(e)}</option>
+              ))
+            }
+          </select>
+        </div>
+
+        <div class="champ">
+          <label for="f-categorie">Catégorie</label>
+          <select id="f-categorie" data-filtre="categorie" data-restreint-par="sexe">
+            <option value="">Toutes</option>
+            {
+              categoriesFiltre.map(({ classe, sexes: presents }) => (
+                <option value={classe.id} data-compatible={[...presents].join('')}>
+                  {classe.label}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+      </Fragment>
       {
         grilles.map(({ equipement, sexe, categories }) => (
           <section class="section" data-section-tableau>
@@ -142,9 +216,21 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
                 </thead>
                 <tbody>
                   {categories.map((cat) => (
-                    <tr>
+                    <tr
+                      data-sexe={sexe.id}
+                      data-equipement={equipement}
+                      data-categorie={cat.id}
+                    >
                       <th scope="row" class="categorie" data-valeur={cat.kg}>
-                        {cat.label}
+                        {
+                          pagesCategories.has(cheminCategorie(sexe.id, cat.id)) ? (
+                            <a href={`/categories/${cheminCategorie(sexe.id, cat.id)}/`}>
+                              {cat.label}
+                            </a>
+                          ) : (
+                            cat.label
+                          )
+                        }
                       </th>
                       {LIFTS.map((l) => {
                         const rec = recordDe(l.id, sexe.id, cat.id, equipement);
