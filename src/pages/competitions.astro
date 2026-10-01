@@ -49,7 +49,7 @@ const annees = [...new Set(meets.map((m) => m.date.slice(0, 4)))].sort().reverse
         </div>
       </Fragment>
 
-      <div class="liste">
+      <div class="liste liste-barres">
         <table data-tableau>
           <thead>
             <tr>
@@ -74,8 +74,8 @@ const annees = [...new Set(meets.map((m) => m.date.slice(0, 4)))].sort().reverse
                   <th scope="row" class="nom">
                     <a href={`/competitions/${meet.chemin}/`}>{meet.meetName}</a>
                   </th>
-                  <td data-libelle="Commune">{meet.meetTown || '—'}</td>
-                  <td data-libelle="Format">
+                  <td data-libelle="Commune" class="cellule-sous">{meet.meetTown || '—'}</td>
+                  <td data-libelle="Format" class="cellule-annexe">
                     <span class="etiquettes">
                       {meet.events.map((e) => (
                         <span class="etiquette">{libelleEvent(e)}</span>

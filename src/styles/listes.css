@@ -621,11 +621,32 @@
     flex-direction: column;
   }
 
-  /* Deux intitulés se taisent : « Compétition » au-dessus d'un nom de
-     compétition et « Format » au-dessus d'une pastille qui se lit seule
-     n'apprennent rien à personne. */
+  /*
+   * LE NOM ET SA LIGNE SECONDAIRE tiennent eux aussi la largeur. Sur
+   * /competitions/ c'est le nom de l'événement qui ouvre la carte, et la
+   * commune qui le précise juste dessous ; sur /exterieur/ c'est le nom de
+   * l'athlète. Dans les deux cas l'identité passe avant les chiffres.
+   */
+  .liste.liste-barres tbody .nom,
+  .liste.liste-barres tbody .cellule-sous {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  .liste.liste-barres tbody .cellule-sous {
+    margin-top: calc(-1 * var(--space-1));
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /* Les intitulés de l'identité se taisent : « Compétition » au-dessus d'un
+     nom de compétition, « Format » au-dessus d'une pastille qui se lit seule,
+     « Commune » au-dessus d'un nom de commune et « Date » au-dessus d'une date
+     n'apprennent rien. La date ouvre la carte, sa forme la désigne. */
+  .liste.liste-barres tbody .date::before,
   .liste.liste-barres tbody .competition::before,
-  .liste.liste-barres tbody .cellule-annexe::before {
+  .liste.liste-barres tbody .cellule-annexe::before,
+  .liste.liste-barres tbody .cellule-sous::before {
     display: none;
   }
 
@@ -635,8 +656,15 @@
     grid-column: 1 / -1;
   }
 
+  /*
+   * COMBIEN DE CHIFFRES PAR RANGÉE. Chaque valeur occupe deux colonnes sur
+   * six, donc trois par rangée, ce qui convient aux six chiffres d'un
+   * historique. Une liste qui en compte quatre, comme /exterieur/, pose
+   * `--pas: 3` et les range deux par deux : trois par rangée y laisseraient
+   * un orphelin.
+   */
   .liste.liste-barres tbody td[data-libelle].nombre {
-    grid-column: span 2;
+    grid-column: span var(--pas, 2);
     display: block;
     text-align: left;
     font-size: var(--step-0);
