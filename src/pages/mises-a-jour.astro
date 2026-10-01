@@ -1,0 +1,250 @@
+---
+/**
+ * Journal des mises à jour, par souci de transparence.
+ *
+ * DEUX SOURCES, ET C'EST VOULU. Les chiffres des données sont CALCULÉS à la
+ * génération, donc toujours exacts : les écrire à la main garantirait qu'ils
+ * soient faux un jour. Les changements du site, eux, sont ÉCRITS à la main dans
+ * src/lib/journal.ts, parce qu'un historique de commits raconte le travail et
+ * non ce que le visiteur voit changer.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { nombreAthletes, periode, results } from '../lib/data';
+import exterieur from '../data/results-exterieur.json';
+import { dateLongue } from '../lib/format';
+import { JOURNAL, LIBELLES_NATURE } from '../lib/journal';
+import { listeMeets } from '../lib/meets';
+
+const { debut, fin } = periode();
+const meets = listeMeets();
+const nombre = (n: number) => n.toLocaleString('fr-FR');
+---
+
+<BaseLayout
+  titre="Mises à jour"
+  description="Ce qui change sur SBD.re, et quand : rafraîchissement mensuel des données, nouveautés et corrections du site."
+>
+  <div class="wrap">
+    <header class="entete-page">
+      <h1>Mises à jour</h1>
+      <p class="chapeau">
+        Le site publie les noms et les performances de centaines d'athlètes. Il
+        est normal de pouvoir savoir ce qui change, et quand. Cette page le dit
+        en deux parties : les données d'abord, le site ensuite.
+      </p>
+    </header>
+
+    <section class="bloc">
+      <h2>Les données</h2>
+      <p class="intro">
+        Elles se régénèrent automatiquement le 1<sup>er</sup> de chaque mois à
+        partir du jeu de données public d'OpenPowerlifting. Personne ne les
+        saisit à la main, et aucun résultat n'est ajouté ni retiré en dehors de
+        cette source. Voici ce que contient la version actuellement en ligne.
+      </p>
+
+      <dl class="chiffres-cles donnees">
+        <div>
+          <dt>Athlètes</dt>
+          <dd class="num">{nombre(nombreAthletes())}</dd>
+        </div>
+        <div>
+          <dt>Compétitions</dt>
+          <dd class="num">{nombre(meets.length)}</dd>
+        </div>
+        <div>
+          <dt>Résultats</dt>
+          <dd class="num">{nombre(results.length)}</dd>
+        </div>
+        <div>
+          <dt>Hors de l'île</dt>
+          <dd class="num">{nombre(exterieur.length)}</dd>
+        </div>
+      </dl>
+
+      <p class="periode">
+        La plus ancienne compétition reprise date du {dateLongue(debut)}, la plus
+        récente du {dateLongue(fin)}.
+      </p>
+
+      <p class="note">
+        Une performance absente ou erronée vient presque toujours de la source.
+        La page{' '}
+        <a href="/a-propos/">À propos</a> explique comment une compétition est
+        reconnue comme réunionnaise, et la page{' '}
+        <a href="/confidentialite/">Confidentialité</a> comment demander le
+        retrait de son nom.
+      </p>
+    </section>
+
+    <section class="bloc">
+      <h2>Le site</h2>
+      <p class="intro">
+        Les changements visibles, du plus récent au plus ancien. Les corrections
+        sans effet à l'écran n'y figurent pas.
+      </p>
+
+      <ol class="journal">
+        {
+          JOURNAL.map((e) => (
+            <li>
+              <div class="entete-entree">
+                <time datetime={e.date}>{dateLongue(e.date)}</time>
+                <span class="etiquette" data-nature={e.nature}>
+                  {LIBELLES_NATURE[e.nature]}
+                </span>
+                {e.version && <span class="version">v{e.version}</span>}
+              </div>
+              <h3>{e.titre}</h3>
+              <p>{e.texte}</p>
+            </li>
+          ))
+        }
+      </ol>
+
+      <p class="note">
+        Le numéro de version affiché au pied de page suit ces mises à jour. Le
+        code du site est public, et chaque changement y est consultable ligne à
+        ligne sur{' '}
+        <a href="https://github.com/loremipsum-re/sbd-re" rel="noopener">GitHub</a>.
+      </p>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .entete-page {
+    margin-bottom: var(--space-8);
+  }
+
+  .chapeau,
+  .intro,
+  .periode,
+  .note {
+    max-width: 68ch;
+  }
+
+  .chapeau {
+    color: var(--muted);
+  }
+
+  .bloc {
+    margin-bottom: var(--space-12);
+  }
+
+  h2 {
+    margin-bottom: var(--space-3);
+  }
+
+  .intro {
+    margin-bottom: var(--space-6);
+  }
+
+  /* Le bloc de chiffres reprend la grammaire commune, voir tokens.css. */
+  .donnees {
+    --colonnes: 4;
+    padding: var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .donnees dt {
+    font-size: var(--step--1);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+
+  .donnees dd {
+    margin: var(--space-1) 0 0;
+    font-size: var(--step-3);
+    line-height: 1;
+  }
+
+  .periode {
+    margin-top: var(--space-4);
+    color: var(--muted);
+    font-size: var(--step--1);
+  }
+
+  .note {
+    margin-top: var(--space-6);
+    color: var(--muted);
+    font-size: var(--step--1);
+  }
+
+  /*
+   * LE JOURNAL EST UNE LISTE ORDONNÉE, et son numéro ne sert à rien à l'écran :
+   * c'est la date qui situe une entrée. L'ordre reste porteur de sens pour un
+   * lecteur d'écran, d'où `<ol>` plutôt qu'une suite de blocs.
+   */
+  .journal {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .journal li {
+    padding: var(--space-6);
+    border: 1px solid var(--border);
+    border-left-width: 3px;
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .entete-entree {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-2);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .journal h3 {
+    font-size: var(--step-1);
+    margin-bottom: var(--space-2);
+  }
+
+  .journal p {
+    max-width: 68ch;
+    margin: 0;
+  }
+
+  .etiquette {
+    display: inline-block;
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .version {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /*
+   * LA COULEUR DU LISERÉ DOUBLE LA PASTILLE, elle ne la remplace pas : le mot
+   * reste lisible pour qui ne distingue pas les teintes. Le vert et le saumon
+   * sont les jetons d'écart déjà employés au classement, l'accent sert pour une
+   * nouveauté.
+   */
+  .journal li:has([data-nature='fonction']) {
+    border-left-color: var(--accent);
+  }
+
+  .journal li:has([data-nature='visuel']) {
+    border-left-color: var(--positif);
+  }
+
+  .journal li:has([data-nature='correction']) {
+    border-left-color: var(--alerte);
+  }
+</style>

@@ -29,6 +29,7 @@ export type NomIcone =
   | 'actualites'
   | 'partenariats'
   | 'salles'
+  | 'journal'
   | 'apropos';
 
 export interface Rubrique {
@@ -128,6 +129,12 @@ export const RUBRIQUES: readonly Rubrique[] = [
     label: 'Partenariats',
     resume: 'Proposer un partenariat au site',
     icone: 'partenariats',
+  },
+  {
+    href: '/mises-a-jour/',
+    label: 'Mises à jour',
+    resume: 'Ce qui change sur le site, et quand',
+    icone: 'journal',
   },
   {
     href: '/a-propos/',
