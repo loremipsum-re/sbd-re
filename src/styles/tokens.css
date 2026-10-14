@@ -589,6 +589,59 @@ input:not([type='checkbox']):not([type='radio']) {
   color: var(--negatif);
 }
 
+/* ---------------------------------------------------------------------------
+ * LE CHAPEAU D'UNE PAGE
+ *
+ * Le paragraphe qui suit le titre et dit de quoi la page parle. Il était écrit
+ * VINGT ET UNE FOIS, en dix variantes : deux tailles, quatre mesures de ligne,
+ * 58, 60, 62 et 68 caractères, et trois marges basses. Deux pages voisines ne
+ * présentaient donc pas leur sujet de la même façon, ce qui se voit même sans
+ * les comparer côte à côte.
+ *
+ * Une seule définition désormais. La mesure vaut 62 caractères, milieu de la
+ * fourchette typographique de 45 à 75 et valeur la plus fréquente parmi les
+ * pages qui agrandissaient déjà leur chapeau.
+ *
+ * La marge basse disparaît quand le chapeau vit dans un `.entete-page`, qui
+ * porte déjà la sienne : les deux s'ajoutaient.
+ * ------------------------------------------------------------------------ */
+
+/*
+ * L'EN-TÊTE D'UNE PAGE, LA NOTE DE BAS DE BLOC, LE BLOC.
+ *
+ * Trois formes répétées de page en page, et qui divergeaient de la même façon
+ * que le chapeau : l'en-tête en trois marges, la note en six variantes, le
+ * bloc en deux. Elles tiennent ici, une fois.
+ */
+
+.entete-page {
+  margin-bottom: var(--space-8);
+}
+
+/* Une section de page, séparée de la suivante. */
+.bloc {
+  margin-bottom: var(--space-12);
+}
+
+/* La précision qui suit un tableau ou une liste, et qu'on lit après. */
+.note {
+  max-width: 68ch;
+  margin-top: var(--space-4);
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+
+.chapeau {
+  max-width: 62ch;
+  margin-bottom: var(--space-8);
+  font-size: var(--step-1);
+  color: var(--muted);
+}
+
+.entete-page .chapeau {
+  margin-bottom: 0;
+}
+
 /* ===========================================================================
  * BLOCS DE CHIFFRES CLÉS
  *

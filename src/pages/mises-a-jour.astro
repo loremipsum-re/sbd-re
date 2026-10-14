@@ -113,24 +113,13 @@ const nombre = (n: number) => n.toLocaleString('fr-FR');
 </BaseLayout>
 
 <style>
-  .entete-page {
-    margin-bottom: var(--space-8);
-  }
 
-  .chapeau,
+  /* Le chapeau tient sa mesure de tokens.css. Les textes courants de la page
+     gardent la leur, plus large, parce qu'ils sont du texte suivi. */
   .intro,
   .periode,
-  .note {
-    max-width: 68ch;
-  }
 
-  .chapeau {
-    color: var(--muted);
-  }
 
-  .bloc {
-    margin-bottom: var(--space-12);
-  }
 
   h2 {
     margin-bottom: var(--space-3);
@@ -168,11 +157,6 @@ const nombre = (n: number) => n.toLocaleString('fr-FR');
     font-size: var(--step--1);
   }
 
-  .note {
-    margin-top: var(--space-6);
-    color: var(--muted);
-    font-size: var(--step--1);
-  }
 
   /*
    * LE JOURNAL EST UNE LISTE ORDONNÉE, et son numéro ne sert à rien à l'écran :
