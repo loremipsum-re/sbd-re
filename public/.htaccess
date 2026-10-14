@@ -26,6 +26,14 @@ DirectoryIndex index.html
   RewriteCond %{HTTPS} !=on
   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 
+  # --- L'adresse de sitemap que tout le monde essaie -----------------------
+  # Astro produit `sitemap-index.xml` et `sitemap-0.xml`, jamais `sitemap.xml`.
+  # Or c'est cette adresse-là que tapent les robots et les humains : une visite
+  # réelle est tombée sur une 404, relevée dans les enregistrements de session.
+  # La redirection permanente envoie l'un vers l'autre, sans dupliquer de
+  # fichier qui se périmerait à la génération suivante.
+  RewriteRule ^sitemap\.xml$ /sitemap-index.xml [R=301,L]
+
   # --- www vers le domaine nu ----------------------------------------------
   # Une seule adresse canonique : www.sbd.re renvoie vers sbd.re. Sans cette
   # règle, les moteurs de recherche voient deux sites au contenu identique.

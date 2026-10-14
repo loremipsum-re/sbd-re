@@ -116,7 +116,8 @@ const description =
           <p class="fin">
             Les {chronologie.length} marques qui se sont succédé en Raw depuis que
             la catégorie est suivie. Seule une amélioration réelle figure ici : à
-            performance égale, la marque la plus ancienne conserve le record.
+            performance égale, la marque la plus ancienne conserve le record. La
+            durée de règne de chaque marque se lit entre deux dates.
           </p>
 
           <ol class="chrono">
@@ -136,13 +137,6 @@ const description =
                         <span aria-hidden="true">▲</span>
                         {`${nombre(etape.gainKg)} kg`}
                         <span class="sr-only">de plus que la marque précédente</span>
-                      </span>
-                    )}
-                    {etape.jours !== null && (
-                      <span>
-                        a tenu {etape.jours < 365
-                          ? `${etape.jours} jours`
-                          : `${Math.round(etape.jours / 365.25)} an${Math.round(etape.jours / 365.25) > 1 ? 's' : ''}`}
                       </span>
                     )}
                     {i === chronologie.length - 1 && <span class="encours">record actuel</span>}
