@@ -135,23 +135,44 @@ const { debut, fin } = periode();
           <a href="https://www.openpowerlifting.org" rel="noopener">OpenPowerlifting</a>.
         </p>
         <p>Site indépendant, non affilié à la FFForce ni à SBD Apparel.</p>
-        <p class="realisation">
-          Une réalisation de{' '}
-          <a href="https://loremipsum.re" rel="noopener">loremipsum.re</a>.
+        {/*
+          La version suit la mention d'indépendance : c'est une information de
+          maintenance, utile pour situer ce qu'un visiteur a sous les yeux quand
+          il signale quelque chose, et elle appartient au même registre que ce
+          qui précède.
+        */}
+        <p class="version">
+          Version du site : <span class="badge">v{versionAffichee}</span>
         </p>
       </div>
 
       <div class="legal">
+        {/*
+          Les trois pages légales sur UNE LIGNE : ce sont trois liens d'un même
+          registre, pas une liste à parcourir. La page de confidentialité porte
+          le droit d'opposition des athlètes à la publication de leur nom, elle
+          doit s'atteindre du premier coup.
+        */}
         <nav aria-label="Pages légales">
           <a href="/mentions-legales/">Mentions légales</a>
           <a href="/confidentialite/">Confidentialité</a>
           <a href="/accessibilite/">Accessibilité</a>
         </nav>
-        <p class="version">
-          Version du site : <span class="badge">v{versionAffichee}</span>
+
+        {/*
+          LIEN SUIVI, et volontairement. `noopener` ferme l'accès de la page
+          ouverte à celle-ci, il n'a rien à voir avec le référencement : c'est
+          `nofollow` qui demanderait aux moteurs d'ignorer le lien, et il n'est
+          pas là. Le site est fait par loremipsum.re, la mention est sincère et
+          le lien la suit.
+        */}
+        <p class="realisation">
+          Une réalisation de{' '}
+          <a href="https://loremipsum.re" rel="noopener">loremipsum.re</a>.
         </p>
       </div>
     </div>
+
   </div>
 </footer>
 
@@ -299,24 +320,42 @@ const { debut, fin } = periode();
    * lien garde sa propre ligne de touche.
    */
   .legal nav {
-    display: grid;
-    gap: var(--space-1);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 var(--space-4);
   }
 
-  .legal .version {
-    margin-top: var(--space-3);
+  .legal .realisation {
+    margin-top: var(--space-1);
   }
 
-  @media (min-width: 48rem) {
+  /*
+   * DEUX COLONNES SEULEMENT À PARTIR DE 64rem, et non de 48.
+   *
+   * Les trois liens légaux mis bout à bout mesurent 681 px. Dans la colonne de
+   * droite d'une grille `1fr auto`, large de 227 px à 1280 px de fenêtre, ils
+   * se repliaient les uns sous les autres quoi qu'on demande. La colonne prend
+   * donc la largeur de son contenu, `max-content`, et les crédits gardent le
+   * reste. En dessous de 64rem la place manque pour les deux : tout s'empile,
+   * et la rangée de liens se replie d'elle-même.
+   */
+  @media (min-width: 64rem) {
     .mentions {
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr max-content;
       gap: var(--space-8);
       align-items: start;
     }
 
     .legal {
       text-align: right;
+    }
+
+    /* La rangée se pousse contre le bord droit, comme le texte au-dessus. */
+    .legal nav {
+      flex-wrap: nowrap;
+      justify-content: flex-end;
     }
   }
 
