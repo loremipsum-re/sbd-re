@@ -29,6 +29,7 @@ export type NomIcone =
   | 'actualites'
   | 'partenariats'
   | 'salles'
+  | 'suggestions'
   | 'journal'
   | 'apropos';
 
@@ -129,6 +130,13 @@ export const RUBRIQUES: readonly Rubrique[] = [
     label: 'Partenariats',
     resume: 'Proposer un partenariat au site',
     icone: 'partenariats',
+  },
+  {
+    href: '/suggestions/',
+    label: 'Proposer',
+    labelLong: 'Proposer une amélioration',
+    resume: 'Signaler une erreur ou souffler une idée, sans compte',
+    icone: 'suggestions',
   },
   {
     href: '/mises-a-jour/',

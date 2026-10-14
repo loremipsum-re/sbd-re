@@ -1,0 +1,305 @@
+---
+/**
+ * Boîte à suggestions, anonyme par défaut.
+ *
+ * POURQUOI ANONYME. Demander une identité pour recevoir une idée écarte la
+ * moitié de ceux qui en ont une. Le message suffit donc : l'adresse est
+ * proposée à qui veut une réponse, et laissée vide elle ne manque à rien.
+ *
+ * POURQUOI PAS GITHUB SEUL. Les issues du dépôt restent ouvertes et sont citées
+ * plus bas, mais elles supposent un compte, donc un nom, donc l'inverse de
+ * l'anonymat. Le formulaire reste la porte principale.
+ *
+ * La mécanique d'envoi est celle de /partenariats/, éprouvée en production :
+ * même champ appât, même délai minimal, même compteur par adresse IP. Le détail
+ * du raisonnement vit dans public/api/contact.php.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  titre="Proposer une amélioration"
+  description="Signaler une donnée fausse, un problème technique ou proposer une idée pour SBD.re. Anonyme, sans compte à créer."
+>
+  <div class="wrap page">
+    <header class="entete-page">
+      <h1>Proposer une amélioration</h1>
+      <p class="chapeau">
+        Une donnée qui cloche, une page qui résiste, une idée qui manque : tout
+        se dit ici. Le message suffit, l'adresse électronique reste facultative.
+      </p>
+    </header>
+
+    <section class="formulaire">
+      <noscript>
+        <p class="repli">
+          Ce formulaire demande JavaScript. Écrivez directement à{' '}
+          <a href="mailto:hello@loremipsum.re">hello@loremipsum.re</a>.
+        </p>
+      </noscript>
+
+      <form id="suggestion" novalidate>
+        <div class="champ">
+          <label for="nature">De quoi s'agit-il ?</label>
+          <select id="nature" name="nature" required>
+            <option value="amelioration">Idée d'amélioration</option>
+            <option value="donnee">Donnée fausse ou manquante</option>
+            <option value="technique">Problème technique</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+
+        <div class="champ">
+          <label for="message">Votre suggestion</label>
+          <textarea id="message" name="message" required rows="7" maxlength="4000"></textarea>
+          <p class="aide">
+            Pour une donnée fausse, le nom de l'athlète et la compétition
+            concernée suffisent à retrouver la ligne.
+          </p>
+        </div>
+
+        {/*
+          La page d'origine est posée PAR LE SCRIPT, et reste modifiable à la
+          main. Sur un signalement technique, savoir d'où il vient épargne un
+          aller-retour ; la laisser en lecture seule priverait de ce réglage qui
+          ne regarde personne d'autre.
+        */}
+        <div class="champ">
+          <label for="page">Page concernée <span class="option">facultatif</span></label>
+          <input id="page" name="page" type="text" maxlength="200" />
+        </div>
+
+        <div class="champ">
+          <label for="courriel">
+            Adresse électronique <span class="option">facultatif</span>
+          </label>
+          <input id="courriel" name="courriel" type="email" maxlength="190" autocomplete="email" />
+          <p class="aide">
+            Laissez ce champ vide pour rester anonyme. Renseignée, l'adresse sert
+            uniquement à vous répondre.
+          </p>
+        </div>
+
+        {/* Champ appât : voir le commentaire de /partenariats/. */}
+        <div class="appat" aria-hidden="true">
+          <label for="site">Ne remplissez pas ce champ</label>
+          <input id="site" name="site" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+
+        <input id="depuis" name="depuis" type="hidden" value="" />
+
+        <button type="submit">Envoyer la suggestion</button>
+
+        <p class="etat" data-etat role="status" aria-live="polite" hidden></p>
+
+        <p class="rgpd">
+          Aucune inscription, aucun cookie, aucune adresse conservée au-delà de
+          la réponse. Voir la <a href="/confidentialite/">page de confidentialité</a>.
+        </p>
+      </form>
+    </section>
+
+    <section class="autrement">
+      <h2>Autrement</h2>
+      <p>
+        Le code du site est public. Qui a déjà un compte GitHub peut ouvrir une
+        demande et suivre son traitement sur{' '}
+        <a href="https://github.com/loremipsum-re/sbd-re/issues" rel="noopener">
+          le dépôt du projet
+        </a>. Les changements déjà livrés se lisent sur la page{' '}
+        <a href="/mises-a-jour/">Mises à jour</a>.
+      </p>
+    </section>
+  </div>
+</BaseLayout>
+
+<script is:inline>
+  (() => {
+    const form = document.getElementById('suggestion');
+    if (!form) return;
+
+    const etat = form.querySelector('[data-etat]');
+    const bouton = form.querySelector('button[type="submit"]');
+    const depuis = form.querySelector('#depuis');
+    const page = form.querySelector('#page');
+
+    // L'horodatage se pose maintenant, à l'ouverture de la page.
+    depuis.value = String(Math.floor(Date.now() / 1000));
+
+    /*
+     * La page d'origine se pré-remplit avec celle d'où l'on vient, quand c'est
+     * une page du site. Un visiteur arrivé directement garde le champ vide.
+     */
+    try {
+      const venant = new URL(document.referrer || '', location.origin);
+      if (venant.origin === location.origin && venant.pathname !== location.pathname) {
+        page.value = venant.pathname;
+      }
+    } catch {
+      /* Referrer absent ou illisible : le champ reste vide, ce n'est pas grave. */
+    }
+
+    const afficher = (texte, ok) => {
+      etat.textContent = texte;
+      etat.dataset.ok = ok ? 'oui' : 'non';
+      etat.hidden = false;
+    };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      bouton.disabled = true;
+      afficher('Envoi en cours…', true);
+
+      try {
+        const reponse = await fetch('/api/suggestion.php', {
+          method: 'POST',
+          body: new FormData(form),
+        });
+        const donnees = await reponse.json();
+        afficher(donnees.message, donnees.ok === true);
+        if (donnees.ok) form.reset();
+      } catch {
+        afficher("L'envoi a échoué. Écrivez directement à hello@loremipsum.re.", false);
+      } finally {
+        // Réactivé quoi qu'il arrive : un bouton mort après une panne réseau
+        // enferme le visiteur.
+        bouton.disabled = false;
+      }
+    });
+  })();
+</script>
+
+<style>
+  .page {
+    padding-block: var(--space-8) var(--space-16);
+  }
+
+  .entete-page {
+    margin-bottom: var(--space-8);
+  }
+
+  .chapeau {
+    color: var(--muted);
+    font-size: var(--step-1);
+    max-width: 62ch;
+  }
+
+  .formulaire {
+    max-width: 44rem;
+    margin-bottom: var(--space-12);
+  }
+
+  form {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .champ {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  label {
+    font-weight: 600;
+  }
+
+  .option {
+    font-weight: 400;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  input,
+  select,
+  textarea {
+    width: 100%;
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+  }
+
+  textarea {
+    resize: vertical;
+    line-height: 1.5;
+  }
+
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    border-color: var(--accent);
+  }
+
+  .aide {
+    margin: 0;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  button[type='submit'] {
+    justify-self: start;
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-6);
+    border: 1px solid var(--accent-fill);
+    border-radius: var(--radius);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  button[type='submit']:disabled {
+    opacity: 0.6;
+    cursor: progress;
+  }
+
+  /*
+   * Le champ appât est masqué EN CSS et non par `hidden` : certains robots
+   * ignorent les champs `hidden`, aucun ne calcule le CSS.
+   */
+  .appat {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .etat {
+    margin: 0;
+    padding: var(--space-3) var(--space-4);
+    border-left: 3px solid var(--border);
+    font-weight: 600;
+  }
+
+  .etat[data-ok='oui'] {
+    border-left-color: var(--positif);
+    color: var(--positif);
+  }
+
+  .etat[data-ok='non'] {
+    border-left-color: var(--negatif);
+    color: var(--negatif);
+  }
+
+  .repli,
+  .rgpd {
+    margin: 0;
+    font-size: var(--step--1);
+    color: var(--muted);
+    max-width: 68ch;
+  }
+
+  .autrement {
+    max-width: 68ch;
+  }
+
+  .autrement h2 {
+    margin-bottom: var(--space-3);
+  }
+</style>
