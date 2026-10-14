@@ -29,6 +29,8 @@ export type NomIcone =
   | 'actualites'
   | 'partenariats'
   | 'salles'
+  | 'suggestions'
+  | 'journal'
   | 'apropos';
 
 export interface Rubrique {
@@ -48,6 +50,18 @@ export interface Rubrique {
   resume: string;
   icone: NomIcone;
   /**
+   * Les deux familles du pied de page.
+   *
+   * `classements` : ce qui montre des athlètes, des marques et des
+   * compétitions, c'est-à-dire la donnée elle-même.
+   * `projet` : ce qui parle du site, de ses sources et de ses coulisses.
+   *
+   * Un pied de page qui alignait quatorze entrées sous un seul titre « Le
+   * site » ne disait rien de leur nature : deux colonnes distinguent ce qu'on
+   * vient chercher de ce qu'on consulte une fois.
+   */
+  famille: 'classements' | 'projet';
+  /**
    * Les rubriques principales occupent la barre de navigation sur grand écran.
    * Les autres vivent dans le menu du téléphone et au pied de page.
    *
@@ -63,6 +77,7 @@ export const RUBRIQUES: readonly Rubrique[] = [
     label: 'Classement officiel',
     resume: 'Le meilleur total de chaque athlète, en compétition',
     icone: 'classement',
+    famille: 'classements',
     principale: true,
   },
   {
@@ -70,6 +85,7 @@ export const RUBRIQUES: readonly Rubrique[] = [
     label: 'Communauté',
     resume: 'Le classement ouvert aux performances de salle',
     icone: 'communaute',
+    famille: 'classements',
     principale: true,
   },
   {
@@ -78,6 +94,7 @@ export const RUBRIQUES: readonly Rubrique[] = [
     labelLong: 'Comparer des athlètes',
     resume: "Jusqu'à quatre athlètes, barre par barre",
     icone: 'comparer',
+    famille: 'classements',
     principale: true,
   },
   {
@@ -86,56 +103,82 @@ export const RUBRIQUES: readonly Rubrique[] = [
     labelLong: 'Me situer dans le classement',
     resume: 'Où se placerait votre total dans le classement',
     icone: 'simulateur',
+    famille: 'classements',
   },
   {
     href: '/records/',
     label: 'Records',
     resume: "Les meilleures marques de l'île, par mouvement",
     icone: 'records',
+    famille: 'classements',
   },
   {
     href: '/categories/',
     label: 'Catégories',
     resume: 'Les catégories de poids, leurs records et leur histoire',
     icone: 'categories',
+    famille: 'classements',
   },
   {
     href: '/competitions/',
     label: 'Compétitions',
     resume: 'Toutes les compétitions organisées depuis 2017',
     icone: 'competitions',
+    famille: 'classements',
   },
   {
     href: '/exterieur/',
     label: 'Extérieur',
     resume: 'Les résultats obtenus hors de La Réunion',
     icone: 'exterieur',
+    famille: 'classements',
   },
   {
     href: '/actualites/',
     label: 'Actualités',
     resume: 'Les compétitions racontées, résultats et records',
     icone: 'actualites',
+    famille: 'projet',
   },
   {
     href: '/salles/',
     label: 'Salles',
     resume: "Les salles de l'île sur une carte, par commune",
     icone: 'salles',
+    famille: 'projet',
   },
   {
     href: '/partenariats/',
     label: 'Partenariats',
     resume: 'Proposer un partenariat au site',
     icone: 'partenariats',
+    famille: 'projet',
+  },
+  {
+    href: '/suggestions/',
+    label: 'Proposer',
+    labelLong: 'Proposer une amélioration',
+    resume: 'Signaler une erreur ou souffler une idée, sans compte',
+    icone: 'suggestions',
+    famille: 'projet',
+  },
+  {
+    href: '/mises-a-jour/',
+    label: 'Mises à jour',
+    resume: 'Ce qui change sur le site, et quand',
+    icone: 'journal',
+    famille: 'projet',
   },
   {
     href: '/a-propos/',
     label: 'À propos',
     resume: 'Sources, méthode et fonctionnement du site',
     icone: 'apropos',
+    famille: 'projet',
   },
 ];
 
 export const rubriquesPrincipales = RUBRIQUES.filter((r) => r.principale);
+export const rubriquesClassements = RUBRIQUES.filter((r) => r.famille === 'classements');
+export const rubriquesProjet = RUBRIQUES.filter((r) => r.famille === 'projet');
 export const rubriquesSecondaires = RUBRIQUES.filter((r) => !r.principale);

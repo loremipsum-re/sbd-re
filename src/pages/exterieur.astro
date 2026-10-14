@@ -81,7 +81,7 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
         </div>
       </Fragment>
 
-      <div class="liste">
+      <div class="liste liste-barres">
         <table data-tableau>
           <thead>
             <tr>
@@ -123,7 +123,9 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
                         {libelleEvent(r.event)}
                       </span>
                     </td>
-                    <td data-libelle="Pays">{paysFr(r.meetCountry)}</td>
+                    <td data-libelle="Pays" class="cellule-annexe">
+                      <span class="etiquette">{paysFr(r.meetCountry)}</span>
+                    </td>
                     <td class="nombre" data-libelle="Catégorie" data-valeur={classe?.kg ?? ''}>
                       {r.weightClassKg ? `${r.weightClassKg} kg` : '—'}
                     </td>
@@ -157,14 +159,13 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
 </BaseLayout>
 
 <style>
-  .entete-page {
-    margin-bottom: var(--space-8);
+  /* Quatre chiffres par ligne, catégorie, total, Dots et place : rangés trois
+     par rangée, le quatrième resterait seul. Deux par rangée les apparient. */
+  .liste.liste-barres {
+    --pas: 3;
   }
 
-  .chapeau {
-    color: var(--muted);
-    max-width: 68ch;
-  }
+
 
   .avertissement {
     max-width: 68ch;
@@ -184,10 +185,4 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
     color: var(--muted);
   }
 
-  .note {
-    margin-top: var(--space-4);
-    font-size: var(--step--1);
-    color: var(--muted);
-    max-width: 68ch;
-  }
 </style>

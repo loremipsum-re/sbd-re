@@ -1,0 +1,26 @@
+# =============================================================================
+# Ce dossier conserve les suggestions reçues, écrites par suggestion.php. Elles
+# contiennent du texte libre envoyé par des visiteurs, parfois une adresse
+# électronique : tout accès HTTP y est refusé.
+#
+# Ce fichier est volontairement SÉPARÉ du .htaccess racine. Une erreur de
+# syntaxe dans celui de la racine rend le site entier inaccessible ; ici, elle
+# ne toucherait que ce dossier.
+#
+# Le fichier écrit porte en plus l'extension `.jsonl`, qu'Apache sert en texte
+# brut : si jamais cette règle sautait, le contenu serait lisible. C'est la
+# raison pour laquelle aucune donnée inutile n'y entre, ni adresse IP, ni
+# en-tête de requête.
+# =============================================================================
+
+# Apache 2.4, celui d'OVH.
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+
+# Apache 2.2, au cas où. Sans ce repli, la directive ci-dessus serait ignorée
+# et le dossier resterait ouvert sans que rien ne le signale.
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+</IfModule>

@@ -28,7 +28,8 @@ import { version } from '../../package.json';
 const versionAffichee = version.replace(/\.0$/, '');
 import { periode, nombreAthletes, results } from '../lib/data';
 import { dateLongue } from '../lib/format';
-import { RUBRIQUES } from '../lib/navigation';
+import Logo from './Logo.astro';
+import { rubriquesClassements, rubriquesProjet } from '../lib/navigation';
 
 const { debut, fin } = periode();
 ---
@@ -36,27 +37,33 @@ const { debut, fin } = periode();
 <footer class="pied">
   <div class="wrap">
     <div class="grille">
-      <div>
-        <p class="marque">SBD<span>.re</span></p>
-        <p class="fin">
-          Classements et records de force athlétique de La Réunion.
+      {/*
+        PREMIÈRE COLONNE : l'identité, puis ce que le site contient. Les
+        chiffres des données vivaient dans une colonne à part, au même rang que
+        la navigation, alors qu'ils disent la même chose que la phrase du
+        dessus : de quoi ce site est fait. Ils la suivent donc.
+      */}
+      <div class="identite">
+        <Logo taille="1.6em" />
+        <p class="fin">Classements et records de force athlétique de La Réunion.</p>
+        <p class="donnees">
+          {results.length.toLocaleString('fr-FR')} résultats, {nombreAthletes()} athlètes.{' '}
+          {debut && <>De {dateLongue(debut)} à {dateLongue(fin)}.</>}
         </p>
       </div>
 
-      <nav aria-label="Pied de page">
-        <p class="titre">Le site</p>
+      {/*
+        DEUX COLONNES DE NAVIGATION PLUTÔT QU'UNE.
+        Quatorze entrées sous un seul titre « Le site » ne disaient rien de leur
+        nature. Elles se séparent maintenant selon ce qu'elles montrent : la
+        donnée d'un côté, le site lui-même de l'autre. Le partage vit dans
+        lib/navigation, avec les adresses et les icônes, et non ici.
+      */}
+      <nav aria-label="Classements et records">
+        <p class="titre">Classements</p>
         <ul>
-          {/*
-            L'en-tête ne porte que trois entrées ; ce menu recueille tout le
-            reste. Les huit rubriques viennent de lib/navigation, comme celles
-            du menu du téléphone : une seule liste, donc les mêmes libellés,
-            les mêmes adresses et les mêmes icônes des deux côtés.
-
-            `labelLong` quand il existe : la colonne offre ici la place d'être
-            explicite, là où la barre de navigation impose d'être bref.
-          */}
           {
-            RUBRIQUES.map((r) => (
+            rubriquesClassements.map((r) => (
               <li>
                 <a href={r.href}>
                   <Icone nom={r.icone} taille={18} />
@@ -68,13 +75,21 @@ const { debut, fin } = periode();
         </ul>
       </nav>
 
-      <div>
-        <p class="titre">Données</p>
-        <p class="fin">
-          {results.length.toLocaleString('fr-FR')} résultats, {nombreAthletes()} athlètes.{' '}
-          {debut && <>De {dateLongue(debut)} à {dateLongue(fin)}.</>}
-        </p>
-      </div>
+      <nav aria-label="Le projet">
+        <p class="titre">Le projet</p>
+        <ul>
+          {
+            rubriquesProjet.map((r) => (
+              <li>
+                <a href={r.href}>
+                  <Icone nom={r.icone} taille={18} />
+                  {r.labelLong ?? r.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
     </div>
 
     <BandeauPartenaires />
@@ -107,32 +122,63 @@ const { debut, fin } = periode();
       </a>
     </div>
 
+    {/*
+      LES CRÉDITS À GAUCHE, LES PAGES LÉGALES À DROITE. Empilées les unes sous
+      les autres, les cinq lignes se lisaient comme une seule liste où rien ne
+      se distinguait. Deux colonnes séparent ce qui informe sur l'origine des
+      données de ce qui mène aux pages obligatoires.
+    */}
     <div class="mentions">
-      <p>
-        Données issues du projet{' '}
-        <a href="https://www.openpowerlifting.org" rel="noopener">OpenPowerlifting</a>.
-      </p>
-      <p>
-        Site indépendant, non affilié à la FFForce ni à SBD Apparel.
-      </p>
-      <p class="legal">
-        <a href="/mentions-legales/">Mentions légales</a>
-        <span aria-hidden="true">·</span>
-        <a href="/confidentialite/">Confidentialité</a>
-      </p>
-      <p class="realisation">
-        Une réalisation de{' '}
-        <a href="https://loremipsum.re" rel="noopener">loremipsum.re</a>.
-      </p>
-      {/*
-        Dernière ligne du document, volontairement. C'est une information de
-        maintenance, utile pour situer ce qu'un visiteur a sous les yeux quand
-        il signale quelque chose. Elle ne mérite pas d'être vue avant le reste.
-      */}
-      <p class="version">
-        Version du site : <span class="badge">v{versionAffichee}</span>
-      </p>
+      <div class="credits">
+        <p>
+          Données issues du projet{' '}
+          <a href="https://www.openpowerlifting.org" rel="noopener">OpenPowerlifting</a>
+        </p>
+        <p>Site indépendant, non affilié à la FFForce ni à SBD Apparel.</p>
+        {/*
+          La version suit la mention d'indépendance : c'est une information de
+          maintenance, utile pour situer ce qu'un visiteur a sous les yeux quand
+          il signale quelque chose, et elle appartient au même registre que ce
+          qui précède.
+        */}
+        <p class="version">
+          Version du site <span class="badge">v{versionAffichee}</span>
+        </p>
+      </div>
+
+      <div class="legal">
+        {/*
+          Les trois pages légales sur UNE LIGNE : ce sont trois liens d'un même
+          registre, pas une liste à parcourir. La page de confidentialité porte
+          le droit d'opposition des athlètes à la publication de leur nom, elle
+          doit s'atteindre du premier coup.
+        */}
+        <nav aria-label="Pages légales">
+          <a href="/mentions-legales/">Mentions légales</a>
+          <a href="/confidentialite/">Confidentialité</a>
+          <a href="/accessibilite/">Accessibilité</a>
+        </nav>
+
+        {/*
+          LIEN SUIVI, et volontairement.
+
+          `dofollow` figure ici à la demande de l'auteur. À savoir : cette
+          valeur n'existe dans aucune spécification et aucun moteur ne la lit.
+          Ce qui rend un lien suivi, c'est l'ABSENCE de `nofollow`, et elle est
+          acquise depuis toujours sur ce lien. `noopener`, lui, ferme l'accès de
+          la page ouverte à celle-ci et ne regarde pas le référencement.
+
+          Autrement dit, le lien était déjà suivi avant cet ajout et le reste
+          après. Si un moteur ne le remonte pas, la cause est ailleurs : délai
+          d'exploration, ou lien de pied de page jugé peu significatif.
+        */}
+        <p class="realisation">
+          Une réalisation de{' '}
+          <a href="https://loremipsum.re" rel="dofollow noopener">loremipsum.re</a>
+        </p>
+      </div>
     </div>
+
   </div>
 </footer>
 
@@ -158,15 +204,16 @@ const { debut, fin } = periode();
     }
   }
 
-  .marque {
-    font-family: var(--font-display);
-    font-weight: 800;
-    font-size: var(--step-1);
-    letter-spacing: -0.03em;
-    margin-bottom: var(--space-2);
+  /* Le logo remplace le mot-symbole écrit à la main : mêmes lettres, plus les
+     trois barres, et une seule définition pour tout le site. */
+  .identite .logo {
+    margin-bottom: var(--space-3);
   }
-  .marque span {
-    color: var(--accent);
+
+  .donnees {
+    margin-top: var(--space-3);
+    color: var(--muted);
+    font-size: var(--step--1);
   }
 
   .titre {
@@ -273,21 +320,56 @@ const { debut, fin } = periode();
     color: var(--muted);
   }
 
-  .legal {
+  /*
+   * Les pages légales en colonne et non en ligne séparée par des points : à
+   * droite d'un bloc de crédits, une pile se lit mieux qu'une file, et chaque
+   * lien garde sa propre ligne de touche.
+   */
+  .legal nav {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--space-2);
-    margin-top: var(--space-3);
+    gap: 0 var(--space-4);
+  }
+
+  .legal .realisation {
+    margin-top: var(--space-1);
   }
 
   /*
-   * Mentions légales et confidentialité restent côte à côte sur une ligne,
-   * séparées par le point médian : ce sont deux liens, pas une liste. Seule
-   * leur zone cliquable grandit, verticalement, autour d'un texte inchangé.
+   * DEUX COLONNES SEULEMENT À PARTIR DE 64rem, et non de 48.
    *
-   * La page de confidentialité porte le droit d'opposition des athlètes à la
-   * publication de leur nom. Elle doit s'atteindre du premier coup.
+   * Les trois liens légaux mis bout à bout mesurent 681 px. Dans la colonne de
+   * droite d'une grille `1fr auto`, large de 227 px à 1280 px de fenêtre, ils
+   * se repliaient les uns sous les autres quoi qu'on demande. La colonne prend
+   * donc la largeur de son contenu, `max-content`, et les crédits gardent le
+   * reste. En dessous de 64rem la place manque pour les deux : tout s'empile,
+   * et la rangée de liens se replie d'elle-même.
+   */
+  @media (min-width: 64rem) {
+    .mentions {
+      display: grid;
+      grid-template-columns: 1fr max-content;
+      gap: var(--space-8);
+      align-items: start;
+    }
+
+    .legal {
+      text-align: right;
+    }
+
+    /* La rangée se pousse contre le bord droit, comme le texte au-dessus. */
+    .legal nav {
+      flex-wrap: nowrap;
+      justify-content: flex-end;
+    }
+  }
+
+  /*
+   * Chaque page légale garde une zone cliquable d'une hauteur de cible, autour
+   * d'un texte inchangé. La page de confidentialité porte le droit d'opposition
+   * des athlètes à la publication de leur nom : elle doit s'atteindre du
+   * premier coup.
    */
   .legal a {
     display: inline-flex;

@@ -528,8 +528,17 @@ input:not([type='checkbox']):not([type='radio']) {
   min-height: var(--cible-min);
 }
 
+/*
+ * L'EN-TÊTE DE COLONNE CLIQUABLE : 24 px, et non 44.
+ *
+ * Il échappe à la règle des 44 px, qui tasserait une rangée d'en-têtes au point
+ * de voler sa place aux données. Il reste tenu par le critère 2.5.8 des WCAG
+ * 2.2, qui demande 24 px au minimum hors cibles en ligne dans une phrase.
+ * Mesuré à 23 px lors de l'audit du 14 octobre 2026, soit un pixel sous le
+ * seuil : d'où ce plancher explicite.
+ */
 .bouton-tri {
-  min-height: 0;
+  min-height: 24px;
 }
 
 /* Visible uniquement pour les lecteurs d'écran. */
@@ -550,6 +559,96 @@ input:not([type='checkbox']):not([type='radio']) {
   outline: 3px solid var(--accent);
   outline-offset: 2px;
   border-radius: 2px;
+}
+
+/* ---------- Le sens d'un écart ----------
+ * CE MARQUEUR N'APPARTIENT PLUS AUX LISTES. Il vivait dans listes.css tant que
+ * seuls le classement et les tableaux l'employaient ; la chronologie d'un
+ * record, sur une page de catégorie, n'est pas une liste et en a le même
+ * besoin. Il monte donc ici, avec les autres marques communes.
+ *
+ * Les jetons --positif et --negatif ont été posés et mesurés pour dire « le
+ * SENS D'UN ÉCART chiffré dans un tableau ». Le négatif est un saumon désaturé
+ * et non un écarlate : l'écarlate sur fond quasi noir est l'identité de SBD
+ * Apparel.
+ *
+ * LA COULEUR NE PORTE JAMAIS L'INFORMATION SEULE. Le triangle la double pour
+ * qui ne sépare pas le vert du rouge, et un texte réservé aux lecteurs d'écran
+ * dit ce que l'écart mesure. Trois emplois à ce jour : les places gagnées sur
+ * douze mois au classement, les points Dots gagnés d'une compétition à la
+ * suivante sur une fiche, et les kilos arrachés au record précédent dans la
+ * chronologie d'une catégorie.
+ */
+
+.evolution {
+  display: flex;
+  align-items: baseline;
+  gap: 0.15rem;
+  font-family: var(--font-body);
+  font-size: var(--step--1);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.evolution[data-sens='hausse'] {
+  color: var(--positif);
+}
+
+.evolution[data-sens='baisse'] {
+  color: var(--negatif);
+}
+
+/* ---------------------------------------------------------------------------
+ * LE CHAPEAU D'UNE PAGE
+ *
+ * Le paragraphe qui suit le titre et dit de quoi la page parle. Il était écrit
+ * VINGT ET UNE FOIS, en dix variantes : deux tailles, quatre mesures de ligne,
+ * 58, 60, 62 et 68 caractères, et trois marges basses. Deux pages voisines ne
+ * présentaient donc pas leur sujet de la même façon, ce qui se voit même sans
+ * les comparer côte à côte.
+ *
+ * Une seule définition désormais. La mesure vaut 62 caractères, milieu de la
+ * fourchette typographique de 45 à 75 et valeur la plus fréquente parmi les
+ * pages qui agrandissaient déjà leur chapeau.
+ *
+ * La marge basse disparaît quand le chapeau vit dans un `.entete-page`, qui
+ * porte déjà la sienne : les deux s'ajoutaient.
+ * ------------------------------------------------------------------------ */
+
+/*
+ * L'EN-TÊTE D'UNE PAGE, LA NOTE DE BAS DE BLOC, LE BLOC.
+ *
+ * Trois formes répétées de page en page, et qui divergeaient de la même façon
+ * que le chapeau : l'en-tête en trois marges, la note en six variantes, le
+ * bloc en deux. Elles tiennent ici, une fois.
+ */
+
+.entete-page {
+  margin-bottom: var(--space-8);
+}
+
+/* Une section de page, séparée de la suivante. */
+.bloc {
+  margin-bottom: var(--space-12);
+}
+
+/* La précision qui suit un tableau ou une liste, et qu'on lit après. */
+.note {
+  max-width: 68ch;
+  margin-top: var(--space-4);
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+
+.chapeau {
+  max-width: 62ch;
+  margin-bottom: var(--space-8);
+  font-size: var(--step-1);
+  color: var(--muted);
+}
+
+.entete-page .chapeau {
+  margin-bottom: 0;
 }
 
 /* ===========================================================================

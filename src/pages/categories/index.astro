@@ -1,4 +1,17 @@
 ---
+/**
+ * Les catégories de poids, en liste filtrable.
+ *
+ * C'EST LA PAGE LA PLUS VISITÉE DU SITE, relevé par la mesure d'audience du
+ * 14 octobre 2026. Elle était une grille de cartes sans aucun moyen de chercher
+ * ni de trier : vingt-six catégories à parcourir à l'œil pour en trouver une.
+ *
+ * Elle reprend donc la grammaire des listes du site, qui apporte d'un coup la
+ * recherche, le filtre par sexe, le tri par poids, par effectif et par record,
+ * et l'état écrit dans l'adresse. TOUT RESTE AFFICHÉ PAR DÉFAUT : l'affinage
+ * est une aide, pas un péage.
+ */
+import InteractiveTable from '../../components/InteractiveTable.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { SEXE_LABEL, listeCategories } from '../../lib/categoriesPages';
 import { kg } from '../../lib/format';
@@ -34,38 +47,94 @@ const parSexe: { sex: Sex; label: string; liste: typeof categories }[] = [
       </p>
     </header>
 
-    {
-      parSexe.map(({ label, liste }) => (
-        <section class="bloc">
-          <h2>{label}</h2>
-          <ul class="grille">
-            {liste.map((cat) => {
-              const rec = recordDe(cat.sex, cat.classe.id);
-              return (
-                <li>
-                  <a class="carte lien-nu" href={`/categories/${cat.chemin}/`}>
-                    <span class="poids num">{cat.classe.label}</span>
-                    <span class="corps">
-                      <span class="effectif">
-                        {cat.athletes} athlète{cat.athletes > 1 ? 's' : ''}
-                      </span>
-                      {rec ? (
-                        <span class="record">
-                          Record {kg(rec.valueKg)}
-                          <span class="detenteur">{rec.holder}</span>
-                        </span>
-                      ) : (
-                        <span class="record">Aucun record en Raw</span>
-                      )}
-                    </span>
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ))
-    }
+    <InteractiveTable
+      recherche="Catégorie, détenteur du record…"
+      singulier="catégorie"
+      pluriel="catégories"
+      total={categories.length}
+    >
+      {/*
+        PAS DE BARRE « TRIER PAR » ICI. Elle se construit à partir des en-têtes
+        d'un tableau, et la page en compte deux, un par sexe : la barre
+        affichait donc six boutons pour trois critères. Le tri par clic sur
+        l'en-tête reste disponible dès que les colonnes apparaissent, et en
+        carte la recherche et le filtre couvrent le besoin.
+      */}
+      <Fragment slot="filtres">
+        <div class="champ">
+          <label for="f-sexe">Sexe</label>
+          <select id="f-sexe" data-filtre="sexe">
+            <option value="">Tous</option>
+            <option value="M">Hommes</option>
+            <option value="F">Femmes</option>
+          </select>
+        </div>
+      </Fragment>
+
+      {
+        parSexe.map(({ sex, label, liste }) => (
+          <section class="bloc" data-section-tableau>
+            <h2>{label}</h2>
+
+            <div class="liste liste-barres">
+              <table data-tableau>
+                <thead>
+                  <tr>
+                    <th scope="col" data-tri data-cle="poids" data-type="nombre">
+                      Catégorie
+                    </th>
+                    <th scope="col" class="nombre" data-tri data-cle="athletes" data-type="nombre">
+                      Athlètes
+                    </th>
+                    <th scope="col" class="nombre" data-tri data-cle="record" data-type="nombre">
+                      Record au total
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {liste.map((cat) => {
+                    const rec = recordDe(cat.sex, cat.classe.id);
+                    return (
+                      <tr
+                        data-recherche={`${cat.classe.label} ${rec?.holder ?? ''}`}
+                        data-sexe={sex}
+                        data-poids={cat.classe.kg}
+                        data-athletes={cat.athletes}
+                        data-record={rec?.valueKg ?? ''}
+                      >
+                        <th scope="row" class="categorie" data-valeur={cat.classe.kg}>
+                          <a href={`/categories/${cat.chemin}/`}>{cat.classe.label}</a>
+                        </th>
+
+                        {/* Le nombre seul : l'intitulé de la colonne, « Athlètes »,
+                            dit déjà de quoi il s'agit. */}
+                        <td class="nombre num-tab" data-libelle="Athlètes" data-valeur={cat.athletes}>
+                          {cat.athletes}
+                        </td>
+
+                        <td class="nombre" data-libelle="Record" data-valeur={rec?.valueKg ?? ''}>
+                          {rec ? (
+                            <>
+                              {/* L'unité DANS la valeur : posée à côté, elle
+                                  tombait sur sa propre ligne, la valeur étant
+                                  un bloc en mode carte. */}
+                              <span class="valeur num">{kg(rec.valueKg)}</span>
+                              <span class="detenteur">{rec.holder}</span>
+                            </>
+                          ) : (
+                            <span class="absent">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ))
+      }
+    </InteractiveTable>
 
     <p class="note">
       Les records affichés ici sont ceux du total en Raw, la marque de référence
@@ -76,98 +145,57 @@ const parSexe: { sex: Sex; label: string; liste: typeof categories }[] = [
 </BaseLayout>
 
 <style>
-  .entete-page {
-    margin-bottom: var(--space-8);
-  }
 
-  .chapeau {
-    color: var(--muted);
+
+
+  /*
+   * La catégorie ouvre la rangée, comme sur la grille des records : même rôle,
+   * même traitement, pour qu'on la retrouve d'une page à l'autre.
+   */
+  .categorie {
+    font-family: var(--font-display);
+    font-weight: 700;
     font-size: var(--step-1);
-    max-width: 62ch;
-  }
-
-  .bloc {
-    margin-bottom: var(--space-12);
-  }
-
-  .grille {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    /*
-     * Le `min()` n'est pas décoratif. `minmax(15rem, 1fr)` impose 240 px à
-     * chaque colonne, y compris quand l'écran en offre moins : la grille
-     * déborde alors au lieu de se replier. `min(15rem, 100%)` laisse la
-     * colonne tomber à la largeur disponible sur les très petits écrans.
-     */
-    grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
-    gap: var(--space-3);
-  }
-
-  /* Un élément de grille vaut `min-width: auto` : sans cette ligne il peut
-     dépasser sa colonne pour loger un nom un peu long. */
-  .grille > li {
-    min-width: 0;
-  }
-
-  .carte {
-    display: flex;
-    align-items: center;
-    gap: var(--space-4);
-    height: 100%;
-    padding: var(--space-4);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    background: var(--surface);
-    color: var(--text);
-  }
-  .carte:hover {
-    border-color: var(--accent);
-    color: var(--text);
-  }
-
-  .poids {
-    font-size: var(--step-2);
-    line-height: 1;
-    color: var(--accent);
     white-space: nowrap;
   }
 
-  .corps {
-    display: grid;
-    gap: var(--space-1);
-    min-width: 0;
+  @media (min-width: 60rem) {
+    .liste tbody .categorie {
+      background: color-mix(in srgb, var(--text) 5%, transparent);
+    }
   }
 
-  .effectif {
-    font-size: var(--step--1);
-    color: var(--muted);
+  @media (max-width: 59.999rem) {
+    .liste tbody .categorie {
+      grid-column: 1 / -1;
+    }
+
+    /* Deux chiffres par carte, l'effectif et le record : trois colonnes
+       laisseraient une place vide, et chaque valeur a de quoi respirer. */
+    .liste.liste-barres {
+      --pas: 3;
+    }
+
+    .liste tbody .valeur {
+      display: block;
+    }
   }
 
-  .record {
-    font-size: var(--step--1);
-    font-weight: 600;
+  .valeur {
+    font-size: var(--step-1);
+    line-height: 1.1;
   }
 
-  /*
-   * Le nom du détenteur passe à la ligne au lieu d'être tronqué.
-   *
-   * « Christan Pounoussamy » et « Jean-Gérald Hoareau » y perdaient leur fin
-   * sur téléphone. Tronquer le nom d'un athlète est le pire endroit du site où
-   * le faire : c'est précisément l'information que la carte existe pour
-   * donner.
-   */
+  /* Le détenteur passe toujours à la ligne, en tableau comme en carte : collé
+     à la charge, on lisait « 720 kgAnthony Costarigot ». */
   .detenteur {
     display: block;
-    font-weight: 400;
-    color: var(--muted);
-    overflow-wrap: break-word;
-  }
-
-  .note {
     font-size: var(--step--1);
     color: var(--muted);
-    max-width: 68ch;
   }
+
+  .absent {
+    color: var(--muted);
+  }
+
 </style>

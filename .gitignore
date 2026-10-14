@@ -35,3 +35,7 @@ Thumbs.db
 
 # Copié depuis node_modules à chaque build par scripts/preparer-admin.mjs.
 public/admin/sveltia-cms.js
+
+# Suggestions reçues des visiteurs, écrites par public/api/suggestion.php.
+# Ce sont des données personnelles : elles vivent sur le serveur, jamais ici.
+public/api/journal/*.jsonl

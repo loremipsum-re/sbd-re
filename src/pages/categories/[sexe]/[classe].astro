@@ -116,7 +116,8 @@ const description =
           <p class="fin">
             Les {chronologie.length} marques qui se sont succédé en Raw depuis que
             la catégorie est suivie. Seule une amélioration réelle figure ici : à
-            performance égale, la marque la plus ancienne conserve le record.
+            performance égale, la marque la plus ancienne conserve le record. La
+            durée de règne de chaque marque se lit entre deux dates.
           </p>
 
           <ol class="chrono">
@@ -131,12 +132,11 @@ const description =
                     <a href={`/competitions/${meetPath(etape.date, etape.meetName)}/`}>
                       {dateLongue(etape.date)}
                     </a>
-                    {etape.gainKg > 0 && <span class="gain">+{nombre(etape.gainKg)} kg</span>}
-                    {etape.jours !== null && (
-                      <span>
-                        a tenu {etape.jours < 365
-                          ? `${etape.jours} jours`
-                          : `${Math.round(etape.jours / 365.25)} an${Math.round(etape.jours / 365.25) > 1 ? 's' : ''}`}
+                    {etape.gainKg > 0 && (
+                      <span class="evolution" data-sens="hausse">
+                        <span aria-hidden="true">▲</span>
+                        {`${nombre(etape.gainKg)} kg`}
+                        <span class="sr-only">de plus que la marque précédente</span>
                       </span>
                     )}
                     {i === chronologie.length - 1 && <span class="encours">record actuel</span>}
@@ -180,19 +180,8 @@ const description =
     margin-bottom: var(--space-4);
   }
 
-  .entete-page {
-    margin-bottom: var(--space-8);
-  }
 
-  .chapeau {
-    color: var(--muted);
-    font-size: var(--step-1);
-    max-width: 62ch;
-  }
 
-  .bloc {
-    margin-bottom: var(--space-12);
-  }
 
   .fin {
     color: var(--muted);
@@ -316,19 +305,13 @@ const description =
     color: var(--muted);
   }
 
-  .gain {
-    color: var(--accent);
-    font-weight: 600;
-  }
+  /* Le marqueur d'écart est commun au site et vit dans tokens.css. Rien à
+     régler ici : `.chrono-meta` est déjà une rangée flex, le marqueur y est
+     donc un élément parmi les autres et tient sa ligne. */
 
   .encours {
     font-weight: 600;
     color: var(--or);
   }
 
-  .note {
-    margin-top: var(--space-4);
-    font-size: var(--step--1);
-    color: var(--muted);
-  }
 </style>

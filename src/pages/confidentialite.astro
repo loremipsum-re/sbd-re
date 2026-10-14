@@ -67,8 +67,9 @@ import { nombreAthletes } from '../lib/data';
     <h3>Ce qui n'est pas collecté</h3>
     <p>
       Le contenu que vous saisissez dans un champ de formulaire est masqué par
-      défaut par Clarity. Le site ne demande de toute façon aucune saisie : il
-      n'y a ni compte, ni formulaire, ni paiement.
+      défaut par Clarity. Le site ne comporte ni compte, ni paiement : les deux
+      seuls formulaires sont décrits plus bas, et ce que vous y écrivez reste
+      invisible à la mesure d'audience.
     </p>
 
     <h3>Où vont ces données</h3>
@@ -139,6 +140,49 @@ import { nombreAthletes } from '../lib/data';
       votre adresse IP afin de compter les messages reçus. Cette trace disparaît
       au bout d'une heure et ne sert à rien d'autre. Aucun service extérieur
       n'intervient : ni CAPTCHA, ni filtre tiers.
+    </p>
+
+    {/*
+      SECTION OBLIGATOIRE DEPUIS QUE LES SUGGESTIONS SONT CONSERVÉES SUR LE
+      SERVEUR. Le formulaire de partenariat se contente d'un courriel ; la boîte
+      à suggestions écrit un fichier, ce qui est un traitement de données à
+      part entière et doit être annoncé avec sa durée et son contenu exact.
+    */}
+    <h2>La boîte à suggestions</h2>
+    <p>
+      La page <a href="/suggestions/">Proposer une amélioration</a>, également
+      accessible par le bouton flottant présent sur chaque page, demande le
+      moins possible : la nature de la demande, votre message, et deux champs
+      facultatifs, la page concernée et votre adresse électronique.
+    </p>
+    <p>
+      <strong>Laissez l'adresse vide et la suggestion est anonyme.</strong>
+      {' '}Renseignée, elle sert uniquement à vous répondre.
+    </p>
+    <p>
+      Chaque suggestion est <strong>enregistrée dans un fichier sur le serveur
+      du site</strong>, en plus d'être envoyée par courriel. La raison est
+      simple : une boîte de réception se trie et s'efface, alors qu'une idée
+      mérite d'être retrouvée des mois plus tard. Ce fichier n'est pas
+      accessible depuis le web.
+    </p>
+    <p>Y figurent la date, la nature, la page concernée, votre message, et votre
+      adresse si vous l'avez donnée. N'y figurent ni votre adresse IP, ni votre
+      navigateur, ni aucun identifiant de visite : rien ne permet de relier deux
+      suggestions à la même personne.
+    </p>
+    <p>
+      Base légale : l'intérêt légitime à améliorer le site. Conservation le temps
+      que la suggestion soit traitée ou écartée. Pour faire effacer la vôtre, ou
+      en obtenir copie, écrivez à
+      {' '}<a href="mailto:hello@loremipsum.re">hello@loremipsum.re</a> en
+      indiquant sa date approximative et son sujet.
+    </p>
+    <p>
+      Comme pour le formulaire de partenariat, le serveur retient temporairement
+      votre adresse IP afin de compter les envois. Cette trace disparaît au bout
+      d'une heure, reste séparée du contenu de la suggestion, et ne sert à rien
+      d'autre.
     </p>
 
     <h2>Ce que le site ne fait pas</h2>
@@ -260,11 +304,6 @@ import { nombreAthletes } from '../lib/data';
     padding-bottom: var(--space-8);
   }
 
-  .chapeau {
-    font-size: var(--step-1);
-    color: var(--muted);
-    margin-bottom: var(--space-8);
-  }
 
   h2 {
     margin-top: var(--space-12);

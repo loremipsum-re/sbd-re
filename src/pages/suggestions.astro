@@ -1,0 +1,83 @@
+---
+/**
+ * Boîte à suggestions, anonyme par défaut.
+ *
+ * POURQUOI ANONYME. Demander une identité pour recevoir une idée écarte la
+ * moitié de ceux qui en ont une. Le message suffit donc : l'adresse est
+ * proposée à qui veut une réponse, et laissée vide elle ne manque à rien.
+ *
+ * POURQUOI PAS GITHUB SEUL. Les issues du dépôt restent ouvertes et sont citées
+ * plus bas, mais elles supposent un compte, donc un nom, donc l'inverse de
+ * l'anonymat. Le formulaire reste la porte principale.
+ *
+ * La mécanique d'envoi est celle de /partenariats/, éprouvée en production :
+ * même champ appât, même délai minimal, même compteur par adresse IP. Le détail
+ * du raisonnement vit dans public/api/contact.php.
+ */
+import FormulaireSuggestion from '../components/FormulaireSuggestion.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  titre="Proposer une amélioration"
+  description="Signaler une donnée fausse, un problème technique ou proposer une idée pour SBD.re. Anonyme, sans compte à créer."
+>
+  <div class="wrap page">
+    <header class="entete-page">
+      <h1>Proposer une amélioration</h1>
+      <p class="chapeau">
+        Une donnée qui cloche, une page qui résiste, une idée qui manque : tout
+        se dit ici. Le message suffit, l'adresse électronique reste facultative.
+      </p>
+    </header>
+
+    <section class="formulaire">
+      <noscript>
+        <p class="repli">
+          Ce formulaire demande JavaScript. Écrivez directement à{' '}
+          <a href="mailto:hello@loremipsum.re">hello@loremipsum.re</a>.
+        </p>
+      </noscript>
+
+      <FormulaireSuggestion prefixe="page" origine="page" />
+    </section>
+
+    <section class="autrement">
+      <h2>Autrement</h2>
+      <p>
+        Le code du site est public. Qui a déjà un compte GitHub peut ouvrir une
+        demande et suivre son traitement sur{' '}
+        <a href="https://github.com/loremipsum-re/sbd-re/issues" rel="noopener">
+          le dépôt du projet
+        </a>. Les changements déjà livrés se lisent sur la page{' '}
+        <a href="/mises-a-jour/">Mises à jour</a>.
+      </p>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    padding-block: var(--space-8) var(--space-16);
+  }
+
+  .formulaire {
+    max-width: 44rem;
+    margin-bottom: var(--space-12);
+  }
+
+  .repli {
+    margin: 0;
+    font-size: var(--step--1);
+    color: var(--muted);
+    max-width: 68ch;
+  }
+
+  .autrement {
+    max-width: 68ch;
+  }
+
+  .autrement h2 {
+    margin-bottom: var(--space-3);
+  }
+</style>

@@ -1,0 +1,216 @@
+---
+/**
+ * Bouton flottant « Proposer une amélioration », et sa fenêtre.
+ *
+ * POURQUOI FLOTTANT. Une suggestion se formule au moment où la gêne se
+ * rencontre, pas trois pages plus loin. Le bouton suit donc le visiteur, comme
+ * le retour en haut de page à côté duquel il se range.
+ *
+ * DISCRET PAR CONSTRUCTION. Même taille, même forme et même surface que le
+ * retour en haut : un rond de 2,75 rem, posé en bas à droite, qui n'apparaît
+ * qu'une fois la page défilée. Il laisse donc le premier écran tranquille.
+ *
+ * UN `<dialog>` NATIF, et non une boîte reconstruite. Le navigateur se charge
+ * du fond modal, de la fermeture par Échap, du piège à focus et du retour du
+ * focus au bouton. Trois lignes de script au lieu de cinquante, et un
+ * comportement que les technologies d'assistance connaissent déjà.
+ *
+ * LA PAGE D'ORIGINE PART AVEC LA DEMANDE : le formulaire la pose depuis
+ * l'adresse en cours. C'est l'intérêt du bouton flottant par rapport à la page
+ * dédiée, où il faut se souvenir d'où l'on venait.
+ */
+import FormulaireSuggestion from './FormulaireSuggestion.astro';
+---
+
+<button class="appel" type="button" data-ouvrir-suggestion hidden>
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path
+      d="M3 12h1m8 -9v1m8 8h1m-15.4 -6.4l.7 .7m12.1 -.7l-.7 .7"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"></path>
+    <path
+      d="M9 16a5 5 0 1 1 6 0a3.5 3.5 0 0 0 -1 3a2 2 0 0 1 -4 0a3.5 3.5 0 0 0 -1 -3"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"></path>
+  </svg>
+  <span class="mot">Proposer</span>
+</button>
+
+<dialog class="fenetre" data-fenetre-suggestion aria-labelledby="titre-suggestion">
+  <div class="entete">
+    <h2 id="titre-suggestion">Proposer une amélioration</h2>
+    <button type="button" class="fermer" data-fermer-suggestion aria-label="Fermer">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path
+          d="M18 6 6 18M6 6l12 12"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"></path>
+      </svg>
+    </button>
+  </div>
+
+  <p class="intro">
+    Une donnée qui cloche, une page qui résiste, une idée qui manque. Le message
+    suffit, l'adresse reste facultative.
+  </p>
+
+  <FormulaireSuggestion prefixe="fenetre" origine="dialogue" />
+</dialog>
+
+<script>
+  const bouton = document.querySelector<HTMLButtonElement>('[data-ouvrir-suggestion]');
+  const fenetre = document.querySelector<HTMLDialogElement>('[data-fenetre-suggestion]');
+
+  if (bouton && fenetre) {
+    /*
+     * Le bouton n'apparaît qu'une fois la page défilée, comme le retour en
+     * haut : sur le premier écran, rien ne gêne encore personne.
+     */
+    const basculer = () => {
+      bouton.hidden = window.scrollY < 600;
+    };
+    addEventListener('scroll', basculer, { passive: true });
+    basculer();
+
+    bouton.addEventListener('click', () => fenetre.showModal());
+
+    for (const fermer of fenetre.querySelectorAll('[data-fermer-suggestion]')) {
+      fermer.addEventListener('click', () => fenetre.close());
+    }
+
+    /*
+     * Un clic sur le fond ferme la fenêtre. `<dialog>` ne distingue pas le fond
+     * de son contenu : la cible du clic est le dialogue lui-même quand on vise
+     * à côté, et un enfant sinon.
+     */
+    fenetre.addEventListener('click', (evenement) => {
+      if (evenement.target === fenetre) fenetre.close();
+    });
+  }
+</script>
+
+<style>
+  /*
+   * Même gabarit que le retour en haut de page, à une différence près : ce
+   * bouton porte un mot. Une icône seule demanderait de deviner, et la règle
+   * du site veut qu'une icône accompagne toujours un intitulé.
+   */
+  .appel {
+    position: fixed;
+    right: var(--space-4);
+    /* Au-dessus du retour en haut, qui occupe le coin. */
+    bottom: calc(var(--space-4) + 2.75rem + var(--space-2));
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 2.75rem;
+    padding: 0 var(--space-4);
+    border-radius: 999px;
+    border: 2px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: var(--step--1);
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.25);
+  }
+
+  .appel[hidden] {
+    display: none;
+  }
+
+  .appel:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .appel svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  /* Sur un téléphone, le mot cède la place : deux boutons ronds l'un au-dessus
+     de l'autre tiennent dans le coin sans mordre sur le contenu. */
+  @media (max-width: 30rem) {
+    .appel .mot {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+
+    .appel {
+      width: 2.75rem;
+      padding: 0;
+      justify-content: center;
+      border-radius: 50%;
+    }
+  }
+
+  .fenetre {
+    width: min(34rem, calc(100vw - 2 * var(--space-4)));
+    max-height: calc(100vh - 2 * var(--space-6));
+    padding: var(--space-6);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  .fenetre::backdrop {
+    background: color-mix(in srgb, #000 60%, transparent);
+  }
+
+  .entete {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-2);
+  }
+
+  .entete h2 {
+    font-size: var(--step-1);
+    margin: 0;
+  }
+
+  .fermer {
+    display: grid;
+    place-items: center;
+    width: var(--cible-min);
+    height: var(--cible-min);
+    margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius);
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .fermer:hover {
+    color: var(--accent);
+  }
+
+  .fermer svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .intro {
+    margin: 0 0 var(--space-5);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+</style>

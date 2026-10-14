@@ -1,0 +1,323 @@
+---
+/**
+ * Page d'accessibilité, adossée à un audit réellement mené.
+ *
+ * ELLE NE DÉCLARE PAS UNE CONFORMITÉ. Le RGAA impose une déclaration aux
+ * organismes publics et aux grandes entreprises ; ce site n'entre dans aucune
+ * de ces catégories, et aucun audit RGAA n'a été commandé. Annoncer une
+ * conformité qui n'a pas été auditée serait exactement le genre de donnée
+ * inventée que le projet s'interdit.
+ *
+ * Elle dit donc ce qui a été mesuré, comment, quand, ce qui passe, ce qui a été
+ * corrigé et ce qui reste hors de portée. Les chiffres viennent des mesures
+ * faites dans le navigateur le 14 octobre 2026, et sont à refaire après toute
+ * refonte.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const DATE_AUDIT = '14 octobre 2026';
+
+/** Pages passées au crible, choisies pour couvrir chaque gabarit du site. */
+const PAGES_AUDITEES = [
+  { url: '/', nom: "L'accueil" },
+  { url: '/classement/', nom: 'Le classement, liste filtrable' },
+  { url: '/categories/', nom: 'Les catégories de poids' },
+  { url: '/records/', nom: 'Les records, grille à quatre tableaux' },
+  { url: '/athlete/daisy-blondan/', nom: "Une fiche d'athlète, avec courbe" },
+  { url: '/competitions/reunion-island-meet/2026-07-18/', nom: 'Une compétition' },
+  { url: '/suggestions/', nom: 'Un formulaire' },
+  { url: '/mises-a-jour/', nom: 'Une page de texte' },
+];
+
+/** Ce qui a été vérifié, et le résultat. */
+const CONTROLES = [
+  {
+    titre: 'Contraste des textes',
+    critere: 'WCAG 2.2, critère 1.4.3, niveau AA',
+    resultat: 'ok',
+    detail:
+      "Chaque texte visible a été comparé à la couleur réellement composée sous lui, transparences comprises, dans les deux thèmes. Aucun texte sous son seuil, 4,5 pour un corps courant et 3 pour un grand titre.",
+  },
+  {
+    titre: 'Structure des titres',
+    critere: 'WCAG 2.2, critère 1.3.1',
+    resultat: 'ok',
+    detail:
+      "Un seul titre de premier niveau par page, et aucun niveau sauté dans la descente. Les tableaux ont leurs en-têtes de colonne et de ligne, ce qui permet à un lecteur d'écran d'annoncer « Squat, 165 kg » plutôt que « 165 ».",
+  },
+  {
+    titre: 'Nom des liens, des boutons et des images',
+    critere: 'WCAG 2.2, critères 2.4.4 et 1.1.1',
+    resultat: 'ok',
+    detail:
+      "Aucun lien ni bouton sans intitulé lisible. Les icônes qui accompagnent un mot sont masquées aux lecteurs d'écran, pour éviter d'entendre deux fois la même chose ; celles qui portent une information ont un texte de remplacement.",
+  },
+  {
+    titre: 'Étiquettes de formulaire',
+    critere: 'WCAG 2.2, critère 3.3.2',
+    resultat: 'ok',
+    detail:
+      "Chaque champ des deux formulaires du site a son étiquette liée, et non un simple texte d'invite qui disparaît à la saisie.",
+  },
+  {
+    titre: 'Taille des cibles',
+    critere: 'WCAG 2.2, critère 2.5.8, niveau AA',
+    resultat: 'corrige',
+    detail:
+      "Les en-têtes de colonne cliquables mesuraient 23 px de haut, un pixel sous le minimum de 24. Corrigé le jour de l'audit. Les autres commandes du site visent 44 px, au-delà de ce qu'exige le niveau AA.",
+  },
+  {
+    titre: 'Affichage à 320 px de large',
+    critere: 'WCAG 2.2, critère 1.4.10',
+    resultat: 'ok',
+    detail:
+      "À la largeur d'un petit téléphone, ou d'un écran agrandi quatre fois, aucune page ne demande de défilement horizontal : les tableaux se replient en cartes plutôt que de déborder.",
+  },
+  {
+    titre: 'Navigation au clavier',
+    critere: 'WCAG 2.2, critères 2.1.1 et 2.4.7',
+    resultat: 'ok',
+    detail:
+      "Un lien d'évitement ouvre chaque page. Le focus reste visible partout, par un contour de 3 px. Les points de la courbe de progression se parcourent aux flèches depuis un seul arrêt de tabulation, pour ne pas imposer quarante-huit arrêts avant la suite de la page.",
+  },
+  {
+    titre: 'Rôles et états annoncés',
+    critere: 'WCAG 2.2, critère 4.1.2',
+    resultat: 'corrige',
+    detail:
+      "La courbe de progression se déclarait image tout en contenant des points cliquables, deux affirmations contradictoires qui rendaient ces points invisibles aux technologies d'assistance. Corrigé le 22 septembre 2026 : elle devient un groupe dès que le script rend ses points manipulables.",
+  },
+  {
+    titre: 'Mouvement et animation',
+    critere: 'WCAG 2.2, critère 2.3.3',
+    resultat: 'ok',
+    detail:
+      "Aucune animation automatique. Les rares transitions s'effacent quand le système annonce une préférence pour le mouvement réduit.",
+  },
+];
+
+const LIBELLES_RESULTAT: Record<string, string> = {
+  ok: 'Conforme',
+  corrige: 'Corrigé',
+};
+---
+
+<BaseLayout
+  titre="Accessibilité"
+  description="Ce qui a été mesuré sur SBD.re en matière d'accessibilité : méthode, résultats, corrections apportées et limites connues."
+>
+  <div class="wrap">
+    <header class="entete-page">
+      <h1>Accessibilité</h1>
+      <p class="chapeau">
+        Un site de classements se consulte autant au clavier, à la loupe ou avec
+        un lecteur d'écran qu'à la souris. Voici ce qui a été vérifié, comment,
+        et ce qui reste à faire.
+      </p>
+    </header>
+
+    <section class="bloc">
+      <h2>Ce que cette page est, et ce qu'elle n'est pas</h2>
+      <p class="texte">
+        Elle rend compte d'un <strong>audit mené par la mesure</strong> le {DATE_AUDIT},
+        sur huit pages couvrant chaque gabarit du site. Elle ne déclare aucune
+        conformité officielle : le référentiel français impose une déclaration
+        aux organismes publics et aux grandes entreprises, ce site n'entre dans
+        aucune de ces catégories, et aucun audit certifié n'a été commandé.
+        Annoncer une conformité qui n'a pas été auditée vaudrait moins que rien.
+      </p>
+      <p class="texte">
+        L'objectif visé est le niveau AA des WCAG 2.2, référentiel international
+        dont le référentiel français est la déclinaison.
+      </p>
+    </section>
+
+    <section class="bloc">
+      <h2>Comment la vérification a été faite</h2>
+      <p class="texte">
+        Tout a été mesuré dans un navigateur, sur les pages réelles, et non
+        estimé à la lecture du code. Les contrastes sont calculés sur la couleur
+        effectivement composée sous chaque texte, transparences comprises, ce qui
+        change le résultat : un aplat posé à 5 % sur un fond sombre donne une
+        valeur très différente de celle qu'on lirait dans la feuille de style.
+      </p>
+      <p class="texte">Les pages passées au crible :</p>
+      <ul class="pages">
+        {
+          PAGES_AUDITEES.map((p) => (
+            <li>
+              <a href={p.url}>{p.nom}</a>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="note">
+        Aucun outil d'analyse tiers n'a été chargé sur le site pour cet audit :
+        les scripts de mesure ont été exécutés depuis le navigateur, puis jetés.
+      </p>
+    </section>
+
+    <section class="bloc">
+      <h2>Résultats</h2>
+
+      <ol class="controles">
+        {
+          CONTROLES.map((c) => (
+            <li>
+              <div class="entete-controle">
+                <h3>{c.titre}</h3>
+                <span class="verdict" data-resultat={c.resultat}>
+                  {LIBELLES_RESULTAT[c.resultat]}
+                </span>
+              </div>
+              <p class="critere">{c.critere}</p>
+              <p class="detail">{c.detail}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <section class="bloc">
+      <h2>Ce qui n'a pas été vérifié</h2>
+      <p class="texte">
+        Dire ce qu'on n'a pas fait vaut mieux que de laisser croire qu'on a tout
+        fait.
+      </p>
+      <ul class="limites">
+        <li>
+          <strong>Aucun test avec de vraies personnes.</strong> Un audit à la
+          mesure dit qu'une page respecte des règles ; il ne dit pas qu'elle
+          s'utilise bien avec un lecteur d'écran au quotidien. C'est la limite
+          principale de cette page.
+        </li>
+        <li>
+          <strong>Aucun audit certifié.</strong> Les 106 critères du référentiel
+          français n'ont pas été passés un à un par un auditeur tiers.
+        </li>
+        <li>
+          <strong>La carte des salles</strong> montre des positions sur un fond
+          dessiné. Les salles sont également listées sous la carte, en texte, ce
+          qui donne la même information sans le visuel, mais cette liste n'a pas
+          été éprouvée au lecteur d'écran.
+        </li>
+        <li>
+          <strong>Les contenus venant d'OpenPowerlifting</strong>, noms et
+          intitulés de compétitions, sont repris tels quels. Une faute de casse
+          ou d'accent dans la source se retrouve ici.
+        </li>
+      </ul>
+    </section>
+
+    <section class="bloc">
+      <h2>Signaler un obstacle</h2>
+      <p class="texte">
+        Si une page vous résiste, la page{' '}
+        <a href="/suggestions/">Proposer une amélioration</a> est faite pour ça,
+        sans compte à créer et sans adresse obligatoire. Décrivez ce que vous
+        tentiez de faire et avec quel outil : c'est le genre de signalement qui
+        corrige le plus vite.
+      </p>
+      <p class="note">
+        Les corrections apportées figurent sur la page{' '}
+        <a href="/mises-a-jour/">Mises à jour</a>, comme le reste des changements
+        du site.
+      </p>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .texte {
+    max-width: 68ch;
+    margin-bottom: var(--space-4);
+  }
+
+  .pages {
+    margin: 0 0 var(--space-4) var(--space-6);
+    max-width: 68ch;
+  }
+
+  .pages li {
+    margin-bottom: var(--space-1);
+  }
+
+  /*
+   * Les contrôles sont une liste ORDONNÉE : leur numéro ne s'affiche pas, mais
+   * l'ordre reste porteur de sens pour qui parcourt la page au lecteur d'écran.
+   */
+  .controles {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .controles li {
+    padding: var(--space-5) var(--space-6);
+    border: 1px solid var(--border);
+    border-left-width: 3px;
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .entete-controle {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-4);
+  }
+
+  .controles h3 {
+    font-size: var(--step-0);
+    margin: 0;
+  }
+
+  .critere {
+    margin: var(--space-1) 0 var(--space-2);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .detail {
+    margin: 0;
+    max-width: 68ch;
+  }
+
+  /*
+   * LE MOT DIT LE VERDICT, la couleur ne fait que l'appuyer : « Conforme » et
+   * « Corrigé » se lisent sans distinguer le vert de l'ambre.
+   */
+  .verdict {
+    font-size: var(--step--1);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .verdict[data-resultat='ok'] {
+    color: var(--positif);
+  }
+
+  .verdict[data-resultat='corrige'] {
+    color: var(--alerte);
+  }
+
+  .controles li:has([data-resultat='ok']) {
+    border-left-color: var(--positif);
+  }
+
+  .controles li:has([data-resultat='corrige']) {
+    border-left-color: var(--alerte);
+  }
+
+  .limites {
+    margin: 0 0 0 var(--space-6);
+    max-width: 68ch;
+  }
+
+  .limites li {
+    margin-bottom: var(--space-3);
+  }
+</style>
