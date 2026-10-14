@@ -1,0 +1,276 @@
+---
+/**
+ * Le formulaire de suggestion, écrit UNE FOIS et posé à deux endroits : la page
+ * /suggestions/ et la fenêtre du bouton flottant.
+ *
+ * POURQUOI UN COMPOSANT PLUTÔT QUE DEUX COPIES. Deux formulaires qui envoient
+ * au même point d'entrée doivent poser les mêmes champs, les mêmes limites et
+ * les mêmes pièges à robots. Recopiés, ils divergent au premier changement, et
+ * c'est le serveur qui refuse sans qu'on comprenne pourquoi.
+ *
+ * LES IDENTIFIANTS SONT PRÉFIXÉS. Deux instances sur une même page donneraient
+ * deux `id="message"`, et une étiquette pointerait alors vers le mauvais champ.
+ * C'est une erreur invisible à l'œil et bloquante au lecteur d'écran.
+ *
+ * Le script vit en bas de ce fichier et s'adresse à TOUS les formulaires de la
+ * page : Astro ne l'inclut qu'une fois, quel que soit le nombre d'instances.
+ */
+
+interface Props {
+  /** Préfixe des identifiants, pour que deux instances cohabitent. */
+  prefixe: string;
+  /**
+   * `page` : la page concernée se devine depuis celle d'où l'on vient.
+   * `dialogue` : elle se devine depuis la page en cours, puisqu'on y est.
+   */
+  origine: 'page' | 'dialogue';
+}
+
+const { prefixe, origine } = Astro.props;
+const id = (nom: string) => `${prefixe}-${nom}`;
+---
+
+<form data-formulaire-suggestion data-origine={origine} novalidate>
+  <div class="champ">
+    <label for={id('nature')}>De quoi s'agit-il ?</label>
+    <select id={id('nature')} name="nature" required>
+      <option value="amelioration">Idée d'amélioration</option>
+      <option value="donnee">Donnée fausse ou manquante</option>
+      <option value="technique">Problème technique</option>
+      <option value="autre">Autre</option>
+    </select>
+  </div>
+
+  <div class="champ">
+    <label for={id('message')}>Votre suggestion</label>
+    <textarea id={id('message')} name="message" required rows="6" maxlength="4000"></textarea>
+    <p class="aide">
+      Pour une donnée fausse, le nom de l'athlète et la compétition concernée
+      suffisent à retrouver la ligne.
+    </p>
+  </div>
+
+  {/*
+    La page d'origine est posée par le script et reste modifiable à la main. Sur
+    un signalement technique, savoir d'où il part épargne un aller-retour.
+  */}
+  <div class="champ">
+    <label for={id('page')}>Page concernée <span class="option">facultatif</span></label>
+    <input id={id('page')} name="page" type="text" maxlength="200" data-page />
+  </div>
+
+  <div class="champ">
+    <label for={id('courriel')}>
+      Adresse électronique <span class="option">facultatif</span>
+    </label>
+    <input
+      id={id('courriel')}
+      name="courriel"
+      type="email"
+      maxlength="190"
+      autocomplete="email"
+    />
+    <p class="aide">
+      Laissez ce champ vide pour rester anonyme. Renseignée, l'adresse sert
+      uniquement à vous répondre.
+    </p>
+  </div>
+
+  {/*
+    Champ appât. Masqué en CSS et non par `hidden` : certains robots ignorent
+    les champs `hidden`, aucun ne calcule le CSS. `aria-hidden` et `tabindex`
+    l'écartent des lecteurs d'écran et du parcours au clavier.
+  */}
+  <div class="appat" aria-hidden="true">
+    <label for={id('site')}>Ne remplissez pas ce champ</label>
+    <input id={id('site')} name="site" type="text" tabindex="-1" autocomplete="off" />
+  </div>
+
+  {/*
+    Horodatage posé PAR LE SCRIPT à l'ouverture, jamais à la génération. Une
+    valeur figée au build serait vieille de plusieurs jours à la première
+    visite, et le serveur rejetterait tout le monde.
+  */}
+  <input name="depuis" type="hidden" value="" data-depuis />
+
+  <button type="submit">Envoyer la suggestion</button>
+
+  <p class="etat" data-etat role="status" aria-live="polite" hidden></p>
+
+  <p class="rgpd">
+    Aucune inscription, aucun cookie. Voir la{' '}
+    <a href="/confidentialite/">page de confidentialité</a>.
+  </p>
+</form>
+
+<script>
+  /*
+   * UN SEUL SCRIPT POUR TOUS LES FORMULAIRES de la page. Astro ne l'inclut
+   * qu'une fois, quel que soit le nombre d'instances du composant.
+   */
+  for (const form of document.querySelectorAll<HTMLFormElement>(
+    '[data-formulaire-suggestion]',
+  )) {
+    const etat = form.querySelector<HTMLElement>('[data-etat]')!;
+    const bouton = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+    const depuis = form.querySelector<HTMLInputElement>('[data-depuis]')!;
+    const page = form.querySelector<HTMLInputElement>('[data-page]')!;
+
+    depuis.value = String(Math.floor(Date.now() / 1000));
+
+    /*
+     * Dans la fenêtre flottante, la page concernée est celle qu'on a sous les
+     * yeux. Sur la page dédiée, c'est celle d'où l'on vient, quand elle
+     * appartient au site.
+     */
+    if (form.dataset.origine === 'dialogue') {
+      page.value = location.pathname;
+    } else {
+      try {
+        const venant = new URL(document.referrer || '', location.origin);
+        if (venant.origin === location.origin && venant.pathname !== location.pathname) {
+          page.value = venant.pathname;
+        }
+      } catch {
+        /* Referrer absent ou illisible : le champ reste vide. */
+      }
+    }
+
+    const afficher = (texte: string, ok: boolean) => {
+      etat.textContent = texte;
+      etat.dataset.ok = ok ? 'oui' : 'non';
+      etat.hidden = false;
+    };
+
+    form.addEventListener('submit', async (evenement) => {
+      evenement.preventDefault();
+      bouton.disabled = true;
+      afficher('Envoi en cours…', true);
+
+      try {
+        const reponse = await fetch('/api/suggestion.php', {
+          method: 'POST',
+          body: new FormData(form),
+        });
+        const donnees = await reponse.json();
+        afficher(donnees.message, donnees.ok === true);
+        if (donnees.ok) {
+          form.reset();
+          // Le formulaire remis à zéro perd son horodatage et sa page : on les
+          // repose, sans quoi un deuxième envoi serait refusé.
+          depuis.value = String(Math.floor(Date.now() / 1000));
+          if (form.dataset.origine === 'dialogue') page.value = location.pathname;
+        }
+      } catch {
+        afficher("L'envoi a échoué. Écrivez directement à hello@loremipsum.re.", false);
+      } finally {
+        // Réactivé quoi qu'il arrive : un bouton mort après une panne réseau
+        // enferme le visiteur.
+        bouton.disabled = false;
+      }
+    });
+  }
+</script>
+
+<style>
+  form {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .champ {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  label {
+    font-weight: 600;
+  }
+
+  .option {
+    font-weight: 400;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  input,
+  select,
+  textarea {
+    width: 100%;
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+  }
+
+  textarea {
+    resize: vertical;
+    line-height: 1.5;
+  }
+
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    border-color: var(--accent);
+  }
+
+  .aide {
+    margin: 0;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  button[type='submit'] {
+    justify-self: start;
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-6);
+    border: 1px solid var(--accent-fill);
+    border-radius: var(--radius);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  button[type='submit']:disabled {
+    opacity: 0.6;
+    cursor: progress;
+  }
+
+  .appat {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .etat {
+    margin: 0;
+    padding: var(--space-3) var(--space-4);
+    border-left: 3px solid var(--border);
+    font-weight: 600;
+  }
+
+  .etat[data-ok='oui'] {
+    border-left-color: var(--positif);
+    color: var(--positif);
+  }
+
+  .etat[data-ok='non'] {
+    border-left-color: var(--negatif);
+    color: var(--negatif);
+  }
+
+  .rgpd {
+    margin: 0;
+    font-size: var(--step--1);
+    color: var(--muted);
+    max-width: 68ch;
+  }
+</style>
