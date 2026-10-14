@@ -528,8 +528,17 @@ input:not([type='checkbox']):not([type='radio']) {
   min-height: var(--cible-min);
 }
 
+/*
+ * L'EN-TÊTE DE COLONNE CLIQUABLE : 24 px, et non 44.
+ *
+ * Il échappe à la règle des 44 px, qui tasserait une rangée d'en-têtes au point
+ * de voler sa place aux données. Il reste tenu par le critère 2.5.8 des WCAG
+ * 2.2, qui demande 24 px au minimum hors cibles en ligne dans une phrase.
+ * Mesuré à 23 px lors de l'audit du 14 octobre 2026, soit un pixel sous le
+ * seuil : d'où ce plancher explicite.
+ */
 .bouton-tri {
-  min-height: 0;
+  min-height: 24px;
 }
 
 /* Visible uniquement pour les lecteurs d'écran. */
