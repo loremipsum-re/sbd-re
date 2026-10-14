@@ -49,6 +49,28 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 
 export const JOURNAL: readonly EntreeJournal[] = [
   {
+    date: '2026-10-14',
+    nature: 'fonction',
+    version: '1.5',
+    titre: 'Proposer une amélioration, depuis n’importe quelle page',
+    texte:
+      "Un bouton discret suit la lecture en bas de l’écran et ouvre une petite fenêtre pour signaler une donnée fausse, une page qui résiste ou une idée. La page d’où part la demande est reprise toute seule. Le message suffit : l’adresse électronique reste facultative, et laissée vide, la suggestion est anonyme. Une page entière, « Proposer une amélioration », propose le même formulaire.",
+  },
+  {
+    date: '2026-10-14',
+    nature: 'fonction',
+    titre: 'Deux pages qui disent ce que vaut le site',
+    texte:
+      "Cette page de mises à jour ouvre le journal des changements visibles. Une page Accessibilité rend compte d’un audit mené par la mesure sur huit pages : ce qui a été vérifié, ce qui a été corrigé au passage, et ce qui n’a pas été testé.",
+  },
+  {
+    date: '2026-10-14',
+    nature: 'visuel',
+    titre: 'Catégories et records plus faciles à fouiller',
+    texte:
+      "La page des catégories se cherche et se filtre par sexe, et sa chronologie ne garde que les chiffres qui disent quelque chose. Les records se filtrent par sexe, équipement et catégorie, et chaque catégorie mène à sa page. Le thème sombre devient celui par défaut, sa bascule passe dans le menu, et le pied de page sépare ce qu’on vient chercher de ce qui parle du site.",
+  },
+  {
     date: '2026-09-22',
     nature: 'visuel',
     version: '1.4',
