@@ -3,6 +3,7 @@
  * Gabarit commun à toutes les pages : en-tête, navigation, pied de page, méta.
  */
 import BanniereConsentement from '../components/BanniereConsentement.astro';
+import BoutonSuggestion from '../components/BoutonSuggestion.astro';
 import Icone from '../components/Icone.astro';
 import Logo from '../components/Logo.astro';
 import SiteFooter from '../components/SiteFooter.astro';
@@ -326,6 +327,13 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
 
     <SiteFooter />
     <BanniereConsentement />
+
+    {/*
+      Le bouton de suggestion, partout SAUF sur sa propre page : y proposer
+      d'ouvrir une fenêtre contenant le formulaire déjà affiché dessous n'aurait
+      aucun sens.
+    */}
+    {Astro.url.pathname !== '/suggestions/' && <BoutonSuggestion />}
 
     {/*
       Retour en haut. C'est un LIEN vers l'ancre du haut de page, pas un bouton :
