@@ -132,7 +132,7 @@ const { debut, fin } = periode();
       <div class="credits">
         <p>
           Données issues du projet{' '}
-          <a href="https://www.openpowerlifting.org" rel="noopener">OpenPowerlifting</a>.
+          <a href="https://www.openpowerlifting.org" rel="noopener">OpenPowerlifting</a>
         </p>
         <p>Site indépendant, non affilié à la FFForce ni à SBD Apparel.</p>
         {/*
@@ -142,7 +142,7 @@ const { debut, fin } = periode();
           qui précède.
         */}
         <p class="version">
-          Version du site : <span class="badge">v{versionAffichee}</span>
+          Version du site <span class="badge">v{versionAffichee}</span>
         </p>
       </div>
 
@@ -160,15 +160,21 @@ const { debut, fin } = periode();
         </nav>
 
         {/*
-          LIEN SUIVI, et volontairement. `noopener` ferme l'accès de la page
-          ouverte à celle-ci, il n'a rien à voir avec le référencement : c'est
-          `nofollow` qui demanderait aux moteurs d'ignorer le lien, et il n'est
-          pas là. Le site est fait par loremipsum.re, la mention est sincère et
-          le lien la suit.
+          LIEN SUIVI, et volontairement.
+
+          `dofollow` figure ici à la demande de l'auteur. À savoir : cette
+          valeur n'existe dans aucune spécification et aucun moteur ne la lit.
+          Ce qui rend un lien suivi, c'est l'ABSENCE de `nofollow`, et elle est
+          acquise depuis toujours sur ce lien. `noopener`, lui, ferme l'accès de
+          la page ouverte à celle-ci et ne regarde pas le référencement.
+
+          Autrement dit, le lien était déjà suivi avant cet ajout et le reste
+          après. Si un moteur ne le remonte pas, la cause est ailleurs : délai
+          d'exploration, ou lien de pied de page jugé peu significatif.
         */}
         <p class="realisation">
           Une réalisation de{' '}
-          <a href="https://loremipsum.re" rel="noopener">loremipsum.re</a>.
+          <a href="https://loremipsum.re" rel="dofollow noopener">loremipsum.re</a>
         </p>
       </div>
     </div>
