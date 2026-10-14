@@ -201,6 +201,37 @@ $entetes = implode("\r\n", $listeEntetes);
 $sujet = mb_encode_mimeheader('[sbd.re] ' . NATURES[$cleNature], 'UTF-8', 'B');
 $corps = quoted_printable_encode(preg_replace('/\r\n|\r|\n/', "\r\n", $corps) ?? $corps);
 
+/*
+ * -----------------------------------------------------------------------------
+ * CONSERVATION, AVANT L'ENVOI
+ * -----------------------------------------------------------------------------
+ * Une suggestion qui ne part pas est une suggestion perdue. `mail()` échoue
+ * parfois sans rien dire d'exploitable, et la boîte de réception n'est pas un
+ * registre : elle se trie, s'archive et s'efface. La demande est donc écrite
+ * sur le serveur AVANT la tentative d'envoi, dans un fichier que le web ne sert
+ * pas, protégé par son propre .htaccess.
+ *
+ * CE QUI N'Y ENTRE PAS, et c'est délibéré : aucune adresse IP, aucun en-tête de
+ * requête, aucun identifiant de session. Le fichier contient ce que la personne
+ * a écrit, rien de plus. Son adresse n'y figure que si elle l'a donnée.
+ *
+ * L'ÉCHEC D'ÉCRITURE NE BLOQUE RIEN. Un disque plein ou un droit manquant ne
+ * doit pas fermer la seule porte de suggestion du site : on continue vers
+ * l'envoi, qui reste le chemin principal.
+ */
+$journal = __DIR__ . '/journal/suggestions.jsonl';
+@file_put_contents(
+    $journal,
+    json_encode([
+        'date'     => date('c'),
+        'nature'   => $cleNature,
+        'page'     => $page !== '' ? $page : null,
+        'courriel' => $courrielValide ? $courriel : null,
+        'message'  => $message,
+    ], JSON_UNESCAPED_UNICODE) . "\n",
+    FILE_APPEND | LOCK_EX,
+);
+
 /* Le compteur monte AVANT l'envoi : voir le raisonnement dans contact.php. */
 if ($compteur !== false) {
     $horodatages[] = time();
@@ -215,7 +246,16 @@ if ($compteur !== false) {
 $envoye = @mail(DESTINATAIRE, $sujet, $corps, $entetes, '-f' . EXPEDITEUR);
 
 if (!$envoye) {
-    repondre(500, "L'envoi a échoué. Écrivez directement à hello@loremipsum.re.");
+    /*
+     * La suggestion est déjà conservée sur le serveur : elle n'est pas perdue,
+     * seule la notification a échoué. On le dit sans promettre une lecture
+     * immédiate, et on laisse une adresse de repli.
+     */
+    repondre(
+        500,
+        "Votre suggestion est enregistrée, mais la notification a échoué. "
+        . "Écrivez à hello@loremipsum.re si elle est urgente.",
+    );
 }
 
 repondre(200, 'Suggestion envoyée. Merci du coup de main.', true);
