@@ -107,6 +107,46 @@ const partenaire = await partenaireDeLaPage('article', article.id);
   </div>
 </BaseLayout>
 
+<script>
+  /*
+   * UNE ZONE QUI DÉFILE DOIT ÊTRE ATTEIGNABLE AU CLAVIER. Un tableau d'article
+   * plus large que l'écran défile horizontalement. Sans arrêt de tabulation,
+   * les colonnes de droite restent hors de portée pour qui navigue au clavier.
+   * Les navigateurs récents posent cet arrêt d'eux-mêmes, celui-ci couvre les
+   * autres.
+   *
+   * Le `tabindex` se pose UNIQUEMENT sur un tableau qui déborde vraiment. Un
+   * arrêt de tabulation sur un tableau entièrement visible ferait perdre du
+   * temps sans rien apporter. D'où la réévaluation au redimensionnement.
+   *
+   * Aucun `role` posé ici. `role="region"` remplacerait le rôle de tableau et
+   * ferait perdre l'annonce des lignes et des colonnes, donc davantage que ce
+   * qu'il apporterait. L'étiquette suffit à nommer la zone.
+   */
+  const tableaux = [...document.querySelectorAll<HTMLTableElement>('.corps table')];
+
+  function marquerLesTableauxLarges() {
+    for (const tableau of tableaux) {
+      if (tableau.scrollWidth > tableau.clientWidth + 1) {
+        const titre = tableau.previousElementSibling?.textContent?.trim();
+        tableau.tabIndex = 0;
+        tableau.setAttribute(
+          'aria-label',
+          titre ? `${titre}, tableau à faire défiler` : 'Tableau à faire défiler',
+        );
+      } else {
+        tableau.removeAttribute('tabindex');
+        tableau.removeAttribute('aria-label');
+      }
+    }
+  }
+
+  if (tableaux.length > 0) {
+    marquerLesTableauxLarges();
+    addEventListener('resize', marquerLesTableauxLarges, { passive: true });
+  }
+</script>
+
 <style>
   .page {
     padding-block: var(--space-8) var(--space-16);
@@ -146,6 +186,66 @@ const partenaire = await partenaireDeLaPage('article', article.id);
   .corps :global(p) {
     max-width: 68ch;
   }
+  /*
+   * TABLEAUX D'ARTICLE. Un tableau Markdown arrive sans classe et sans
+   * conteneur. Les règles de `.liste` ne l'atteignent donc pas, et le style du
+   * navigateur donnerait des colonnes collées sans séparateur.
+   *
+   * Le texte des cellules passe à la ligne, un nom d'athlète devant rester
+   * entier. Les valeurs chiffrées tiennent sur une ligne par l'espace
+   * insécable écrit dans le Markdown, « 180 kg » et non « 180 » puis « kg ».
+   *
+   * Le défilement horizontal reste en secours pour un tableau large écrit
+   * plus tard depuis l'administration.
+   */
+  .corps :global(table) {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
+    margin-block: var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    border-collapse: collapse;
+    background: var(--surface);
+    font-size: var(--step--1);
+  }
+
+  .corps :global(th),
+  .corps :global(td) {
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  /*
+   * Sous 40 rem, le rembourrage mange la place utile. Resserré, un relevé de
+   * huit lignes et quatre colonnes tient dans la largeur d'un téléphone, donc
+   * le défilement horizontal ne se déclenche plus.
+   */
+  @media (max-width: 40rem) {
+    .corps :global(th),
+    .corps :global(td) {
+      padding: var(--space-2);
+    }
+  }
+
+  .corps :global(thead th) {
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .corps :global(tbody tr) {
+    border-top: 1px solid var(--border);
+  }
+
+  .corps :global(tbody tr:first-child) {
+    border-top: 0;
+  }
+
   .corps :global(strong) {
     color: var(--text);
     font-weight: 700;

@@ -7,6 +7,7 @@ athletes:
   - Philippe René
   - Leena Waitzmann
   - Myriam Fontaine
+  - Camille Pailha
 ---
 
 Meilleures barres soulevées en compétition officielle à La Réunion, toutes
@@ -15,7 +16,7 @@ catégories confondues.
 ## Hommes
 
 - Squat 302,5 kg, Gabriel Begue, catégorie 93 kg
-- Bench 220 kg, Gabriel Begue, catégorie 93 kg
+- Bench 220 kg, Gabriel Begue, catégorie 93 kg, équipé
 - Deadlift 315 kg, Philippe René, catégorie 105 kg
 - Total full power 807,5 kg, Gabriel Begue
 
@@ -27,6 +28,9 @@ catégories confondues.
 - Total full power 490,5 kg, Leena Waitzmann
 
 Cinq de ces records datent du 18 juillet 2026.
+
+Le développé couché hommes a été réalisé avec chemise. La meilleure barre
+raw vaut 205 kg, par le même athlète le 15 mars 2025.
 
 Le record au total demande les trois mouvements lors de la même compétition.
 
