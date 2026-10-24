@@ -51,6 +51,22 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-10-24',
     nature: 'fonction',
+    version: '1.7',
+    titre: 'Cinq infographies pour comprendre la discipline',
+    texte:
+      "Les points Dots, le total en neuf essais, l'équipement, les catégories de poids et les divisions d'âge ont chacun leur image. Elles ouvrent les articles qui en parlent, et se déplient depuis le classement, les records et le simulateur. Leurs chiffres se mettent à jour avec les données chaque mois.",
+  },
+  {
+    date: '2026-10-24',
+    nature: 'visuel',
+    version: '1.7',
+    titre: 'Les liens vers d’autres sites ouvrent un nouvel onglet',
+    texte:
+      "La page de sbd.re reste ouverte derrière. La flèche ↗ signale ces liens à l'œil, et les lecteurs d'écran annoncent « Nouvel onglet, quitte sbd.re ».",
+  },
+  {
+    date: '2026-10-24',
+    nature: 'fonction',
     version: '1.6',
     titre: 'Trouver sa catégorie en un geste',
     texte:
