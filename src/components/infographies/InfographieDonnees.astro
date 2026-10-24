@@ -160,12 +160,14 @@ const destinations: Destination[] = [
       </p>
       <p>
         Pour l'île, seules les compétitions de la FFForce sont examinées. Une
-        compétition entre par l'une de ces deux règles.
+        compétition entre par l'une des deux règles suivantes.
       </p>
 
+      {/* Une règle sans compétition sort de la jauge : sa largeur minimale y
+          dessinerait une part qui n'existe pas. Sa carte dit « 0 ». */}
       <p class="jauge" aria-hidden="true">
         {
-          regles.map((r) => (
+          regles.filter((r) => r.competitions > 0).map((r) => (
             <span class="segment" data-regle={r.id} style={`--part:${r.competitions}`} />
           ))
         }
@@ -190,15 +192,19 @@ const destinations: Destination[] = [
       </ul>
 
       {/* La commune hors de la liste des règles : elle signale, elle n'ajoute
-          rien. Les pointillés le montrent, le texte le dit. */}
+          rien. Les pointillés le montrent, le texte le dit. LA VILLE EST
+          COMPARÉE PAR SON NOM, d'où « porte le nom » : Saint-Denis existe
+          aussi en métropole, et le script la signale tout autant. */}
       <p class="signal">
-        <strong>Par la commune.</strong> Une commune de l'île signale une
-        compétition. Une vérification à la main décide de son ajout.
+        <strong>Par la commune.</strong> Une autre compétition, tenue dans une
+        ville qui porte le nom d'une commune de l'île, est signalée. Elle est
+        ajoutée à la liste si une vérification à la main confirme qu'elle est
+        réunionnaise.
       </p>
 
       <section class="bilan" aria-labelledby="donnees-bilan-ile">
         <p class="bilan-titre" id="donnees-bilan-ile">Données de l'île</p>
-        <dl class="stats">
+        <dl class="stats chiffres-cles">
           <div>
             <dt>Compétitions</dt>
             <dd class="num">{nombre(meets.length)}</dd>
@@ -373,9 +379,12 @@ const destinations: Destination[] = [
     background: var(--bleu);
   }
 
+  /* Côte à côte dès que chaque carte loge « compétitions » en entier. Mesuré
+     à 320 px de large, la largeur du zoom à 400 %, deux colonnes fixes
+     faisaient sortir le mot de sa carte : elles s'empilent sous 360 px. */
   .regles {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(8.5rem, 100%), 1fr));
     gap: var(--space-3);
     margin: 0;
     padding: 0;
@@ -447,14 +456,18 @@ const destinations: Destination[] = [
     font-weight: 700;
   }
 
+  /* LES CHIFFRES DE L'ÎLE PRENNENT LA GRAMMAIRE COMMUNE, `.chiffres-cles` de
+     tokens.css : deux colonnes sur téléphone, le dernier étalé, trois dès
+     40rem. Trois colonnes fixes faisaient chevaucher « Compétitions » et
+     « Résultats » à 320 px de large. */
   .stats {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--space-2);
+    --colonnes: 3;
     margin: 0;
   }
+  /* La sous-grille garde sa propre gouttière entre l'intitulé et sa valeur :
+     héritée de la grille, elle les écartait de 20 px dans un encadré étroit. */
   .stats > div {
-    min-width: 0;
+    row-gap: var(--space-1);
   }
 
   .stats dt {
@@ -463,7 +476,7 @@ const destinations: Destination[] = [
   }
 
   .stats dd {
-    margin: var(--space-1) 0 0;
+    margin: 0;
     font-size: var(--step-2);
     line-height: 1;
     white-space: nowrap;
