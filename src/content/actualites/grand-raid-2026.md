@@ -33,8 +33,8 @@ La Diagonale des Fous 2026 a enregistré 11 % d'inscrites. Les compétitions de
 force athlétique de l'île ont réuni 34 femmes sur 112 athlètes cette année,
 soit 30 %.
 
-Cette part se maintient depuis 2017. Elle a atteint 32 % en 2023 et vaut 30 %
-cette année, pour un minimum de 21 % en 2024.
+Depuis 2017, cette part varie de 21 % en 2024 à 32 % en 2023. Elle vaut 30 %
+cette année.
 
 Les autres courses du Grand Raid s'en rapprochent. Le relais Zembrocal compte
 44 % de femmes, le Métis Trail 36 %, la Mascareignes 28 %.
