@@ -5,8 +5,10 @@
  * UN TABLEAU À DEUX COLONNES, une ligne par point de comparaison : l'usage,
  * le poids de corps, la taille. L'officiel pèse, la communauté demande une
  * tranche, et la ligne les met face à face. Les usages reprennent le texte de
- * la page, la pesée l'article sur les catégories (« La pesée a lieu le jour
- * de la compétition »), les tranches lib/categories.ts.
+ * la page : le classement communauté y est « ouvert à tous : les performances
+ * réalisées en salle et les compétitions non homologuées ». La pesée vient de
+ * l'article sur les catégories (« La pesée a lieu le jour de la
+ * compétition »), les tranches de lib/categories.ts.
  *
  * LES TRANCHES APPLIQUÉES AUX RÉSULTATS OFFICIELS. Rangés dans les tranches
  * de la communauté, les poids pesés sur l'île montrent ce qu'une tranche
@@ -118,7 +120,7 @@ const titre =
         </dd>
         <dd>
           <span class="sr-only">Communauté, en préparation :</span>
-          <p class="mode">Ouvert à ceux qui s'entraînent hors compétition</p>
+          <p class="mode">Ouvert aux performances de salle et aux compétitions non homologuées</p>
         </dd>
       </div>
 
@@ -129,7 +131,8 @@ const titre =
           <p class="mode">Pesé le jour de la compétition</p>
           <p class="chiffre">
             <span class="num">{nombre(poidsDifferents)}</span>{' '}
-            {pluriel(poidsDifferents, 'valeur différente', 'valeurs différentes')} sur l'île, de{' '}
+            {pluriel(poidsDifferents, 'poids différent relevé', 'poids différents relevés')} sur
+            l'île, de{' '}
             {nombre(plusLeger, 2)} à {nombre(plusLourd, 2)}&nbsp;kg
           </p>
         </dd>
@@ -164,9 +167,12 @@ const titre =
   </div>
 
   <div class="repartition">
+    {/* L'intitulé nomme la provenance : SOUS LA COLONNE COMMUNAUTÉ, des
+        effectifs sans origine passeraient pour des inscrits d'un classement
+        qui n'existe pas encore. */}
     <p class="intitule" id="communaute-repartition">
-      Les {nombre(poids.length)} résultats de l'île par tranche de poids de corps, hommes et
-      femmes confondus
+      Les {nombre(poids.length)} résultats de compétition de l'île par tranche de poids de
+      corps, hommes et femmes confondus
     </p>
     <ol
       class="colonnes"
@@ -187,7 +193,7 @@ const titre =
         ))
       }
     </ol>
-    {/* Les graduations tombent sur les bornes, entre deux colonnes : la
+    {/* Les graduations tombent sur les bornes, entre deux colonnes. La
         première colonne n'a pas de borne basse à afficher. */}
     <p class="axe" aria-hidden="true" style={`--colonnes:${colonnes.length}`}>
       {colonnes.map((c, i) => <span>{i > 0 && c.min !== null && <span>{c.min}</span>}</span>)}
@@ -276,7 +282,9 @@ const titre =
   }
 
   /* À 320 px, la colonne tombe à 106 px pour un mot de 108 : le cadre et
-     l'écart se resserrent pour le loger. */
+     l'écart se resserrent pour le loger. « Communauté » ne tient plus à côté
+     de son icône. LES DEUX ICÔNES PASSENT AU-DESSUS DU NOM, pour que les deux
+     têtes restent alignées. */
   @media (max-width: 22.5rem) {
     .comparatif {
       padding: var(--space-2);
@@ -285,12 +293,16 @@ const titre =
     .ligne {
       column-gap: var(--space-2);
     }
+    .tete {
+      flex-direction: column;
+      align-items: flex-start;
+    }
   }
 
   /* Le statut se range à côté du nom, et passe dessous s'il manque de place. */
   .statut {
     padding: 0 var(--space-2);
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     border-radius: var(--radius);
     font-family: var(--font-body);
     font-size: var(--step--1);
