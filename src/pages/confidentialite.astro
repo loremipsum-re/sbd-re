@@ -89,17 +89,6 @@ import { nombreAthletes } from '../lib/data';
       Base légale : votre consentement, que vous pouvez retirer à tout moment.
     </p>
 
-    {/*
-      L'INFOGRAPHIE DU CONSENTEMENT, DÉPLIÉE. La page se lit d'un trait, sans
-      liste que la figure repousserait : elle se pose dans la section qu'elle
-      illustre, sans pastille à ouvrir.
-      JUSTE AU-DESSUS DU BLOC DE CHOIX, et à cette place seulement. Sa dernière
-      étape renvoie aux « deux boutons juste en dessous » : déplacée, la figure
-      rendrait cette phrase fausse. Posée après le détail de ce qui est
-      collecté, elle laisse aussi ce détail à sa place, en tête de section.
-    */}
-    <InfographieConsentement />
-
     <div class="action-consentement">
       <p class="etat" data-etat-consentement>Chargement de votre choix actuel…</p>
       <div class="boutons">
@@ -107,6 +96,19 @@ import { nombreAthletes } from '../lib/data';
         <button type="button" data-consentement="non">Refuser la mesure</button>
       </div>
     </div>
+
+    {/*
+      L'INFOGRAPHIE DU CONSENTEMENT, DÉPLIÉE. La page se lit d'un trait, sans
+      liste que la figure repousserait : elle se pose dans la section qu'elle
+      illustre, sans pastille à ouvrir.
+      JUSTE SOUS LE BLOC DE CHOIX, et à cette place seulement. Les boutons de
+      retrait suivent ainsi la phrase qui annonce le retrait possible à tout
+      moment. Posée au-dessus, la figure les repoussait de 1 521 px à 375 px de
+      large et de 1 179 px à 1 280 px. Sa dernière étape renvoie aux « deux
+      boutons juste au-dessus » : déplacée, la figure rendrait cette phrase
+      fausse.
+    */}
+    <InfographieConsentement />
 
     <h2>Les athlètes publiés sur ce site</h2>
     <p>

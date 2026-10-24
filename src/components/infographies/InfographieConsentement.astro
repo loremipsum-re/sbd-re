@@ -37,9 +37,14 @@
  * dans l'ordre de ses boutons, Refuser puis Accepter. La troisième étape suit
  * l'ordre des boutons de la page, Accepter puis Refuser.
  *
- * L'APERÇU DE LA BANNIÈRE reprend son titre et ses deux boutons. Il est
- * décoratif et masqué aux lecteurs d'écran, la phrase voisine disant la même
- * chose. Il doit suivre BanniereConsentement.astro si celle-ci change.
+ * LA FIGURE SE POSE JUSTE SOUS LE BLOC DE CHOIX de confidentialite.astro, et
+ * sa troisième étape le désigne « juste au-dessus ». Placée avant, elle
+ * repoussait les deux boutons de retrait de 1 521 px à 375 px de large.
+ *
+ * L'APERÇU DE LA BANNIÈRE reprend son titre et ses deux boutons, en gris pour
+ * ne pas imiter les vrais boutons voisins. Il est décoratif et masqué aux
+ * lecteurs d'écran, la phrase voisine disant la même chose. Il doit suivre
+ * BanniereConsentement.astro si celle-ci change.
  *
  * AUCUN CHIFFRE N'EST AFFICHÉ, hors des numéros d'étape : le consentement
  * n'a pas de donnée à compter.
@@ -71,7 +76,8 @@ interface Props {
             Clarity absent
           </p>
           <p class="detail">
-            Le navigateur contacte uniquement sbd.re. Aucun cookie n'est déposé.
+            Chaque page se charge uniquement depuis sbd.re. Aucun cookie n'est
+            déposé.
           </p>
         </div>
 
@@ -120,8 +126,8 @@ interface Props {
             Clarity chargé
           </p>
           <p class="detail">
-            <code>window.sbdChargerMesure()</code> télécharge son script depuis
-            www.clarity.ms, sans recharger la page.
+            <code>window.sbdChargerMesure()</code> télécharge le script de
+            Clarity depuis www.clarity.ms, sans recharger la page.
           </p>
         </li>
       </ul>
@@ -139,7 +145,7 @@ interface Props {
         Changer d'avis
       </p>
 
-      <p>Les deux boutons juste en dessous remplacent votre réponse.</p>
+      <p>Les deux boutons juste au-dessus de cette image remplacent votre réponse.</p>
 
       <ul class="bascules">
         <li class="bascule">
@@ -355,7 +361,11 @@ interface Props {
     line-height: 1.2;
   }
 
-  /* Deux boutons de même largeur, comme dans la vraie bannière. */
+  /* Deux boutons de même largeur, comme dans la vraie bannière.
+     EN GRIS, et non à l'accent de la vraie bannière. Les boutons du bloc de
+     choix, posés juste au-dessus de la figure, ont cette apparence : une copie
+     à l'identique, inerte, se prendrait pour un contrôle et laisserait croire
+     à un refus ou à un accord enregistré. */
   .mini-boutons {
     display: flex;
     gap: var(--space-2);
@@ -364,10 +374,10 @@ interface Props {
     flex: 1 1 0;
     min-width: 0;
     padding: 0.125rem var(--space-2);
-    border: 1px solid var(--accent);
+    border: 1px solid var(--muted);
     border-radius: calc(var(--radius) / 2);
     background: var(--bg);
-    color: var(--accent);
+    color: var(--muted);
     font-size: var(--step--1);
     font-weight: 700;
     text-align: center;
