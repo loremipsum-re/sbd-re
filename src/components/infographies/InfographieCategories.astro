@@ -11,8 +11,8 @@
  * LES CATÉGORIES EN VIGUEUR, LUES DANS LES DONNÉES. Les classes ne sont pas
  * codées en dur, pour la raison donnée dans lib/categories.ts. Une classe
  * compte si elle a été disputée sur l'île lors des cinq dernières saisons :
- * le 72 kg femmes, abandonné en 2021, sort de la règle, le 47 kg, disputé en
- * 2023, y reste.
+ * le 72 kg femmes, disputé pour la dernière fois en janvier 2021, sort de la
+ * règle, le 47 kg, disputé en 2023, y reste.
  *
  * L'EXEMPLE est la catégorie la plus disputée de chaque sexe, et le poids cité
  * le milieu de sa tranche.
@@ -21,7 +21,9 @@
  * catégorie ne montre que la règle de son sexe, et la catégorie de la page
  * remplace l'exemple. Quatre cas, chacun avec sa phrase :
  *
- *  - bornée des deux côtés : la phrase de l'exemple, inchangée ;
+ *  - bornée des deux côtés : la phrase de l'exemple. Si sa voisine du dessous
+ *    a changé, une seconde phrase donne l'ancienne borne et sa date : le
+ *    84 kg femmes commençait à 72,01 kg tant que le 72 kg était disputé ;
  *  - la plus légère : le poids cité est le milieu d'une tranche de la largeur
  *    de sa case. AUCUNE BORNE BASSE N'EST ÉCRITE : la règle ne montre que les
  *    catégories disputées sur l'île, et les données ne disent rien d'une
@@ -102,6 +104,65 @@ function regle(sexe: Sex): { cases: Case[]; exemple: Case; ecarts: number[] } {
 const basDessine = (c: Case) => c.bas ?? c.classe.kg - c.largeur;
 const hautDessine = (c: Case) => (c.classe.open ? c.classe.kg + c.largeur : c.classe.kg);
 
+/** Première et dernière date où une catégorie a été disputée sur l'île. */
+function datesDe(sexe: Sex, id: string): { premiere: string; derniere: string } | null {
+  const dates = results
+    .filter((r) => r.sex === sexe && r.weightClassKg === id)
+    .map((r) => r.date)
+    .sort();
+  const [premiere, derniere] = [dates[0], dates.at(-1)];
+  return premiere && derniere ? { premiere, derniere } : null;
+}
+
+/**
+ * La borne basse d'une catégorie entre deux dates : la plus lourde des
+ * catégories bornées plus légères qu'elle, disputées dans l'intervalle.
+ */
+function voisineBasse(sexe: Sex, debut: string, fin: string, kg: number): number | null {
+  let bas: number | null = null;
+  for (const r of results) {
+    if (r.sex !== sexe || r.date < debut || r.date > fin) continue;
+    const c = parseWeightClass(r.weightClassKg);
+    if (c && !c.open && c.kg < kg && (bas === null || c.kg > bas)) bas = c.kg;
+  }
+  return bas;
+}
+
+/**
+ * LA BORNE D'AVANT UNE RÉFORME, pour une catégorie de la règle. Tant que le
+ * 72 kg femmes était disputé, le 84 kg commençait à 72,01 kg, et sa liste
+ * garde une athlète pesée à 73,8 kg en 2017. La phrase de la règle actuelle
+ * seule contredirait la page. La borne est lue comme celle d'une catégorie
+ * absente, pendant les années d'activité de chaque catégorie sortie de la règle.
+ */
+function borneAnterieure(
+  sexe: Sex,
+  c: Case,
+  cases: Case[],
+): { jusquau: string; bas: number } | null {
+  if (c.bas === null || c.classe.open) return null;
+  const actuelles = new Set(cases.map((k) => k.classe.id));
+  const sorties = [...new Set(results.filter((r) => r.sex === sexe).map((r) => r.weightClassKg))]
+    .filter((id) => parseWeightClass(id) !== null && !actuelles.has(id))
+    .map((id) => datesDe(sexe, id))
+    .filter((p): p is { premiere: string; derniere: string } => p !== null)
+    .sort((p, q) => q.derniere.localeCompare(p.derniere));
+
+  for (const { premiere, derniere } of sorties) {
+    const disputee = results.some(
+      (r) =>
+        r.sex === sexe &&
+        r.weightClassKg === c.classe.id &&
+        r.date >= premiere &&
+        r.date <= derniere,
+    );
+    if (!disputee) continue;
+    const bas = voisineBasse(sexe, premiere, derniere, c.classe.kg);
+    if (bas !== null && bas !== c.bas) return { jusquau: derniere, bas };
+  }
+  return null;
+}
+
 /** Une catégorie absente de la règle, et la tranche qu'elle couvrait. */
 interface Ancienne {
   classe: WeightClass;
@@ -111,38 +172,33 @@ interface Ancienne {
   bas: number | null;
   /** Les catégories de la règle qui se partagent sa tranche. */
   relais: Case[];
-  /** Position de la barre sous la règle, en `calc()`. */
-  gauche: string;
-  largeur: string;
+  /** Position de la barre sous la règle, en `calc()`. Absente hors de la règle. */
+  barre: { gauche: string; largeur: string } | null;
 }
 
 function ancienne(sexe: Sex, classe: WeightClass, cases: Case[]): Ancienne {
-  const dates = results
-    .filter((r) => r.sex === sexe && r.weightClassKg === classe.id)
-    .map((r) => r.date)
-    .sort();
-  const premiere = dates[0];
-  const derniere = dates.at(-1);
-  if (!premiere || !derniere) {
+  const dates = datesDe(sexe, classe.id);
+  if (!dates) {
     throw new Error(`Aucun résultat pour la catégorie ${sexe} ${classe.id}.`);
   }
+  const { premiere, derniere } = dates;
 
   // Les catégories disputées en même temps qu'elle, d'une date à l'autre.
-  const voisines = new Set<string>();
-  for (const r of results) {
-    if (r.sex === sexe && r.date >= premiere && r.date <= derniere) voisines.add(r.weightClassKg);
-  }
-  const plusLegeres = [...voisines]
-    .map(parseWeightClass)
-    .filter((c): c is WeightClass => c !== null && !c.open && c.kg < classe.kg)
-    .sort(compareWeightClass);
-  const bas = classe.open ? classe.kg : (plusLegeres.at(-1)?.kg ?? null);
+  const bas = classe.open ? classe.kg : voisineBasse(sexe, premiere, derniere, classe.kg);
 
   // La tranche (bas, haut], ramenée à l'étendue dessinée de la règle.
   const debutRegle = basDessine(cases[0]);
   const finRegle = hautDessine(cases[cases.length - 1]);
   const de = Math.max(bas ?? debutRegle, debutRegle);
   const a = Math.min(classe.open ? finRegle : classe.kg, finRegle);
+
+  /*
+   * UNE TRANCHE HORS DE LA RÈGLE N'A NI BARRE NI RELAIS. Le cas viendra : le
+   * 47 kg femmes, plus léger que toute la règle, en sortira après cinq saisons
+   * sans compétition. Mesuré en réduisant la fenêtre à trois saisons : sans ce
+   * garde-fou, la génération s'arrête sur sa page.
+   */
+  if (a <= de) return { classe, derniere, bas, relais: [], barre: null };
 
   const relais = cases.filter((c) => basDessine(c) < a && hautDessine(c) > de);
 
@@ -168,8 +224,10 @@ function ancienne(sexe: Sex, classe: WeightClass, cases: Case[]): Ancienne {
     derniere,
     bas,
     relais,
-    gauche: `calc(${2 * d.k}px + ${d.unites / total} * ${reste})`,
-    largeur: `calc(${2 * (f.k - d.k)}px + ${(f.unites - d.unites) / total} * ${reste})`,
+    barre: {
+      gauche: `calc(${2 * d.k}px + ${d.unites / total} * ${reste})`,
+      largeur: `calc(${2 * (f.k - d.k)}px + ${(f.unites - d.unites) / total} * ${reste})`,
+    },
   };
 }
 
@@ -196,13 +254,20 @@ const sexes = choix
         ecarts,
         exemple: enAvant,
         premiere: enAvant !== undefined && enAvant.bas === null,
+        avant: enAvant ? borneAnterieure(sexe, enAvant, cases) : null,
         ancienne: enAvant ? null : ancienne(sexe, classe, cases),
       };
     })
   : [
       { sexe: 'M' as const, titre: 'Hommes', athlete: ATHLETE.M, ...regle('M') },
       { sexe: 'F' as const, titre: 'Femmes', athlete: ATHLETE.F, ...regle('F') },
-    ].map((s) => ({ ...s, id: `categories-${s.sexe}`, premiere: false, ancienne: null }));
+    ].map((s) => ({
+      ...s,
+      id: `categories-${s.sexe}`,
+      premiere: false,
+      avant: null,
+      ancienne: null,
+    }));
 
 /** Milieu de la case dessinée : le poids cité dans la phrase. */
 const milieu = (c: Case) => Math.round((basDessine(c) + hautDessine(c)) / 2);
@@ -227,15 +292,23 @@ function suiteAncienne(a: Ancienne): string {
     );
   }
   const noms = a.relais.map((c) => `le ${nomClasse(c.classe)}`);
-  const liste = `${noms.slice(0, -1).join(', ')} et ${noms.at(-1)}`;
-  phrases.push(
-    `Parmi les catégories disputées depuis ${depuis}, ces poids ` +
-      (noms.length > 1
-        ? `se répartissent entre ${liste}${kg}.`
-        : `relèvent du ${nomClasse(a.relais[0].classe)}${kg}.`),
-  );
+  if (noms.length > 1) {
+    const liste = `${noms.slice(0, -1).join(', ')} et ${noms.at(-1)}`;
+    phrases.push(
+      `Parmi les catégories disputées depuis ${depuis}, ces poids se répartissent entre ${liste}${kg}.`,
+    );
+  } else if (noms.length === 1) {
+    phrases.push(
+      `Parmi les catégories disputées depuis ${depuis}, ces poids relèvent du ${nomClasse(a.relais[0].classe)}${kg}.`,
+    );
+  }
   return phrases.join(' ');
 }
+
+/** La phrase de la borne d'avant une réforme, d'un bloc pour garder ses espaces. */
+const phraseAvant = (avant: { jusquau: string; bas: number }, c: Case) =>
+  ` Jusqu'au ${dateLongue(avant.jusquau)}, elle regroupait les athlètes de ` +
+  `${nombre(avant.bas + 0.01, 2)} à ${c.classe.kg} kg.`;
 ---
 
 <Infographie
@@ -244,7 +317,7 @@ function suiteAncienne(a: Ancienne): string {
   lienArticle={lienArticle}
 >
   {
-    sexes.map(({ sexe, id, titre, athlete, cases, exemple, ecarts, premiere, ancienne }) => (
+    sexes.map(({ sexe, id, titre, athlete, cases, exemple, ecarts, premiere, avant, ancienne }) => (
       <section class="sexe" aria-labelledby={id}>
         <p class="intitule" id={id}>
           {titre}
@@ -271,11 +344,11 @@ function suiteAncienne(a: Ancienne): string {
 
         {/* La tranche d'une catégorie absente, à l'échelle de la règle. La
             phrase qui suit dit la même chose en mots. */}
-        {ancienne && (
+        {ancienne?.barre && (
           <div class="ancienne" aria-hidden="true">
             <span
               class="barre num-tab"
-              style={`left:${ancienne.gauche};width:${ancienne.largeur}`}
+              style={`left:${ancienne.barre.gauche};width:${ancienne.barre.largeur}`}
             >
               {ancienne.classe.label.replace(' kg', '')}
             </span>
@@ -305,7 +378,7 @@ function suiteAncienne(a: Ancienne): string {
             Pesé{sexe === 'F' && 'e'} à{' '}
             <strong class="num-tab">{milieu(exemple)}&nbsp;kg</strong>, {athlete} concourt en{' '}
             <strong class="num-tab">{exemple.classe.kg}&nbsp;kg</strong>. Sa catégorie
-            regroupe les athlètes de {borneBasse(exemple)} à {exemple.classe.kg}&nbsp;kg.
+            regroupe les athlètes de {borneBasse(exemple)} à {exemple.classe.kg}&nbsp;kg.{avant && phraseAvant(avant, exemple)}
           </p>
         )}
 
@@ -401,7 +474,6 @@ function suiteAncienne(a: Ancienne): string {
      ses chiffres. */
   .regle [data-exemple][data-ouverte] .num-tab {
     padding: 0 var(--space-1);
-    border-radius: 2px;
     background: var(--accent-fill);
   }
 
