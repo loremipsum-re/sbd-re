@@ -702,3 +702,45 @@ gabarits futurs sont tous traités. L'annonce passe par `aria-describedby` vers
 une phrase unique et masquée, ce qui laisse intact le nom accessible des liens
 porteurs d'un `aria-label`. Mesuré sur le build : 1 931 liens sortants, tous
 marqués, aucun lien interne touché.
+
+### La seconde série : une infographie par page
+
+Même jour, seconde demande de l'auteur : « continue pour toutes les pages ».
+Quinze infographies se sont ajoutées, et celle des catégories sait désormais
+mettre en avant la catégorie de sa page. Seules les mentions légales, la page
+404 et la liste des actualités restent sans image, faute de notion à expliquer.
+
+Chacune a été dessinée dans une copie isolée du dépôt, puis relue par un
+second agent chargé d'y trouver des défauts. Mesures communes à toutes :
+débordement par élément, contraste calculé (4,93:1 au plus bas, en clair),
+captures à 375 et 1 280 px dans les deux thèmes, et chaque chiffre recompté
+par un script indépendant du composant. Le contrôle d'ensemble, après
+assemblage, a vérifié 160 figures sur 36 pages sans un seul défaut.
+
+Ce que la série a appris :
+
+- **Les infographies ont démenti des textes déjà publiés.** Posée au-dessus de
+  l'article sur les titres internationaux, l'image comptait trois titres
+  mondiaux là où le chapeau en annonçait un : Alain Cuvelier est champion du
+  monde Masters 4 depuis octobre 2025. Quatre articles, la page À propos et la
+  note des records ont été corrigés d'après les données. Un chiffre écrit à la
+  main dans un article vieillit, celui d'une infographie se recalcule.
+- **Le titre se définit par une règle prudente.** Un « titre » est une place 1
+  à un championnat d'Europe de l'EPF ou du monde de l'IPF, reconnu à son nom.
+  Cinq premières places d'autres fédérations ou d'autres épreuves restent hors
+  du compte, et la légende le dit.
+- **Le coût vertical se mesure contre la version précédente.** Une pastille
+  coûte 44 px plus la marge de sa rangée, soit 60 px, et rien quand elle tient
+  sur la ligne du glossaire. Sur les pages de compétition, la pastille passe
+  avant les résultats (+44 px) : placé après le tableau, le bloc commençait à
+  18 000 px sur le Reunion Island Meet.
+- **La source de vérité reste le code qui fait le travail.** L'infographie des
+  suggestions lit ses limites dans `suggestion.php` par un import `?raw`, celle
+  du consentement a été vérifiée dans le navigateur : aucune requête vers
+  clarity.ms avant l'accord.
+- **Deux classes globales, `.note` et `.bloc`**, s'appliquent à l'intérieur des
+  infographies. Une classe locale du même nom en hérite sa largeur maximale ou
+  sa marge, piège rencontré deux fois.
+- **Premières requêtes de conteneur du site**, dans les infographies des
+  communes et des formats : leur mise en page suit la largeur du cadre, article
+  de 68 caractères ou page entière, et non celle de la fenêtre.

@@ -125,21 +125,37 @@ Points à ne pas casser :
 
 ## Infographies
 
-Cinq infographies, écrites en HTML et CSS dans `src/components/infographies/`,
-autour d'un cadre commun, `Infographie.astro`. Le catalogue est
-`lib/infographies.ts`, source unique pour le schéma des articles, le menu du
-CMS et l'aiguillage `InfographieArticle.astro`.
+Vingt infographies, écrites en HTML et CSS dans `src/components/infographies/`,
+autour d'un cadre commun, `Infographie.astro`. Une par page qui demande une
+explication : seules les mentions légales, la page 404 et la liste des
+actualités n'en ont pas.
 
 - **Dans un article** : le champ `infographie` du frontmatter la pose entre le
-  chapeau et le texte.
+  chapeau et le texte. Le catalogue `lib/infographies.ts` liste celles qu'un
+  article peut choisir, et nourrit le schéma, le menu du CMS et l'aiguillage
+  `InfographieArticle.astro`. L'infographie `competition` lit le champ
+  `competition` de l'article, et la génération échoue s'il manque.
 - **Sur une page de données** : dans une pastille repliée, `Repli.astro`, qui
   partage la classe `.repli` du glossaire. Plusieurs pastilles se rangent dans
-  `.rangee-replis`.
-- **Les chiffres se lisent dans les données**, jamais recopiés. Seul l'exemple
-  des neuf essais est construit, et sa légende le dit.
+  `.rangee-replis`. Une infographie propre à une page (consentement,
+  partenariats, fiche d'athlète…) est appelée directement par la page, hors
+  catalogue.
+- **Les chiffres se lisent dans les données**, jamais recopiés. Les calculs
+  lourds vivent dans `src/lib/infographie-<nom>.ts`. Trois exemples sont
+  construits, et leur légende le dit : les neuf essais, le comparateur, le
+  calcul des Dots. L'infographie des suggestions lit ses limites dans
+  `public/api/suggestion.php` lui-même : modifier ce fichier peut arrêter la
+  génération, et c'est voulu.
+- `InfographieCategories` accepte `sexe` et `classe` pour mettre en avant la
+  catégorie de la page.
+- **Les classes globales `.note` et `.bloc`** de `tokens.css` s'appliquent aussi
+  dans une infographie. Une classe locale du même nom en hérite.
 
-Pour en ajouter une : une ligne au catalogue, un composant, une entrée dans
-l'aiguillage.
+Pour en ajouter une : un composant, et pour un article une ligne au catalogue
+et une entrée dans l'aiguillage. Vérifier comme les autres : débordement par
+élément, contraste calculé, captures à 375 et 1 280 px dans les deux thèmes,
+coût vertical mesuré contre la version précédente, chiffres recomptés par un
+script indépendant.
 
 ## Partage sur les réseaux sociaux
 
