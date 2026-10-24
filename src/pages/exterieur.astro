@@ -1,6 +1,8 @@
 ---
 import BadgeOfficiel from '../components/BadgeOfficiel.astro';
 import InteractiveTable from '../components/InteractiveTable.astro';
+import Repli from '../components/Repli.astro';
+import InfographieInternational from '../components/infographies/InfographieInternational.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { equipmentGroup, parseWeightClass } from '../lib/categories';
 import {
@@ -47,6 +49,18 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
         </p>
       </div>
     </header>
+
+    {/*
+      PAYS, FÉDÉRATIONS ET TITRES EN IMAGES, REPLIÉS. La pastille tient sur
+      une ligne entre l'avertissement et la recherche : la liste reste le
+      premier contenu de la page, et qui veut savoir d'où viennent ces
+      résultats l'ouvre. La rangée accueillera une seconde pastille.
+    */}
+    <div class="rangee-replis">
+      <Repli titre="Pays et titres en images">
+        <InfographieInternational lienArticle="international" />
+      </Repli>
+    </div>
 
     <InteractiveTable
       recherche="Nom d'un athlète"

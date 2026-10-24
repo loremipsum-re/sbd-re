@@ -2,6 +2,7 @@
 titre: "Les titres internationaux des athlètes réunionnais"
 description: "Un titre mondial, plusieurs titres européens, et 32 ans de carrière internationale. Ce que les Réunionnais ont gagné hors de l'île."
 date: 2026-10-22
+infographie: international
 athletes:
   - Kenzo Thiburce
   - Alain Cuvelier

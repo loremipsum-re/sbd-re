@@ -1,13 +1,676 @@
 ---
 /**
- * ÉBAUCHE, à dessiner : infographie « international ».
+ * Les résultats obtenus hors de La Réunion, en une image.
  *
- * Le fichier existe pour que l'aiguillage et les pages se compilent pendant
- * que l'infographie se dessine. Il ne rend rien.
+ * TROIS LECTURES DE LA MÊME LISTE : où, quand, et les titres. Tout est compté
+ * sur data/results-exterieur.json, celui de la page /exterieur/ : un résultat
+ * de plus à la mise à jour mensuelle change les barres sans qu'une ligne d'ici
+ * bouge.
+ *
+ * LE TITRE SUIT UNE RÈGLE ÉTROITE, ÉCRITE DANS LA LÉGENDE. Une première place
+ * compte comme titre quand la compétition est un championnat d'Europe de
+ * l'EPF ou un championnat du monde de l'IPF, d'après son nom. Les coupes
+ * universitaires, le championnat d'Europe de l'Ouest et les championnats des
+ * autres fédérations restent hors du compte : la donnée ne dit pas ce qu'ils
+ * valent. Une note dit combien de premières places sont ainsi écartées.
+ *
+ * Deux titres la même année, en raw puis en équipé par exemple, comptent
+ * pour deux : ce sont deux premières places.
+ *
+ * LES PAYS SONT CEUX DE LA SOURCE. OpenPowerlifting range sous « France » un
+ * plateau de Nouvelle-Calédonie, et distingue « England » de « UK ». La
+ * légende le signale au lieu de corriger la donnée.
+ *
+ * COMPACTE PAR CONSTRUCTION. Les pays tiennent en rangées d'une ligne, les
+ * fédérations en une liste à la suite. Écrite avec une barre par fédération
+ * et des rangées sur deux lignes, la figure mesurait 2 006 px de haut à
+ * 375 px de large. Elle en mesure 1 440 ainsi.
  */
+import Infographie from './Infographie.astro';
+import { paysFr, resultatsExterieur } from '../../lib/exterieur';
+import { dateLongue, nombre, pluriel } from '../../lib/format';
 import type { IdInfographie } from '../../lib/infographies';
+import type { ResultExterieur } from '../../lib/types';
 
 interface Props {
   lienArticle?: IdInfographie;
 }
+
+const { lienArticle } = Astro.props;
+
+const total = resultatsExterieur.length;
+
+/* ---------------------------------------------------------------------------
+ * PAYS ET FÉDÉRATIONS : les plus fréquents, puis le reste regroupé.
+ * ------------------------------------------------------------------------ */
+
+interface Rangee {
+  libelle: string;
+  resultats: number;
+  /** La rangée qui regroupe le reste. */
+  reste?: boolean;
+}
+
+/**
+ * Les `garder` valeurs les plus fréquentes d'un champ, puis une rangée pour
+ * toutes les autres. Le regroupement se fait sur le libellé affiché, qui
+ * réunit « UK » et « United Kingdom ». À égalité, l'ordre alphabétique
+ * départage, pour que la génération rende toujours la même image.
+ */
+function repartition(
+  champ: 'meetCountry' | 'federation',
+  garder: number,
+  libelle: (v: string) => string,
+  reste: (n: number) => string,
+): Rangee[] {
+  const parLibelle = new Map<string, number>();
+  for (const r of resultatsExterieur) {
+    if (!r[champ]) continue;
+    const cle = libelle(r[champ]);
+    parLibelle.set(cle, (parLibelle.get(cle) ?? 0) + 1);
+  }
+  const rangees = [...parLibelle.entries()]
+    .map(([nom, n]) => ({ libelle: nom, resultats: n }))
+    .sort((a, b) => b.resultats - a.resultats || a.libelle.localeCompare(b.libelle, 'fr'));
+
+  const autres = rangees.slice(garder);
+  if (autres.length === 0) return rangees;
+  return [
+    ...rangees.slice(0, garder),
+    {
+      libelle: reste(autres.length),
+      resultats: autres.reduce((somme, a) => somme + a.resultats, 0),
+      reste: true,
+    },
+  ];
+}
+
+const pays = repartition('meetCountry', 4, paysFr, (n) => `${n} autres pays`);
+const federations = repartition(
+  'federation',
+  4,
+  (f) => f,
+  (n) => `${n} ${pluriel(n, 'autre fédération', 'autres fédérations')}`,
+);
+
+/* ---------------------------------------------------------------------------
+ * ANNÉES : une colonne par année, les années sans résultat comprises, pour
+ * que l'axe reste régulier.
+ * ------------------------------------------------------------------------ */
+
+const dates = resultatsExterieur.map((r) => r.date).sort();
+const fin = dates.at(-1) ?? '';
+const premiere = Number(dates[0]?.slice(0, 4));
+const derniere = Number(fin.slice(0, 4));
+
+const parAnnee = new Map<number, number>();
+for (const r of resultatsExterieur) {
+  const a = Number(r.date.slice(0, 4));
+  parAnnee.set(a, (parAnnee.get(a) ?? 0) + 1);
+}
+
+const annees = Array.from({ length: derniere - premiere + 1 }, (_, i) => premiere + i).map(
+  (annee) => ({ annee, resultats: parAnnee.get(annee) ?? 0 }),
+);
+const plusFournie = Math.max(...annees.map((a) => a.resultats));
+const anneesMax = annees.filter((a) => a.resultats === plusFournie).map((a) => a.annee);
+
+/*
+ * La dernière année s'arrête au dernier résultat relevé. Hachurée tant
+ * qu'elle n'atteint pas décembre, pour qu'une saison incomplète ne se lise
+ * pas comme un recul. Ancrée sur la donnée, jamais sur l'horloge : la
+ * génération reste reproductible.
+ */
+const partielle = Number(fin.slice(5, 7)) < 12;
+
+/** Graduations : la première année, chaque début de décennie, la dernière. */
+const graduations = annees
+  .map((a, i) => ({ ...a, i }))
+  .filter(
+    ({ annee }) =>
+      annee === premiere ||
+      annee === derniere ||
+      (annee % 10 === 0 && annee - premiere > 3 && derniere - annee > 3),
+  );
+const position = (i: number) => ((i + 0.5) / annees.length) * 100;
+
+/* ---------------------------------------------------------------------------
+ * TITRES
+ * ------------------------------------------------------------------------ */
+
+type Niveau = 'monde' | 'europe';
+
+/** Le championnat qui fait un titre, reconnu à son nom. */
+const CHAMPIONNATS: Record<string, { niveau: Niveau; nom: RegExp }> = {
+  IPF: { niveau: 'monde', nom: /^World\b.*\bChampionships?$/ },
+  EPF: { niveau: 'europe', nom: /^(?:Men's |Women's )?European\b.*\bChampionships?$/ },
+};
+
+function niveauDuTitre(r: ResultExterieur): Niveau | null {
+  if (r.place !== '1') return null;
+  const championnat = CHAMPIONNATS[r.federation];
+  return championnat && championnat.nom.test(r.meetName) ? championnat.niveau : null;
+}
+
+const titres = resultatsExterieur
+  .map((r) => ({ r, niveau: niveauDuTitre(r) }))
+  .filter((t): t is { r: ResultExterieur; niveau: Niveau } => t.niveau !== null);
+
+const mondiaux = titres.filter((t) => t.niveau === 'monde').length;
+const europeens = titres.filter((t) => t.niveau === 'europe').length;
+
+/** Les autres premières places à une compétition au nom européen ou mondial. */
+const ecartees = resultatsExterieur.filter(
+  (r) => r.place === '1' && niveauDuTitre(r) === null && /\b(World|European)\b/.test(r.meetName),
+).length;
+
+/** Les années d'une série de titres, et le nombre de titres de chacune. */
+function anneesDe(liste: ResultExterieur[]): { annee: string; fois: number }[] {
+  const parAn = new Map<string, number>();
+  for (const r of [...liste].sort((a, b) => a.date.localeCompare(b.date))) {
+    const a = r.date.slice(0, 4);
+    parAn.set(a, (parAn.get(a) ?? 0) + 1);
+  }
+  return [...parAn.entries()].map(([annee, fois]) => ({ annee, fois }));
+}
+
+const parAthlete = new Map<string, { r: ResultExterieur; niveau: Niveau }[]>();
+for (const t of titres) parAthlete.set(t.r.name, [...(parAthlete.get(t.r.name) ?? []), t]);
+
+/* Le plus titré d'abord. À égalité, le titre le plus récent passe devant. */
+const palmares = [...parAthlete.entries()]
+  .map(([nom, liste]) => ({
+    nom,
+    nombre: liste.length,
+    dernier: liste.map((t) => t.r.date).sort().at(-1) ?? '',
+    niveaux: (['monde', 'europe'] as const)
+      .map((niveau) => ({
+        niveau,
+        annees: anneesDe(liste.filter((t) => t.niveau === niveau).map((t) => t.r)),
+      }))
+      .filter((n) => n.annees.length > 0),
+  }))
+  .sort((a, b) => b.nombre - a.nombre || b.dernier.localeCompare(a.dernier));
+
+const NIVEAUX: Record<Niveau, string> = { monde: 'Monde', europe: 'Europe' };
+const FOIS = ['', '', 'deux', 'trois', 'quatre'];
+
+/** « titres européens et mondiaux », accordé à ce que la donnée contient. */
+function nature(): string {
+  const n = titres.length;
+  if (mondiaux > 0 && europeens > 0) return `${pluriel(n, 'titre')} européens et mondiaux`;
+  if (mondiaux > 0) return pluriel(n, 'titre mondial', 'titres mondiaux');
+  return pluriel(n, 'titre européen', 'titres européens');
+}
+
+const titre =
+  titres.length > 0
+    ? `${nombre(total)} résultats hors de l'île, dont ${titres.length} ${nature()}`
+    : `${nombre(total)} résultats hors de l'île`;
 ---
+
+<Infographie
+  titre={titre}
+  source="Résultats relevés par OpenPowerlifting, pays tels que la source les enregistre. Un titre est une première place à un championnat d'Europe de l'EPF ou à un championnat du monde de l'IPF, d'après le nom de la compétition."
+  lienArticle={lienArticle}
+>
+  <div class="contexte">
+    <section class="ou" aria-labelledby="international-pays">
+      <p class="intitule" id="international-pays">Par pays</p>
+      <ol class="barres">
+        {
+          pays.map((p) => (
+            <li data-reste={p.reste ? '' : undefined} style={`--part:${p.resultats / pays[0].resultats}`}>
+              {/* Les espaces explicites séparent les cellules dans le texte
+                  copié. La grille les ignore. */}
+              <span class="libelle">{p.libelle}</span>{' '}
+              <span class="piste" aria-hidden="true">
+                <span class="barre" />
+              </span>{' '}
+              <span class="valeur num-tab">
+                {nombre(p.resultats)}
+                <span class="sr-only"> {pluriel(p.resultats, 'résultat')}</span>
+              </span>
+            </li>
+          ))
+        }
+      </ol>
+
+      <p class="intitule second" id="international-federations">Par fédération</p>
+      <ul class="federations" aria-labelledby="international-federations">
+        {
+          federations.map((f) => (
+            <li data-reste={f.reste ? '' : undefined}>
+              {f.libelle}{' '}<strong class="num-tab">{nombre(f.resultats)}</strong>
+              <span class="sr-only"> {pluriel(f.resultats, 'résultat')}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section class="quand" aria-labelledby="international-annees">
+      <p class="intitule" id="international-annees">
+        Par année, de {premiere} à {derniere}
+      </p>
+      <ol class="annees" style={`--n:${annees.length}`}>
+        {
+          annees.map((a) => (
+            <li
+              data-max={anneesMax.includes(a.annee) ? '' : undefined}
+              data-partielle={partielle && a.annee === derniere ? '' : undefined}
+              style={`--hauteur:${(a.resultats / plusFournie) * 100}%`}
+            >
+              <span class="sr-only">
+                {a.annee} :{' '}
+                {a.resultats > 0
+                  ? `${nombre(a.resultats)} ${pluriel(a.resultats, 'résultat')}`
+                  : 'aucun résultat'}
+              </span>
+              <span class="colonne" aria-hidden="true" />
+            </li>
+          ))
+        }
+      </ol>
+      <p class="graduations" aria-hidden="true">
+        {
+          graduations.map((g) => (
+            <span
+              data-bout={g.annee === premiere ? 'debut' : g.annee === derniere ? 'fin' : undefined}
+              style={`--position:${position(g.i)}%`}
+            >
+              {g.annee}
+            </span>
+          ))
+        }
+      </p>
+      <p class="lecture">
+        Année la plus fournie : {anneesMax.join(' et ')}, avec{' '}
+        <strong class="num-tab">{nombre(plusFournie)}</strong>&nbsp;{pluriel(plusFournie, 'résultat')}.
+        {
+          partielle && (
+            <>
+              {' '}
+              La barre hachurée s'arrête au {dateLongue(fin).replaceAll(' ', '\u00a0')}, date
+              du dernier résultat relevé.
+            </>
+          )
+        }
+      </p>
+    </section>
+  </div>
+
+  {
+    titres.length > 0 && (
+      <section class="titres" aria-labelledby="international-titres">
+        <p class="intitule" id="international-titres">
+          Titres européens et mondiaux
+        </p>
+
+        <ul class="chiffres">
+          {mondiaux > 0 && (
+            <li data-niveau="monde">
+              <strong class="num">{mondiaux}</strong>{' '}
+              <span class="quoi">
+                {pluriel(mondiaux, 'titre mondial', 'titres mondiaux')}{' '}
+                <span class="qui">IPF</span>
+              </span>
+            </li>
+          )}
+          {europeens > 0 && (
+            <li data-niveau="europe">
+              <strong class="num">{europeens}</strong>{' '}
+              <span class="quoi">
+                {pluriel(europeens, 'titre européen', 'titres européens')}{' '}
+                <span class="qui">EPF</span>
+              </span>
+            </li>
+          )}
+        </ul>
+
+        <ol class="palmares">
+          {palmares.map((a) => (
+            <li>
+              <span class="nom">{a.nom}</span>
+              {a.niveaux.map((n) => (
+                <>
+                  {' '}
+                  <span class="groupe">
+                    <span class="niveau" data-niveau={n.niveau}>{NIVEAUX[n.niveau]}</span>{' '}
+                    {/* Sur une seule ligne : un retour à la ligne entre deux
+                        balises glisserait une espace avant chaque virgule. */}
+                    <span class="annees-titres">
+                      {n.annees.map((x, i) => (<>{i > 0 && ', '}<span class="annee">{x.annee}{x.fois > 1 && (<><span aria-hidden="true">&nbsp;×{x.fois}</span><span class="sr-only">, {FOIS[x.fois] ?? x.fois} titres</span></>)}</span></>))}
+                    </span>
+                  </span>
+                </>
+              ))}
+            </li>
+          ))}
+        </ol>
+
+        {ecartees > 0 && (
+          <p class="ecartees">
+            {nombre(ecartees)}{' '}
+            {pluriel(
+              ecartees,
+              'autre première place à une compétition européenne ou mondiale reste',
+              'autres premières places à des compétitions européennes ou mondiales restent',
+            )}{' '}
+            hors du compte.
+          </p>
+        )}
+      </section>
+    )
+  }
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  .intitule {
+    margin-bottom: var(--space-3);
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .intitule.second {
+    margin-top: var(--space-6);
+  }
+
+  /*
+   * OÙ ET QUAND, côte à côte dès qu'il y a la place : sur la page, les pays
+   * à gauche, les années à droite. Dans la colonne d'un article, 19 rem par
+   * côté ne tiennent plus et les deux s'empilent : mesuré à 300 px chacune,
+   * les fédérations y prenaient trois lignes face à un graphique tassé.
+   */
+  .contexte {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(19rem, 100%), 1fr));
+    gap: var(--space-8);
+  }
+  .ou,
+  .quand {
+    min-width: 0;
+  }
+
+  /* UNE RANGÉE PAR PAYS, sur une ligne : le nom, la barre à l'échelle du
+     premier, l'effectif. La colonne des noms est fixe pour que les barres
+     partent toutes du même filet. */
+  .barres {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .barres li {
+    display: grid;
+    grid-template-columns: 8.5rem minmax(0, 1fr) 2.5rem;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  .libelle {
+    min-width: 0;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  .valeur {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .piste {
+    display: block;
+    height: 0.75rem;
+    background: var(--bg);
+    border-left: 2px solid var(--border);
+  }
+
+  .barre {
+    display: block;
+    height: 100%;
+    width: calc(var(--part) * 100%);
+    /* Une rangée rare reste visible : 9 résultats sur 387 font 2 %. */
+    min-width: 3px;
+    background: var(--accent-fill);
+  }
+
+  /* La rangée du reste : un regroupement, en gris, et son nom le dit. */
+  [data-reste] .barre {
+    background: color-mix(in srgb, var(--muted) 55%, var(--surface));
+  }
+  .barres [data-reste] .libelle {
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  /* LES FÉDÉRATIONS, en étiquettes à la suite, de la plus fréquente à la
+     plus rare. */
+  .federations {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .federations li {
+    padding: var(--space-1) var(--space-2);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .federations [data-reste] {
+    color: var(--muted);
+  }
+  .federations strong {
+    color: var(--text);
+  }
+
+  /*
+   * LES ANNÉES. Une colonne par année. À 375 px, trente colonnes font 8 px
+   * chacune : assez pour la forme, trop peu pour un libellé. Les effectifs
+   * passent par le texte masqué de chaque colonne, et les graduations n'en
+   * nomment que quelques-unes.
+   */
+  .annees {
+    display: grid;
+    grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+    align-items: end;
+    gap: 1px;
+    height: 6rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-bottom: 2px solid var(--border);
+  }
+  /* Plus haut sur grand écran, où il fait face à la colonne des pays. */
+  @media (min-width: 48rem) {
+    .annees {
+      height: 8rem;
+    }
+  }
+
+  .annees li {
+    display: flex;
+    align-items: flex-end;
+    height: 100%;
+    min-width: 0;
+  }
+
+  /* Le gris des colonnes est mêlé au fond, comme dans l'histogramme des Dots :
+     seule l'année la plus fournie prend l'aplat de l'accent. */
+  .colonne {
+    --teinte: color-mix(in srgb, var(--muted) 55%, var(--surface));
+    display: block;
+    width: 100%;
+    height: var(--hauteur);
+    border-radius: 2px 2px 0 0;
+    background: var(--teinte);
+  }
+  [data-max] .colonne {
+    --teinte: var(--accent-fill);
+  }
+  [data-partielle] .colonne {
+    background: repeating-linear-gradient(-45deg, var(--teinte) 0 2px, transparent 2px 4px);
+    outline: 1px solid var(--teinte);
+    outline-offset: -1px;
+  }
+
+  .graduations {
+    position: relative;
+    height: 1.5rem;
+    margin-top: var(--space-1);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .graduations span {
+    position: absolute;
+    top: 0;
+    left: var(--position);
+    transform: translateX(-50%);
+  }
+  /* Les deux bouts restent dans le cadre. */
+  .graduations [data-bout='debut'] {
+    left: 0;
+    transform: none;
+  }
+  .graduations [data-bout='fin'] {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+
+  .lecture {
+    margin-top: var(--space-2);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .lecture strong {
+    color: var(--text);
+  }
+
+  /* LES TITRES. Deux chiffres, puis le palmarès de chaque athlète. */
+  .titres {
+    margin-top: var(--space-8);
+    padding-top: var(--space-6);
+    border-top: 2px solid var(--border);
+  }
+
+  .chiffres {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
+    gap: var(--space-2);
+    max-width: 32rem;
+    margin: 0 0 var(--space-4);
+    padding: 0;
+    list-style: none;
+  }
+
+  .chiffres li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+    padding: var(--space-2) var(--space-3);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+  .chiffres .num {
+    font-size: var(--step-3);
+    line-height: 1;
+  }
+  .quoi {
+    display: grid;
+    min-width: 0;
+    font-size: var(--step--1);
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .qui {
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  /* Le titre mondial porte l'aplat, l'européen le filet : la même
+     distinction que les étiquettes du palmarès, et le mot la double. */
+  .chiffres [data-niveau='monde'] {
+    border-color: var(--accent-fill);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+  }
+  .chiffres [data-niveau='monde'] .qui {
+    color: var(--on-accent);
+  }
+
+  /* LE PALMARÈS. Une rangée par athlète : le nom, puis ses titres par
+     niveau, qui passent à la ligne quand la place manque. */
+  .palmares {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr));
+    gap: 0 var(--space-6);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .palmares li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-3);
+    min-width: 0;
+    padding-block: var(--space-2);
+    border-top: 1px solid var(--border);
+  }
+
+  .nom {
+    font-weight: 700;
+  }
+
+  .groupe {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--space-1);
+    font-size: var(--step--1);
+  }
+
+  .niveau {
+    padding: 0 var(--space-2);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    font-weight: 700;
+  }
+  .niveau[data-niveau='monde'] {
+    border-color: var(--accent-fill);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+  }
+
+  .annees-titres {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .annee {
+    white-space: nowrap;
+  }
+
+  .ecartees {
+    margin-top: var(--space-2);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+</style>
