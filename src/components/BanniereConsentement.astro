@@ -36,36 +36,23 @@
 </div>
 
 <script>
-  const CLE = 'sbd-mesure';
-  const banniere = document.querySelector<HTMLElement>('[data-banniere-consentement]');
+  import { EVENEMENT_CONSENTEMENT, enregistrerChoix, lireChoix } from '../lib/consentement';
 
-  function lireChoix(): string | null {
-    try {
-      return localStorage.getItem(CLE);
-    } catch {
-      // Navigation privée ou stockage refusé : on considère qu'aucun choix
-      // n'a été exprimé, donc rien n'est chargé.
-      return null;
-    }
-  }
+  const banniere = document.querySelector<HTMLElement>('[data-banniere-consentement]');
 
   if (banniere && lireChoix() === null) banniere.hidden = false;
 
   for (const bouton of banniere?.querySelectorAll<HTMLButtonElement>('[data-consentement]') ??
     []) {
     bouton.addEventListener('click', () => {
-      const choix = bouton.dataset.consentement === 'oui' ? 'oui' : 'non';
-      try {
-        localStorage.setItem(CLE, choix);
-      } catch {
-        // Sans stockage, le choix ne vaut que pour la visite en cours.
-      }
-      if (banniere) banniere.hidden = true;
-      // Chargement immédiat en cas d'acceptation : recharger la page pour
-      // activer la mesure serait une friction inutile.
-      if (choix === 'oui') window.sbdChargerMesure?.();
+      enregistrerChoix(bouton.dataset.consentement === 'oui' ? 'oui' : 'non');
     });
   }
+
+  // Se ferme sur tout choix, y compris donné par le bloc de /confidentialite/.
+  document.addEventListener(EVENEMENT_CONSENTEMENT, () => {
+    if (banniere) banniere.hidden = true;
+  });
 </script>
 
 <style>

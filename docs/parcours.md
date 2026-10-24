@@ -311,6 +311,19 @@ l'auteur. Ce schéma est valide **à condition que le lien vers
 `/confidentialite/` reste visible** : sans lui, le consentement ne serait plus
 éclairé.
 
+**Deux interfaces, un seul choix.** La bannière et le bloc de
+`/confidentialite/` écrivaient chacune la clé `sbd-mesure` de leur côté, sans
+prévenir l'autre. Constaté le 24 octobre 2026 dans le navigateur, sur
+`/confidentialite/` : répondre par la bannière laissait la page afficher « pas
+encore répondu », et accepter par la page laissait la bannière ouverte. Un
+« Refuser » cliqué ensuite enregistrait le refus pendant que Clarity continuait
+de tourner jusqu'au rechargement. Le « aucune requête après refus » vérifié plus
+haut ne couvrait pas ce chemin.
+
+Tout passe désormais par `enregistrerChoix()`, dans `src/lib/consentement.ts`,
+qui émet `sbd:consentement`. Le choix voyage dans l'événement, et non par une
+relecture du stockage : sans stockage disponible, relire rendrait `null`.
+
 ---
 
 ## 7. L'audit ergonomique du 2 août 2026
