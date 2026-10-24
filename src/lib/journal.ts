@@ -51,6 +51,22 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-10-24',
     nature: 'fonction',
+    version: '1.8',
+    titre: 'Une infographie sur chaque page qui demande une explication',
+    texte:
+      "Chaque compétition, chaque fiche d'athlète et chaque catégorie a désormais son image, comme les records, les résultats hors de l'île, les formats de compétition et les pages qui expliquent le site. Sur les pages de données, l'image se déplie depuis une pastille et la liste reste en tête. Les quinze articles ont chacun la leur, et leurs chiffres se mettent à jour avec les données.",
+  },
+  {
+    date: '2026-10-24',
+    nature: 'correction',
+    version: '1.8',
+    titre: 'Quatre articles alignés sur les données',
+    texte:
+      "L'article sur les titres internationaux compte trois titres mondiaux, dont celui d'Alain Cuvelier en octobre 2025. Le compte rendu du Championnat Régional précise que trois records de catégorie datent de ce jour-là. La page À propos calcule ses chiffres au lieu de les écrire.",
+  },
+  {
+    date: '2026-10-24',
+    nature: 'fonction',
     version: '1.7',
     titre: 'Cinq infographies pour comprendre la discipline',
     texte:
