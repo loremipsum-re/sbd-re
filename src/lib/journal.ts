@@ -49,6 +49,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 
 export const JOURNAL: readonly EntreeJournal[] = [
   {
+    date: '2026-10-24',
+    nature: 'fonction',
+    version: '1.5.2',
+    titre: 'Six articles de plus dans les actualités',
+    texte:
+      "Le Championnat Régional du 26 septembre a son compte rendu. Quatre articles de fond ouvrent les données autrement : les titres internationaux des Réunionnais, les divisions d'âge, ce qu'on soulève à sa première compétition, et les communes qui organisent. Un dernier compare la force athlétique au Grand Raid, deux sports de la même île.",
+  },
+  {
     date: '2026-10-14',
     nature: 'fonction',
     version: '1.5',
