@@ -8,8 +8,8 @@
  * n'en ont aucune : L'Étang-Salé, Saint-Joseph, Saint-Leu et La
  * Plaine-des-Palmistes. Une carte aurait demandé d'inventer leurs coordonnées.
  *
- * DEUX LECTURES, DEUX BLOCS. La barre compte les compétitions de chaque
- * commune, la grille des saisons dit quand elle a organisé. Chaque bloc a ses
+ * DEUX LECTURES, DEUX VOLETS. La barre compte les compétitions de chaque
+ * commune, la grille des saisons dit quand elle a organisé. Chaque volet a ses
  * propres rangées : une barre posée au-dessus des années se lirait comme une
  * période, de 2017 jusqu'au bout de la barre.
  *
@@ -260,9 +260,14 @@ function periodeDe(c: (typeof communes)[number]): string {
     font-size: var(--step--1);
     color: var(--muted);
   }
+  /* Le chiffre en couleur de texte, le mot en gris : la règle des autres
+     infographies pour une ligne secondaire. */
+  .detail .num-tab {
+    color: var(--text);
+  }
 
   /* Dès 40 rem, le classement et la grille des saisons partagent la même
-     colonne de noms, de 14 rem : les deux blocs s'alignent l'un sous l'autre. */
+     colonne de noms, de 14 rem : les deux volets s'alignent l'un sous l'autre. */
   @media (min-width: 40rem) {
     .commune {
       grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
@@ -322,9 +327,16 @@ function periodeDe(c: (typeof communes)[number]): string {
     color: var(--on-accent);
   }
 
-  /* L'axe : « 17 » au lieu de « 2017 » sous 48 rem. Mesuré à 375 px, la case
-     fait 29 px et « 2017 » aussi : deux années se seraient touchées.
-     L'intitulé donne les deux années complètes. */
+  /* L'axe : « 17 », et « 2017 » seulement quand la case a la place. L'intitulé
+     donne les deux années complètes.
+
+     LA LARGEUR DE LA CASE DÉCIDE. Une saison de plus chaque année rétrécit
+     les cases. Avec une requête sur la largeur d'écran, l'article de
+     68 caractères montrait des années collées dès douze saisons : mesuré
+     sur des données prolongées jusqu'en 2028, case de 30 px, « 2028 » de
+     30 px. Chaque année de l'axe est donc un conteneur, et « 2017 » demande
+     34 px, soit le texte mesuré à 1 280 px et 4 px d'air. Sans requête de
+     conteneur, le navigateur garde « 17 ». */
   .axe {
     margin-bottom: var(--space-1);
   }
@@ -332,6 +344,7 @@ function periodeDe(c: (typeof communes)[number]): string {
     display: none;
   }
   .axe .cases li {
+    container-type: inline-size;
     min-height: 0;
     border: 0;
     background: none;
@@ -343,6 +356,11 @@ function periodeDe(c: (typeof communes)[number]): string {
   .siecle {
     display: none;
   }
+  @container (min-width: 2.125rem) {
+    .siecle {
+      display: inline;
+    }
+  }
 
   @media (min-width: 40rem) {
     .ligne {
@@ -352,12 +370,6 @@ function periodeDe(c: (typeof communes)[number]): string {
     }
     .axe .vide {
       display: block;
-    }
-  }
-
-  @media (min-width: 48rem) {
-    .siecle {
-      display: inline;
     }
   }
 </style>
