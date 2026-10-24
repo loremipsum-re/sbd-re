@@ -3,6 +3,7 @@ titre: "Championnat Régional 2026, Ulrich Randrianantenaina en tête aux points
 description: "17 athlètes à Saint-Paul le 26 septembre. Les totaux, les catégories et les meilleurs scores aux points Dots."
 date: 2026-09-26
 competition: championnat-regional-fa-pl-la-reunion/2026-09-26
+infographie: competition
 athletes:
   - Ulrich Randrianantenaina
   - Kévin Turpin

@@ -3,6 +3,7 @@ titre: "Bench Cup 974 2026, José Grondin pousse 180 kg"
 description: "Huit athlètes au développé couché le 8 mars au Tampon. Les barres, les catégories et le classement complet."
 date: 2026-03-08
 competition: bench-cup-974/2026-03-08
+infographie: competition
 athletes:
   - José Grondin
   - Benjamin Ragou
