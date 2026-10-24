@@ -14,8 +14,10 @@
  * plus ancienne garde le record, comme dans `progressionRecord`.
  *
  * L'ÉQUIPEMENT EST ÉCRIT SUR CHAQUE CARTE. Un record peut venir de l'équipé,
- * le développé couché des hommes en est un. La carte donne alors aussi la
- * meilleure barre raw, que l'article cite.
+ * le développé couché des hommes en est un. Une ligne sous les cartes donne
+ * alors la meilleure barre raw, que l'article cite. Posée DANS la carte, elle
+ * l'allongeait seule : sa voisine gardait un vide de même hauteur, et les
+ * cartes des femmes ne s'alignaient plus sur celles des hommes.
  *
  * LA DATE DIT L'ÂGE DU RECORD. Une saison est une année civile, comme dans
  * l'article « La saison 2026 », et la saison en cours est celle de la dernière
@@ -106,6 +108,21 @@ const saisons = [...parSaison.entries()].map(([an, liste]) => ({ an, liste }));
 
 const nomCarte = (c: Carte) => `${c.label.toLowerCase()} ${c.sexe.complement}`;
 
+/** « Meilleure barre raw au développé couché », ou « Meilleur total raw ». */
+const intituleRaw = (c: Carte) =>
+  c.lift === 'total' ? 'Meilleur total raw' : `Meilleure barre raw au ${c.label.toLowerCase()}`;
+
+/*
+ * « À Saint-Joseph », mais « au Tampon » : l'article d'une commune se
+ * contracte avec la préposition. Le Tampon figure dans les données.
+ */
+const aLaCommune = (commune: string) =>
+  commune.startsWith('Le ')
+    ? `au ${commune.slice(3)}`
+    : commune.startsWith('Les ')
+      ? `aux ${commune.slice(4)}`
+      : `à ${commune}`;
+
 /*
  * LES RECORDS DE LA SAISON VIENNENT-ILS D'UNE SEULE COMPÉTITION ? La phrase
  * donne alors son jour et sa commune, comme l'article « La saison 2026 ». Le
@@ -121,7 +138,7 @@ const phraseSaison = uneSeule
       ? `Les ${courantes.length} records de ${saison} ont été établis`
       : `Le record de ${saison} a été établi`) +
     ` le ${jourEtMois(uneSeule.date)}` +
-    (uneSeule.meetTown ? `, à ${uneSeule.meetTown}.` : '.')
+    (uneSeule.meetTown ? `, ${aLaCommune(uneSeule.meetTown)}.` : '.')
   : null;
 
 /* Le plus ancien, quand il date d'une saison passée. */
@@ -130,8 +147,8 @@ const anciens = cartes.filter((c) => c.record.date === premiereDate);
 const phraseAncien =
   premiereDate && annee(premiereDate) !== saison
     ? anciens.length === 1
-      ? `Le plus ancien est le ${nomCarte(anciens[0])}, du ${date(premiereDate)}.`
-      : `Les plus anciens datent du ${date(premiereDate)}.`
+      ? `Le plus ancien record, au ${nomCarte(anciens[0])}, date du ${date(premiereDate)}.`
+      : `Les ${anciens.length} plus anciens records datent du ${date(premiereDate)}.`
     : null;
 
 /* LE TITRE EST LE CONSTAT DU JOUR, recalculé à chaque mise à jour. */
@@ -196,17 +213,21 @@ const titre =
                     {date(c.record.date)}
                   </span>
                 </p>
-                {c.raw && (
-                  <p class="raw">
-                    Meilleure barre raw&nbsp;:{' '}
-                    <strong class="num-tab">{nombre(c.raw.valueKg)}&nbsp;kg</strong>{' '}
-                    en {annee(c.raw.date)}
-                    {c.raw.holder !== c.record.holder && <>, par {c.raw.holder}</>}.
-                  </p>
-                )}
               </li>
             ))}
           </ul>
+
+          {cartes.map(
+            (c) =>
+              c.raw && (
+                <p class="raw">
+                  {intituleRaw(c)}&nbsp;:{' '}
+                  <strong class="num-tab">{nombre(c.raw.valueKg)}&nbsp;kg</strong>
+                  {c.raw.holder !== c.record.holder && <>, par {c.raw.holder}</>}, en{' '}
+                  {annee(c.raw.date)}.
+                </p>
+              ),
+          )}
         </section>
       ))
     }
@@ -287,7 +308,7 @@ const titre =
 
   .record {
     display: grid;
-    grid-row: span 6;
+    grid-row: span 5;
     grid-template-rows: subgrid;
     row-gap: var(--space-1);
     align-content: start;
@@ -367,18 +388,25 @@ const titre =
     font-weight: 700;
   }
 
+  /* La meilleure barre raw, sous les cartes, pour un record établi en équipé. */
   .raw {
-    margin-top: var(--space-1);
-    padding-top: var(--space-2);
-    border-top: 1px solid var(--border);
+    margin-top: var(--space-3);
     font-size: var(--step--1);
     color: var(--muted);
+  }
+  .raw + .raw {
+    margin-top: var(--space-2);
   }
   .raw strong {
     color: var(--text);
   }
 
-  /* LE BILAN : un carré par record, rangé sous sa saison. */
+  /*
+   * LE BILAN : un carré par record, rangé sous sa saison. Plein pour la saison
+   * en cours, vide pour les autres : la forme double la couleur. Le contour
+   * tient le contraste de 3:1 qu'un repère graphique doit à son fond, ce que
+   * l'aplat d'accent seul ne fait pas en thème clair, mesuré à 1,29:1.
+   */
   .bilan {
     margin-top: var(--space-8);
     padding-top: var(--space-6);
@@ -410,10 +438,10 @@ const titre =
   .case {
     width: 1.5rem;
     height: 1.5rem;
-    border-radius: 2px;
-    background: color-mix(in srgb, var(--muted) 55%, var(--surface));
+    border: 2px solid var(--muted);
   }
   [data-courante] .case {
+    border-color: var(--accent);
     background: var(--accent-fill);
   }
 
