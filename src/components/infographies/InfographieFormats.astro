@@ -22,6 +22,12 @@
  * aucun résultat ne porte de catégorie de poids ne détient aucun record, et la
  * note le dit.
  *
+ * LE FORMAT DE LA LIGNE, ET NON CELUI DE LA COMPÉTITION. Une compétition mixte
+ * porte deux formats, et un athlète peut y disputer le développé couché seul.
+ * Mesuré : un des records du développé couché seul vient d'une compétition
+ * qui mêle full power et développé couché. L'intitulé parle donc du format où
+ * chaque record a été établi.
+ *
  * LA MISE EN PAGE SUIT LA LARGEUR DE L'INFOGRAPHIE, et non celle de l'écran,
  * par des requêtes de conteneur. Posée dans la colonne d'un article, large de
  * 68 caractères, elle garde deux cartes par rangée sur un écran de 1 280 px.
@@ -86,13 +92,15 @@ const sansCategorie = formats.filter(
   (f) => !f.auClassement && f.resultats > 0 && f.sansCategorie === f.resultats,
 );
 const n = sansCategorie.reduce((somme, f) => somme + f.resultats, 0);
-const noms = sansCategorie.map((f) => f.enPhrase).join(' et de ');
+/** « de squat seul et de soulevé de terre seul », virgules au-delà de deux. */
+const enDe = sansCategorie.map((f) => `de ${f.enPhrase}`);
+const noms = enDe.length > 1 ? `${enDe.slice(0, -1).join(', ')} et ${enDe.at(-1)}` : (enDe[0] ?? '');
 const noteCategorie =
   n === 0
     ? null
     : n > 1
-      ? `Les ${nombre(n)}${INSECABLE}résultats de ${noms} figurent sans catégorie dans les données. Ils restent hors des records.`
-      : `Le résultat de ${noms} figure sans catégorie dans les données. Il reste hors des records.`;
+      ? `Les ${nombre(n)}${INSECABLE}résultats ${noms} figurent sans catégorie dans les données. Ils restent hors des records.`
+      : `Le résultat ${noms} figure sans catégorie dans les données. Il reste hors des records.`;
 ---
 
 <Infographie
@@ -154,6 +162,9 @@ const noteCategorie =
         {
           melanges.map((m) => (
             <li data-plusieurs={m.formats.length > 1 ? '' : undefined}>
+              {/* Le lecteur d'écran entend « Full power seul : 31 compétitions ».
+                  Sans « seul », il prendrait les 31 pour toutes les
+                  compétitions de full power, que la carte compte à 37. */}
               <span class="etiquettes">
                 {m.formats.map((code, i) => (
                   <>
@@ -161,8 +172,10 @@ const noteCategorie =
                     <span class="etiquette">{libelleEvent(code)}</span>
                   </>
                 ))}
+                {m.formats.length === 1 && <span class="sr-only"> seul</span>}
               </span>
               <span class="compte">
+                <span class="sr-only">{`${INSECABLE}: `}</span>
                 <strong class="num-tab">{m.competitions}</strong>
                 <span class="sr-only">{` ${pluriel(m.competitions, 'compétition')}`}</span>
               </span>
@@ -175,12 +188,12 @@ const noteCategorie =
           ))
         }
       </ul>
-      <p class="cle-carres" aria-hidden="true">Un carré par compétition.</p>
+      <p class="cle-carres" aria-hidden="true">Un carré par compétition, sur la ligne de ses étiquettes.</p>
     </div>
 
     <div class="partie">
       <p class="intitule" id="formats-records">
-        Les {totalRecords} records de l'île, selon le format de la compétition
+        Les {totalRecords} records de l'île, selon le format où chacun a été établi
       </p>
       <p class="legende" aria-hidden="true">
         <span><span class="pastille" />Full power</span>
@@ -304,6 +317,14 @@ const noteCategorie =
     line-height: 1.1;
   }
 
+  /* Sur un écran de 320 px, une carte laisse 92 px au texte, mesuré, et
+     « Développé » en demande 103 au corps du titre. Le corps de texte le loge. */
+  @container (max-width: 17.5rem) {
+    .nom {
+      font-size: var(--step-0);
+    }
+  }
+
   .mouvements {
     font-size: var(--step--1);
     color: var(--muted);
@@ -419,6 +440,14 @@ const noteCategorie =
     }
     .etiquettes {
       grid-column: auto;
+    }
+  }
+
+  /* Pleine page, la colonne des étiquettes loge les trois du mélange le plus
+     large, 364 px mesurés à 1 280 px, sur une seule ligne. */
+  @container (min-width: 50rem) {
+    .melanges li {
+      grid-template-columns: minmax(0, 24rem) 2.5rem minmax(0, 1fr);
     }
   }
 
