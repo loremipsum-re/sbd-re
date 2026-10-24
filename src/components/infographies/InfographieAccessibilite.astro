@@ -1,12 +1,354 @@
 ---
 /**
- * ÉBAUCHE, à dessiner : infographie « accessibilite ».
+ * L'audit d'accessibilité, en une image.
  *
- * Le fichier existe pour que l'aiguillage et les pages se compilent pendant
- * que l'infographie se dessine. Il ne rend rien.
+ * TROIS ÉTAGES, dans l'ordre de la page. Le périmètre, ce qui en est sorti,
+ * puis ce qui n'a pas été vérifié. Le dernier étage résume la section qui
+ * suit : la synthèse donne ses limites, comme la page.
+ *
+ * UNE CASE PAR CONTRÔLE. Pleine pour un contrôle conforme, hachurée pour un
+ * contrôle corrigé. Le motif double la couleur, et la légende, avec le mot du
+ * verdict et son effectif, double le motif. Les cases sont regroupées par
+ * verdict pour que la proportion se lise d'un coup d'œil. L'ordre de la page
+ * reste celui de la liste détaillée qui suit.
+ *
+ * LES CORRECTIONS SONT NOMMÉES, LES CONFORMITÉS COMPTÉES. La liste détaillée
+ * vient juste dessous : y répéter sept intitulés allongerait la figure sans
+ * rien apprendre de plus.
+ *
+ * RIEN N'EST ÉCRIT ICI. Pages, contrôles, verdicts, limites et date arrivent
+ * en propriétés depuis le frontmatter de la page, qui les affiche aussi. Les
+ * critères sont comptés dans les libellés des contrôles, par
+ * lib/infographie-accessibilite.ts.
  */
+import Icone from '../Icone.astro';
+import Infographie from './Infographie.astro';
+import { pluriel } from '../../lib/format';
+import {
+  criteresAudites,
+  referentielsAudites,
+  type ControleAudit,
+  type LimiteAudit,
+  type PageAuditee,
+  type ResultatAudit,
+} from '../../lib/infographie-accessibilite';
 
 interface Props {
-  // Aucune propriété pour l'instant.
+  /** « 14 octobre 2026 », tel que la page l'écrit. */
+  dateAudit: string;
+  pages: readonly PageAuditee[];
+  controles: readonly ControleAudit[];
+  libelles: Record<ResultatAudit, string>;
+  limites: readonly LimiteAudit[];
 }
+
+const { dateAudit, pages, controles, libelles, limites } = Astro.props;
+
+/** L'ordre des verdicts : les conformes d'abord, les corrections ensuite. */
+const ORDRE: readonly ResultatAudit[] = ['ok', 'corrige'];
+
+const verdicts = ORDRE.map((resultat) => {
+  const concernes = controles.filter((c) => c.resultat === resultat);
+  return {
+    resultat,
+    nombre: concernes.length,
+    libelle: pluriel(concernes.length, libelles[resultat].toLowerCase()),
+    // Seules les corrections sont nommées, voir l'en-tête.
+    noms: resultat === 'corrige' ? concernes.map((c) => c.titre) : [],
+  };
+}).filter((v) => v.nombre > 0);
+
+const total = controles.length;
+const conformes = controles.filter((c) => c.resultat === 'ok').length;
+const corriges = total - conformes;
+
+/** Espace insécable : un nombre ne se sépare pas du mot qui le suit. */
+const NBSP = '\u00a0';
+
+const titre =
+  corriges === 0
+    ? `Les ${total}${NBSP}contrôles sont conformes`
+    : conformes === 0
+      ? `Les ${total}${NBSP}contrôles ont été corrigés`
+      : `Sur ${total}${NBSP}contrôles, ${conformes}${NBSP}${pluriel(conformes, 'est conforme', 'sont conformes')} et ${corriges}${NBSP}${pluriel(corriges, 'a été corrigé', 'ont été corrigés')}`;
+
+const criteres = criteresAudites(controles);
+/*
+ * L'espace de « WCAG 2.2 » reste sécable. Insécable, le sigle et sa version
+ * formaient un bloc plus large que la colonne à 320 px, et le navigateur le
+ * coupait au milieu du numéro, « 2. » puis « 2 ».
+ */
+const referentiel = referentielsAudites(controles).join(' et ');
+
+const perimetre = [
+  { nombre: pages.length, libelle: pluriel(pages.length, 'page') },
+  { nombre: total, libelle: pluriel(total, 'contrôle') },
+  { nombre: criteres.length, libelle: `${pluriel(criteres.length, 'critère')} ${referentiel}` },
+];
+
+/** Les cases, regroupées par verdict. */
+const cases = verdicts.flatMap((v) => Array.from({ length: v.nombre }, () => v.resultat));
 ---
+
+<Infographie
+  titre={titre}
+  source={`Audit mené par la mesure le ${dateAudit}, dans un navigateur et sur les pages réelles.`}
+>
+  <ul class="perimetre" aria-label="Périmètre de l'audit">
+    {
+      perimetre.map((p) => (
+        <li>
+          <strong class="num">{p.nombre}</strong>{' '}
+          <span class="libelle">{p.libelle}</span>
+        </li>
+      ))
+    }
+  </ul>
+
+  <div class="etages">
+    <div class="etage">
+      <p class="intitule" id="accessibilite-resultats">
+        {pluriel(total, 'Résultat du contrôle', `Résultat des ${total}${NBSP}contrôles`)}
+      </p>
+      <p class="cases" style={`--cases:${cases.length}`} aria-hidden="true">
+        {cases.map((resultat) => <span class="case" data-resultat={resultat} />)}
+      </p>
+      <ul class="legende" aria-labelledby="accessibilite-resultats">
+        {
+          verdicts.map((v) => (
+            <li data-resultat={v.resultat}>
+              <span class="case marque" data-resultat={v.resultat} aria-hidden="true" />
+              <p class="compte">
+                <strong class="num">{v.nombre}</strong>{' '}
+                <span class="verdict">{v.libelle}</span>
+              </p>
+              {v.noms.length > 0 && (
+                <ul class="noms">
+                  {v.noms.map((nom) => (
+                    <li>{nom}</li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <div class="etage">
+      <p class="intitule" id="accessibilite-limites">Ce qui n'a pas été vérifié</p>
+      <ul class="non-verifie" aria-labelledby="accessibilite-limites">
+        {
+          limites.map((l) => (
+            <li>
+              <span class="signe">
+                <Icone nom="manque" taille={16} />
+              </span>
+              <span>{l.resume}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  /* LE PÉRIMÈTRE. Trois chiffres côte à côte, même sur téléphone : les
+     libellés tiennent en deux mots pour loger dans un tiers de 252 px, la
+     largeur utile à 320 px. Des filets les séparent plutôt que des cadres :
+     mesuré, le rembourrage d'un cadre faisait déborder « contrôles » sous
+     370 px. */
+  .perimetre {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Sur téléphone, le libellé passe sous le chiffre. */
+  .perimetre li {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+    padding: 0 var(--space-3);
+  }
+  .perimetre li:first-child {
+    padding-left: 0;
+  }
+  .perimetre li:last-child {
+    padding-right: 0;
+  }
+  .perimetre li + li {
+    border-left: 2px solid var(--border);
+  }
+
+  /* Dès qu'il y a la place, chiffre et libellé partagent leur ligne de base. */
+  @media (min-width: 40rem) {
+    .perimetre li {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: var(--space-1) var(--space-2);
+      padding: 0 var(--space-6);
+    }
+  }
+
+  .perimetre .num {
+    font-size: var(--step-3);
+    line-height: 1;
+  }
+
+  .libelle {
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+    /* Dernier recours, au-delà de ce que la mesure a éprouvé : un mot coupé
+       reste lisible, un mot qui sort de sa colonne chevauche le suivant. */
+    overflow-wrap: break-word;
+  }
+
+  /* LES DEUX ÉTAGES, côte à côte dès qu'il y a la place. Un filet de 2 px
+     ouvre chacun, à la manière d'une rubrique. */
+  .etages {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+    gap: var(--space-8);
+    margin-top: var(--space-8);
+  }
+
+  .etage {
+    min-width: 0;
+    padding-top: var(--space-4);
+    border-top: 2px solid var(--border);
+  }
+
+  .intitule {
+    margin-bottom: var(--space-3);
+    font-size: var(--step--1);
+    font-weight: 700;
+  }
+
+  /* LES CASES. Une colonne par contrôle, plafonnée à 40 px : sur téléphone,
+     neuf cases et leurs écarts tiennent dans la largeur sans passer à la
+     ligne. */
+  .cases {
+    display: grid;
+    grid-template-columns: repeat(var(--cases), minmax(0, 2.5rem));
+    gap: var(--space-1);
+    margin-bottom: var(--space-4);
+  }
+
+  .case {
+    display: block;
+    aspect-ratio: 1;
+    min-width: 0;
+    border: 2px solid;
+    border-radius: 2px;
+  }
+
+  /* Les jetons des verdicts de la liste détaillée, pour que la case et la
+     carte qu'elle résume portent la même couleur. */
+  .case[data-resultat='ok'] {
+    border-color: var(--positif);
+    background: var(--positif);
+  }
+
+  /* La hachure dit « corrigé » sans la couleur. */
+  .case[data-resultat='corrige'] {
+    border-color: var(--alerte);
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent 0 4px,
+      var(--alerte) 4px 6px
+    );
+  }
+
+  .legende {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .legende > li {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+    column-gap: var(--space-3);
+    align-items: center;
+    min-width: 0;
+  }
+
+  .marque {
+    width: 1.25rem;
+  }
+
+  .compte {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--space-2);
+    min-width: 0;
+  }
+
+  .compte .num {
+    font-size: var(--step-2);
+    line-height: 1.1;
+  }
+
+  /* LE MOT DIT LE VERDICT, comme sur les cartes de la page. */
+  .verdict {
+    font-weight: 700;
+  }
+  [data-resultat='ok'] .verdict {
+    color: var(--positif);
+  }
+  [data-resultat='corrige'] .verdict {
+    color: var(--alerte);
+  }
+
+  /* Les contrôles corrigés, sous leur effectif, dans la colonne du texte. */
+  .noms {
+    grid-column: 2;
+    display: grid;
+    gap: var(--space-1);
+    margin: var(--space-2) 0 0;
+    padding: 0;
+    list-style: none;
+    font-weight: 600;
+  }
+
+  .non-verifie {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .non-verifie li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  .non-verifie li > span:last-child {
+    min-width: 0;
+  }
+
+  /* L'icône se cale sur la première ligne : 16 px dans une ligne de 1,6. */
+  .signe {
+    display: inline-flex;
+    flex-shrink: 0;
+    padding-top: 0.3em;
+    color: var(--muted);
+  }
+</style>

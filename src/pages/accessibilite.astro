@@ -13,12 +13,19 @@
  * faites dans le navigateur le 14 octobre 2026, et sont à refaire après toute
  * refonte.
  */
+import InfographieAccessibilite from '../components/infographies/InfographieAccessibilite.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import type {
+  ControleAudit,
+  LimiteAudit,
+  PageAuditee,
+  ResultatAudit,
+} from '../lib/infographie-accessibilite';
 
 const DATE_AUDIT = '14 octobre 2026';
 
 /** Pages passées au crible, choisies pour couvrir chaque gabarit du site. */
-const PAGES_AUDITEES = [
+const PAGES_AUDITEES: PageAuditee[] = [
   { url: '/', nom: "L'accueil" },
   { url: '/classement/', nom: 'Le classement, liste filtrable' },
   { url: '/categories/', nom: 'Les catégories de poids' },
@@ -30,7 +37,7 @@ const PAGES_AUDITEES = [
 ];
 
 /** Ce qui a été vérifié, et le résultat. */
-const CONTROLES = [
+const CONTROLES: ControleAudit[] = [
   {
     titre: 'Contraste des textes',
     critere: 'WCAG 2.2, critère 1.4.3, niveau AA',
@@ -96,10 +103,42 @@ const CONTROLES = [
   },
 ];
 
-const LIBELLES_RESULTAT: Record<string, string> = {
+const LIBELLES_RESULTAT: Record<ResultatAudit, string> = {
   ok: 'Conforme',
   corrige: 'Corrigé',
 };
+
+/*
+ * Ce qui n'a pas été vérifié. Les limites vivent ici avec le reste de l'audit,
+ * et non plus dans le gabarit, pour que la liste de la page et l'infographie
+ * lisent la même source. Le texte publié est inchangé.
+ */
+const LIMITES: LimiteAudit[] = [
+  {
+    titre: 'Aucun test avec de vraies personnes.',
+    suite:
+      " Un audit à la mesure dit qu'une page respecte des règles ; il ne dit pas qu'elle s'utilise bien avec un lecteur d'écran au quotidien. C'est la limite principale de cette page.",
+    resume: 'Aucun test avec de vraies personnes',
+  },
+  {
+    titre: 'Aucun audit certifié.',
+    suite:
+      " Les 106 critères du référentiel français n'ont pas été passés un à un par un auditeur tiers.",
+    resume: 'Aucun audit certifié',
+  },
+  {
+    titre: 'La carte des salles',
+    suite:
+      " montre des positions sur un fond dessiné. Les salles sont également listées sous la carte, en texte, ce qui donne la même information sans le visuel, mais cette liste n'a pas été éprouvée au lecteur d'écran.",
+    resume: "Liste des salles non éprouvée au lecteur d'écran",
+  },
+  {
+    titre: "Les contenus venant d'OpenPowerlifting",
+    suite:
+      ", noms et intitulés de compétitions, sont repris tels quels. Une faute de casse ou d'accent dans la source se retrouve ici.",
+    resume: "Noms et intitulés d'OpenPowerlifting repris tels quels",
+  },
+];
 ---
 
 <BaseLayout
@@ -160,6 +199,20 @@ const LIBELLES_RESULTAT: Record<string, string> = {
     <section class="bloc">
       <h2>Résultats</h2>
 
+      {/*
+        LA SYNTHÈSE AVANT LE DÉTAIL, DÉPLIÉE. La page est un texte, sans liste
+        de données à atteindre en premier : l'infographie ouvre la section
+        qu'elle résume, et la liste des contrôles justifie ensuite chaque
+        verdict. Repliée, elle cacherait la seule vue d'ensemble de l'audit.
+      */}
+      <InfographieAccessibilite
+        dateAudit={DATE_AUDIT}
+        pages={PAGES_AUDITEES}
+        controles={CONTROLES}
+        libelles={LIBELLES_RESULTAT}
+        limites={LIMITES}
+      />
+
       <ol class="controles">
         {
           CONTROLES.map((c) => (
@@ -185,27 +238,14 @@ const LIBELLES_RESULTAT: Record<string, string> = {
         fait.
       </p>
       <ul class="limites">
-        <li>
-          <strong>Aucun test avec de vraies personnes.</strong> Un audit à la
-          mesure dit qu'une page respecte des règles ; il ne dit pas qu'elle
-          s'utilise bien avec un lecteur d'écran au quotidien. C'est la limite
-          principale de cette page.
-        </li>
-        <li>
-          <strong>Aucun audit certifié.</strong> Les 106 critères du référentiel
-          français n'ont pas été passés un à un par un auditeur tiers.
-        </li>
-        <li>
-          <strong>La carte des salles</strong> montre des positions sur un fond
-          dessiné. Les salles sont également listées sous la carte, en texte, ce
-          qui donne la même information sans le visuel, mais cette liste n'a pas
-          été éprouvée au lecteur d'écran.
-        </li>
-        <li>
-          <strong>Les contenus venant d'OpenPowerlifting</strong>, noms et
-          intitulés de compétitions, sont repris tels quels. Une faute de casse
-          ou d'accent dans la source se retrouve ici.
-        </li>
+        {
+          LIMITES.map((l) => (
+            <li>
+              {/* Sur une seule ligne : `suite` porte son propre séparateur. */}
+              <strong>{l.titre}</strong>{l.suite}
+            </li>
+          ))
+        }
       </ul>
     </section>
 
