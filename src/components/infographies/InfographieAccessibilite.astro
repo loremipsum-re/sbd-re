@@ -13,8 +13,8 @@
  * reste celui de la liste détaillée qui suit.
  *
  * LES CORRECTIONS SONT NOMMÉES, LES CONFORMITÉS COMPTÉES. La liste détaillée
- * vient juste dessous : y répéter sept intitulés allongerait la figure sans
- * rien apprendre de plus.
+ * vient juste dessous : y répéter les intitulés conformes allongerait la
+ * figure sans rien apprendre de plus.
  *
  * RIEN N'EST ÉCRIT ICI. Pages, contrôles, verdicts, limites et date arrivent
  * en propriétés depuis le frontmatter de la page, qui les affiche aussi. Les
@@ -44,8 +44,14 @@ interface Props {
 
 const { dateAudit, pages, controles, libelles, limites } = Astro.props;
 
-/** L'ordre des verdicts : les conformes d'abord, les corrections ensuite. */
-const ORDRE: readonly ResultatAudit[] = ['ok', 'corrige'];
+/*
+ * L'ordre des verdicts : les conformes d'abord, les corrections ensuite. UN
+ * RECORD ET NON UNE LISTE : un verdict ajouté à ResultatAudit fait échouer la
+ * vérification des types ici, au lieu d'être compté en silence parmi les
+ * corrections.
+ */
+const RANG: Record<ResultatAudit, number> = { ok: 0, corrige: 1 };
+const ORDRE = (Object.keys(RANG) as ResultatAudit[]).sort((a, b) => RANG[a] - RANG[b]);
 
 const verdicts = ORDRE.map((resultat) => {
   const concernes = controles.filter((c) => c.resultat === resultat);
@@ -60,16 +66,19 @@ const verdicts = ORDRE.map((resultat) => {
 
 const total = controles.length;
 const conformes = controles.filter((c) => c.resultat === 'ok').length;
-const corriges = total - conformes;
+const corriges = controles.filter((c) => c.resultat === 'corrige').length;
 
 /** Espace insécable : un nombre ne se sépare pas du mot qui le suit. */
 const NBSP = '\u00a0';
 
+/** « Les 9 contrôles », ou « Le contrôle » quand il n'y en a qu'un. */
+const tous = pluriel(total, 'Le contrôle', `Les ${total}${NBSP}contrôles`);
+
 const titre =
   corriges === 0
-    ? `Les ${total}${NBSP}contrôles sont conformes`
+    ? `${tous} ${pluriel(total, 'est conforme', 'sont conformes')}`
     : conformes === 0
-      ? `Les ${total}${NBSP}contrôles ont été corrigés`
+      ? `${tous} ${pluriel(total, 'a été corrigé', 'ont été corrigés')}`
       : `Sur ${total}${NBSP}contrôles, ${conformes}${NBSP}${pluriel(conformes, 'est conforme', 'sont conformes')} et ${corriges}${NBSP}${pluriel(corriges, 'a été corrigé', 'ont été corrigés')}`;
 
 const criteres = criteresAudites(controles);
@@ -107,8 +116,9 @@ const cases = verdicts.flatMap((v) => Array.from({ length: v.nombre }, () => v.r
 
   <div class="etages">
     <div class="etage">
+      {/* Sans effectif : le titre et le périmètre le donnent déjà. */}
       <p class="intitule" id="accessibilite-resultats">
-        {pluriel(total, 'Résultat du contrôle', `Résultat des ${total}${NBSP}contrôles`)}
+        {pluriel(total, 'Résultat du contrôle', 'Résultat des contrôles')}
       </p>
       <p class="cases" style={`--cases:${cases.length}`} aria-hidden="true">
         {cases.map((resultat) => <span class="case" data-resultat={resultat} />)}
@@ -135,21 +145,26 @@ const cases = verdicts.flatMap((v) => Array.from({ length: v.nombre }, () => v.r
       </ul>
     </div>
 
-    <div class="etage">
-      <p class="intitule" id="accessibilite-limites">Ce qui n'a pas été vérifié</p>
-      <ul class="non-verifie" aria-labelledby="accessibilite-limites">
-        {
-          limites.map((l) => (
-            <li>
-              <span class="signe">
-                <Icone nom="manque" taille={16} />
-              </span>
-              <span>{l.resume}</span>
-            </li>
-          ))
-        }
-      </ul>
-    </div>
+    {/* Sans limite déclarée, l'étage n'aurait qu'un intitulé au-dessus du vide. */}
+    {
+      limites.length > 0 && (
+        <div class="etage">
+          <p class="intitule" id="accessibilite-limites">
+            Ce qui n'a pas été vérifié
+          </p>
+          <ul class="non-verifie" aria-labelledby="accessibilite-limites">
+            {limites.map((l) => (
+              <li>
+                <span class="signe">
+                  <Icone nom="manque" taille={16} />
+                </span>
+                <span>{l.resume}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
   </div>
 </Infographie>
 

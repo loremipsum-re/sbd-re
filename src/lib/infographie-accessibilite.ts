@@ -34,7 +34,11 @@ export interface LimiteAudit {
    * ou une virgule, parce que le gras n'est pas toujours suivi d'une espace.
    */
   suite: string;
-  /** La limite en quelques mots, pour l'infographie. */
+  /**
+   * La limite en quelques mots, pour l'infographie. Elle nomme ce qui n'a pas
+   * été vérifié, à la forme affirmative : l'intitulé de l'étage porte déjà la
+   * négation.
+   */
   resume: string;
 }
 
