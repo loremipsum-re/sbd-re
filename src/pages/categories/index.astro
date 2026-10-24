@@ -6,10 +6,18 @@
  * 14 octobre 2026. Elle était une grille de cartes sans aucun moyen de chercher
  * ni de trier : vingt-six catégories à parcourir à l'œil pour en trouver une.
  *
- * Elle reprend donc la grammaire des listes du site, qui apporte d'un coup la
- * recherche, le filtre par sexe, le tri par poids, par effectif et par record,
- * et l'état écrit dans l'adresse. TOUT RESTE AFFICHÉ PAR DÉFAUT : l'affinage
- * est une aide, pas un péage.
+ * UN SÉLECTEUR DIRECT D'ABORD, LES TABLEAUX ENSUITE. Mesuré le 24 octobre
+ * 2026 : avec une barre de recherche et un menu Sexe pour dix-sept liens, la
+ * catégorie 63 kg femmes, la plus fournie chez les femmes, tombait 2,7 écrans
+ * sous le haut de page sur un téléphone, et demandait deux gestes dans un menu
+ * pour remonter. Dix-sept pastilles tiennent sur deux rangées au-dessus du pli
+ * et mènent chacune à sa page en un geste.
+ *
+ * Les tableaux restent en dessous, triables par en-tête : ils portent le
+ * contenu que les moteurs indexent, l'effectif et le record de chaque
+ * catégorie. La recherche et le filtre sont retirés de cette page : sur un
+ * menu de dix-sept entrées que le visiteur connaît déjà, ils coûtaient plus
+ * qu'ils ne rapportaient.
  */
 import InteractiveTable from '../../components/InteractiveTable.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
@@ -47,29 +55,37 @@ const parSexe: { sex: Sex; label: string; liste: typeof categories }[] = [
       </p>
     </header>
 
-    <InteractiveTable
-      recherche="Catégorie, détenteur du record…"
-      singulier="catégorie"
-      pluriel="catégories"
-      total={categories.length}
-    >
-      {/*
-        PAS DE BARRE « TRIER PAR » ICI. Elle se construit à partir des en-têtes
-        d'un tableau, et la page en compte deux, un par sexe : la barre
-        affichait donc six boutons pour trois critères. Le tri par clic sur
-        l'en-tête reste disponible dès que les colonnes apparaissent, et en
-        carte la recherche et le filtre couvrent le besoin.
-      */}
-      <Fragment slot="filtres">
-        <div class="champ">
-          <label for="f-sexe">Sexe</label>
-          <select id="f-sexe" data-filtre="sexe">
-            <option value="">Tous</option>
-            <option value="M">Hommes</option>
-            <option value="F">Femmes</option>
-          </select>
-        </div>
-      </Fragment>
+    {/*
+      LE CHOIX EN UN GESTE. Chaque pastille est le lien vers la page de sa
+      catégorie. Deux rangées, hommes puis femmes, dans l'ordre des poids :
+      c'est l'ordre dans lequel on se cherche. Un `<nav>` nommé, pour qu'un
+      lecteur d'écran l'annonce et permette de le sauter.
+    */}
+    <nav class="choix" aria-label="Choisir une catégorie">
+      {
+        parSexe.map(({ sex, label, liste }) => (
+          <div class="groupe">
+            <p class="intitule" id={`choix-${sex}`}>
+              {label}
+            </p>
+            <ul aria-labelledby={`choix-${sex}`}>
+              {liste.map((cat) => (
+                <li>
+                  <a href={`/categories/${cat.chemin}/`}>{cat.classe.label}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </nav>
+
+    {/*
+      Ni recherche, ni filtre, ni compteur : le sélecteur au-dessus fait ce
+      travail en un geste. Le composant ne sert plus ici qu'au tri par en-tête,
+      qui reste utile pour classer les catégories par effectif ou par record.
+    */}
+    <InteractiveTable singulier="catégorie" pluriel="catégories">
 
       {
         parSexe.map(({ sex, label, liste }) => (
@@ -145,6 +161,62 @@ const parSexe: { sex: Sex; label: string; liste: typeof categories }[] = [
 </BaseLayout>
 
 <style>
+  /*
+   * LES PASTILLES DU SÉLECTEUR. Même forme que les badges d'une fiche
+   * d'athlète et que les boutons de tri, pour qu'on les reconnaisse comme des
+   * commandes. La hauteur vaut la cible minimale du site : ce sont les liens
+   * les plus tapés de la page la plus visitée.
+   */
+  .choix {
+    display: grid;
+    gap: var(--space-5);
+    margin-bottom: var(--space-8);
+  }
+
+  .groupe {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .intitule {
+    margin: 0;
+    font-size: var(--step--1);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  .choix ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .choix a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+    padding: 0 var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: var(--step-0);
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .choix a:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
 
 
 
