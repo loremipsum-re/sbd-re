@@ -51,6 +51,14 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-10-24',
     nature: 'fonction',
+    version: '1.6',
+    titre: 'Trouver sa catégorie en un geste',
+    texte:
+      "La page des catégories s'ouvre sur dix-sept pastilles, hommes puis femmes, chacune menant à sa page d'un seul geste. Sur les records, le sexe et l'équipement se choisissent par des boutons qui montrent leurs trois options, au lieu de menus déroulants à ouvrir. Une femme qui cherche son record en 63 kg y arrive en deux gestes, contre quatre à six auparavant.",
+  },
+  {
+    date: '2026-10-24',
+    nature: 'fonction',
     version: '1.5.2',
     titre: 'Six articles de plus dans les actualités',
     texte:
