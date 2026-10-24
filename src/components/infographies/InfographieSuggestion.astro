@@ -19,8 +19,14 @@
  * croix, un champ conservé porte la coche, un champ absent la croix.
  *
  * LA PAGE CONCERNÉE est décrite par ce que le script du formulaire en fait :
- * remplie d'office. Le cas d'une arrivée directe sur la page n'est pas décrit :
- * le script y écrit « / » au lieu de laisser le champ vide.
+ * remplie d'office quand on vient d'une page DU SITE, modifiable à la main.
+ * Venu d'un autre site, le champ reste vide. Le cas d'une arrivée directe sur
+ * la page n'est pas décrit : le script y écrit « / » au lieu de laisser le
+ * champ vide, défaut de FormulaireSuggestion.astro.
+ *
+ * L'ISSUE D'UN CONTRÔLE NOMME L'ENVOI. « Ignoré s'il est rempli », seul sous
+ * la phrase du champ masqué, se lisait comme le champ ignoré, à l'inverse du
+ * code : c'est l'envoi qui est écarté, sous une réponse de succès.
  *
  * Les grands chiffres des contrôles sont masqués aux lecteurs d'écran : la
  * phrase voisine porte la même valeur.
@@ -61,11 +67,14 @@ const groupes = [
     requis: false,
     titre: 'Facultatifs',
     champs: [
-      { nom: 'Page concernée', detail: "Remplie d'office avec la page d'où vous venez." },
+      {
+        nom: 'Page concernée',
+        detail: "Remplie d'office avec la page du site d'où vous venez. Vous pouvez la modifier.",
+      },
       {
         nom: 'Adresse électronique',
         detail:
-          "Vide, la suggestion reste anonyme. Renseignée, l'adresse sert uniquement à vous répondre.",
+          'Laissée vide, elle rend la suggestion anonyme. Renseignée, elle sert uniquement à vous répondre.',
       },
     ],
   },
@@ -133,7 +142,7 @@ const ABSENTS = ['Votre adresse IP', 'Votre navigateur', 'Un identifiant de visi
             </p>
             <p class="issue">
               <Icone nom="manque" taille={16} />
-              Refusé au-delà
+              Envoi refusé au-delà
             </p>
             <p class="detail">L'adresse IP sert uniquement à ce compteur, sous forme hachée.</p>
           </div>
@@ -148,7 +157,7 @@ const ABSENTS = ['Votre adresse IP', 'Votre navigateur', 'Un identifiant de visi
             <p class="regle">Un champ masqué sert de piège à robots.</p>
             <p class="issue">
               <Icone nom="manque" taille={16} />
-              Ignoré s'il est rempli
+              Envoi ignoré s'il est rempli
             </p>
           </div>
         </li>
@@ -167,7 +176,7 @@ const ABSENTS = ['Votre adresse IP', 'Votre navigateur', 'Un identifiant de visi
             </p>
             <p class="issue">
               <Icone nom="manque" taille={16} />
-              Refusé hors délai
+              Envoi refusé hors délai
             </p>
           </div>
         </li>
@@ -181,10 +190,10 @@ const ABSENTS = ['Votre adresse IP', 'Votre navigateur', 'Un identifiant de visi
             <p class="regle">Le message compte {nombre(R.messageMin)}&nbsp;caractères au moins.</p>
             <p class="issue">
               <Icone nom="manque" taille={16} />
-              Refusé sinon
+              Envoi refusé en dessous
             </p>
             <p class="detail">
-              La nature vient de la liste. Une adresse donnée doit être valide.
+              La nature doit venir de la liste. Une adresse donnée doit être valide.
             </p>
           </div>
         </li>
@@ -227,9 +236,9 @@ const ABSENTS = ['Votre adresse IP', 'Votre navigateur', 'Un identifiant de visi
             <dt>De</dt>
             <dd>{R.expediteur}</dd>
             <dt>Objet</dt>
-            <dd>{R.prefixeObjet} et la nature choisie</dd>
+            <dd>{R.prefixeObjet} suivi de la nature choisie</dd>
             <dt>Répondre&nbsp;à</dt>
-            <dd>Votre adresse, si vous l'avez donnée</dd>
+            <dd>Votre adresse électronique, si vous l'avez donnée</dd>
           </dl>
           <p class="detail">
             Il reprend le contenu du fichier. Si l'envoi échoue, la suggestion reste
@@ -494,12 +503,18 @@ const ABSENTS = ['Votre adresse IP', 'Votre navigateur', 'Un identifiant de visi
     font-weight: 600;
   }
 
+  /* L'issue passe à la ligne dans la colonne étroite d'un téléphone : la
+     croix reste en tête de la première ligne, comme devant les champs. */
   .issue {
-    display: inline-flex;
-    align-items: center;
+    display: flex;
+    align-items: flex-start;
     gap: var(--space-1);
     font-size: var(--step--1);
     font-weight: 700;
+  }
+  .issue :global(.icone) {
+    flex: none;
+    margin-top: 0.15em;
   }
 
   /*

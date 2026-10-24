@@ -76,7 +76,8 @@ const LIBELLES_CONSERVES: Record<string, string> = {
   nature: 'La nature',
   page: 'La page concernée',
   message: 'Le message',
-  courriel: "Votre adresse, si vous l'avez donnée",
+  /* « électronique » en toutes lettres : la même figure cite l'adresse IP. */
+  courriel: "Votre adresse électronique, si vous l'avez donnée",
 };
 
 const blocJournal = trouver(
