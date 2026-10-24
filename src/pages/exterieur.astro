@@ -2,6 +2,7 @@
 import BadgeOfficiel from '../components/BadgeOfficiel.astro';
 import InteractiveTable from '../components/InteractiveTable.astro';
 import Repli from '../components/Repli.astro';
+import InfographieDonnees from '../components/infographies/InfographieDonnees.astro';
 import InfographieInternational from '../components/infographies/InfographieInternational.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { equipmentGroup, parseWeightClass } from '../lib/categories';
@@ -54,11 +55,18 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
       PAYS, FÉDÉRATIONS ET TITRES EN IMAGES, REPLIÉS. La pastille tient sur
       une ligne entre l'avertissement et la recherche : la liste reste le
       premier contenu de la page, et qui veut savoir d'où viennent ces
-      résultats l'ouvre. La rangée accueillera une seconde pastille.
+      résultats l'ouvre.
+
+      LA PROVENANCE SUR LA MÊME RANGÉE. Elle montre pourquoi ces résultats
+      vivent ici et sur les fiches, hors du classement et des records : c'est
+      la question que pose cette page.
     */}
     <div class="rangee-replis">
       <Repli titre="Pays et titres en images">
         <InfographieInternational lienArticle="international" />
+      </Repli>
+      <Repli titre="Sources en images">
+        <InfographieDonnees />
       </Repli>
     </div>
 
