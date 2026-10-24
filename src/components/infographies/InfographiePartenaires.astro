@@ -41,7 +41,7 @@ interface Props {
 
 /** Une tranche du schéma de page, de haut en bas. */
 interface Zone {
-  /** Le dessin de la tranche, voir les règles `[data-dessin]`. */
+  /** Le dessin de la tranche, choisi dans le gabarit sous `.maquette`. */
   dessin: 'dessus' | 'donnees' | 'apres' | 'pied';
   ou: string;
   possible: boolean;
@@ -180,11 +180,11 @@ const pages = [
   <ul class="marques" aria-labelledby="partenaires-marques">
     <li>
       <p class="marque"><span class="mention">Partenaire</span></p>
-      <p class="detail">Visible au-dessus du logo, comme la loi l'exige.</p>
+      <p class="detail">Mention visible, exigée par la loi.</p>
     </li>
     <li>
       <p class="marque"><code>rel="sponsored nofollow"</code></p>
-      <p class="detail">Sur le lien, comme Google l'exige.</p>
+      <p class="detail">Attribut exigé par Google sur un lien rémunéré.</p>
     </li>
   </ul>
 </Infographie>
@@ -264,6 +264,12 @@ const pages = [
   }
   .ou {
     font-weight: 700;
+  }
+  /* LE STATUT SE CALE À DROITE, à la même place d'une rangée à l'autre. Sur
+     téléphone, il passe sous le libellé quand celui-ci est long : laissé à
+     gauche, il changeait de place d'une rangée à l'autre. */
+  .texte .statut {
+    margin-left: auto;
   }
   .texte .detail {
     flex-basis: 100%;
@@ -382,7 +388,10 @@ const pages = [
     margin-top: var(--space-3);
   }
 
-  /* LES DEUX MARQUES OBLIGATOIRES, montrées telles qu'elles s'affichent. */
+  /* LES DEUX MARQUES OBLIGATOIRES. La mention garde son style d'affichage,
+     l'attribut est cité tel que le code l'écrit. Partenaire.astro rattache à
+     la loi une mention VISIBLE. Sa place au-dessus du logo vient du gabarit :
+     la légende ne la rattache donc pas à la loi. */
   .marques {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
