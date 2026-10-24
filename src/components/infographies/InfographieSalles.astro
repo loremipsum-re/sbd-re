@@ -2,10 +2,9 @@
 /**
  * Les salles de la carte, commune par commune.
  *
- * LE COMPTE QUE LA CARTE NE DONNE PAS. Vue de loin, la carte serre les points
- * de Saint-Denis et de Sainte-Marie au point de les confondre, et le filtre ne
- * montre qu'une commune à la fois. Une barre par commune, de la plus fournie à
- * la moins fournie, rend le compte lisible d'un coup.
+ * TOUTES LES COMMUNES D'UN COUP. Le filtre de la carte donne l'effectif d'une
+ * seule commune à la fois, dans son compteur. Une barre par commune, de la
+ * plus fournie à la moins fournie, les met toutes côte à côte.
  *
  * CE QUE CONTIENNENT LES FICHES. La description de la page promet adresse,
  * horaires et contact. Le nom, la commune et la position sont obligatoires
@@ -16,6 +15,12 @@
  * LES CHIFFRES SONT LUS DANS LA COLLECTION `salles`, fiches actives seulement,
  * comme la page qui les affiche. Une fiche masquée depuis l'administration
  * sort de tous les comptes et rejoint la note du bas.
+ *
+ * LA NOTE COMPTE DES FICHES, JAMAIS DES LIEUX, ET NE DONNE AUCUNE RAISON. Deux
+ * fiches masquées décrivent le même gymnase de Saint-Louis, doublon venu
+ * d'OpenStreetMap et laissé à l'auteur (commit 1c04a6a). Et aucun champ ne dit
+ * pourquoi une fiche est masquée : une raison écrite ici deviendrait fausse le
+ * jour où l'auteur masque une salle fermée.
  */
 import { getCollection } from 'astro:content';
 import Infographie from './Infographie.astro';
@@ -128,8 +133,8 @@ const champs = CHAMPS.map((c) => ({
     masquees > 0 && (
       <p class="masquees">
         {masquees > 1
-          ? `${nombre(masquees)} autres lieux enregistrés restent hors de la carte. Ce sont des gymnases municipaux et des salles consacrées à d'autres disciplines.`
-          : "1 autre lieu enregistré reste hors de la carte. C'est un gymnase municipal ou une salle consacrée à une autre discipline."}
+          ? `${nombre(masquees)} autres fiches sont masquées, hors de la carte et de la liste.`
+          : '1 autre fiche est masquée, hors de la carte et de la liste.'}
       </p>
     )
   }

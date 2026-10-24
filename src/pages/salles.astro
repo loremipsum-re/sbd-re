@@ -77,10 +77,10 @@ const communes = [...new Set(salles.map((s) => s.commune))].sort((a, b) =>
           {/*
             LES SALLES EN IMAGES, REPLIÉES, APRÈS LA CARTE ET SA LISTE. La
             carte reste le premier contenu de la page, et la pastille ne coûte
-            qu'une ligne avant la note. Ouverte, elle compte les salles par
-            commune, ce que les points serrés du nord de l'île ne laissent pas
-            lire, et mesure ce que les fiches renseignent : la note qui suit
-            invite justement à signaler une information manquante.
+            qu'une ligne avant la note. Ouverte, elle compte les salles de
+            toutes les communes, que le filtre de la carte donne une à une, et
+            mesure ce que les fiches renseignent. La note qui suit invite à
+            signaler une salle absente ou une information fausse.
           */}
           <div class="rangee-replis rangee-salles">
             <Repli titre="Salles par commune en images">
