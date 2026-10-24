@@ -20,6 +20,7 @@ import {
   normalizeTown,
   openRows,
   REUNION_TOWNS,
+  communeOfficielle,
 } from './lib/opl.mjs';
 
 const force = process.argv.includes('--force');
@@ -126,7 +127,10 @@ for await (const row of rows) {
 
   const date = row[iDate] ?? '';
   const meetName = row[iMeetName] ?? '';
-  const meetTown = row[iMeetTown] ?? '';
+  // La commune est ramenée à son orthographe officielle : OpenPowerlifting
+  // reprend la graphie de la fédération, et une même commune arrivait sous
+  // deux formes. Voir communeOfficielle() dans lib/opl.mjs.
+  const meetTown = communeOfficielle(row[iMeetTown] ?? '');
   const cle = `${date}|${meetName}`;
 
   // La liste d'exclusion a toujours le dernier mot.

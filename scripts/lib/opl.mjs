@@ -163,44 +163,63 @@ export function normalizeTown(value) {
 }
 
 /**
- * Les 24 communes de La Réunion.
+ * Les 24 communes de La Réunion, dans leur orthographe officielle.
  *
  * ATTENTION — cette liste ne sert JAMAIS à inclure automatiquement un meet.
  * Saint-Denis, Saint-André, Saint-Louis, Saint-Paul, Saint-Pierre et Sainte-Marie
  * existent aussi en métropole : filtrer sur la ville ferait entrer des
  * compétitions qui n'ont rien à voir avec l'île.
  *
- * Elle sert uniquement à SIGNALER des meets à examiner à la main, qui
- * atterrissent dans data/meets-candidates.json. La décision reste humaine.
+ * Elle sert à deux choses. SIGNALER des meets à examiner à la main, qui
+ * atterrissent dans data/meets-candidates.json, la décision restant humaine. Et
+ * donner la forme écrite retenue pour une commune, par communeOfficielle().
  */
-export const REUNION_TOWNS = new Set(
-  [
-    'Les Avirons',
-    'Bras-Panon',
-    'Cilaos',
-    'Entre-Deux',
-    "L'Étang-Salé",
-    'Petite-Île',
-    'La Plaine-des-Palmistes',
-    'Le Port',
-    'La Possession',
-    'Saint-André',
-    'Saint-Benoît',
-    'Saint-Denis',
-    'Saint-Joseph',
-    'Saint-Leu',
-    'Saint-Louis',
-    'Saint-Paul',
-    'Saint-Philippe',
-    'Saint-Pierre',
-    'Sainte-Marie',
-    'Sainte-Rose',
-    'Sainte-Suzanne',
-    'Salazie',
-    'Le Tampon',
-    'Les Trois-Bassins',
-  ].map(normalizeTown),
-);
+const COMMUNES = [
+  'Les Avirons',
+  'Bras-Panon',
+  'Cilaos',
+  'Entre-Deux',
+  "L'Étang-Salé",
+  'Petite-Île',
+  'La Plaine-des-Palmistes',
+  'Le Port',
+  'La Possession',
+  'Saint-André',
+  'Saint-Benoît',
+  'Saint-Denis',
+  'Saint-Joseph',
+  'Saint-Leu',
+  'Saint-Louis',
+  'Saint-Paul',
+  'Saint-Philippe',
+  'Saint-Pierre',
+  'Sainte-Marie',
+  'Sainte-Rose',
+  'Sainte-Suzanne',
+  'Salazie',
+  'Le Tampon',
+  'Les Trois-Bassins',
+];
+
+export const REUNION_TOWNS = new Set(COMMUNES.map(normalizeTown));
+
+/** Commune → sa forme officielle, pour retrouver chaque orthographe. */
+const FORMES_DE_COMMUNE = new Map(COMMUNES.map((c) => [normalizeTown(c), c]));
+
+/**
+ * Ramène une commune réunionnaise à son orthographe officielle.
+ *
+ * OpenPowerlifting reprend la graphie saisie par la fédération, donc une même
+ * commune arrive sous plusieurs formes. « La Plaine-des-Palmistes » et « La
+ * Plaine des Palmistes » désignent le même endroit et comptaient pour deux
+ * dans tout regroupement par commune.
+ *
+ * Une valeur inconnue repart telle quelle : la liste couvre La Réunion, et une
+ * ville étrangère n'a rien à y faire.
+ */
+export function communeOfficielle(value) {
+  return FORMES_DE_COMMUNE.get(normalizeTown(value ?? '')) ?? value;
+}
 
 export function formatBytes(bytes) {
   if (bytes >= 1_000_000_000) return `${(bytes / 1_000_000_000).toFixed(1)} Go`;
