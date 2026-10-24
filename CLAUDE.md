@@ -123,6 +123,24 @@ Points à ne pas casser :
   partageable et permet aux badges d'une fiche de pointer vers un classement
   déjà filtré.
 
+## Infographies
+
+Cinq infographies, écrites en HTML et CSS dans `src/components/infographies/`,
+autour d'un cadre commun, `Infographie.astro`. Le catalogue est
+`lib/infographies.ts`, source unique pour le schéma des articles, le menu du
+CMS et l'aiguillage `InfographieArticle.astro`.
+
+- **Dans un article** : le champ `infographie` du frontmatter la pose entre le
+  chapeau et le texte.
+- **Sur une page de données** : dans une pastille repliée, `Repli.astro`, qui
+  partage la classe `.repli` du glossaire. Plusieurs pastilles se rangent dans
+  `.rangee-replis`.
+- **Les chiffres se lisent dans les données**, jamais recopiés. Seul l'exemple
+  des neuf essais est construit, et sa légende le dit.
+
+Pour en ajouter une : une ligne au catalogue, un composant, une entrée dans
+l'aiguillage.
+
 ## Partage sur les réseaux sociaux
 
 La plomberie OpenGraph existe dans `BaseLayout.astro` mais reste inactive : la

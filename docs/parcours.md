@@ -656,3 +656,49 @@ même l'en-tête de colonne disparaît. Quatre pages étaient concernées.
 Les Dots et la place n'en reçoivent pas : « Dots » est déjà le nom de l'unité,
 et une place est un rang. Sur la courbe, l'unité ne figure que sur la graduation
 haute, un axe la portant une fois.
+
+## 11. Les infographies et les liens sortants, octobre 2026
+
+Demande de l'auteur du 24 octobre 2026 : de petites infographies à la charte
+pour les articles et les notions qui demandent une explication, et des liens
+sortants qui s'ouvrent dans un nouvel onglet en annonçant la sortie.
+
+### Des infographies en HTML, pas en image
+
+Une image SVG figée met ses libellés à l'échelle de sa boîte : dessinée sur
+680 px, elle réduit un texte de 14 px à 7 px sur un téléphone de 375 px. Les
+cinq infographies sont donc écrites en HTML et en CSS. Elles suivent le thème,
+passent à la ligne, se lisent au lecteur d'écran, et la mesure par élément ne
+relève aucun débordement à 375 comme à 1 280 px.
+
+Leurs chiffres sont lus dans les données à la génération, comme le reste du
+site. Seul l'exemple des neuf essais est construit : les données importées ne
+gardent que la meilleure barre de chaque mouvement, aucun résultat réel ne
+montre donc un essai manqué. Sa légende le dit.
+
+### Un champ d'article plutôt que du MDX
+
+Un article Markdown ne peut pas appeler un composant. Passer en MDX aurait
+ajouté une dépendance et sorti les articles du CMS. Le champ `infographie` du
+frontmatter, proposé en menu dans le CMS, nomme l'image, que la page d'article
+pose entre le chapeau et le texte. Le catalogue vit dans `lib/infographies.ts`.
+
+### Repliées sur les pages de données
+
+Dépliée au-dessus du classement, une infographie repousserait la liste d'un
+écran. Elle se range dans une pastille, celle du glossaire, montée pour
+l'occasion dans `tokens.css` sous la classe `.repli`. Les libellés sont courts
+pour tenir sur la même ligne que le glossaire : mesuré à 375 px, la liste du
+classement et le formulaire du simulateur ne bougent pas d'un pixel. Les
+records descendent de 60 px. La page des catégories garde l'infographie
+dépliée, sous le sélecteur, qui reste le premier geste.
+
+### Les liens sortants, traités sur le HTML final
+
+La flèche ↗ vivait déjà en CSS pour attraper tous les liens sans y penser. Le
+nouvel onglet et l'annonce suivent la même logique : `src/middleware.ts`
+réécrit chaque page à la génération. Les liens des articles, du CMS et des
+gabarits futurs sont tous traités. L'annonce passe par `aria-describedby` vers
+une phrase unique et masquée, ce qui laisse intact le nom accessible des liens
+porteurs d'un `aria-label`. Mesuré sur le build : 1 931 liens sortants, tous
+marqués, aucun lien interne touché.
