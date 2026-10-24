@@ -401,9 +401,10 @@ dizaines de kilo-octets.
 `<head>`. Un fichier externe serait chargé trop tard et la page clignoterait en
 blanc avant de basculer en sombre.
 
-**Le script de données est idempotent.** Deux exécutions sur le même dump
-produisent un fichier rigoureusement identique, à l'octet près. C'est ce qui
-permet au workflow mensuel de ne commiter que s'il y a réellement du nouveau.
+**Le script de données est idempotent.** Deux exécutions sur le même dump,
+même à des jours différents, produisent des fichiers rigoureusement identiques,
+à l'octet près. C'est ce qui permet au workflow mensuel de ne commiter que s'il
+y a réellement du nouveau.
 
 ---
 
