@@ -124,17 +124,18 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
     <div class="wrap">
     <header class="entete-page">
       <h1>Records de La Réunion</h1>
+      {/*
+        UN SEUL CHAPEAU, COURT. Les deux paragraphes d'avant occupaient 560 px
+        sur un téléphone, et les commandes n'apparaissaient qu'au bas du
+        premier écran. Le mode d'emploi est parti : des boutons qui montrent
+        leurs trois choix n'ont pas besoin d'être expliqués. La règle de calcul
+        du développé couché vit dans la note sous les grilles, où elle sert à
+        qui lit les chiffres.
+      */}
       <p class="chapeau">
-        La meilleure performance réalisée lors d'une compétition organisée à
-        La Réunion, pour chaque catégorie. Le développé couché tient compte des
-        compétitions dédiées à ce mouvement. Squat, soulevé de terre et total
-        proviennent du full power, seul format où ces barres se disputent.
-      </p>
-      <p class="chapeau">
-        Cherchez un athlète pour voir tous les records qu'il détient, ou triez
-        une grille en cliquant sur un en-tête. Chaque
-        {' '}<a href="/categories/">catégorie de poids</a> dispose aussi de sa
-        propre page, avec son classement et l'histoire de ses records.
+        La meilleure barre réalisée en compétition à La Réunion, pour chaque
+        catégorie de poids, chez les hommes et chez les femmes, en raw et en
+        équipé.
       </p>
     </header>
 
@@ -158,17 +159,59 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
         partage par un lien.
       */}
       <Fragment slot="filtres">
-        <div class="champ">
-          <label for="f-sexe">Sexe</label>
-          <select id="f-sexe" data-filtre="sexe">
+        {/*
+          SEXE ET ÉQUIPEMENT EN BOUTONS À BASCULE, et non en menus déroulants.
+          Mesuré le 24 octobre 2026 : atteindre « Femmes Raw 63 kg » demandait
+          quatre à six gestes dans trois menus, ou 4,8 écrans de défilement sur
+          un téléphone. Trois choix se lisent d'un coup d'œil et se prennent
+          d'un seul geste, l'état restant visible.
+
+          LE MENU RESTE, MASQUÉ : il est le moteur que le composant écoute.
+          Les boutons radio écrivent sa valeur et déclenchent son `change`, si
+          bien que l'adresse partageable, le menu Catégorie restreint par le
+          sexe et l'affichage de tout par défaut fonctionnent sans qu'une
+          ligne du composant ne change. Le script de synchronisation est en
+          bas de page.
+        */}
+        <fieldset class="champ bascule" data-bascule>
+          <legend>Sexe</legend>
+          <div class="segments">
+            <label>
+              <input type="radio" name="bascule-sexe" value="" checked />
+              <span>Tous</span>
+            </label>
+            {
+              sexes.map((s) => (
+                <label>
+                  <input type="radio" name="bascule-sexe" value={s.id} />
+                  <span>{s.label}</span>
+                </label>
+              ))
+            }
+          </div>
+          <select data-filtre="sexe" hidden>
             <option value="">Tous</option>
             {sexes.map((s) => <option value={s.id}>{s.label}</option>)}
           </select>
-        </div>
+        </fieldset>
 
-        <div class="champ">
-          <label for="f-equipement">Équipement</label>
-          <select id="f-equipement" data-filtre="equipement">
+        <fieldset class="champ bascule" data-bascule>
+          <legend>Équipement</legend>
+          <div class="segments">
+            <label>
+              <input type="radio" name="bascule-equipement" value="" checked />
+              <span>Tous</span>
+            </label>
+            {
+              equipements.map((e) => (
+                <label>
+                  <input type="radio" name="bascule-equipement" value={e} />
+                  <span>{libelleEquipement(e)}</span>
+                </label>
+              ))
+            }
+          </div>
+          <select data-filtre="equipement" hidden>
             <option value="">Tous</option>
             {
               equipements.map((e) => (
@@ -176,7 +219,7 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
               ))
             }
           </select>
-        </div>
+        </fieldset>
 
         <div class="champ">
           <label for="f-categorie">Catégorie</label>
@@ -267,15 +310,137 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
     </InteractiveTable>
 
     <p class="note">
-      Un tiret signale une catégorie où aucune performance n'a encore été
-      enregistrée lors d'une compétition réunionnaise : la place est libre. La
-      coupe marque la meilleure barre de la catégorie, celle qui fait référence
-      aujourd'hui.
+      Le développé couché tient compte des compétitions dédiées à ce mouvement.
+      Squat, soulevé de terre et total viennent du full power, seul format où
+      ces barres se disputent. Un tiret signale une catégorie où aucune
+      performance n'a encore été enregistrée lors d'une compétition
+      réunionnaise. Chaque{' '}
+      <a href="/categories/">catégorie de poids</a> a aussi sa page, avec son
+      classement et l'histoire de ses records.
     </p>
   </div>
 </BaseLayout>
 
+<script>
+  /*
+   * Les boutons radio pilotent le menu masqué, qui reste le moteur du filtre.
+   *
+   * L'ÉTAT INITIAL VIENT DE L'ADRESSE, lue ici directement et non recopiée
+   * depuis le menu : l'ordre d'exécution des scripts n'est pas garanti, et le
+   * composant peut lire l'adresse avant ou après celui-ci. Une même source,
+   * lue deux fois, donne le même résultat quel que soit l'ordre.
+   */
+  for (const groupe of document.querySelectorAll<HTMLFieldSetElement>('[data-bascule]')) {
+    const menu = groupe.querySelector<HTMLSelectElement>('select[data-filtre]');
+    const boutons = groupe.querySelectorAll<HTMLInputElement>('input[type="radio"]');
+    if (!menu) continue;
+
+    const valeurs = new Set(Array.from(menu.options, (o) => o.value));
+    const demande = new URLSearchParams(location.search).get(menu.dataset.filtre ?? '') ?? '';
+    const initial = valeurs.has(demande) ? demande : '';
+    for (const bouton of boutons) bouton.checked = bouton.value === initial;
+
+    for (const bouton of boutons) {
+      bouton.addEventListener('change', () => {
+        if (!bouton.checked) return;
+        menu.value = bouton.value;
+        menu.dispatchEvent(new Event('change'));
+      });
+    }
+  }
+</script>
+
 <style>
+  /*
+   * LES BOUTONS À BASCULE. Un `<fieldset>` par critère, sa `<legend>` jouant
+   * le rôle de l'étiquette des autres champs. Les radios restent dans la page,
+   * invisibles mais focalisables : le clavier les parcourt aux flèches, comme
+   * n'importe quel groupe de radios, et le contour de focus se pose sur la
+   * pastille.
+   *
+   * L'état actif reprend celui des boutons de tri, bordure et teinte d'accent
+   * à 12 %, pour qu'une même apparence dise « sélectionné » partout.
+   */
+  /*
+   * UN GROUPE DE TROIS PASTILLES TIENT SUR UNE LIGNE, ou il se lit comme deux
+   * groupes. Mesuré sur un téléphone de 375 px : la grille des outils y donne
+   * deux colonnes de 165 px, et « Tous Hommes Femmes » s'y empilait sur trois
+   * lignes, pour un cadre de 392 px de haut. Le groupe prend donc toute la
+   * rangée sous 40 rem, et deux colonnes au-dessus, comme la recherche.
+   */
+  .bascule {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+
+  @media (min-width: 40rem) {
+    .bascule {
+      grid-column: span 2;
+    }
+  }
+
+  .bascule legend {
+    padding: 0;
+    margin-bottom: var(--space-1);
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .segments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .segments label {
+    position: relative;
+    display: inline-flex;
+    margin: 0;
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .segments input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .segments span {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+    padding: 0 var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg);
+    white-space: nowrap;
+  }
+
+  .segments label:hover span {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .segments input:checked + span {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+  }
+
+  .segments input:focus-visible + span {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+
 
 
   .section {
