@@ -1,4 +1,5 @@
 ---
+import InfographieConsentement from '../components/infographies/InfographieConsentement.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { nombreAthletes } from '../lib/data';
 ---
@@ -87,6 +88,17 @@ import { nombreAthletes } from '../lib/data';
     <p class="base">
       Base légale : votre consentement, que vous pouvez retirer à tout moment.
     </p>
+
+    {/*
+      L'INFOGRAPHIE DU CONSENTEMENT, DÉPLIÉE. La page se lit d'un trait, sans
+      liste que la figure repousserait : elle se pose dans la section qu'elle
+      illustre, sans pastille à ouvrir.
+      JUSTE AU-DESSUS DU BLOC DE CHOIX, et à cette place seulement. Sa dernière
+      étape renvoie aux « deux boutons juste en dessous » : déplacée, la figure
+      rendrait cette phrase fausse. Posée après le détail de ce qui est
+      collecté, elle laisse aussi ce détail à sa place, en tête de section.
+    */}
+    <InfographieConsentement />
 
     <div class="action-consentement">
       <p class="etat" data-etat-consentement>Chargement de votre choix actuel…</p>
