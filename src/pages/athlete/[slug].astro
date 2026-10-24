@@ -5,6 +5,8 @@ import IconeMouvement from '../../components/IconeMouvement.astro';
 import SpriteMouvements from '../../components/SpriteMouvements.astro';
 import InteractiveTable from '../../components/InteractiveTable.astro';
 import ProgressChart from '../../components/ProgressChart.astro';
+import Repli from '../../components/Repli.astro';
+import InfographieFiche from '../../components/infographies/InfographieFiche.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { equipmentGroup, equipmentLabel, sexLabel } from '../../lib/categories';
 import { results } from '../../lib/data';
@@ -212,7 +214,30 @@ const description =
 <BaseLayout titre={name} description={description}>
   <SpriteMouvements />
     <div class="wrap">
-    <p class="fil"><a href="/classement/">Retour au classement</a></p>
+    {/*
+      LA LÉGENDE DE LA FICHE, REPLIÉE SUR LA LIGNE DU RETOUR AU CLASSEMENT.
+
+      Cette ligne ne portait qu'un lien, et sa moitié droite restait vide. La
+      pastille s'y range et ne coûte que l'écart entre la hauteur du lien et
+      celle d'une cible tactile de 44 px : les chiffres clés descendent de 21
+      à 23 px, mesuré à 375 et 1 280 px. Posée sous l'en-tête, elle les aurait
+      repoussés de 60 px. Ouverte, elle passe sous le lien, sur toute la
+      largeur, comme dans toute rangée de pastilles.
+
+      L'infographie reçoit les chiffres que la fiche a déjà calculés, pour
+      que ses cartes et le bloc des chiffres clés ne puissent pas diverger.
+    */}
+    <div class="rangee-replis tete-fiche">
+      <p class="fil"><a href="/classement/">Retour au classement</a></p>
+      <Repli titre="Comprendre la fiche">
+        <InfographieFiche
+          sexe={dernier.sex}
+          barres={meilleures}
+          meilleurTotal={meilleurTotal}
+          meilleurDots={meilleurDots}
+        />
+      </Repli>
+    </div>
 
     <header class="entete-athlete">
       {
@@ -642,9 +667,16 @@ const description =
 </BaseLayout>
 
 <style>
+  /* Le lien à gauche, la pastille à droite, centrés sur une même ligne. La
+     marge basse est celle de la rangée, la même que portait le lien seul. */
+  .tete-fiche {
+    justify-content: space-between;
+    align-items: center;
+  }
+
   .fil {
     font-size: var(--step--1);
-    margin-bottom: var(--space-4);
+    margin: 0;
   }
 
   .entete-athlete {
