@@ -319,6 +319,11 @@ Tant que rien n'est accepté, aucune requête ne part vers `clarity.ms` et aucun
 cookie n'est déposé. Le refus s'exerce en un clic et se révoque depuis
 `/confidentialite/`.
 
+Le choix s'enregistre par `enregistrerChoix()`, dans `src/lib/consentement.ts`,
+qu'appellent la bannière et `/confidentialite/`. La fonction émet l'événement
+`sbd:consentement`, que les deux écoutent pour se mettre à jour. Écrire la clé
+`sbd-mesure` directement laisserait l'autre interface dans un état périmé.
+
 **Avant de brancher tout autre service externe**, vérifier dans l'onglet réseau
 du navigateur qu'aucune requête ne part avant l'accord du visiteur.
 
