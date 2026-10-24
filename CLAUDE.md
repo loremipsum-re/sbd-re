@@ -192,6 +192,14 @@ de `tokens.css` sur `a[href^="http"]`. Ne pas l'ajouter à la main dans le
 balisage : un nouveau lien externe l'obtient sans rien demander. Les adresses
 `mailto:` en sont exclues, un courriel n'étant pas un site externe.
 
+**Tout lien sortant s'ouvre dans un nouvel onglet et s'annonce**, demande de
+l'auteur du 24 octobre 2026. `src/middleware.ts` réécrit le HTML de chaque page
+à la génération : `target="_blank"`, `rel` complété de `noopener`, et
+`aria-describedby` vers la phrase unique « Nouvel onglet, quitte sbd.re »,
+posée masquée dans `BaseLayout.astro`. Ne rien écrire de tout cela à la main.
+Seul un lien fabriqué en JavaScript échappe au traitement : lui appeler
+`marquerLienSortant()` de `lib/liens-sortants.ts`, comme la carte des salles.
+
 **Une exception au pack unique : `Coupe.astro` et `Medaille.astro`.** Ce sont
 des tracés maison et PLEINS, antérieurs à Tabler, et ils le restent. Deux
 raisons. Ils marquent un état dans la donnée, pas une navigation, et le plein
