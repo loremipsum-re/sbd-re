@@ -2,6 +2,7 @@
 titre: "Où se disputent les compétitions à La Réunion"
 description: "63 compétitions sur sept communes depuis 2017. L'Étang-Salé en accueille 18, Saint-Paul 16, Sainte-Marie 13."
 date: 2026-10-16
+infographie: communes
 ---
 
 L'Étang-Salé accueille le plus de compétitions de force athlétique à
