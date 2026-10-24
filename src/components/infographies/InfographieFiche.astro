@@ -11,8 +11,8 @@
  *
  * LES CHIFFRES VIENNENT DE LA PAGE, passés en propriétés. La fiche les a déjà
  * calculés pour ses chiffres clés : les recalculer ici ouvrirait la porte à
- * deux valeurs différentes sur une même page. Le composant ne fait que les
- * comparer.
+ * deux valeurs différentes sur une même page. Le composant les compare, et
+ * cherche dans l'historique de l'athlète la compétition de chaque barre.
  *
  * JUSTE POUR TOUS LES PROFILS. Chaque constat se choisit sur les données, et
  * rien n'est affirmé que la fiche ne montre :
@@ -22,14 +22,21 @@
  *  - la somme des meilleures barres dépasse le meilleur total sur 89 des 320
  *    fiches qui ont un total, mesuré en octobre 2026. Chaque barre est la
  *    meilleure de toute la carrière sur l'île, le total celui d'une seule
- *    compétition : une somme supérieure PROUVE que les trois barres viennent
- *    de plusieurs compétitions. Une somme égale ne prouve rien, d'où un
- *    constat plus prudent ;
- *  - meilleur total et meilleur Dots viennent de deux compétitions sur 20
- *    fiches. Le tableau passe alors à deux colonnes. La comparaison se fait
- *    par la date et le nom de la compétition, jamais par l'objet : un athlète
- *    peut figurer deux fois dans une même compétition, en full power et en
- *    développé couché seul.
+ *    ligne de full power : une somme supérieure prouve que les trois barres
+ *    viennent de PLUSIEURS LIGNES DE L'HISTORIQUE, et non forcément de
+ *    plusieurs compétitions. Un athlète peut disputer deux épreuves d'une
+ *    même compétition, le full power et le développé couché seul : sur une
+ *    fiche, les trois meilleures barres viennent ainsi d'une seule
+ *    compétition, dont le développé couché seul a donné la meilleure barre.
+ *    Le constat cherche donc où chaque barre a été soulevée, dans
+ *    l'historique passé en propriété, au lieu de le déduire. Une somme égale
+ *    ne prouve rien, d'où un constat plus prudent ;
+ *  - meilleur total et meilleur Dots viennent de deux résultats différents
+ *    sur 20 fiches. Le tableau passe alors à deux colonnes. La comparaison se
+ *    fait PAR L'OBJET, celui que la fiche a retenu pour chacun : deux lignes
+ *    de full power d'une même compétition, en raw et en équipé par exemple,
+ *    se confondraient à la date et au nom, et la colonne unique afficherait
+ *    alors le Dots du meilleur total au lieu du meilleur Dots.
  *
  * LES MARQUES SONT LES VRAIS COMPOSANTS : BadgeOfficiel, Coupe,
  * IconeMouvement, la classe `.evolution` de tokens.css. La légende ne peut
@@ -53,13 +60,15 @@ interface Props {
   sexe: Sex;
   /** Meilleure barre de chaque mouvement sur l'île, 0 si jamais disputé. */
   barres: Record<Mouvement, number>;
+  /** Les résultats de l'athlète sur l'île, pour savoir d'où vient chaque barre. */
+  historique: Result[];
   /** Le résultat full power au meilleur total, tel que la fiche l'a retenu. */
   meilleurTotal: Result | null;
   /** Le résultat full power au meilleur Dots, tel que la fiche l'a retenu. */
   meilleurDots: Result | null;
 }
 
-const { sexe, barres, meilleurTotal, meilleurDots } = Astro.props;
+const { sexe, barres, historique, meilleurTotal, meilleurDots } = Astro.props;
 
 const NBSP = '\u00a0';
 
@@ -84,6 +93,20 @@ const somme = mouvements.every((m) => m.kg > 0)
 const total = meilleurTotal?.totalKg ?? null;
 const ecartSomme = somme !== null && total !== null ? Number((somme - total).toFixed(1)) : null;
 
+/* Les compétitions où chaque meilleure barre a été soulevée, cherchées dans
+   l'historique. Une compétition qui les porte toutes les trois rend fausse la
+   phrase « plusieurs compétitions ». */
+const CHAMPS: Record<Mouvement, 'bestSquatKg' | 'bestBenchKg' | 'bestDeadliftKg'> = {
+  squat: 'bestSquatKg',
+  bench: 'bestBenchKg',
+  deadlift: 'bestDeadliftKg',
+};
+const competition = (r: Result) => `${r.date}|${r.meetName}`;
+const [sourcesSquat, ...autresSources] = mouvements.map(
+  (m) => new Set(historique.filter((r) => r[CHAMPS[m.id]] === m.kg).map(competition)),
+);
+const uneSeuleCompetition = [...sourcesSquat].some((c) => autresSources.every((s) => s.has(c)));
+
 /*
  * Les constats sont construits ici plutôt que cousus dans le gabarit : des
  * conditions au milieu d'un texte laissent des espaces parasites avant les
@@ -91,8 +114,11 @@ const ecartSomme = somme !== null && total !== null ? Number((somme - total).toF
  */
 const noteBarres = ['Chaque barre est la meilleure du mouvement sur l’île.'];
 if (ecartSomme !== null && ecartSomme > 0) {
+  const provenance = uneSeuleCompetition
+    ? 'de plusieurs épreuves d’une même compétition'
+    : 'de plusieurs compétitions';
   noteBarres.push(
-    `Elles viennent de plusieurs compétitions et dépassent ensemble le meilleur total de ${nombre(ecartSomme)}${NBSP}kg.`,
+    `Elles viennent ${provenance} et dépassent ensemble le meilleur total de ${nombre(ecartSomme)}${NBSP}kg.`,
   );
 } else if (ecartSomme === 0) {
   noteBarres.push('Leur somme égale ici le meilleur total.');
@@ -107,18 +133,19 @@ interface Colonne {
   marques: Marque[];
 }
 
+/* Le même résultat, par l'objet que la fiche a retenu : voir l'en-tête. */
+const memeResultat = meilleurTotal !== null && meilleurTotal === meilleurDots;
 const memeCompetition =
   meilleurTotal !== null &&
   meilleurDots !== null &&
-  meilleurTotal.date === meilleurDots.date &&
-  meilleurTotal.meetName === meilleurDots.meetName;
+  competition(meilleurTotal) === competition(meilleurDots);
 
 /* Une colonne quand les deux marques coïncident, deux quand elles divergent,
    aucune sans total en full power. */
 const colonnes: Colonne[] =
   meilleurTotal === null || meilleurDots === null
     ? []
-    : memeCompetition
+    : memeResultat
       ? [{ titre: 'Les deux', resultat: meilleurTotal, marques: ['total', 'dots'] }]
       : [
           { titre: 'Meilleur total', resultat: meilleurTotal, marques: ['total'] },
@@ -139,20 +166,23 @@ if (meilleurTotal === null) {
   );
 } else {
   noteDots.push(
-    'Le total réunit les trois barres d’une même compétition.',
+    'Le total réunit les trois barres d’une même épreuve de full power.',
     'Le Dots le ramène au poids de corps.',
   );
-  if (memeCompetition) {
+  const lieu = memeCompetition
+    ? 'd’une autre épreuve de la même compétition'
+    : 'd’une autre compétition';
+  if (memeResultat) {
     noteDots.push(
       'Les deux marques viennent ici de la même compétition.',
       'Plus léger, un athlète peut marquer plus de points avec un total moins lourd.',
     );
   } else if (allege !== null && allege > 0) {
     noteDots.push(
-      `Le meilleur Dots vient ici d’une autre compétition, à un poids de corps plus bas de ${nombre(allege)}${NBSP}kg.`,
+      `Le meilleur Dots vient ici ${lieu}, à un poids de corps plus bas de ${nombre(allege)}${NBSP}kg.`,
     );
   } else {
-    noteDots.push('Le meilleur Dots vient ici d’une autre compétition.');
+    noteDots.push(`Le meilleur Dots vient ici ${lieu}.`);
   }
 }
 
@@ -163,10 +193,16 @@ const article = sexe === 'F' ? 'cette' : 'cet';
   titre="Lire une fiche d'athlète"
   source={`Chiffres tirés des résultats de ${article} athlète à La Réunion. La légende vaut pour toutes les fiches.`}
 >
-  <section aria-labelledby="fiche-chiffres">
+  {/*
+    DES BLOCS ET NON DES `<section>`. Nommée, une section devient un repère de
+    navigation pour les lecteurs d'écran, et la figure en ajouterait deux à la
+    liste des repères de la page. L'intitulé nomme la liste qu'il précède,
+    comme dans les autres infographies.
+  */}
+  <div>
     <p class="intitule" id="fiche-chiffres">Les chiffres de cette fiche</p>
 
-    <ul class="cartes">
+    <ul class="cartes" aria-labelledby="fiche-chiffres">
       <li class="carte">
         <p class="nom">Meilleures barres</p>
         <dl class="meilleures">
@@ -273,10 +309,10 @@ const article = sexe === 'F' ? 'cette' : 'cet';
         <p class="constat">{noteDots.join(' ')}</p>
       </li>
     </ul>
-  </section>
+  </div>
 
-  <section class="reperes-bloc" aria-labelledby="fiche-reperes">
-    <p class="intitule" id="fiche-reperes">Les repères d'une fiche</p>
+  <div class="reperes-bloc">
+    <p class="intitule">Les repères d'une fiche</p>
 
     <dl class="reperes">
       <div class="repere">
@@ -301,7 +337,11 @@ const article = sexe === 'F' ? 'cette' : 'cet';
 
       <div class="repere">
         <dt>
-          <span class="marque" aria-hidden="true"><Coupe metal="or" taille={20} /></span>
+          {/* Sans `detail`, la coupe dorée prendrait l'infobulle « Première
+              place », que le survol afficherait malgré `aria-hidden`. */}
+          <span class="marque" aria-hidden="true">
+            <Coupe metal="or" taille={20} detail="Record en cours" />
+          </span>
           Coupe
         </dt>
         <dd>Record en cours de sa catégorie à La Réunion.</dd>
@@ -343,12 +383,12 @@ const article = sexe === 'F' ? 'cette' : 'cet';
             <span class="evolution" data-sens="hausse">▲</span>
             <span class="evolution" data-sens="baisse">▼</span>
           </span>
-          Triangles
+          Flèches
         </dt>
         <dd>Points Dots gagnés ou perdus depuis la compétition précédente en full power.</dd>
       </div>
     </dl>
-  </section>
+  </div>
 </Infographie>
 
 <style>

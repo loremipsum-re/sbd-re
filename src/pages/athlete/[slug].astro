@@ -222,7 +222,8 @@ const description =
       celle d'une cible tactile de 44 px : les chiffres clés descendent de 21
       à 23 px, mesuré à 375 et 1 280 px. Posée sous l'en-tête, elle les aurait
       repoussés de 60 px. Ouverte, elle passe sous le lien, sur toute la
-      largeur, comme dans toute rangée de pastilles.
+      largeur, comme dans toute rangée de pastilles. Sa pastille reste à
+      droite, voir la feuille de style.
 
       L'infographie reçoit les chiffres que la fiche a déjà calculés, pour
       que ses cartes et le bloc des chiffres clés ne puissent pas diverger.
@@ -233,6 +234,7 @@ const description =
         <InfographieFiche
           sexe={dernier.sex}
           barres={meilleures}
+          historique={historique}
           meilleurTotal={meilleurTotal}
           meilleurDots={meilleurDots}
         />
@@ -672,6 +674,16 @@ const description =
   .tete-fiche {
     justify-content: space-between;
     align-items: center;
+  }
+
+  /* OUVERTE, LA PASTILLE RESTE À DROITE. Sa rangée la fait passer sous le
+     lien, et elle partait au bord gauche : mesuré à 1 280 px, elle sautait de
+     900 px loin du pointeur qui venait de la toucher, et il fallait la
+     chercher pour refermer. Calée à droite, elle descend d'une ligne. */
+  .tete-fiche :global(.repli[open] > summary) {
+    display: flex;
+    width: fit-content;
+    margin-left: auto;
   }
 
   .fil {
