@@ -73,8 +73,10 @@ function repartition(
     .map(([nom, n]) => ({ libelle: nom, resultats: n }))
     .sort((a, b) => b.resultats - a.resultats || a.libelle.localeCompare(b.libelle, 'fr'));
 
+  /* Un reste d'une seule valeur s'affiche sous son nom. La rangée « 1 autre
+     pays » prendrait la même place et cacherait ce nom. */
   const autres = rangees.slice(garder);
-  if (autres.length === 0) return rangees;
+  if (autres.length <= 1) return rangees;
   return [
     ...rangees.slice(0, garder),
     {
@@ -86,12 +88,16 @@ function repartition(
 }
 
 const pays = repartition('meetCountry', 4, paysFr, (n) => `${n} autres pays`);
-const federations = repartition(
-  'federation',
-  4,
-  (f) => f,
-  (n) => `${n} ${pluriel(n, 'autre fédération', 'autres fédérations')}`,
-);
+const federations = repartition('federation', 4, (f) => f, (n) => `${n} autres fédérations`);
+
+/*
+ * L'échelle des barres est la plus longue rangée, celle du reste comprise :
+ * un reste plus fourni que le premier pays sortirait de sa piste. La colonne
+ * des effectifs s'élargit avec le plus long, « 1 000 » ne tenant pas dans la
+ * place de « 387 ».
+ */
+const echellePays = Math.max(...pays.map((p) => p.resultats));
+const chiffresPays = Math.max(...pays.map((p) => nombre(p.resultats).length));
 
 /* ---------------------------------------------------------------------------
  * ANNÉES : une colonne par année, les années sans résultat comprises, pour
@@ -122,8 +128,14 @@ const anneesMax = annees.filter((a) => a.resultats === plusFournie).map((a) => a
  * génération reste reproductible.
  */
 const partielle = Number(fin.slice(5, 7)) < 12;
+/** « 4 octobre », insécable : l'année est déjà nommée dans la phrase. */
+const jourFin = dateLongue(fin).replace(/\s\d{4}$/, '').replaceAll(' ', '\u00a0');
 
-/** Graduations : la première année, chaque début de décennie, la dernière. */
+/**
+ * Graduations : la première année, chaque début de décennie, la dernière.
+ * Une décennie à moins de sept ans d'un bout est marquée serrée : sur un
+ * écran de 320 px, « 2020 » et « 2026 » ne gardaient que 3 px entre eux.
+ */
 const graduations = annees
   .map((a, i) => ({ ...a, i }))
   .filter(
@@ -131,7 +143,12 @@ const graduations = annees
       annee === premiere ||
       annee === derniere ||
       (annee % 10 === 0 && annee - premiere > 3 && derniere - annee > 3),
-  );
+  )
+  .map((g) => ({
+    ...g,
+    serre:
+      g.annee !== premiere && g.annee !== derniere && (g.annee - premiere < 7 || derniere - g.annee < 7),
+  }));
 const position = (i: number) => ((i + 0.5) / annees.length) * 100;
 
 /* ---------------------------------------------------------------------------
@@ -207,20 +224,29 @@ const titre =
   titres.length > 0
     ? `${nombre(total)} résultats hors de l'île, dont ${titres.length} ${nature()}`
     : `${nombre(total)} résultats hors de l'île`;
+
+/* La définition du titre n'accompagne que des titres affichés. */
+const source = [
+  'Résultats relevés par OpenPowerlifting. Les pays sont ceux que la source enregistre.',
+  titres.length > 0 &&
+    "Un titre est une première place à un championnat d'Europe de l'EPF ou à un championnat du monde de l'IPF, d'après le nom de la compétition.",
+]
+  .filter(Boolean)
+  .join(' ');
 ---
 
 <Infographie
   titre={titre}
-  source="Résultats relevés par OpenPowerlifting, pays tels que la source les enregistre. Un titre est une première place à un championnat d'Europe de l'EPF ou à un championnat du monde de l'IPF, d'après le nom de la compétition."
+  source={source}
   lienArticle={lienArticle}
 >
   <div class="contexte">
     <section class="ou" aria-labelledby="international-pays">
       <p class="intitule" id="international-pays">Par pays</p>
-      <ol class="barres">
+      <ol class="barres" style={`--chiffres:${chiffresPays}`}>
         {
           pays.map((p) => (
-            <li data-reste={p.reste ? '' : undefined} style={`--part:${p.resultats / pays[0].resultats}`}>
+            <li data-reste={p.reste ? '' : undefined} style={`--part:${p.resultats / echellePays}`}>
               {/* Les espaces explicites séparent les cellules dans le texte
                   copié. La grille les ignore. */}
               <span class="libelle">{p.libelle}</span>{' '}
@@ -277,6 +303,7 @@ const titre =
           graduations.map((g) => (
             <span
               data-bout={g.annee === premiere ? 'debut' : g.annee === derniere ? 'fin' : undefined}
+              data-serre={g.serre ? '' : undefined}
               style={`--position:${position(g.i)}%`}
             >
               {g.annee}
@@ -287,12 +314,13 @@ const titre =
       <p class="lecture">
         Année la plus fournie : {anneesMax.join(' et ')}, avec{' '}
         <strong class="num-tab">{nombre(plusFournie)}</strong>&nbsp;{pluriel(plusFournie, 'résultat')}.
+        {/* L'année est nommée : la hachure est invisible au lecteur d'écran. */}
         {
           partielle && (
             <>
               {' '}
-              La barre hachurée s'arrête au {dateLongue(fin).replaceAll(' ', '\u00a0')}, date
-              du dernier résultat relevé.
+              L'année {derniere} est comptée jusqu'au {jourFin}, date du dernier résultat
+              relevé. Sa barre est hachurée.
             </>
           )
         }
@@ -411,7 +439,7 @@ const titre =
 
   .barres li {
     display: grid;
-    grid-template-columns: 8.5rem minmax(0, 1fr) 2.5rem;
+    grid-template-columns: 8.5rem minmax(0, 1fr) max(2.5rem, calc((var(--chiffres) + 0.5) * 1ch));
     align-items: center;
     gap: var(--space-2);
     min-width: 0;
@@ -439,7 +467,7 @@ const titre =
     display: block;
     height: 100%;
     width: calc(var(--part) * 100%);
-    /* Une rangée rare reste visible : 9 résultats sur 387 font 2 %. */
+    /* Une rangée rare reste visible : 11 résultats sur 387 font 3 %. */
     min-width: 3px;
     background: var(--accent-fill);
   }
@@ -550,6 +578,12 @@ const titre =
     left: auto;
     right: 0;
     transform: none;
+  }
+  /* Jusqu'à 360 px de large, une décennie trop proche d'un bout s'efface. */
+  @media (max-width: 22.5rem) {
+    .graduations [data-serre] {
+      display: none;
+    }
   }
 
   .lecture {
