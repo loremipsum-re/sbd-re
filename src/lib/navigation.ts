@@ -31,7 +31,11 @@ export type NomIcone =
   | 'salles'
   | 'suggestions'
   | 'journal'
-  | 'apropos';
+  | 'apropos'
+  /* Deux icônes d'état, pour les infographies : un essai validé, un essai
+     manqué. Toujours accompagnées du mot. */
+  | 'valide'
+  | 'manque';
 
 export interface Rubrique {
   href: string;
