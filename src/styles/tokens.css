@@ -248,6 +248,11 @@
    *
    * Règle : prendre un multiple de 8. Descendre à 4 ou 12 seulement pour un
    * rembourrage interne serré, jamais pour un écart entre deux blocs.
+   *
+   * --space-5 n'existe pas, et c'est voulu : 20 px tombe hors du pas de 8.
+   * Cinq déclarations l'ont pourtant employé jusqu'au 24 octobre 2026. Une
+   * variable absente sans repli annule toute la déclaration, et ces écarts
+   * valaient 0 px. Choisir --space-4 ou --space-6.
    */
   --space-1: 0.25rem; /*  4 px — demi-pas */
   --space-2: 0.5rem; /*   8 px */
