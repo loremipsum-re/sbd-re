@@ -37,7 +37,7 @@
 import Icone from '../Icone.astro';
 import Infographie from './Infographie.astro';
 import { duree, parFenetre, REGLES_SUGGESTION as R } from '../../lib/infographie-suggestion';
-import { nombre } from '../../lib/format';
+import { nombre, pluriel } from '../../lib/format';
 
 interface Props {
   // Aucune propriété : la page des suggestions l'appelle directement.
@@ -58,7 +58,7 @@ const groupes = [
       { nom: 'Nature', natures: R.natures },
       {
         nom: 'Message',
-        detail: `De ${nombre(R.messageMin)} à ${nombre(R.messageMax)}${NBSP}caractères.`,
+        detail: `De ${nombre(R.messageMin)} à ${nombre(R.messageMax)}${NBSP}${pluriel(R.messageMax, 'caractère')}.`,
       },
     ],
   },
@@ -80,6 +80,9 @@ const groupes = [
   },
 ];
 
+/* GARDÉS PAR LA GÉNÉRATION : lib/infographie-suggestion.ts arrête le build si
+   le PHP lit le navigateur, un cookie ou une session, ou emploie l'adresse IP
+   ailleurs que dans le compteur. */
 const ABSENTS = ['Votre adresse IP', 'Votre navigateur', 'Un identifiant de visite'];
 ---
 
@@ -90,7 +93,7 @@ const ABSENTS = ['Votre adresse IP', 'Votre navigateur', 'Un identifiant de visi
   <ol class="etapes">
     <li class="etape">
       <p class="intitule">
-        <span class="rang" aria-hidden="true">1</span>
+        <span class="rang">1</span>{' '}
         Ce que vous envoyez
       </p>
 
@@ -125,7 +128,7 @@ const ABSENTS = ['Votre adresse IP', 'Votre navigateur', 'Un identifiant de visi
     <li class="etape">
       <span class="liaison" aria-hidden="true"></span>
       <p class="intitule">
-        <span class="rang" aria-hidden="true">2</span>
+        <span class="rang">2</span>{' '}
         Les contrôles du serveur
       </p>
 
@@ -137,8 +140,8 @@ const ABSENTS = ['Votre adresse IP', 'Votre navigateur', 'Un identifiant de visi
           </p>
           <div class="texte">
             <p class="regle">
-              {R.envoisMax}&nbsp;suggestions au plus {parFenetre(R.fenetreSecondes)}, par
-              adresse&nbsp;IP.
+              Au plus {R.envoisMax}&nbsp;{pluriel(R.envoisMax, 'suggestion')}{' '}
+              {parFenetre(R.fenetreSecondes)} et par adresse&nbsp;IP.
             </p>
             <p class="issue">
               <Icone nom="manque" taille={16} />
@@ -184,10 +187,13 @@ const ABSENTS = ['Votre adresse IP', 'Votre navigateur', 'Un identifiant de visi
         <li class="controle">
           <p class="valeur" aria-hidden="true">
             <span class="num">{nombre(R.messageMin)}</span>{' '}
-            <span class="unite">caractères</span>
+            <span class="unite">{pluriel(R.messageMin, 'caractère')}</span>
           </p>
           <div class="texte">
-            <p class="regle">Le message compte {nombre(R.messageMin)}&nbsp;caractères au moins.</p>
+            <p class="regle">
+              Le message compte {nombre(R.messageMin)}&nbsp;{pluriel(R.messageMin, 'caractère')} au
+              moins.
+            </p>
             <p class="issue">
               <Icone nom="manque" taille={16} />
               Envoi refusé en dessous
@@ -199,13 +205,15 @@ const ABSENTS = ['Votre adresse IP', 'Votre navigateur', 'Un identifiant de visi
         </li>
       </ul>
 
-      <p class="detail">Aucun CAPTCHA ni service extérieur.</p>
+      <p class="detail">
+        Ces contrôles se font sur le serveur du site, sans CAPTCHA ni service extérieur.
+      </p>
     </li>
 
     <li class="etape">
       <span class="liaison" aria-hidden="true"></span>
       <p class="intitule">
-        <span class="rang" aria-hidden="true">3</span>
+        <span class="rang">3</span>{' '}
         Gardée, puis envoyée
       </p>
 
@@ -262,8 +270,8 @@ const ABSENTS = ['Votre adresse IP', 'Votre navigateur', 'Un identifiant de visi
       </div>
 
       <p class="detail">
-        La <a href="/confidentialite/">page de confidentialité</a> explique comment
-        faire effacer votre suggestion.
+        Pour faire effacer votre suggestion, suivez la démarche de la{' '}
+        <a href="/confidentialite/">page de confidentialité</a>.
       </p>
     </li>
   </ol>
@@ -294,8 +302,10 @@ const ABSENTS = ['Votre adresse IP', 'Votre navigateur', 'Un identifiant de visi
   }
 
   /* LE NUMÉRO D'ÉTAPE, en carré d'aplat, comme dans les infographies de la
-     provenance des données et du consentement. La liste ordonnée l'annonce
-     déjà : le chiffre est caché aux lecteurs d'écran. */
+     provenance des données et du consentement. LE CHIFFRE RESTE LU. Sans
+     puce, la liste n'expose plus aucun numéro : mesuré dans l'arbre
+     d'accessibilité de Chromium, l'étape 1 commençait par « Ce que vous
+     envoyez » quand le carré était caché. */
   .intitule {
     display: flex;
     align-items: center;

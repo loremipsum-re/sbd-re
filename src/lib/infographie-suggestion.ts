@@ -96,6 +96,36 @@ const conserves = [...blocJournal.matchAll(/'(\w+)'\s*=>/g)].map(([, cle]) => {
   return libelle;
 });
 
+/*
+ * LES ABSENTS SONT VÉRIFIÉS AUSSI. L'infographie affirme que ni l'adresse IP,
+ * ni le navigateur, ni un identifiant de visite n'entrent dans le fichier ou
+ * le courriel. Le serveur ne lit donc ni l'en-tête du navigateur, ni un
+ * cookie, ni une session, et l'adresse IP n'y sert qu'au nom haché du
+ * compteur : lue une fois, employée une fois, dans `sha1($ip)`.
+ */
+for (const [motif, quoi] of [
+  [/HTTP_USER_AGENT/, "l'en-tête du navigateur"],
+  [/\$_COOKIE|session_start/, 'un cookie ou une session'],
+] as const) {
+  if (motif.test(source)) {
+    throw new Error(
+      `Infographie « suggestion » : ${FICHIER} lit ${quoi}, que la figure dit absent. ` +
+        `Mettre à jour src/components/infographies/InfographieSuggestion.astro.`,
+    );
+  }
+}
+const compter = (motif: RegExp) => (source.match(motif) ?? []).length;
+if (
+  compter(/REMOTE_ADDR|HTTP_X_FORWARDED_FOR/g) !== 1 ||
+  compter(/\$ip\b/g) !== 2 ||
+  !/sha1\(\$ip\)/.test(source)
+) {
+  throw new Error(
+    `Infographie « suggestion » : ${FICHIER} emploie l'adresse IP ailleurs que dans le ` +
+      `compteur. Mettre à jour src/components/infographies/InfographieSuggestion.astro.`,
+  );
+}
+
 export const REGLES_SUGGESTION = {
   /** Libellés des natures, dans l'ordre de la liste fermée du serveur. */
   natures: tableau('NATURES').map(([, libelle]) => libelle),
