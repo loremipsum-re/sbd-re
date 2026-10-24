@@ -9,8 +9,8 @@
  * tableau, où chaque catégorie a son podium.
  *
  * UN CARRÉ PAR ATHLÈTE, une colonne par catégorie de poids, de la plus légère
- * à la plus lourde, une rangée par sexe. Les carrés se comptent sur une
- * compétition de cinq athlètes comme sur la plus grosse, et le nombre écrit
+ * à la plus lourde, une rangée par sexe. Les carrés se comptent sur la plus
+ * petite compétition comme sur la plus grosse, et le nombre écrit
  * au-dessus de chaque colonne évite de les compter. Ils s'empilent deux par
  * deux pour que la plus grosse catégorie tienne sur un téléphone.
  *
@@ -19,9 +19,18 @@
  * le texte réservé aux lecteurs d'écran donnent les effectifs.
  *
  * TROIS REPÈRES SOUS LE GRAPHIQUE, chacun affiché seulement s'il a quelque
- * chose à dire : les athlètes qui signent leur premier résultat sur l'île, les
- * coupes du tableau recomptées, l'étendue des tranches d'âge. Les calculs
- * vivent dans lib/infographie-competition.ts.
+ * chose à dire : les athlètes qui signent leur premier résultat recensé sur
+ * l'île, les coupes du tableau recomptées, l'étendue des tranches d'âge. Les
+ * calculs vivent dans lib/infographie-competition.ts.
+ *
+ * TROIS MOTS CHOISIS POUR RESTER EXACTS. « Recensé », parce que les données
+ * commencent en 2017 : un athlète qui concourait avant y figure comme un
+ * débutant, et la source le rappelle. « Marques », parce qu'une coupe
+ * récompense aussi bien un total qu'une barre, et qu'un total n'est pas une
+ * barre. « Par catégorie », parce que les comptes rendus appellent « records
+ * de l'île » les records toutes catégories. Une compétition peut signer des
+ * records de catégorie sans toucher à ceux-là, et l'infographie posée dans
+ * son compte rendu doit pouvoir le dire sans le contredire.
  */
 import Infographie from './Infographie.astro';
 import { EQUIPMENT_GROUPS, type EquipmentGroup, type WeightClass } from '../../lib/categories';
@@ -193,12 +202,13 @@ const legende = [
 ].filter(Boolean);
 
 const { recordsCategorie: records, recordsAbsolus: absolus } = profil;
+/* L'espace insécable garde « toutes catégories » sur une même ligne. */
 const suiteRecords =
   absolus === 0
     ? ''
     : absolus < records
-      ? `, dont ${nombre(absolus)} toutes catégories`
-      : `, aussi ${pluriel(records, 'record')} toutes catégories`;
+      ? `, dont ${nombre(absolus)} toutes catégories`
+      : `, ${pluriel(records, 'record')} toutes catégories`;
 
 const source = `Résultats publiés par OpenPowerlifting. Les compétitions de l'île sont recensées depuis ${annee(periode().debut)}.`;
 ---
@@ -292,7 +302,7 @@ const source = `Résultats publiés par OpenPowerlifting. Les compétitions de l
       <dl class="reperes">
         {profil.debutants ? (
           <div>
-            <dt>Premier résultat sur l'île</dt>
+            <dt>Premier résultat recensé</dt>
             <dd>
               <span class="num">{nombre(profil.debutants)}</span>{' '}
               {pluriel(profil.debutants, 'athlète')} sur {nombre(athletes)}
@@ -301,10 +311,10 @@ const source = `Résultats publiés par OpenPowerlifting. Les compétitions de l
         ) : null}
         {records > 0 && (
           <div>
-            <dt>Records actuels de l'île</dt>
+            <dt>Records actuels par catégorie</dt>
             <dd>
               <span class="num">{nombre(records)}</span>{' '}
-              {pluriel(records, 'barre')}
+              {pluriel(records, 'marque')}
               {suiteRecords}
             </dd>
           </div>
@@ -314,7 +324,7 @@ const source = `Résultats publiés par OpenPowerlifting. Les compétitions de l
             <dt>Tranches d'âge</dt>
             <dd>
               De <span class="num">{profil.ages.min}</span> à{' '}
-              <span class="num">{profil.ages.max}</span> ans
+              <span class="num">{profil.ages.max}</span>&nbsp;ans{profil.ages.ouvert && ' et plus'}
             </dd>
           </div>
         )}
@@ -507,7 +517,17 @@ const source = `Résultats publiés par OpenPowerlifting. Les compétitions de l
     border-top: 1px solid var(--border);
   }
 
+  /*
+   * LES INTITULÉS ET LES VALEURS PARTAGENT LEURS RANGÉES, par `subgrid`, comme
+   * les blocs de chiffres clés de tokens.css. « Records actuels par
+   * catégorie » passe sur deux lignes dans la colonne d'un article : sans
+   * cela, sa valeur tombait plus bas que celles des cases voisines.
+   */
   .reperes > div {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: span 2;
+    row-gap: var(--space-1);
     min-width: 0;
     padding: var(--space-3);
     border: 2px solid var(--border);
@@ -516,7 +536,6 @@ const source = `Résultats publiés par OpenPowerlifting. Les compétitions de l
   }
 
   .reperes dt {
-    margin-bottom: var(--space-1);
     font-size: var(--step--1);
     font-weight: 600;
     color: var(--muted);

@@ -78,21 +78,32 @@ export interface ProfilCompetition {
   unAthleteParCarre: boolean;
   femmesSeulement: boolean;
   /**
-   * Athlètes dont c'est le premier résultat sur l'île. `null` pour la
+   * Athlètes dont c'est le premier résultat RECENSÉ sur l'île. Les données
+   * commencent en 2017 : un athlète qui concourait avant y apparaît comme un
+   * débutant, d'où le mot « recensé » à l'affichage. `null` pour la
    * compétition qui ouvre les données : tout son plateau y débuterait par
    * construction, ce qui ne dirait rien.
    */
   debutants: number | null;
-  /** Barres de ce jour qui sont encore des records de leur catégorie : les coupes du tableau. */
+  /**
+   * Marques de ce jour qui sont encore des records de leur catégorie : les
+   * coupes du tableau. Ce sont des barres ou des totaux, d'où « marques ».
+   */
   recordsCategorie: number;
   /** Parmi elles, les meilleures de l'île pour leur sexe, toutes catégories confondues. */
   recordsAbsolus: number;
-  /** Bornes des tranches d'âge relevées, « 13-15 » donnant 13 et « 65-69 » donnant 69. */
-  ages: { min: number; max: number } | null;
+  /**
+   * Bornes des tranches d'âge relevées, « 13-15 » donnant 13 et « 65-69 »
+   * donnant 69. La dernière tranche d'OpenPowerlifting, « 80-999 », n'a pas
+   * de borne haute : `max` prend alors sa borne basse et `ouvert` vaut vrai.
+   */
+  ages: { min: number; max: number; ouvert: boolean } | null;
 }
 
 const LEVEES: LiftKey[] = ['squat', 'bench', 'deadlift', 'total'];
 const ORDRE_EQUIPEMENT = EQUIPMENT_GROUPS.map((g) => g.id);
+/** Borne haute de « 80-999 », la tranche ouverte d'OpenPowerlifting. */
+const TRANCHE_SANS_BORNE = 999;
 
 let premiers: Map<string, string> | null = null;
 
@@ -223,11 +234,17 @@ export function profilCompetition(chemin: string): ProfilCompetition {
       : [...noms].filter((nom) => debuts.get(nom) === meet.date).length;
 
   const tranches = lignes.map((r) => bornes(r.ageClass)).filter((b) => b !== null);
+  const derniere = tranches.reduce<[number, number] | null>(
+    (plus, t) => (!plus || t[1] > plus[1] ? t : plus),
+    null,
+  );
+  const ouvert = derniere !== null && derniere[1] >= TRANCHE_SANS_BORNE;
   const ages =
-    tranches.length > 0
+    derniere !== null
       ? {
           min: Math.min(...tranches.map(([bas]) => bas)),
-          max: Math.max(...tranches.map(([, haut]) => haut)),
+          max: ouvert ? derniere[0] : derniere[1],
+          ouvert,
         }
       : null;
 
