@@ -7,6 +7,9 @@ import { listeMeets } from '../lib/meets';
 
 const { debut, fin } = periode();
 const meets = listeMeets();
+/* Compté plutôt qu'écrit : « 26 des 61 », écrit à la main, était périmé dès
+   la mise à jour suivante. */
+const developpeSeul = meets.filter((m) => m.events.length === 1 && m.events[0] === 'B').length;
 ---
 
 <BaseLayout
@@ -86,7 +89,8 @@ const meets = listeMeets();
         <strong>Records par mouvement</strong> : toutes les compétitions. Une
         barre compte dès lors qu'elle a été soulevée devant des juges, y compris
         lors d'une compétition ne comportant qu'un seul mouvement. Le développé
-        couché seul représente à lui seul 26 des 61 compétitions de l'île :
+        couché seul représente à lui seul {developpeSeul} des {meets.length}{' '}
+        compétitions de l'île :
         l'écarter afficherait un record inférieur à la réalité.
       </li>
       <li>
@@ -142,7 +146,7 @@ const meets = listeMeets();
 
     <h2>Indépendance</h2>
     <p>
-      Ce site est un projet personnel, sans but lucratif et sans publicité. Il
+      Ce site est un projet personnel, sans but lucratif et sans régie publicitaire. Il
       n'est affilié ni à la FFForce, ni à SBD Apparel, ni à aucun club. Le nom
       « SBD » désigne ici les trois mouvements de la discipline : Squat, Bench,
       Deadlift.
