@@ -46,7 +46,14 @@ const partenaire = await partenaireDeLaPage('article', article.id);
         <p class="chapeau">{article.data.description}</p>
       </header>
 
-      {article.data.infographie && <InfographieArticle id={article.data.infographie} />}
+      {
+        article.data.infographie && (
+          <InfographieArticle
+            id={article.data.infographie}
+            competition={article.data.competition}
+          />
+        )
+      }
 
       <div class="corps">
         <Content />

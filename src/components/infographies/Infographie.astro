@@ -17,7 +17,7 @@
  * ses libellés à 7 px sur un écran de 375 px.
  */
 import Logo from '../Logo.astro';
-import { INFOGRAPHIES, type IdInfographie } from '../../lib/infographies';
+import { INFOGRAPHIES, type FicheInfographie, type IdInfographie } from '../../lib/infographies';
 
 interface Props {
   titre: string;
@@ -31,6 +31,8 @@ interface Props {
 }
 
 const { titre, source, lienArticle } = Astro.props;
+const fiche: FicheInfographie | undefined = lienArticle ? INFOGRAPHIES[lienArticle] : undefined;
+const article = fiche?.article;
 ---
 
 <figure class="infographie">
@@ -46,13 +48,13 @@ const { titre, source, lienArticle } = Astro.props;
   <slot />
 
   {
-    (source || lienArticle) && (
+    (source || article) && (
       <p class="pied">
         {source}
-        {lienArticle && (
+        {article && (
           <>
             {source && ' '}
-            <a href={`/actualites/${INFOGRAPHIES[lienArticle].article}/`}>Lire l'article</a>
+            <a href={`/actualites/${article}/`}>Lire l'article</a>
           </>
         )}
       </p>

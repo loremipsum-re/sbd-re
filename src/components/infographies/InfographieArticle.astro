@@ -8,15 +8,26 @@
  * avant de lire le développement.
  */
 import InfographieCategories from './InfographieCategories.astro';
+import InfographieCommunes from './InfographieCommunes.astro';
+import InfographieCompetition from './InfographieCompetition.astro';
 import InfographieDivisions from './InfographieDivisions.astro';
+import InfographieDonnees from './InfographieDonnees.astro';
 import InfographieDots from './InfographieDots.astro';
 import InfographieEquipement from './InfographieEquipement.astro';
+import InfographieFormats from './InfographieFormats.astro';
+import InfographieInternational from './InfographieInternational.astro';
+import InfographieRecords from './InfographieRecords.astro';
+import InfographieSaisons from './InfographieSaisons.astro';
 import InfographieTotal from './InfographieTotal.astro';
-import type { IdInfographie } from '../../lib/infographies';
+import { INFOGRAPHIES, type FicheInfographie, type IdInfographie } from '../../lib/infographies';
 
 interface Props {
   id: IdInfographie;
+  /** Champ `competition` de l'article, que lit l'infographie d'une compétition. */
+  competition?: string;
 }
+
+const { id, competition } = Astro.props;
 
 const COMPOSANTS = {
   dots: InfographieDots,
@@ -24,9 +35,27 @@ const COMPOSANTS = {
   equipement: InfographieEquipement,
   categories: InfographieCategories,
   divisions: InfographieDivisions,
-} satisfies Record<IdInfographie, unknown>;
+  saisons: InfographieSaisons,
+  records: InfographieRecords,
+  communes: InfographieCommunes,
+  international: InfographieInternational,
+  donnees: InfographieDonnees,
+  formats: InfographieFormats,
+} satisfies Record<Exclude<IdInfographie, 'competition'>, unknown>;
 
-const Composant = COMPOSANTS[Astro.props.id];
+/*
+ * L'infographie d'une compétition sans compétition désignée n'aurait rien à
+ * montrer. La génération s'arrête plutôt que de publier un cadre vide.
+ */
+const fiche: FicheInfographie = INFOGRAPHIES[id];
+if (fiche.exigeCompetition && !competition) {
+  throw new Error(
+    `L'infographie « ${id} » demande le champ « competition » de l'article.`,
+  );
+}
+
+// Toutes s'affichent sans propriété, sauf celle d'une compétition.
+const Composant = id === 'competition' ? null : COMPOSANTS[id];
 ---
 
-<Composant />
+{Composant ? <Composant /> : <InfographieCompetition chemin={competition!} />}
