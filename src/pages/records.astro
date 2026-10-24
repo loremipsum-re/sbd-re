@@ -2,6 +2,8 @@
 import IconeMouvement from '../components/IconeMouvement.astro';
 import SpriteMouvements from '../components/SpriteMouvements.astro';
 import InteractiveTable from '../components/InteractiveTable.astro';
+import Repli from '../components/Repli.astro';
+import InfographieEquipement from '../components/infographies/InfographieEquipement.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import {
   EQUIPMENT_GROUPS,
@@ -138,6 +140,17 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
         équipé.
       </p>
     </header>
+
+    {/*
+      L'ÉQUIPEMENT EN IMAGES, REPLIÉ. Une pastille de 44 px entre le chapeau
+      et les commandes : le choix Raw ou Équipé se fait juste dessous, et qui
+      ignore ce qui les sépare l'apprend avant de choisir.
+    */}
+    <div class="rangee-replis">
+      <Repli titre="Raw, bandes et équipé en images">
+        <InfographieEquipement lienArticle="equipement" />
+      </Repli>
+    </div>
 
     <InteractiveTable
       recherche="Nom d'athlète, catégorie…"

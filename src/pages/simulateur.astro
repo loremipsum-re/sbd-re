@@ -29,6 +29,8 @@
  * page dit « tu SERAIS », jamais « tu ES », et la formulation compte.
  */
 import Glossaire from '../components/Glossaire.astro';
+import Repli from '../components/Repli.astro';
+import InfographieDots from '../components/infographies/InfographieDots.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { EQUIPMENT_GROUPS, weightClassesFor } from '../lib/categories';
 import { fullPowerResults } from '../lib/data';
@@ -95,7 +97,12 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
       </p>
     </header>
 
-    <Glossaire />
+    <div class="rangee-replis">
+      <Glossaire />
+      <Repli titre="Dots en images">
+        <InfographieDots lienArticle="dots" />
+      </Repli>
+    </div>
 
     <form class="formulaire" id="formulaire" autocomplete="off">
       {/* Ce qu'on CHOISIT dans une liste. */}
