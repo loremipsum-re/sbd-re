@@ -254,7 +254,15 @@ npm run check         # types TypeScript et composants Astro
 npm run data:update   # régénère les données depuis OpenPowerlifting
 npm run data:explore  # diagnostic du dump, ne produit rien
 npm run fonts:update  # retélécharge les polices auto-hébergées
+npm run clarity:relever # relève la veille dans Clarity, à lancer chaque jour
 ```
+
+**Clarity ne s'exporte pas, il se relève.** Son API ne rend que les 1 à 3
+derniers jours, agrégés, à 10 appels par jour. `scripts/relever-clarity.mjs`
+écrit la veille dans `clarity/releves.jsonl`, dossier ignoré par git où vit
+aussi le jeton. Un mois de données demande un mois de relevés. Les cartes de
+chaleur et l'élément d'un clic mort ne passent pas par l'API : captures d'écran.
+
 
 Pour la partie communauté, **PHP 8.4 est installé en local** et disponible dans
 le PATH utilisateur. Aucun PHP ne doit être livré sans être passé par le
