@@ -2,6 +2,7 @@
 titre: "Grand Raid 2026, ce que la Diagonale dit du sport réunionnais"
 description: "7 226 coureurs au Grand Raid, 112 athlètes en force athlétique. Deux sports de l'île, deux rapports à l'effort."
 date: 2026-10-24
+infographie: saisons
 ---
 
 Hugo Deck a remporté la 34e Diagonale des Fous le 16 octobre 2026, en 22 h 54

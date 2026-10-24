@@ -1,13 +1,490 @@
 ---
 /**
- * ÉBAUCHE, à dessiner : infographie « saisons ».
+ * Les saisons de l'île, depuis la première année des données.
  *
- * Le fichier existe pour que l'aiguillage et les pages se compilent pendant
- * que l'infographie se dessine. Il ne rend rien.
+ * UNE RANGÉE PAR SAISON, de la plus ancienne à la plus récente. La barre
+ * compte les athlètes distincts de l'année : un athlète compte une fois, quel
+ * que soit son nombre de compétitions. Les femmes ouvrent la barre, si bien
+ * que leur nombre se compare d'une saison à l'autre sur un départ commun.
+ *
+ * PLEIN POUR LES FEMMES, HACHURÉ POUR LES HOMMES. La distinction tient au
+ * motif et non à la couleur : la couleur sert déjà à désigner la saison en
+ * cours, seule rangée accentuée. Chaque rangée écrit en plus sa part de femmes
+ * en toutes lettres.
+ *
+ * LA SAISON EST L'ANNÉE CIVILE, comme dans l'article « La saison 2026 ». La
+ * première est incomplète, les données commençant en octobre 2017 : la
+ * légende donne la date du premier résultat.
+ *
+ * LA DERNIÈRE SAISON EST MISE EN AVANT dans un encadré, qui ajoute les
+ * débutants : les athlètes sans résultat sur l'île avant la saison. Ce
+ * chiffre n'est pas donné saison par saison, car la première année des
+ * données, tous les athlètes le seraient. Les lignes « précédent maximum » ne
+ * s'affichent que si la saison bat ce maximum, pour que l'encadré n'annonce
+ * jamais un record qui n'en est pas un.
+ *
+ * « EN COURS » SE DÉCIDE À LA DATE DE GÉNÉRATION, comme l'annonce de
+ * l'accueil : la saison est en cours si son année est celle du build.
  */
+import Infographie from './Infographie.astro';
+import { periode, results } from '../../lib/data';
+import { dateLongue, nombre, pluriel } from '../../lib/format';
 import type { IdInfographie } from '../../lib/infographies';
+import { listeMeets } from '../../lib/meets';
 
 interface Props {
   lienArticle?: IdInfographie;
 }
+
+const { lienArticle } = Astro.props;
+
+interface Saison {
+  annee: string;
+  athletes: number;
+  femmes: number;
+  competitions: number;
+  /** Athlètes dont le premier résultat sur l'île date de cette saison. */
+  premiers: number;
+}
+
+// La première saison de chaque athlète sur l'île.
+const debutDe = new Map<string, string>();
+for (const r of results) {
+  const annee = r.date.slice(0, 4);
+  const connue = debutDe.get(r.name);
+  if (!connue || annee < connue) debutDe.set(r.name, annee);
+}
+
+const parAnnee = new Map<string, { noms: Set<string>; femmes: Set<string> }>();
+for (const r of results) {
+  const annee = r.date.slice(0, 4);
+  let entree = parAnnee.get(annee);
+  if (!entree) {
+    entree = { noms: new Set(), femmes: new Set() };
+    parAnnee.set(annee, entree);
+  }
+  entree.noms.add(r.name);
+  if (r.sex === 'F') entree.femmes.add(r.name);
+}
+
+// Les compétitions se comptent comme partout ailleurs sur le site.
+const meets = listeMeets();
+
+const saisons: Saison[] = [...parAnnee.entries()]
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([annee, { noms, femmes }]) => ({
+    annee,
+    athletes: noms.size,
+    femmes: femmes.size,
+    competitions: meets.filter((m) => m.date.startsWith(annee)).length,
+    premiers: [...noms].filter((nom) => debutDe.get(nom) === annee).length,
+  }));
+
+const derniere = saisons[saisons.length - 1];
+const precedentes = saisons.slice(0, -1);
+const enCours = derniere.annee === new Date().toISOString().slice(0, 4);
+const plusFournie = Math.max(...saisons.map((s) => s.athletes));
+
+/**
+ * La meilleure saison précédente, si la dernière la dépasse. La plus récente
+ * l'emporte en cas d'égalité entre deux saisons précédentes.
+ */
+function maximumBattu(cle: 'athletes' | 'femmes'): Saison | null {
+  let meilleure: Saison | null = null;
+  for (const s of precedentes) if (!meilleure || s[cle] >= meilleure[cle]) meilleure = s;
+  return meilleure && derniere[cle] > meilleure[cle] ? meilleure : null;
+}
+const recordAthletes = maximumBattu('athletes');
+const recordFemmes = maximumBattu('femmes');
+
+const { debut, fin } = periode();
+const premiereSaison = saisons[0].annee;
+
+const pourcent = (n: number, sur: number) => nombre((n / sur) * 100, 0);
+const competitions = (n: number) => `${n} ${pluriel(n, 'compétition')}`;
+
+const titre = recordAthletes
+  ? `La saison ${derniere.annee} compte le plus d'athlètes depuis ${premiereSaison}`
+  : `${saisons.length} saisons de force athlétique sur l'île`;
 ---
+
+<Infographie
+  titre={titre}
+  source={`Compétitions de La Réunion du ${dateLongue(debut)} au ${dateLongue(fin)}, par année civile. Un athlète compte une fois par saison. Un débutant obtient son premier résultat sur l'île pendant la saison.`}
+  lienArticle={lienArticle}
+>
+  <section class="saison" aria-labelledby="saisons-derniere">
+    <p class="saison-titre" id="saisons-derniere">
+      Saison {derniere.annee}{' '}
+      {enCours && <span class="etat">en cours</span>}
+    </p>
+
+    <dl class="chiffres-cles saison-chiffres">
+      <div>
+        <dt>Athlètes</dt>
+        <dd><span class="num">{nombre(derniere.athletes)}</span></dd>
+      </div>
+      <div>
+        <dt>Compétitions</dt>
+        <dd><span class="num">{derniere.competitions}</span></dd>
+      </div>
+      <div>
+        <dt>Femmes</dt>
+        <dd>
+          <span class="num">{nombre(derniere.femmes)}</span>
+          <span class="detail">
+            {pourcent(derniere.femmes, derniere.athletes)}&nbsp;% des athlètes
+          </span>
+        </dd>
+      </div>
+      {
+        derniere.annee !== premiereSaison && (
+          <div>
+            <dt>Débutants</dt>
+            <dd>
+              <span class="num">{nombre(derniere.premiers)}</span>
+              <span class="detail">
+                {pourcent(derniere.premiers, derniere.athletes)}&nbsp;% des athlètes
+              </span>
+            </dd>
+          </div>
+        )
+      }
+    </dl>
+
+    {
+      (recordAthletes || recordFemmes) && (
+        <ul class="reperes">
+          {recordAthletes && (
+            <li>
+              Précédent maximum : {nombre(recordAthletes.athletes)} athlètes en{' '}
+              {recordAthletes.annee}, sur {competitions(recordAthletes.competitions)}.
+            </li>
+          )}
+          {recordFemmes && (
+            <li>
+              Précédent maximum chez les femmes : {nombre(recordFemmes.femmes)} en{' '}
+              {recordFemmes.annee}.
+            </li>
+          )}
+        </ul>
+      )
+    }
+  </section>
+
+  <div class="serie">
+    <div class="entete-serie">
+      <p class="intitule" id="saisons-serie">Athlètes par saison</p>
+      <ul class="legende" aria-hidden="true">
+        <li><span class="pastille" data-sexe="F"></span>Femmes</li>
+        <li><span class="pastille" data-sexe="M"></span>Hommes</li>
+      </ul>
+    </div>
+
+    <ol class="saisons" aria-labelledby="saisons-serie">
+      {
+        saisons.map((s) => {
+          const courante = s === derniere && enCours;
+          return (
+            <li
+              class="rangee"
+              data-courante={courante ? '' : undefined}
+              style={`--femmes:${s.femmes};--hommes:${s.athletes - s.femmes};--longueur:${s.athletes / plusFournie}`}
+            >
+              <p class="annee">
+                <span class="num-tab">{s.annee}</span>{' '}
+                {courante && <span class="en-cours">en cours</span>}
+              </p>
+              <div class="piste">
+                <span class="remplissage" aria-hidden="true">
+                  {s.femmes > 0 && <span class="part" data-sexe="F" />}
+                  {s.athletes > s.femmes && <span class="part" data-sexe="M" />}
+                </span>
+                <p class="athletes">
+                  <strong class="num-tab">{nombre(s.athletes)}</strong>
+                  <span class="sr-only">
+                    {' '}
+                    {pluriel(s.athletes, 'athlète')}, dont {nombre(s.femmes)}{' '}
+                    {pluriel(s.femmes, 'femme')}
+                  </span>
+                </p>
+              </div>
+              <p class="meta">
+                <span>
+                  <strong class="num-tab">{pourcent(s.femmes, s.athletes)}&nbsp;%</strong> de
+                  femmes
+                </span>
+                <span>
+                  <strong class="num-tab">{s.competitions}</strong>{' '}
+                  {pluriel(s.competitions, 'compétition')}
+                </span>
+              </p>
+            </li>
+          );
+        })
+      }
+    </ol>
+  </div>
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  /* L'ENCADRÉ DE LA DERNIÈRE SAISON. Un filet accentué, comme la rangée qui
+     lui correspond dans la série. Accent de TEXTE et non aplat : en thème
+     clair, l'aplat jaune ne se détacherait pas du fond. */
+  .saison {
+    padding: var(--space-4);
+    border: 2px solid var(--accent);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+
+  .saison-titre {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--space-3);
+    margin-bottom: var(--space-4);
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 800;
+  }
+
+  .etat {
+    font-family: var(--font-body);
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  /* Colonnes et alignement des rangées : voir `.chiffres-cles` dans
+     tokens.css. Quatre chiffres, donc quatre colonnes dès qu'il y a la place. */
+  .saison-chiffres {
+    --colonnes: 4;
+    margin: 0;
+  }
+  /* La sous-grille hérite de l'écart entre deux chiffres. Entre un intitulé
+     et sa valeur, il les détacherait l'un de l'autre. */
+  .saison-chiffres > div {
+    row-gap: var(--space-1);
+  }
+
+  .saison-chiffres dt {
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .saison-chiffres dd {
+    display: grid;
+    align-content: start;
+    margin: 0;
+  }
+  .saison-chiffres .num {
+    font-size: var(--step-3);
+    line-height: 1;
+  }
+  .detail {
+    margin-top: var(--space-1);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .reperes {
+    display: grid;
+    gap: var(--space-1);
+    margin: var(--space-4) 0 0;
+    padding: var(--space-3) 0 0;
+    border-top: 1px solid var(--border);
+    list-style: none;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /* LA SÉRIE. */
+  .serie {
+    margin-top: var(--space-8);
+  }
+
+  /* L'intitulé et la légende partagent leur ligne quand elle le permet. */
+  .entete-serie {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-6);
+    margin-bottom: var(--space-4);
+  }
+
+  .intitule {
+    font-size: var(--step--1);
+    font-weight: 700;
+  }
+
+  .legende {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-6);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .legende li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .pastille {
+    width: 1.25rem;
+    height: 0.75rem;
+  }
+
+  .saisons {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /*
+   * UNE RANGÉE : la saison, la piste et son effectif, la part de femmes, le
+   * nombre de compétitions. Les colonnes sont fixes : toutes les pistes
+   * partagent la même échelle, et les deux dernières colonnes s'alignent.
+   */
+  .rangee {
+    /* La couleur de la rangée : grise, ou accentuée pour la saison en cours. */
+    --trait: color-mix(in srgb, var(--muted) 65%, var(--surface));
+    display: grid;
+    grid-template-columns: 4rem minmax(0, 1fr) 8rem 8.5rem;
+    align-items: center;
+    gap: var(--space-3);
+    line-height: 1.25;
+  }
+  .rangee[data-courante] {
+    --trait: var(--accent);
+  }
+
+  .annee {
+    display: grid;
+  }
+  [data-courante] .annee .num-tab {
+    font-weight: 800;
+  }
+  .en-cours {
+    font-size: var(--step--1);
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /*
+   * LA PISTE part d'un filet vertical, le zéro commun à toutes les rangées.
+   * La barre de la saison la plus fournie la remplit, à la place près de
+   * l'effectif, écrit au bout de chaque barre.
+   */
+  .piste {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    border-left: 2px solid var(--border);
+  }
+
+  .remplissage {
+    display: flex;
+    flex: 0 0 calc(var(--longueur) * (100% - 3rem));
+    gap: 2px;
+    height: 1rem;
+  }
+
+  .part {
+    min-width: 2px;
+  }
+  .part[data-sexe='F'] {
+    flex: var(--femmes) 1 0;
+  }
+  .part[data-sexe='M'] {
+    flex: var(--hommes) 1 0;
+  }
+
+  /* Le plein et le hachuré, dans la couleur de la rangée. La pastille de la
+     légende reprend le gris des saisons passées. */
+  .pastille {
+    --trait: color-mix(in srgb, var(--muted) 65%, var(--surface));
+  }
+  .part[data-sexe='F'],
+  .pastille[data-sexe='F'] {
+    background: var(--trait);
+  }
+  .part[data-sexe='M'],
+  .pastille[data-sexe='M'] {
+    border: 2px solid var(--trait);
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--trait) 0 2px,
+      transparent 2px 6px
+    );
+  }
+  /* La saison en cours remplit ses femmes de l'aplat, et non de l'accent de
+     texte, qui est un vert olive sombre en thème clair. */
+  [data-courante] .part[data-sexe='F'] {
+    background: var(--accent-fill);
+  }
+
+  .athletes {
+    white-space: nowrap;
+  }
+
+  /* La part de femmes et les compétitions prennent chacune leur colonne. */
+  .meta {
+    display: contents;
+  }
+  .meta > span {
+    font-size: var(--step--1);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .meta strong {
+    color: var(--text);
+  }
+
+  /*
+   * SUR TÉLÉPHONE, la part de femmes et les compétitions passent sous la
+   * piste. La saison reste à gauche, en haut de la rangée.
+   */
+  @media (max-width: 40rem) {
+    .rangee {
+      grid-template-columns: 3.75rem minmax(0, 1fr);
+      grid-template-areas:
+        'annee piste'
+        'annee meta';
+      gap: 2px var(--space-3);
+    }
+    .annee {
+      grid-area: annee;
+      align-self: start;
+    }
+    .piste {
+      grid-area: piste;
+    }
+    .meta {
+      grid-area: meta;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 var(--space-4);
+    }
+    .saisons {
+      gap: var(--space-3);
+    }
+  }
+</style>

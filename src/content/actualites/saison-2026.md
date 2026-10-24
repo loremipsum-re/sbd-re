@@ -2,6 +2,7 @@
 titre: "La saison 2026 de force athlétique à La Réunion"
 description: "Cinq compétitions, 112 athlètes et cinq records de l'île. La meilleure participation depuis 2017."
 date: 2026-10-15
+infographie: saisons
 athletes:
   - Gabriel Begue
   - Philippe René
