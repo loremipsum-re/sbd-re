@@ -159,13 +159,18 @@ const constats = [
   source="Exemple construit avec trois athlètes fictifs. Répartitions comptées sur les résultats de La Réunion, parmi les athlètes qui ont une barre aux trois mouvements."
 >
   <p class="formule">
+    {/* « LE TOUT » REMPLACE, POUR L'OREILLE, LE CADRE qui groupe la
+        soustraction à l'écran : la différence entière est divisée par le
+        meilleur. */}
     <span class="sr-only">
-      L'écart en pourcentage égale la valeur moins le meilleur, divisée par le
-      meilleur, multipliée par 100.
+      L'écart en pourcentage égale la valeur moins le meilleur, le tout divisé
+      par le meilleur puis multiplié par 100.
     </span>
     <span class="facteur" aria-hidden="true">valeur − meilleur</span>
-    <span class="operateur" aria-hidden="true">÷</span>
-    <span class="facteur" aria-hidden="true">meilleur</span>
+    <span class="groupe" aria-hidden="true">
+      <span class="operateur">÷</span>
+      <span class="facteur">meilleur</span>
+    </span>
     <span class="groupe" aria-hidden="true">
       <span class="operateur">× 100</span>
       <span class="operateur">=</span>
@@ -213,8 +218,9 @@ const constats = [
       <p class="intitule">Athlète B, développé couché</p>
       <p class="expression num-tab">
         <span class="sr-only">
-          {nombre(detail.valeur, 1)} moins {nombre(ligneDetail.meilleur, 1)}, divisé par{' '}
-          {nombre(ligneDetail.meilleur, 1)}, multiplié par 100, égale {developpe(detail.brut)}
+          {nombre(detail.valeur, 1)} moins {nombre(ligneDetail.meilleur, 1)}, le tout divisé
+          par {nombre(ligneDetail.meilleur, 1)} puis multiplié par 100, égale{' '}
+          {developpe(detail.brut)}
         </span>
         <span aria-hidden="true">
           ({nombre(detail.valeur, 1)} − {nombre(ligneDetail.meilleur, 1)}) ÷{' '}
@@ -229,13 +235,13 @@ const constats = [
 
     <ul class="regles">
       <li>
-        La plus haute valeur de la ligne porte la mention « meilleur ». À égalité,
+        La plus haute valeur de la ligne porte la mention « meilleur ». À&nbsp;égalité,
         chaque athlète concerné la porte.
       </li>
       <li>Un tiret marque une valeur absente. Elle sort du calcul.</li>
       <li>
-        Au rang à La Réunion, le plus petit nombre est le meilleur. L'écart s'y
-        compte en places.
+        Sur la ligne du rang à La Réunion, le plus petit nombre est le meilleur.
+        L'écart s'y compte en places.
       </li>
     </ul>
   </div>
@@ -243,8 +249,12 @@ const constats = [
   {
     constats.length > 0 && (
       <div class="dates">
+        {/* L'INTITULÉ DIT CE QUI PEUT ARRIVER. Les comptes qui suivent
+            montrent qu'une part des athlètes réunit ses trois meilleures
+            barres dans une même compétition. */}
         <p class="intitule" id="comparer-dates">
-          Les meilleures barres d'un athlète ont chacune leur date
+          Les trois meilleures barres d'un athlète peuvent venir de compétitions
+          et d'années différentes
         </p>
         <ul class="constats" aria-labelledby="comparer-dates">
           {constats.map((c) => (
@@ -272,9 +282,10 @@ const constats = [
   }
 
   /* LA FORMULE. Les termes passent à la ligne sur téléphone, chacun gardé
-     d'un bloc. Le cadre de la soustraction tient lieu de parenthèses. Le
-     résultat reste attaché à « × 100 = », sans quoi le signe égal ouvrait
-     seul la deuxième ligne. */
+     d'un bloc. Le cadre de la soustraction tient lieu de parenthèses. Chaque
+     signe reste attaché au terme qui le suit. Sans cela, « ÷ » finissait
+     seul la première ligne à 320 px, et le signe égal ouvrait seul la
+     deuxième à 375. */
   .formule {
     display: flex;
     flex-wrap: wrap;
@@ -330,6 +341,14 @@ const constats = [
     border: 2px solid var(--border);
     border-radius: var(--radius);
     background: var(--bg);
+  }
+
+  /* SOUS 352 PX, la colonne des noms tombait à 51 px à 320 de large, et
+     « Athlète » en mesure 53 : il débordait. La carte rend 8 px de marge. */
+  @media (max-width: 22rem) {
+    .ligne {
+      padding: var(--space-3);
+    }
   }
 
   /* Le libellé reprend celui des lignes du tableau de la page. */
