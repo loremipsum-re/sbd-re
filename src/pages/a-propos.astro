@@ -1,4 +1,5 @@
 ---
+import InfographieDonnees from '../components/infographies/InfographieDonnees.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { nombreAthletes, periode, results } from '../lib/data';
 import { dateLongue } from '../lib/format';
@@ -64,6 +65,16 @@ const meets = listeMeets();
       dont le nom ne le dit pas est donc simplement <em>signalée</em>, puis
       vérifiée à la main avant d'être ajoutée.
     </p>
+
+    {/*
+      L'INFOGRAPHIE EST DÉPLIÉE : la page est du texte suivi, et qui l'ouvre
+      vient chercher cette explication. Elle se lit dans la suite des deux
+      règles qu'elle compte, et sa troisième étape ouvre sur le périmètre
+      détaillé juste après. Posée plus haut, dans « Les données », elle aurait
+      devancé les règles qu'elle illustre. Mesuré le 24 octobre 2026 : le
+      périmètre descend de 2 089 px à 375 px de large, de 1 580 px à 1 280 px.
+    */}
+    <InfographieDonnees />
 
     <h2>Le périmètre retenu</h2>
     <ul>
