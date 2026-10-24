@@ -99,74 +99,76 @@ const perimetre = [
 const cases = verdicts.flatMap((v) => Array.from({ length: v.nombre }, () => v.resultat));
 ---
 
-<Infographie
-  titre={titre}
-  source={`Audit mené par la mesure le ${dateAudit}, dans un navigateur et sur les pages réelles.`}
->
-  <ul class="perimetre" aria-label="Périmètre de l'audit">
-    {
-      perimetre.map((p) => (
-        <li>
-          <strong class="num">{p.nombre}</strong>{' '}
-          <span class="libelle">{p.libelle}</span>
-        </li>
-      ))
-    }
-  </ul>
-
-  <div class="etages">
-    <div class="etage">
-      {/* Sans effectif : le titre et le périmètre le donnent déjà. */}
-      <p class="intitule" id="accessibilite-resultats">
-        {pluriel(total, 'Résultat du contrôle', 'Résultat des contrôles')}
-      </p>
-      <p class="cases" style={`--cases:${cases.length}`} aria-hidden="true">
-        {cases.map((resultat) => <span class="case" data-resultat={resultat} />)}
-      </p>
-      <ul class="legende" aria-labelledby="accessibilite-resultats">
-        {
-          verdicts.map((v) => (
-            <li data-resultat={v.resultat}>
-              <span class="case marque" data-resultat={v.resultat} aria-hidden="true" />
-              <p class="compte">
-                <strong class="num">{v.nombre}</strong>{' '}
-                <span class="verdict">{v.libelle}</span>
-              </p>
-              {v.noms.length > 0 && (
-                <ul class="noms">
-                  {v.noms.map((nom) => (
-                    <li>{nom}</li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))
-        }
+{/*
+  SANS CONTRÔLE, AUCUNE FIGURE. `pluriel` tient zéro pour un singulier : le
+  titre aurait affirmé « Le contrôle est conforme » sur une liste vide.
+*/}
+{
+  total > 0 && (
+    <Infographie
+      titre={titre}
+      source={`Audit mené par la mesure le ${dateAudit}, dans un navigateur et sur les pages réelles.`}
+    >
+      <ul class="perimetre" aria-label="Périmètre de l'audit">
+        {perimetre.map((p) => (
+          <li>
+            <strong class="num">{p.nombre}</strong>{' '}
+            <span class="libelle">{p.libelle}</span>
+          </li>
+        ))}
       </ul>
-    </div>
 
-    {/* Sans limite déclarée, l'étage n'aurait qu'un intitulé au-dessus du vide. */}
-    {
-      limites.length > 0 && (
+      <div class="etages">
         <div class="etage">
-          <p class="intitule" id="accessibilite-limites">
-            Ce qui n'a pas été vérifié
+          {/* Sans effectif : le titre et le périmètre le donnent déjà. */}
+          <p class="intitule" id="accessibilite-resultats">
+            {pluriel(total, 'Résultat du contrôle', 'Résultat des contrôles')}
           </p>
-          <ul class="non-verifie" aria-labelledby="accessibilite-limites">
-            {limites.map((l) => (
-              <li>
-                <span class="signe">
-                  <Icone nom="manque" taille={16} />
-                </span>
-                <span>{l.resume}</span>
+          <p class="cases" style={`--cases:${cases.length}`} aria-hidden="true">
+            {cases.map((resultat) => <span class="case" data-resultat={resultat} />)}
+          </p>
+          <ul class="legende" aria-labelledby="accessibilite-resultats">
+            {verdicts.map((v) => (
+              <li data-resultat={v.resultat}>
+                <span class="case marque" data-resultat={v.resultat} aria-hidden="true" />
+                <p class="compte">
+                  <strong class="num">{v.nombre}</strong>{' '}
+                  <span class="verdict">{v.libelle}</span>
+                </p>
+                {v.noms.length > 0 && (
+                  <ul class="noms">
+                    {v.noms.map((nom) => (
+                      <li>{nom}</li>
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>
         </div>
-      )
-    }
-  </div>
-</Infographie>
+
+        {/* Sans limite déclarée, l'étage n'aurait qu'un intitulé au-dessus du vide. */}
+        {limites.length > 0 && (
+          <div class="etage">
+            <p class="intitule" id="accessibilite-limites">
+              Ce qui n'a pas été vérifié
+            </p>
+            <ul class="non-verifie" aria-labelledby="accessibilite-limites">
+              {limites.map((l) => (
+                <li>
+                  <span class="signe">
+                    <Icone nom="manque" taille={16} />
+                  </span>
+                  <span>{l.resume}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </Infographie>
+  )
+}
 
 <style>
   p {
