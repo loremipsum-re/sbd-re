@@ -1,4 +1,5 @@
 ---
+import InfographiePartenaires from '../components/infographies/InfographiePartenaires.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { nombreAthletes, results } from '../lib/data';
 import { listeMeets } from '../lib/meets';
@@ -55,6 +56,20 @@ const meets = listeMeets();
         au-dessus du contenu. Les emplacements portent la mention
         « Partenaire », comme la loi l'exige.
       </p>
+
+      {/*
+        L'infographie est DÉPLIÉE, en fin de section. Sur une page de données,
+        elle irait dans une pastille repliée pour ne pas repousser la liste.
+        Ici, la page est un texte, et le schéma répond à la question que la
+        section pose : où un partenaire apparaît. Elle vient après le texte,
+        qui reste la première lecture.
+
+        LE COÛT EST MESURÉ : le formulaire descend d'environ 950 px à 375 px
+        de large, et d'environ 780 px à 1 280 px. C'est la hauteur de la
+        figure, compactée pour cette place : les pages en trois colonnes même
+        sur téléphone, aucun intitulé au-dessus du schéma.
+      */}
+      <InfographiePartenaires />
     </section>
 
     <section class="formulaire">

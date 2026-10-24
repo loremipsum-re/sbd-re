@@ -1,12 +1,421 @@
 ---
 /**
- * ÉBAUCHE, à dessiner : infographie « partenaires ».
+ * Les règles des partenariats, en une image.
  *
- * Le fichier existe pour que l'aiguillage et les pages se compilent pendant
- * que l'infographie se dessine. Il ne rend rien.
+ * UN SCHÉMA DE PAGE, DE HAUT EN BAS. Chaque rangée associe une tranche de la
+ * page, dessinée à gauche, à ce qui y est permis. Les tranches sont jointives
+ * et dessinent une seule page : l'ordre de lecture se reconnaît d'un coup
+ * d'œil. Une place interdite est HACHURÉE, une place possible est en aplat
+ * d'accent. Le motif double la couleur, et le mot « Jamais » ou « Possible »,
+ * avec son icône, double le motif.
+ *
+ * TOUT VIENT DU CODE. Les trois règles sont celles de content.config.ts et de
+ * lib/sponsors.ts. Les deux marques obligatoires sont celles de
+ * Partenaire.astro et de BandeauPartenaires.astro. La fiche d'athlète est
+ * écartée pour la raison donnée au commit qui a créé les emplacements.
+ *
+ * « UN SEUL PARTENAIRE À CET EMPLACEMENT », écrit ainsi à dessein.
+ * `partenaireDeLaPage` rend un partenaire au plus pour l'emplacement de
+ * contenu, et le bandeau du pied de page s'y ajoute sur toutes les pages.
+ * « Un seul partenaire par page » contredirait le bandeau.
+ *
+ * LES EFFECTIFS SONT COMPTÉS à la génération, avec les fonctions qui
+ * produisent les pages : listeMeets() pour les compétitions, articles() pour
+ * les actualités, un athlète par nom pour les fiches.
+ *
+ * COMPACTE, parce qu'elle est dépliée au-dessus d'un formulaire. Les pages
+ * tiennent en trois colonnes même sur téléphone, et les deux marques
+ * obligatoires passent côte à côte dès qu'il y a la place.
  */
+import Icone from '../Icone.astro';
+import Infographie from './Infographie.astro';
+import { articles } from '../../lib/actualites';
+import { nombreAthletes } from '../../lib/data';
+import { nombre, pluriel } from '../../lib/format';
+import { listeMeets } from '../../lib/meets';
+import type { Emplacement } from '../../lib/sponsors';
 
 interface Props {
-  // Aucune propriété pour l'instant.
+  // Aucune propriété : la page des partenariats l'appelle directement.
 }
+
+/** Une tranche du schéma de page, de haut en bas. */
+interface Zone {
+  /** Le dessin de la tranche, voir les règles `[data-dessin]`. */
+  dessin: 'dessus' | 'donnees' | 'apres' | 'pied';
+  ou: string;
+  possible: boolean;
+  detail?: string;
+}
+
+const ZONES: Zone[] = [
+  { dessin: 'dessus', ou: 'Au-dessus du contenu', possible: false },
+  {
+    dessin: 'donnees',
+    ou: 'Dans les données',
+    possible: false,
+    detail: 'Classement ou tableau de résultats.',
+  },
+  {
+    dessin: 'apres',
+    ou: 'Après le contenu',
+    possible: true,
+    detail: 'Un seul partenaire à cet emplacement.',
+  },
+  {
+    dessin: 'pied',
+    ou: 'Bandeau du pied de page',
+    possible: true,
+    detail: 'Le même sur toutes les pages.',
+  },
+];
+
+/*
+ * Les pages qui portent un emplacement de contenu, une par valeur
+ * d'`Emplacement` hors pied de page. `satisfies` fait échouer le contrôle des
+ * types si un emplacement s'ajoute sans que l'infographie le montre.
+ */
+const competitions = listeMeets().length;
+const nombreArticles = (await articles()).length;
+const athletes = nombreAthletes();
+
+const PAGES_OUVERTES = {
+  competition: {
+    compte: competitions,
+    type: pluriel(competitions, 'page de compétition', 'pages de compétition'),
+    ou: 'Sous les résultats',
+  },
+  article: {
+    compte: nombreArticles,
+    type: pluriel(nombreArticles, 'article'),
+    ou: "En fin d'article",
+  },
+} satisfies Record<Exclude<Emplacement, 'pied'>, { compte: number; type: string; ou: string }>;
+
+const pages = [
+  ...Object.values(PAGES_OUVERTES).map((p) => ({ ...p, possible: true })),
+  {
+    compte: athletes,
+    type: pluriel(athletes, "fiche d'athlète", "fiches d'athlètes"),
+    ou: pluriel(athletes, 'Écartée', 'Écartées'),
+    possible: false,
+  },
+];
 ---
+
+<Infographie
+  titre="Un partenaire apparaît après le contenu"
+  source="Nombre de pages compté à la génération du site."
+>
+  <ol class="zones" aria-label="Une page, de haut en bas">
+    {
+      ZONES.map((z) => (
+        <li class="zone" data-statut={z.possible ? 'oui' : 'non'}>
+          <span class="maquette" data-dessin={z.dessin} aria-hidden="true">
+            {z.dessin === 'dessus' && (
+              <>
+                <span class="tete" />
+                <span class="interdit" />
+              </>
+            )}
+            {z.dessin === 'donnees' && (
+              <>
+                <span class="ligne" />
+                <span class="interdit" />
+                <span class="ligne" />
+                <span class="ligne" />
+              </>
+            )}
+            {z.dessin === 'apres' && (
+              <>
+                <span class="ligne courte" />
+                <span class="encart" />
+              </>
+            )}
+            {z.dessin === 'pied' && (
+              <span class="logos">
+                <span />
+                <span />
+                <span />
+              </span>
+            )}
+          </span>
+          <div class="texte">
+            <p class="ou">{z.ou}</p>
+            <p class="statut">
+              <Icone nom={z.possible ? 'valide' : 'manque'} taille={16} />
+              {z.possible ? 'Possible' : 'Jamais'}
+            </p>
+            {z.detail && <p class="detail">{z.detail}</p>}
+          </div>
+        </li>
+      ))
+    }
+  </ol>
+
+  {/* « Après le contenu » rattache les pages à la tranche du même nom : la
+      fiche d'athlète est écartée de cet emplacement, et le bandeau du pied
+      de page y figure comme partout. */}
+  <p class="intitule" id="partenaires-pages">Après le contenu, selon la page</p>
+  <ul class="pages" aria-labelledby="partenaires-pages">
+    {
+      pages.map((p) => (
+        <li data-statut={p.possible ? 'oui' : 'non'}>
+          <p class="effectif num">{nombre(p.compte)}</p>
+          <p class="type">{p.type}</p>
+          <p class="statut">
+            <Icone nom={p.possible ? 'valide' : 'manque'} taille={16} />
+            {p.ou}
+          </p>
+        </li>
+      ))
+    }
+  </ul>
+  <p class="detail raison">
+    Sur une fiche d'athlète, une marque prêterait à l'athlète une caution qu'il
+    n'a pas donnée.
+  </p>
+
+  <p class="intitule" id="partenaires-marques">Sur chaque emplacement</p>
+  <ul class="marques" aria-labelledby="partenaires-marques">
+    <li>
+      <p class="marque"><span class="mention">Partenaire</span></p>
+      <p class="detail">Visible au-dessus du logo, comme la loi l'exige.</p>
+    </li>
+    <li>
+      <p class="marque"><code>rel="sponsored nofollow"</code></p>
+      <p class="detail">Sur le lien, comme Google l'exige.</p>
+    </li>
+  </ul>
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  .zones,
+  .pages,
+  .marques {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .intitule {
+    margin: var(--space-6) 0 var(--space-3);
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* LE STATUT. L'icône et le mot, toujours ensemble : l'accent dit
+     « possible », le gris dit « jamais », et le mot le répète. */
+  .statut {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--step--1);
+    font-weight: 700;
+  }
+  [data-statut='oui'] .statut {
+    color: var(--accent);
+  }
+  [data-statut='non'] .statut {
+    color: var(--muted);
+  }
+
+  .detail {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /*
+   * LE SCHÉMA. Deux colonnes : le dessin de la tranche, puis le texte. Les
+   * dessins n'ont aucun écart vertical entre eux et leurs filets se
+   * prolongent : empilés, ils forment une seule page. La hauteur de chaque
+   * tranche suit celle de son texte.
+   */
+  .zone {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    column-gap: var(--space-3);
+    min-width: 0;
+  }
+  @media (min-width: 40rem) {
+    .zone {
+      grid-template-columns: 5.5rem minmax(0, 1fr);
+      column-gap: var(--space-4);
+    }
+  }
+
+  .texte {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--space-3);
+    min-width: 0;
+    padding-block: var(--space-2);
+  }
+  .zone + .zone .texte {
+    border-top: 1px solid var(--border);
+  }
+  .ou {
+    font-weight: 700;
+  }
+  .texte .detail {
+    flex-basis: 100%;
+  }
+
+  .maquette {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+    padding: var(--space-2);
+    border-inline: 2px solid var(--border);
+    background: var(--bg);
+  }
+  .zone:first-child .maquette {
+    border-top: 2px solid var(--border);
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .zone:last-child .maquette {
+    border-bottom: 2px solid var(--border);
+    border-radius: 0 0 var(--radius) var(--radius);
+  }
+
+  /* L'en-tête du site, une barre pleine en haut de la page. */
+  .tete {
+    height: 0.625rem;
+    background: color-mix(in srgb, var(--muted) 55%, var(--bg));
+  }
+
+  /* Une ligne de contenu ou de classement. */
+  .ligne {
+    height: 0.375rem;
+    background: color-mix(in srgb, var(--muted) 40%, var(--bg));
+  }
+  .ligne.courte {
+    width: 60%;
+  }
+
+  /* LA PLACE INTERDITE : vide, cernée d'un tiret et hachurée. Les hachures
+     sont fonctionnelles, elles ne décorent pas. */
+  .interdit {
+    height: 1.125rem;
+    border: 2px dashed var(--muted);
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent 0 5px,
+      color-mix(in srgb, var(--muted) 45%, transparent) 5px 7px
+    );
+  }
+
+  /* LA PLACE POSSIBLE : un encart en aplat d'accent. */
+  .encart {
+    height: 1.25rem;
+    background: var(--accent-fill);
+  }
+
+  /* Le pied de page : un filet, puis une rangée de logos. */
+  .logos {
+    display: flex;
+    gap: 4px;
+    padding-top: var(--space-2);
+    border-top: 2px solid var(--border);
+  }
+  .logos span {
+    flex: 1;
+    height: 0.75rem;
+    background: var(--accent-fill);
+  }
+
+  /*
+   * LES PAGES, en trois colonnes à toutes les largeurs. Empilées sur
+   * téléphone, elles prenaient trois fois la hauteur. Chaque colonne porte un
+   * filet en tête, tireté pour la fiche écartée.
+   */
+  .pages {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .pages li {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+    min-width: 0;
+    padding-top: var(--space-2);
+    border-top: 2px solid var(--border);
+  }
+  .pages li[data-statut='non'] {
+    border-top-style: dashed;
+  }
+
+  .effectif {
+    font-size: var(--step-2);
+    line-height: 1;
+  }
+
+  .type {
+    font-size: var(--step--1);
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  /* L'icône reste en tête du libellé quand celui-ci passe à la ligne. */
+  .pages .statut {
+    align-items: flex-start;
+    line-height: 1.3;
+  }
+  .pages .statut :global(.icone) {
+    margin-top: 0.05em;
+  }
+
+  .raison {
+    margin-top: var(--space-3);
+  }
+
+  /* LES DEUX MARQUES OBLIGATOIRES, montrées telles qu'elles s'affichent. */
+  .marques {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+    gap: var(--space-4) var(--space-6);
+  }
+  .marques li {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  .marque {
+    justify-self: start;
+    max-width: 100%;
+    padding: var(--space-1) var(--space-3);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+
+  /* La mention reprend le style de Partenaire.astro. */
+  .mention {
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  code {
+    font-size: var(--step--1);
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+</style>
