@@ -5,6 +5,7 @@ date: 2026-10-18
 athletes:
   - Alain Cuvelier
   - Kenzo Thiburce
+infographie: divisions
 ---
 
 Une compétition de force athlétique classe les athlètes par sexe, par

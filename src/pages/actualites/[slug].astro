@@ -1,6 +1,7 @@
 ---
 import Icone from '../../components/Icone.astro';
 import Partenaire from '../../components/Partenaire.astro';
+import InfographieArticle from '../../components/infographies/InfographieArticle.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import {
   articles,
@@ -44,6 +45,8 @@ const partenaire = await partenaireDeLaPage('article', article.id);
         <h1>{article.data.titre}</h1>
         <p class="chapeau">{article.data.description}</p>
       </header>
+
+      {article.data.infographie && <InfographieArticle id={article.data.infographie} />}
 
       <div class="corps">
         <Content />

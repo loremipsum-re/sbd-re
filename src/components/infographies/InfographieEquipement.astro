@@ -1,0 +1,315 @@
+---
+/**
+ * Raw, bandes et équipé, en une image.
+ *
+ * TROIS FAMILLES, TROIS MARCHES. La hauteur de la marche dit l'aide que le
+ * matériel apporte à la barre, du raw, qui soutient sans restituer d'énergie,
+ * à l'équipé, dont la combinaison restitue une part de l'effort. C'est un
+ * ordre, pas une mesure : aucune marche ne prétend chiffrer un gain en kilos.
+ *
+ * Les libellés viennent d'EQUIPMENT_GROUPS, seule source des trois familles,
+ * et le matériel reprend les définitions du glossaire, lib/glossaire.ts.
+ *
+ * LA RÉPARTITION EST COMPTÉE sur tous les résultats de l'île, tous formats
+ * confondus, comme dans l'article « Raw et équipé ». Une famille absente des
+ * données le dit au lieu d'afficher une part nulle.
+ */
+import Infographie from './Infographie.astro';
+import { EQUIPMENT_GROUPS, equipmentGroup, type EquipmentGroup } from '../../lib/categories';
+import { periode, results } from '../../lib/data';
+import { annee, nombre, pluriel } from '../../lib/format';
+import type { IdInfographie } from '../../lib/infographies';
+
+interface Props {
+  lienArticle?: IdInfographie;
+}
+
+const { lienArticle } = Astro.props;
+
+const MATERIEL: Record<EquipmentGroup, { materiel: string[]; effet: string }> = {
+  raw: {
+    materiel: ['Ceinture', 'Genouillères souples', 'Bandes de poignets'],
+    effet: "Soutient l'articulation sans restituer d'énergie.",
+  },
+  wraps: {
+    materiel: ['Bandes de genoux, serrées avant la barre'],
+    effet: "Restituent de l'énergie en bas du squat.",
+  },
+  equipped: {
+    materiel: ['Combinaison de force', 'Chemise au développé couché'],
+    effet: "Restituent une part de l'effort.",
+  },
+};
+
+const comptes = new Map<EquipmentGroup, number>();
+for (const r of results) {
+  const groupe = equipmentGroup(r.equipment);
+  comptes.set(groupe, (comptes.get(groupe) ?? 0) + 1);
+}
+
+const familles = EQUIPMENT_GROUPS.map((g, i) => ({
+  ...g,
+  ...MATERIEL[g.id],
+  marche: i + 1,
+  resultats: comptes.get(g.id) ?? 0,
+}));
+
+const total = results.length;
+const presentes = familles.filter((f) => f.resultats > 0);
+const part = (n: number) => `${nombre((n / total) * 100)} %`;
+---
+
+<Infographie
+  titre="Chaque famille d'équipement a son classement"
+  source={`Résultats des compétitions de La Réunion depuis ${annee(periode().debut)}, tous formats.`}
+  lienArticle={lienArticle}
+>
+  <p class="axe" aria-hidden="true">
+    <span>Aide du matériel</span>
+    <span class="fleche"></span>
+  </p>
+
+  <ul class="familles">
+    {
+      familles.map((f) => (
+        <li class="famille" style={`--marche:${f.marche}`}>
+          <span class="marche" aria-hidden="true" />
+          <p class="nom">{f.label}</p>
+          <ul class="materiel">
+            {f.materiel.map((m) => (
+              <li>{m}</li>
+            ))}
+          </ul>
+          <p class="effet">{f.effet}</p>
+          <p class="compte">
+            {f.resultats > 0 ? (
+              <>
+                <strong class="num-tab">{nombre(f.resultats)}</strong>{' '}
+                {pluriel(f.resultats, 'résultat')}
+              </>
+            ) : (
+              'Aucun résultat sur l’île à ce jour'
+            )}
+          </p>
+        </li>
+      ))
+    }
+  </ul>
+
+  <div class="repartition">
+    <p class="intitule" id="equipement-repartition">
+      Part des {nombre(total)} résultats de l'île
+    </p>
+    <p class="jauge" aria-hidden="true">
+      {
+        presentes.map((f) => (
+          <span class="segment" data-famille={f.id} style={`--part:${f.resultats / total}`} />
+        ))
+      }
+    </p>
+    <ul class="legende" aria-labelledby="equipement-repartition">
+      {
+        presentes.map((f) => (
+          <li data-famille={f.id}>
+            <span class="pastille" aria-hidden="true" />
+            {f.label} <strong class="num-tab">{part(f.resultats)}</strong>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  /* L'axe des marches : un libellé et une flèche qui court jusqu'au bord. */
+  .axe {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+    font-size: var(--step--1);
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .fleche {
+    flex: 1;
+    height: 2px;
+    background: currentColor;
+    position: relative;
+  }
+  .fleche::after {
+    content: '';
+    position: absolute;
+    /* Le carré tourné de 45° déborde de sa boîte : décalé de son propre
+       débord, il s'arrête au bord du cadre. */
+    right: 2px;
+    top: 50%;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-top: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    transform: translate(0, -50%) rotate(45deg);
+  }
+
+  .familles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /*
+   * Sur téléphone, trois colonnes de 90 px écraseraient « Genouillères
+   * souples ». Les familles s'empilent, et la marche devient une barre
+   * horizontale dont la longueur garde l'ordre.
+   */
+  @media (max-width: 40rem) {
+    .familles {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .famille {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+
+  /* La marche : un tiers, deux tiers, la hauteur pleine. Posée en haut de la
+     carte, alignée d'une carte à l'autre par le bas. */
+  .marche {
+    display: block;
+    height: 3rem;
+    margin-bottom: var(--space-1);
+    background: linear-gradient(
+      to top,
+      var(--accent-fill) calc(var(--marche) * 33.333%),
+      transparent 0
+    );
+    border-bottom: 2px solid var(--border);
+  }
+
+  @media (max-width: 40rem) {
+    .marche {
+      height: 0.75rem;
+      width: calc(var(--marche) * 33.333%);
+      background: var(--accent-fill);
+      border-bottom: 0;
+    }
+  }
+
+  .nom {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 800;
+  }
+
+  .materiel {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-weight: 600;
+  }
+  .materiel li {
+    padding-left: var(--space-4);
+    position: relative;
+  }
+  /* Le carré, et non la puce ronde du navigateur : le système de marque n'a
+     que des angles. */
+  .materiel li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.6em;
+    width: 0.4rem;
+    height: 0.4rem;
+    background: var(--accent);
+  }
+
+  .effet {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /* L'effectif se cale en bas de la carte, au même niveau d'une carte à
+     l'autre. */
+  .compte {
+    margin-top: auto;
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--border);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .compte strong {
+    color: var(--text);
+  }
+
+  .repartition {
+    margin-top: var(--space-8);
+  }
+
+  .intitule {
+    margin-bottom: var(--space-3);
+    font-size: var(--step--1);
+    font-weight: 700;
+  }
+
+  .jauge {
+    display: flex;
+    height: 1.25rem;
+    gap: 2px;
+  }
+
+  .segment {
+    flex: var(--part) 1 0;
+    /* Une famille rare reste visible : 5 % d'une jauge de 300 px font 15 px,
+       mais 0,5 % n'en ferait qu'un. */
+    min-width: 4px;
+  }
+
+  [data-famille='raw'] .pastille,
+  .segment[data-famille='raw'] {
+    background: var(--accent-fill);
+  }
+  [data-famille='wraps'] .pastille,
+  .segment[data-famille='wraps'] {
+    background: var(--muted);
+  }
+  [data-famille='equipped'] .pastille,
+  .segment[data-famille='equipped'] {
+    background: var(--bleu);
+  }
+
+  .legende {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-6);
+    margin: var(--space-3) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--step--1);
+  }
+  .legende li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .pastille {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+</style>

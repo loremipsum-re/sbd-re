@@ -7,6 +7,7 @@ athletes:
   - José Grondin
   - Christan Pounoussamy
   - Daisy Blondan
+infographie: equipement
 ---
 
 Un athlète équipé porte une combinaison de force, et une chemise au développé

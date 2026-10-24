@@ -1,0 +1,203 @@
+---
+/**
+ * Les catégories de poids, en deux règles graduées.
+ *
+ * UNE RÈGLE PAR SEXE, À L'ÉCHELLE. Chaque case est aussi large que la
+ * tranche de poids qu'elle couvre : 7 kg entre 59 et 66, 15 kg entre 105 et
+ * 120. L'élargissement vers le haut se voit sans être écrit. Les deux cases
+ * des extrémités n'ont pas de borne extérieure : elles prennent la largeur de
+ * leur voisine.
+ *
+ * LES CATÉGORIES EN VIGUEUR, LUES DANS LES DONNÉES. Les classes ne sont pas
+ * codées en dur, pour la raison donnée dans lib/categories.ts. Une classe
+ * compte si elle a été disputée sur l'île lors des cinq dernières saisons :
+ * le 72 kg femmes, abandonné en 2021, sort de la règle, le 47 kg, disputé en
+ * 2023, y reste.
+ *
+ * L'EXEMPLE est la catégorie la plus disputée de chaque sexe, et le poids cité
+ * le milieu de sa tranche.
+ */
+import Infographie from './Infographie.astro';
+import { compareWeightClass, parseWeightClass, type WeightClass } from '../../lib/categories';
+import { periode, results } from '../../lib/data';
+import { nombre } from '../../lib/format';
+import type { IdInfographie } from '../../lib/infographies';
+import type { Sex } from '../../lib/types';
+
+interface Props {
+  lienArticle?: IdInfographie;
+}
+
+const { lienArticle } = Astro.props;
+
+const SAISONS = 5;
+const depuis = Number(periode().fin.slice(0, 4)) - (SAISONS - 1);
+
+interface Case {
+  classe: WeightClass;
+  /** Borne basse, exclue. `null` pour la première catégorie. */
+  bas: number | null;
+  largeur: number;
+  resultats: number;
+}
+
+function regle(sexe: Sex): { cases: Case[]; exemple: Case; ecarts: number[] } {
+  const comptes = new Map<string, number>();
+  for (const r of results) {
+    if (r.sex !== sexe || Number(r.date.slice(0, 4)) < depuis) continue;
+    comptes.set(r.weightClassKg, (comptes.get(r.weightClassKg) ?? 0) + 1);
+  }
+
+  const classes = [...comptes.keys()]
+    .map(parseWeightClass)
+    .filter((c): c is WeightClass => c !== null)
+    .sort(compareWeightClass);
+
+  const bornees = classes.filter((c) => !c.open);
+  const ecarts = bornees.slice(1).map((c, i) => c.kg - bornees[i].kg);
+
+  const cases = classes.map((classe, i) => {
+    const precedente = classes[i - 1];
+    const bas = classe.open ? classe.kg : (precedente?.kg ?? null);
+    const largeur =
+      bas === null ? (ecarts[0] ?? 1) : classe.open ? (ecarts.at(-1) ?? 1) : classe.kg - bas;
+    return { classe, bas, largeur, resultats: comptes.get(classe.id) ?? 0 };
+  });
+
+  // La plus disputée, parmi les catégories bornées des deux côtés.
+  const exemple = cases
+    .filter((c) => c.bas !== null && !c.classe.open)
+    .sort((a, b) => b.resultats - a.resultats)[0];
+
+  return { cases, exemple, ecarts };
+}
+
+const sexes = [
+  { sexe: 'M' as const, titre: 'Hommes', athlete: 'un homme', ...regle('M') },
+  { sexe: 'F' as const, titre: 'Femmes', athlete: 'une femme', ...regle('F') },
+];
+
+const milieu = (c: Case) => Math.round(((c.bas ?? 0) + c.classe.kg) / 2);
+/** « 83,01 » : la borne basse d'une catégorie est exclue. */
+const borneBasse = (c: Case) => nombre((c.bas ?? 0) + 0.01, 2);
+---
+
+<Infographie
+  titre="Une catégorie fixe un poids de corps maximal"
+  source={`Catégories disputées à La Réunion depuis ${depuis}. Chaque case porte la limite de sa catégorie.`}
+  lienArticle={lienArticle}
+>
+  {
+    sexes.map(({ sexe, titre, athlete, cases, exemple, ecarts }) => (
+      <section class="sexe" aria-labelledby={`categories-${sexe}`}>
+        <p class="intitule" id={`categories-${sexe}`}>
+          {titre}
+        </p>
+
+        <ol class="regle">
+          {cases.map((c) => (
+            <li
+              style={`--largeur:${c.largeur}`}
+              data-exemple={c === exemple ? '' : undefined}
+              data-ouverte={c.classe.open ? '' : undefined}
+            >
+              <span class="num-tab">{c.classe.label.replace(' kg', '')}</span>
+              <span class="sr-only">
+                {c.classe.open
+                  ? `, plus de ${c.classe.kg} kg`
+                  : c.bas === null
+                    ? `, jusqu'à ${c.classe.kg} kg`
+                    : `, de ${nombre(c.bas + 0.01, 2)} à ${c.classe.kg} kg`}
+              </span>
+            </li>
+          ))}
+        </ol>
+
+        {exemple && (
+          <p class="exemple">
+            Pesé{sexe === 'F' && 'e'} à{' '}
+            <strong class="num-tab">{milieu(exemple)}&nbsp;kg</strong>, {athlete} concourt en{' '}
+            <strong class="num-tab">{exemple.classe.kg}&nbsp;kg</strong>. Sa catégorie
+            regroupe les athlètes de {borneBasse(exemple)} à {exemple.classe.kg}&nbsp;kg.
+          </p>
+        )}
+
+        {ecarts.length > 1 && (
+          <p class="ecarts">
+            Écart entre deux catégories : de {Math.min(...ecarts)} à {Math.max(...ecarts)} kg.
+          </p>
+        )}
+      </section>
+    ))
+  }
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  .sexe + .sexe {
+    margin-top: var(--space-8);
+  }
+
+  .intitule {
+    margin-bottom: var(--space-2);
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* LA RÈGLE. Des cases jointives, séparées par un filet, larges comme leur
+     tranche de poids. */
+  .regle {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  .regle li {
+    flex: var(--largeur) 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    font-weight: 700;
+    font-size: var(--step--1);
+  }
+  .regle li + li {
+    border-left: 2px solid var(--border);
+  }
+
+  /* La catégorie ouverte vers le haut est hachurée : elle n'a pas de limite. */
+  .regle [data-ouverte] {
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent 0 6px,
+      var(--border) 6px 8px
+    );
+  }
+
+  .regle [data-exemple] {
+    background: var(--accent-fill);
+    color: var(--on-accent);
+  }
+
+  .exemple {
+    margin-top: var(--space-3);
+  }
+
+  .ecarts {
+    margin-top: var(--space-1);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+</style>

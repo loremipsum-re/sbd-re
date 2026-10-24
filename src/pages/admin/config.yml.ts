@@ -11,6 +11,7 @@
  */
 import type { APIRoute } from 'astro';
 import { results } from '../../lib/data';
+import { INFOGRAPHIES } from '../../lib/infographies';
 import { listeMeets } from '../../lib/meets';
 import { athleteSlug } from '../../lib/slug';
 
@@ -40,6 +41,10 @@ export const GET: APIRoute = async () => {
       (m) =>
         `          - { label: ${y(`${m.meetName} — ${m.date}`)}, value: ${y(m.chemin)} }`,
     )
+    .join('\n');
+
+  const optionsInfographies = Object.entries(INFOGRAPHIES)
+    .map(([id, fiche]) => `          - { label: ${y(fiche.libelle)}, value: ${y(id)} }`)
     .join('\n');
 
   const yaml = `# ---------------------------------------------------------------------------
@@ -99,6 +104,13 @@ ${optionsCompetitions || '          []'}
         hint: Chaque athlète cité obtient un lien vers sa fiche.
         options:
 ${optionsAthletes || '          []'}
+      - name: infographie
+        label: Infographie
+        widget: select
+        required: false
+        hint: Posée entre le résumé et le texte. Les chiffres se mettent à jour avec les données.
+        options:
+${optionsInfographies}
       - { name: brouillon, label: Brouillon, widget: boolean, default: false, hint: "Un brouillon reste invisible en ligne." }
       - { name: body, label: Article, widget: markdown }
 

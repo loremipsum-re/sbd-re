@@ -1,0 +1,32 @@
+---
+/**
+ * L'infographie d'un article, choisie par son champ `infographie`.
+ *
+ * Un article Markdown ne peut pas appeler un composant. Le champ du
+ * frontmatter, proposé en menu dans le CMS, nomme l'infographie, et la page
+ * d'article la pose entre le chapeau et le texte : le lecteur voit l'image
+ * avant de lire le développement.
+ */
+import InfographieCategories from './InfographieCategories.astro';
+import InfographieDivisions from './InfographieDivisions.astro';
+import InfographieDots from './InfographieDots.astro';
+import InfographieEquipement from './InfographieEquipement.astro';
+import InfographieTotal from './InfographieTotal.astro';
+import type { IdInfographie } from '../../lib/infographies';
+
+interface Props {
+  id: IdInfographie;
+}
+
+const COMPOSANTS = {
+  dots: InfographieDots,
+  total: InfographieTotal,
+  equipement: InfographieEquipement,
+  categories: InfographieCategories,
+  divisions: InfographieDivisions,
+} satisfies Record<IdInfographie, unknown>;
+
+const Composant = COMPOSANTS[Astro.props.id];
+---
+
+<Composant />

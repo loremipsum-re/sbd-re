@@ -5,6 +5,7 @@ date: 2026-09-08
 athletes:
   - Gabriel Begue
   - Mathilde Petit
+infographie: dots
 ---
 
 Les points Dots ramènent un total soulevé au poids de corps de l'athlète.

@@ -2,6 +2,7 @@
 titre: "Combien soulève-t-on à sa première compétition"
 description: "480 kg au total pour un homme, 277,5 kg pour une femme. Les chiffres des 320 premiers passages sur le plateau à La Réunion."
 date: 2026-10-20
+infographie: total
 ---
 
 Le total médian d'un homme à sa première compétition de force athlétique vaut

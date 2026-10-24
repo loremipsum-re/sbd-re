@@ -2,6 +2,7 @@
 titre: "Les catégories de poids en force athlétique"
 description: "Les 17 catégories disputées à La Réunion, chez les hommes et chez les femmes."
 date: 2026-09-06
+infographie: categories
 ---
 
 La force athlétique se dispute catégorie par catégorie. Chaque catégorie regroupe
