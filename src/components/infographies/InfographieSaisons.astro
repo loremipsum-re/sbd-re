@@ -8,13 +8,16 @@
  * que leur nombre se compare d'une saison à l'autre sur un départ commun.
  *
  * PLEIN POUR LES FEMMES, HACHURÉ POUR LES HOMMES. La distinction tient au
- * motif et non à la couleur : la couleur sert déjà à désigner la saison en
- * cours, seule rangée accentuée. Chaque rangée écrit en plus sa part de femmes
- * en toutes lettres.
+ * motif et non à la couleur : la couleur sert déjà à désigner la dernière
+ * saison, celle de l'encadré, seule rangée accentuée. Chaque rangée écrit en
+ * plus sa part de femmes en toutes lettres. Le hachuré est cerné d'un
+ * `outline`, qui ne prend aucune place : une bordure aurait rogné la part des
+ * femmes de 4 px, soit jusqu'à 4 points sur une barre courte, mesuré.
  *
- * LA SAISON EST L'ANNÉE CIVILE, comme dans l'article « La saison 2026 ». La
- * première est incomplète, les données commençant en octobre 2017 : la
- * légende donne la date du premier résultat.
+ * LA SAISON EST L'ANNÉE CIVILE, comme dans l'article « La saison 2026 ». Les
+ * données commencent en octobre 2017 : la rangée de la première saison porte
+ * le mois de départ, comme la dernière porte « en cours », pour qu'aucune des
+ * deux ne se lise comme une année pleine.
  *
  * LA DERNIÈRE SAISON EST MISE EN AVANT dans un encadré, qui ajoute les
  * débutants : les athlètes sans résultat sur l'île avant la saison. Ce
@@ -24,7 +27,9 @@
  * jamais un record qui n'en est pas un.
  *
  * « EN COURS » SE DÉCIDE À LA DATE DE GÉNÉRATION, comme l'annonce de
- * l'accueil : la saison est en cours si son année est celle du build.
+ * l'accueil : la saison est en cours si son année est celle du build. En
+ * janvier, avant la première compétition, la dernière saison reste en avant,
+ * sans la mention.
  */
 import Infographie from './Infographie.astro';
 import { periode, results } from '../../lib/data';
@@ -100,12 +105,29 @@ const recordFemmes = maximumBattu('femmes');
 const { debut, fin } = periode();
 const premiereSaison = saisons[0].annee;
 
+/**
+ * Le mois où commencent les données, quand ce n'est pas janvier : la première
+ * saison n'en couvre alors qu'une partie. Abrégé à l'écran, « oct. », pour
+ * tenir dans la colonne des années à 375 px. En entier pour la lecture vocale.
+ */
+const moisDebut = (format: 'long' | 'short') =>
+  new Intl.DateTimeFormat('fr-FR', { month: format, timeZone: 'UTC' }).format(
+    new Date(`${debut}T12:00:00Z`),
+  );
+const departPartiel =
+  debut.slice(5, 7) !== '01' ? { court: moisDebut('short'), long: moisDebut('long') } : null;
+
 const pourcent = (n: number, sur: number) => nombre((n / sur) * 100, 0);
 const competitions = (n: number) => `${n} ${pluriel(n, 'compétition')}`;
 
+/*
+ * Sans record, le titre s'en tient au décompte. Il dit « recensées » : la
+ * force athlétique de l'île est plus ancienne que les données, qui commencent
+ * en 2017.
+ */
 const titre = recordAthletes
   ? `La saison ${derniere.annee} compte le plus d'athlètes depuis ${premiereSaison}`
-  : `${saisons.length} saisons de force athlétique sur l'île`;
+  : `${saisons.length} ${pluriel(saisons.length, 'saison')} ${pluriel(saisons.length, 'recensée')} depuis ${premiereSaison}`;
 ---
 
 <Infographie
@@ -125,7 +147,9 @@ const titre = recordAthletes
         <dd><span class="num">{nombre(derniere.athletes)}</span></dd>
       </div>
       <div>
-        <dt>Compétitions</dt>
+        {/* La césure conditionnelle ne sert qu'à 320 px, où le mot en
+            capitales dépasse sa colonne de 11 px, mesuré. */}
+        <dt>Compé&shy;titions</dt>
         <dd><span class="num">{derniere.competitions}</span></dd>
       </div>
       <div>
@@ -183,17 +207,23 @@ const titre = recordAthletes
 
     <ol class="saisons" aria-labelledby="saisons-serie">
       {
-        saisons.map((s) => {
-          const courante = s === derniere && enCours;
+        saisons.map((s, i) => {
+          const enAvant = s === derniere;
           return (
             <li
               class="rangee"
-              data-courante={courante ? '' : undefined}
+              data-en-avant={enAvant ? '' : undefined}
               style={`--femmes:${s.femmes};--hommes:${s.athletes - s.femmes};--longueur:${s.athletes / plusFournie}`}
             >
               <p class="annee">
                 <span class="num-tab">{s.annee}</span>{' '}
-                {courante && <span class="en-cours">en cours</span>}
+                {i === 0 && departPartiel && (
+                  <span class="mention">
+                    <span aria-hidden="true">dès {departPartiel.court}</span>
+                    <span class="sr-only">dès {departPartiel.long}</span>
+                  </span>
+                )}
+                {enAvant && enCours && <span class="mention en-cours">en cours</span>}
               </p>
               <div class="piste">
                 <span class="remplissage" aria-hidden="true">
@@ -210,9 +240,11 @@ const titre = recordAthletes
                 </p>
               </div>
               <p class="meta">
+                {/* La virgule masquée sépare les deux valeurs à la lecture
+                    vocale, que la mise en page sépare à l'écran. */}
                 <span>
                   <strong class="num-tab">{pourcent(s.femmes, s.athletes)}&nbsp;%</strong> de
-                  femmes
+                  femmes<span class="sr-only">,</span>
                 </span>
                 <span>
                   <strong class="num-tab">{s.competitions}</strong>{' '}
@@ -362,7 +394,8 @@ const titre = recordAthletes
    * partagent la même échelle, et les deux dernières colonnes s'alignent.
    */
   .rangee {
-    /* La couleur de la rangée : grise, ou accentuée pour la saison en cours. */
+    /* La couleur de la rangée : grise, ou accentuée pour la dernière saison,
+       celle de l'encadré. */
     --trait: color-mix(in srgb, var(--muted) 65%, var(--surface));
     display: grid;
     grid-template-columns: 4rem minmax(0, 1fr) 8rem 8.5rem;
@@ -370,21 +403,26 @@ const titre = recordAthletes
     gap: var(--space-3);
     line-height: 1.25;
   }
-  .rangee[data-courante] {
+  .rangee[data-en-avant] {
     --trait: var(--accent);
   }
 
   .annee {
     display: grid;
   }
-  [data-courante] .annee .num-tab {
+  [data-en-avant] .annee .num-tab {
     font-weight: 800;
   }
-  .en-cours {
+  /* Sous l'année, ce qui fait d'une saison une saison partielle : « dès
+     oct. » pour la première, « en cours » pour la dernière. */
+  .mention {
     font-size: var(--step--1);
     font-weight: 700;
-    color: var(--accent);
+    color: var(--muted);
     white-space: nowrap;
+  }
+  .en-cours {
+    color: var(--accent);
   }
 
   /*
@@ -426,18 +464,21 @@ const titre = recordAthletes
   .pastille[data-sexe='F'] {
     background: var(--trait);
   }
+  /* Le filet est un `outline` tracé vers l'intérieur : il ne prend aucune
+     place, et les deux parts gardent la proportion exacte des effectifs. */
   .part[data-sexe='M'],
   .pastille[data-sexe='M'] {
-    border: 2px solid var(--trait);
+    outline: 2px solid var(--trait);
+    outline-offset: -2px;
     background: repeating-linear-gradient(
       -45deg,
       var(--trait) 0 2px,
       transparent 2px 6px
     );
   }
-  /* La saison en cours remplit ses femmes de l'aplat, et non de l'accent de
+  /* La dernière saison remplit ses femmes de l'aplat, et non de l'accent de
      texte, qui est un vert olive sombre en thème clair. */
-  [data-courante] .part[data-sexe='F'] {
+  [data-en-avant] .part[data-sexe='F'] {
     background: var(--accent-fill);
   }
 
