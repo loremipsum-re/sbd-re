@@ -6,8 +6,10 @@
  *   node scripts/update-data.mjs --force    (force le retéléchargement)
  *
  * Le script est idempotent : lancé deux fois sur le même dump, il produit
- * exactement le même fichier, octet pour octet. C'est ce qui permet au workflow
- * mensuel de ne créer un commit que lorsque les données ont réellement changé.
+ * exactement les mêmes fichiers, octet pour octet, quel que soit le jour. C'est
+ * ce qui permet au workflow mensuel de ne créer un commit que lorsque les
+ * données ont réellement changé. Aucune date du jour ne doit donc entrer dans
+ * un fichier écrit.
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -353,7 +355,10 @@ writeFileSync(
         'recopie-le dans meets-include.json. Sinon, ignore-le — ou mets-le dans',
         'meets-exclude.json pour ne plus le revoir ici.',
       ],
-      genereLe: new Date().toISOString().slice(0, 10),
+      // Aucune date de génération ici, volontairement. Elle changeait à chaque
+      // passage, si bien que le workflow mensuel voyait toujours une différence
+      // et commitait puis déployait même sans donnée nouvelle. La date du
+      // dernier changement réel se lit dans l'historique git du fichier.
       meets: listeCandidats,
     },
     null,
