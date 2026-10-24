@@ -39,3 +39,6 @@ public/admin/sveltia-cms.js
 # Suggestions reçues des visiteurs, écrites par public/api/suggestion.php.
 # Ce sont des données personnelles : elles vivent sur le serveur, jamais ici.
 public/api/journal/*.jsonl
+
+# Exports Clarity déposés par l'auteur pour analyse locale, jamais versionnés
+clarity/

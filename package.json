@@ -13,7 +13,8 @@
     "check": "astro check",
     "data:explore": "node scripts/explore-meets.mjs",
     "data:update": "node scripts/update-data.mjs",
-    "fonts:update": "node scripts/fetch-fonts.mjs"
+    "fonts:update": "node scripts/fetch-fonts.mjs",
+    "clarity:relever": "node scripts/relever-clarity.mjs"
   },
   "engines": {
     "node": ">=20.0.0"
