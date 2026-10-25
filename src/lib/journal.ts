@@ -82,6 +82,14 @@ export const JOURNAL: readonly EntreeJournal[] = [
   },
   {
     date: '2026-10-24',
+    nature: 'correction',
+    version: '1.6.1',
+    titre: 'Le choix de mesure d’audience, à jour partout',
+    texte:
+      "Sur la page Confidentialité, la ligne qui rappelle votre choix de mesure d'audience se met à jour dès que vous répondez dans la bannière. Un choix fait sur la page ferme la bannière à son tour : un refus arrête donc la mesure sur-le-champ, quel que soit le bouton utilisé.",
+  },
+  {
+    date: '2026-10-24',
     nature: 'fonction',
     version: '1.6',
     titre: 'Trouver sa catégorie en un geste',

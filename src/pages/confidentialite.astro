@@ -253,20 +253,17 @@ import { nombreAthletes } from '../lib/data';
    * Permet de revenir sur son choix depuis cette page, comme l'exige le RGPD :
    * retirer son consentement doit être aussi simple que de le donner.
    */
-  const CLE = 'sbd-mesure';
+  import {
+    EVENEMENT_CONSENTEMENT,
+    enregistrerChoix,
+    lireChoix,
+    type Choix,
+  } from '../lib/consentement';
+
   const etat = document.querySelector<HTMLElement>('[data-etat-consentement]');
 
-  function lire(): string | null {
-    try {
-      return localStorage.getItem(CLE);
-    } catch {
-      return null;
-    }
-  }
-
-  function afficher() {
+  function afficher(choix: Choix | null) {
     if (!etat) return;
-    const choix = lire();
     etat.textContent =
       choix === 'oui'
         ? 'Vous avez accepté la mesure d’audience.'
@@ -286,30 +283,16 @@ import { nombreAthletes } from '../lib/data';
 
   for (const bouton of boutons) {
     bouton.addEventListener('click', () => {
-      const choix = bouton.dataset.consentement === 'oui' ? 'oui' : 'non';
-      try {
-        localStorage.setItem(CLE, choix);
-      } catch {
-        // Sans stockage, le choix ne vaut que pour la visite en cours.
-      }
-      if (choix === 'oui') {
-        window.sbdChargerMesure?.();
-      } else {
-        /*
-         * Un refus après coup doit produire un effet immédiat. Le script déjà
-         * chargé ne peut pas être « déchargé » proprement : on recharge donc la
-         * page, ce qui repart d'un contexte sans mesure.
-         */
-        if (window.__sbdMesureChargee) {
-          location.reload();
-          return;
-        }
-      }
-      afficher();
+      enregistrerChoix(bouton.dataset.consentement === 'oui' ? 'oui' : 'non');
     });
   }
 
-  afficher();
+  // La ligne d'état suit tout choix, y compris donné par la bannière.
+  document.addEventListener(EVENEMENT_CONSENTEMENT, (evenement) => {
+    afficher(evenement.detail);
+  });
+
+  afficher(lireChoix());
 </script>
 
 <style>

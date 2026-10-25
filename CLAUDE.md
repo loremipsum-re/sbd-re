@@ -56,6 +56,11 @@ posé derrière une bannière, et la fonction `window.sbdChargerMesure()` n'est
 appelée qu'après acceptation. Avant de brancher quoi que ce soit d'externe,
 vérifier dans le navigateur qu'aucune requête ne part avant l'accord.
 
+Tout choix passe par `enregistrerChoix()` de `src/lib/consentement.ts`, jamais
+par une écriture directe de la clé `sbd-mesure`. La fonction émet
+`sbd:consentement`, qui garde la bannière et `/confidentialite/` d'accord entre
+elles.
+
 Deux pages encadrent cela : `/confidentialite/` et `/mentions-legales/`. La
 première documente aussi la publication des noms et performances des athlètes,
 qui est un traitement de données personnelles à part entière, avec droit

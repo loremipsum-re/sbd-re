@@ -319,6 +319,11 @@ Tant que rien n'est accepté, aucune requête ne part vers `clarity.ms` et aucun
 cookie n'est déposé. Le refus s'exerce en un clic et se révoque depuis
 `/confidentialite/`.
 
+Le choix s'enregistre par `enregistrerChoix()`, dans `src/lib/consentement.ts`,
+qu'appellent la bannière et `/confidentialite/`. La fonction émet l'événement
+`sbd:consentement`, que les deux écoutent pour se mettre à jour. Écrire la clé
+`sbd-mesure` directement laisserait l'autre interface dans un état périmé.
+
 **Avant de brancher tout autre service externe**, vérifier dans l'onglet réseau
 du navigateur qu'aucune requête ne part avant l'accord du visiteur.
 
@@ -396,9 +401,10 @@ dizaines de kilo-octets.
 `<head>`. Un fichier externe serait chargé trop tard et la page clignoterait en
 blanc avant de basculer en sombre.
 
-**Le script de données est idempotent.** Deux exécutions sur le même dump
-produisent un fichier rigoureusement identique, à l'octet près. C'est ce qui
-permet au workflow mensuel de ne commiter que s'il y a réellement du nouveau.
+**Le script de données est idempotent.** Deux exécutions sur le même dump,
+même à des jours différents, produisent des fichiers rigoureusement identiques,
+à l'octet près. C'est ce qui permet au workflow mensuel de ne commiter que s'il
+y a réellement du nouveau.
 
 ---
 
