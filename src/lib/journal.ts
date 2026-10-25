@@ -49,6 +49,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 
 export const JOURNAL: readonly EntreeJournal[] = [
   {
+    date: '2026-10-25',
+    nature: 'correction',
+    version: '1.6.2',
+    titre: 'Des espacements rétablis',
+    texte:
+      "Plusieurs blocs se touchaient : les champs du formulaire de suggestion, les groupes hommes et femmes de la page des catégories, et les encadrés de la page d'accessibilité, dont le texte collait au bord. Chacun retrouve l'espace prévu, le même que sur le reste du site.",
+  },
+  {
     date: '2026-10-24',
     nature: 'correction',
     version: '1.6.1',
