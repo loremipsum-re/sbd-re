@@ -36,14 +36,20 @@ jobs:
         run: npm ci
 
       # Télécharge ~168 Mo, lit 4 millions de lignes en flux, écrit
-      # src/data/results.json et data/meets-candidates.json.
+      # src/data/results.json, src/data/results-exterieur.json et
+      # data/meets-candidates.json.
       - name: Régénérer les données
         run: npm run data:update
 
       - name: Commiter uniquement s'il y a du changement
         id: maj
         run: |
-          FICHIERS="src/data/results.json data/meets-candidates.json"
+          # Tous les fichiers qu'écrit scripts/update-data.mjs, sans exception.
+          # results-exterieur.json a longtemps manqué à cette liste : le script
+          # le régénérait, mais le workflow ne le comparait ni ne le commitait,
+          # si bien que /exterieur/ et les fiches d'athlètes restaient figées.
+          # Un fichier ajouté au script doit être ajouté ici le même jour.
+          FICHIERS="src/data/results.json src/data/results-exterieur.json data/meets-candidates.json"
 
           # Le script étant idempotent, un dump inchangé produit des fichiers
           # rigoureusement identiques. Sans ce test, on créerait un commit vide

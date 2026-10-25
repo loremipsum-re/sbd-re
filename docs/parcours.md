@@ -187,6 +187,27 @@ La mesure qui fonctionne compare le bord droit de la rangée à celui du cadre q
 la contient. C'est ainsi qu'a été trouvé le « Dots » tronqué du classement sur
 téléphone.
 
+### Le robot de données oubliait un fichier et en commitait un autre pour rien
+
+Deux défauts du workflow mensuel, constatés le 24 octobre 2026, tous deux
+silencieux puisque le workflow restait au vert.
+
+Le premier : `scripts/update-data.mjs` écrit trois fichiers, mais le workflow
+n'en comparait et n'en commitait que deux. `results-exterieur.json` manquait, si
+bien que `/exterieur/` et les résultats hors de l'île des fiches restaient figés
+à leur dernière régénération à la main.
+
+Le second : `data/meets-candidates.json` portait un champ `genereLe`, la date du
+jour. Il changeait à chaque passage, et le workflow commitait puis déployait
+chaque mois même sans donnée nouvelle. L'idempotence annoncée ne tenait pas,
+et la mesure par empreinte ne l'avait pas révélé : deux exécutions le même jour
+donnent la même date. Il a fallu simuler deux jours différents pour voir
+l'empreinte changer.
+
+**Un fichier ajouté au script s'ajoute le même jour à la liste du workflow. Et
+aucune date du jour n'entre dans un fichier généré** : la date du dernier
+changement réel se lit dans l'historique git.
+
 
 ---
 
@@ -310,6 +331,19 @@ Le texte de la bannière reste court et ne nomme pas Microsoft, à la demande de
 l'auteur. Ce schéma est valide **à condition que le lien vers
 `/confidentialite/` reste visible** : sans lui, le consentement ne serait plus
 éclairé.
+
+**Deux interfaces, un seul choix.** La bannière et le bloc de
+`/confidentialite/` écrivaient chacune la clé `sbd-mesure` de leur côté, sans
+prévenir l'autre. Constaté le 24 octobre 2026 dans le navigateur, sur
+`/confidentialite/` : répondre par la bannière laissait la page afficher « pas
+encore répondu », et accepter par la page laissait la bannière ouverte. Un
+« Refuser » cliqué ensuite enregistrait le refus pendant que Clarity continuait
+de tourner jusqu'au rechargement. Le « aucune requête après refus » vérifié plus
+haut ne couvrait pas ce chemin.
+
+Tout passe désormais par `enregistrerChoix()`, dans `src/lib/consentement.ts`,
+qui émet `sbd:consentement`. Le choix voyage dans l'événement, et non par une
+relecture du stockage : sans stockage disponible, relire rendrait `null`.
 
 ---
 
