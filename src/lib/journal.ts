@@ -49,7 +49,7 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 
 export const JOURNAL: readonly EntreeJournal[] = [
   {
-    date: '2026-10-24',
+    date: '2026-10-25',
     nature: 'fonction',
     version: '1.8',
     titre: 'Une infographie sur chaque page qui demande une explication',
@@ -57,7 +57,7 @@ export const JOURNAL: readonly EntreeJournal[] = [
       "Chaque compétition, chaque fiche d'athlète et chaque catégorie a désormais son image, comme les records, les résultats hors de l'île, les formats de compétition et les pages qui expliquent le site. Sur les pages de données, l'image se déplie depuis une pastille et la liste reste en tête. Les quinze articles ont chacun la leur, et leurs chiffres se mettent à jour avec les données.",
   },
   {
-    date: '2026-10-24',
+    date: '2026-10-25',
     nature: 'correction',
     version: '1.8',
     titre: 'Quatre articles alignés sur les données',
@@ -65,7 +65,7 @@ export const JOURNAL: readonly EntreeJournal[] = [
       "L'article sur les titres internationaux compte trois titres mondiaux, dont celui d'Alain Cuvelier en octobre 2025. Le compte rendu du Championnat Régional précise que trois records de catégorie datent de ce jour-là. La page À propos calcule ses chiffres au lieu de les écrire.",
   },
   {
-    date: '2026-10-24',
+    date: '2026-10-25',
     nature: 'fonction',
     version: '1.7',
     titre: 'Cinq infographies pour comprendre la discipline',
@@ -73,12 +73,20 @@ export const JOURNAL: readonly EntreeJournal[] = [
       "Les points Dots, le total en neuf essais, l'équipement, les catégories de poids et les divisions d'âge ont chacun leur image. Elles ouvrent les articles qui en parlent, et se déplient depuis le classement, les records et le simulateur. Leurs chiffres se mettent à jour avec les données chaque mois.",
   },
   {
-    date: '2026-10-24',
+    date: '2026-10-25',
     nature: 'visuel',
     version: '1.7',
     titre: 'Les liens vers d’autres sites ouvrent un nouvel onglet',
     texte:
       "La page de sbd.re reste ouverte derrière. La flèche ↗ signale ces liens à l'œil, et les lecteurs d'écran annoncent « Nouvel onglet, quitte sbd.re ».",
+  },
+  {
+    date: '2026-10-25',
+    nature: 'correction',
+    version: '1.6.2',
+    titre: 'Des espacements rétablis',
+    texte:
+      "Plusieurs blocs se touchaient : les champs du formulaire de suggestion, les groupes hommes et femmes de la page des catégories, et les encadrés de la page d'accessibilité, dont le texte collait au bord. Chacun retrouve l'espace prévu, le même que sur le reste du site.",
   },
   {
     date: '2026-10-24',
