@@ -1,0 +1,271 @@
+---
+/**
+ * Les divisions d'âge, sur un même axe des âges.
+ *
+ * UNE RANGÉE PAR DIVISION, du plus jeune au plus âgé. La barre couvre les
+ * âges RELEVÉS dans les résultats de l'île, pas la définition fédérale : c'est
+ * ce que montre l'article « Les divisions d'âge », et c'est vérifiable. Les
+ * barres se chevauchent, parce que la division dépend de l'année de naissance
+ * et la tranche de l'âge le jour du plateau.
+ *
+ * Les intitulés anciens, Open, Elite, Masters sans numéro ou Cadet, restent
+ * hors de l'axe. Une note dit combien de résultats ils portent.
+ */
+import Infographie from './Infographie.astro';
+import { results } from '../../lib/data';
+import { nombre, pluriel } from '../../lib/format';
+import type { IdInfographie } from '../../lib/infographies';
+
+interface Props {
+  lienArticle?: IdInfographie;
+}
+
+const { lienArticle } = Astro.props;
+
+const ORDRE = [
+  'Sub-Juniors',
+  'Juniors',
+  'Seniors',
+  'Masters 1',
+  'Masters 2',
+  'Masters 3',
+  'Masters 4',
+];
+
+/** « 16-17 » donne [16, 17]. Une tranche vide ou illisible donne `null`. */
+function bornes(tranche: string): [number, number] | null {
+  const [bas, haut] = tranche.split('-').map(Number);
+  return Number.isFinite(bas) && Number.isFinite(haut) ? [bas, haut] : null;
+}
+
+const parDivision = new Map<string, { resultats: number; min: number; max: number }>();
+let anciens = 0;
+const intitulesAnciens = new Set<string>();
+for (const r of results) {
+  if (!ORDRE.includes(r.division)) {
+    anciens++;
+    if (r.division) intitulesAnciens.add(r.division);
+    continue;
+  }
+  const entree = parDivision.get(r.division) ?? { resultats: 0, min: Infinity, max: -Infinity };
+  entree.resultats++;
+  const b = bornes(r.ageClass);
+  if (b) {
+    entree.min = Math.min(entree.min, b[0]);
+    entree.max = Math.max(entree.max, b[1]);
+  }
+  parDivision.set(r.division, entree);
+}
+
+const divisions = ORDRE.filter((d) => parDivision.has(d)).map((nom) => ({
+  nom,
+  ...parDivision.get(nom)!,
+}));
+
+const ageMin = Math.min(...divisions.map((d) => d.min));
+const ageMax = Math.max(...divisions.map((d) => d.max));
+// L'axe court d'une dizaine ronde à la suivante : 10 à 80 ans pour 13 à 74.
+const axeDebut = Math.floor(ageMin / 10) * 10;
+const axeFin = Math.ceil((ageMax + 1) / 10) * 10;
+const position = (age: number) => ((age - axeDebut) / (axeFin - axeDebut)) * 100;
+const graduations = Array.from(
+  { length: (axeFin - axeDebut) / 10 + 1 },
+  (_, i) => axeDebut + i * 10,
+);
+
+/** « Open, Elite ou Cadet », dans l'ordre alphabétique. */
+const listeAnciens = [...intitulesAnciens].sort((a, b) => a.localeCompare(b, 'fr'));
+const intitules =
+  listeAnciens.length > 1
+    ? `${listeAnciens.slice(0, -1).join(', ')} ou ${listeAnciens.at(-1)}`
+    : (listeAnciens[0] ?? '');
+
+const total = results.length;
+const masters = divisions
+  .filter((d) => d.nom.startsWith('Masters'))
+  .reduce((somme, d) => somme + d.resultats, 0);
+---
+
+<Infographie
+  titre={`De ${ageMin} à ${ageMax} ans sur les plateaux de l'île`}
+  source="Âges relevés dans les résultats de La Réunion. La division suit l'année de naissance, l'âge relevé suit le jour de la compétition."
+  lienArticle={lienArticle}
+>
+  <ol class="divisions">
+    {
+      divisions.map((d) => (
+        <li
+          class="division"
+          data-masters={d.nom.startsWith('Masters') ? '' : undefined}
+          style={`--debut:${position(d.min)}%;--fin:${position(d.max + 1)}%`}
+        >
+          <p class="nom">
+            {d.nom}
+            <span class="ages">
+              {d.min} à {d.max} ans
+            </span>
+          </p>
+          <span class="piste" aria-hidden="true">
+            <span class="barre" />
+          </span>
+          <p class="compte">
+            <strong class="num-tab">{nombre(d.resultats)}</strong>
+            <span class="unite"> {pluriel(d.resultats, 'résultat')}</span>
+          </p>
+        </li>
+      ))
+    }
+  </ol>
+
+  <p class="axe" aria-hidden="true">
+    <span class="graduations">
+      {graduations.map((g) => (
+        <span style={`--position:${position(g)}%`}>{g}</span>
+      ))}
+    </span>
+  </p>
+
+  <p class="bilan">
+    Masters 1 à 4 : <strong class="num-tab">{nombre(masters)}</strong> résultats sur{' '}
+    {nombre(total)}, soit <strong class="num-tab">{nombre((masters / total) * 100, 0)} %</strong>.
+  </p>
+
+  {
+    anciens > 0 && (
+      <p class="anciens">
+        {nombre(anciens)} {pluriel(anciens, 'résultat ancien porte', 'résultats anciens portent')}{' '}
+        un autre intitulé{intitules && <>, {intitules}</>}.
+      </p>
+    )
+  }
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  .divisions {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /*
+   * UNE RANGÉE : le nom, la piste des âges, l'effectif. Les trois colonnes
+   * sont fixes, si bien que les pistes de toutes les rangées partagent le même
+   * axe, celui des graduations du bas.
+   */
+  .division,
+  .axe {
+    display: grid;
+    grid-template-columns: 8.5rem minmax(0, 1fr) 6rem;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .nom {
+    display: grid;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+  .ages {
+    font-size: var(--step--1);
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  .piste {
+    position: relative;
+    height: 1.5rem;
+    background: var(--bg);
+    border-left: 2px solid var(--border);
+  }
+
+  .barre {
+    position: absolute;
+    inset-block: 0;
+    left: var(--debut);
+    right: calc(100% - var(--fin));
+    background: var(--accent-fill);
+  }
+
+  /* Les Masters en bleu, pour que leur poids d'ensemble se lise d'un coup. Le
+     bilan sous l'axe le dit aussi en chiffres. */
+  [data-masters] .barre {
+    background: var(--bleu);
+  }
+
+  .compte {
+    text-align: right;
+    white-space: nowrap;
+  }
+  .unite {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .axe {
+    margin-top: var(--space-1);
+  }
+  .graduations {
+    grid-column: 2;
+    position: relative;
+    height: 1.25rem;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .graduations span {
+    position: absolute;
+    left: var(--position);
+    transform: translateX(-50%);
+  }
+  /* Les graduations des deux bouts restent dans la piste. */
+  .graduations span:first-child {
+    transform: none;
+  }
+  .graduations span:last-child {
+    transform: translateX(-100%);
+  }
+
+  /*
+   * SUR TÉLÉPHONE, le nom et l'effectif montent sur une ligne, la piste prend
+   * toute la largeur dessous. Les graduations suivent la même largeur.
+   */
+  @media (max-width: 40rem) {
+    .division {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--space-1) var(--space-3);
+    }
+    .piste {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+    .axe {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .graduations {
+      grid-column: 1;
+    }
+    .nom {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0 var(--space-2);
+    }
+  }
+
+  .bilan {
+    margin-top: var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+  }
+
+  .anciens {
+    margin-top: var(--space-2);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+</style>

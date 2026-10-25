@@ -3,6 +3,7 @@ titre: "Championnat Régional 2026, Ulrich Randrianantenaina en tête aux points
 description: "17 athlètes à Saint-Paul le 26 septembre. Les totaux, les catégories et les meilleurs scores aux points Dots."
 date: 2026-09-26
 competition: championnat-regional-fa-pl-la-reunion/2026-09-26
+infographie: competition
 athletes:
   - Ulrich Randrianantenaina
   - Kévin Turpin
@@ -52,6 +53,7 @@ sur le même plateau. Les tranches d'âge vont de 18-19 ans à 70-74 ans.
 Alain Cuvelier concourt en Masters 4, tranche 70-74 ans, et totalise 390,5 kg
 pour 64,9 kg de poids de corps.
 
-Les records de l'île restent inchangés après cette compétition.
+Les records de l'île toutes catégories restent inchangés après cette
+compétition. Trois records de catégorie établis ce jour-là tiennent toujours.
 
 [Voir les résultats complets](/competitions/championnat-regional-fa-pl-la-reunion/2026-09-26/)

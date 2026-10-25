@@ -26,7 +26,7 @@ import { GLOSSAIRE } from '../lib/glossaire';
 import Infobulle from './Infobulle.astro';
 ---
 
-<details class="glossaire">
+<details class="glossaire repli">
   <summary>
     <span class="chevron" aria-hidden="true"></span>
     Comprendre les termes
@@ -45,46 +45,8 @@ import Infobulle from './Infobulle.astro';
     margin-bottom: var(--space-4);
   }
 
-  summary {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    font-size: var(--step--1);
-    font-weight: 600;
-    color: var(--muted);
-    cursor: pointer;
-    /* Retire la flèche que Safari et Chrome ajoutent d'office : le chevron
-       ci-dessous la remplace et tourne à l'ouverture. */
-    list-style: none;
-  }
-  summary::-webkit-details-marker {
-    display: none;
-  }
-  summary:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  .chevron {
-    width: 0.5rem;
-    height: 0.5rem;
-    border-right: 2px solid currentColor;
-    border-bottom: 2px solid currentColor;
-    transform: rotate(45deg) translate(-0.1rem, -0.1rem);
-    transition: transform 0.15s ease;
-  }
-  .glossaire[open] .chevron {
-    transform: rotate(-135deg) translate(-0.15rem, -0.15rem);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .chevron {
-      transition: none;
-    }
-  }
+  /* La pastille et son chevron sont ceux de `.repli`, dans tokens.css,
+     partagés avec les infographies des pages de données. */
 
   .termes {
     display: flex;

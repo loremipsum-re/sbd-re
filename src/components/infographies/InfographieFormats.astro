@@ -1,0 +1,590 @@
+---
+/**
+ * Les formats de compétition, en une image.
+ *
+ * TROIS QUESTIONS, DANS L'ORDRE OÙ LA LISTE DES COMPÉTITIONS LES POSE. Ce que
+ * veut dire l'étiquette d'un format, et combien de compétitions la portent.
+ * Pourquoi une ligne porte parfois deux ou trois étiquettes. Et où chaque
+ * format compte sur le site.
+ *
+ * LES CARTES REPRENNENT LES ÉTIQUETTES DE LA LISTE, par `libelleEvent`, pour
+ * qu'un visiteur reconnaisse d'un coup d'œil ce qu'il vient de lire dans la
+ * colonne Format. Les pictogrammes disent les mouvements disputés.
+ *
+ * UN CARRÉ PAR COMPÉTITION pour les mélanges : toutes les compétitions de
+ * l'île tiennent en quelques lignes, et la part de celles qui mêlent plusieurs
+ * formats se voit sans calcul. Leurs carrés portent l'aplat de l'accent, le
+ * nombre et les étiquettes disent la même chose en texte.
+ *
+ * LES RECORDS SONT RAPPORTÉS À LEUR FORMAT D'ORIGINE, mouvement par mouvement.
+ * C'est la mesure qui montre la règle de lib/records.ts : une barre compte
+ * dans tous les formats, le total en full power seulement. Un format dont
+ * aucun résultat ne porte de catégorie de poids ne détient aucun record, et la
+ * note le dit.
+ *
+ * LE FORMAT DE LA LIGNE, ET NON CELUI DE LA COMPÉTITION. Une compétition mixte
+ * porte deux formats, et un athlète peut y disputer le développé couché seul.
+ * Mesuré : un des records du développé couché seul vient d'une compétition
+ * qui mêle full power et développé couché. L'intitulé parle donc du format où
+ * chaque record a été établi.
+ *
+ * LA MISE EN PAGE SUIT LA LARGEUR DE L'INFOGRAPHIE, et non celle de l'écran,
+ * par des requêtes de conteneur. Posée dans la colonne d'un article, large de
+ * 68 caractères, elle garde deux cartes par rangée sur un écran de 1 280 px.
+ *
+ * Tous les chiffres sortent de lib/infographie-formats.ts.
+ */
+import Icone from '../Icone.astro';
+import Infographie from './Infographie.astro';
+import { LIFTS } from '../../lib/categories';
+import { periode } from '../../lib/data';
+import { annee, nombre, pluriel } from '../../lib/format';
+import { statistiquesFormats, type RecordsDuMouvement } from '../../lib/infographie-formats';
+import type { IdInfographie } from '../../lib/infographies';
+import { libelleEvent } from '../../lib/meets';
+import { TRACES_MOUVEMENTS } from '../../lib/mouvements';
+import type { LiftKey } from '../../lib/types';
+
+interface Props {
+  lienArticle?: IdInfographie;
+}
+
+const { lienArticle } = Astro.props;
+
+const { competitions, formats, melanges, records } = statistiquesFormats();
+
+/** L'espace insécable, écrit en clair pour rester visible dans le source. */
+const INSECABLE = String.fromCharCode(0xa0);
+
+const melangees = melanges
+  .filter((m) => m.formats.length > 1)
+  .reduce((n, m) => n + m.competitions, 0);
+const totalRecords = records.reduce((n, r) => n + r.total, 0);
+
+/** « Squat, développé couché et soulevé de terre ». */
+const libelleLift = (id: LiftKey) => LIFTS.find((l) => l.id === id)?.label ?? id;
+function mouvementsEnPhrase(mouvements: LiftKey[]): string {
+  if (mouvements.length === 1) return 'Un seul mouvement';
+  const noms = mouvements.map((m, i) => (i === 0 ? libelleLift(m) : libelleLift(m).toLowerCase()));
+  return `${noms.slice(0, -1).join(', ')} et ${noms.at(-1)}`;
+}
+
+const intituleMelanges =
+  melangees === 0
+    ? 'Chaque compétition a un seul format'
+    : `${melangees} ${pluriel(melangees, 'compétition')} sur ${competitions} ${melangees > 1 ? 'mêlent' : 'mêle'} plusieurs formats`;
+
+/** « 26 records : 18 en full power, 8 en développé couché seul ». */
+const enTete = (r: RecordsDuMouvement) => `${r.total}${INSECABLE}${pluriel(r.total, 'record')}`;
+const detail = (r: RecordsDuMouvement) =>
+  `${INSECABLE}: ${r.parFormat.map((p) => `${p.records} en ${p.enPhrase}`).join(', ')}`;
+
+/** La légende ne montre que les familles présentes dans les jauges. */
+const avecMouvementSeul = records.some((r) => r.parFormat.some((p) => p.code !== 'SBD'));
+
+/*
+ * Les formats d'un seul mouvement dont AUCUN résultat ne porte de catégorie
+ * de poids. Ils ne peuvent détenir aucun record, et la note le dit. Un format
+ * dont une partie seulement des résultats est sans catégorie n'est pas cité :
+ * ses autres barres comptent.
+ */
+const sansCategorie = formats.filter(
+  (f) => !f.auClassement && f.resultats > 0 && f.sansCategorie === f.resultats,
+);
+const n = sansCategorie.reduce((somme, f) => somme + f.resultats, 0);
+/** « de squat seul et de soulevé de terre seul », virgules au-delà de deux. */
+const enDe = sansCategorie.map((f) => `de ${f.enPhrase}`);
+const noms = enDe.length > 1 ? `${enDe.slice(0, -1).join(', ')} et ${enDe.at(-1)}` : (enDe[0] ?? '');
+const noteCategorie =
+  n === 0
+    ? null
+    : n > 1
+      ? `Les ${nombre(n)}${INSECABLE}résultats ${noms} figurent sans catégorie dans les données. Ils restent hors des records.`
+      : `Le résultat ${noms} figure sans catégorie dans les données. Il reste hors des records.`;
+---
+
+<Infographie
+  titre="Seul le full power donne un total"
+  source={`Compétitions de La Réunion depuis ${annee(periode().debut)}. Une compétition qui mêle plusieurs formats compte dans chacun.`}
+  lienArticle={lienArticle}
+>
+  <div class="cadre-formats">
+    <p class="intitule" id="formats-liste">
+      Les formats des {competitions} compétitions de l'île
+    </p>
+    <ul class="formats" aria-labelledby="formats-liste">
+      {
+        formats.map((f) => (
+          <li class="format">
+            <span class="pictos" aria-hidden="true">
+              {f.mouvements.map((m) => (
+                <svg class="icone-mouvement" width="22" height="22" viewBox="0 0 24 24" focusable="false">
+                  {TRACES_MOUVEMENTS[m]?.map((d) => <path d={d} />)}
+                </svg>
+              ))}
+            </span>
+            <p class="nom">{f.libelle}</p>
+            <p class="mouvements">{mouvementsEnPhrase(f.mouvements)}</p>
+
+            <div class="chiffres">
+              {f.competitions > 0 ? (
+                <>
+                  <p class="effectif">
+                    <span class="num">{f.competitions}</span>{' '}
+                    <span class="unite">
+                      {pluriel(f.competitions, 'compétition')} sur {competitions}
+                    </span>
+                  </p>
+                  <span class="jauge" aria-hidden="true">
+                    <span style={`--part:${f.competitions / competitions}`} />
+                  </span>
+                  <p class="resultats">
+                    <strong class="num-tab">{nombre(f.resultats)}</strong>{' '}
+                    {pluriel(f.resultats, 'résultat')}
+                  </p>
+                </>
+              ) : (
+                <p class="resultats">Aucune compétition sur l'île à ce jour</p>
+              )}
+              <p class="usage" data-compte={f.auClassement ? '' : undefined}>
+                <Icone nom={f.auClassement ? 'valide' : 'manque'} taille={16} />
+                {f.auClassement ? 'Total, Dots et classement' : 'Hors du classement'}
+              </p>
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+
+    <div class="partie">
+      <p class="intitule" id="formats-melanges">{intituleMelanges}</p>
+      <ul class="melanges" aria-labelledby="formats-melanges">
+        {
+          melanges.map((m) => (
+            <li data-plusieurs={m.formats.length > 1 ? '' : undefined}>
+              {/* Le lecteur d'écran entend « Full power seul : 31 compétitions ».
+                  Sans « seul », il prendrait les 31 pour toutes les
+                  compétitions de full power, que la carte compte à 37. */}
+              <span class="etiquettes">
+                {m.formats.map((code, i) => (
+                  <>
+                    {i > 0 && <span class="sr-only">, </span>}
+                    <span class="etiquette">{libelleEvent(code)}</span>
+                  </>
+                ))}
+                {m.formats.length === 1 && <span class="sr-only"> seul</span>}
+              </span>
+              <span class="compte">
+                <span class="sr-only">{`${INSECABLE}: `}</span>
+                <strong class="num-tab">{m.competitions}</strong>
+                <span class="sr-only">{` ${pluriel(m.competitions, 'compétition')}`}</span>
+              </span>
+              <span class="carres" aria-hidden="true">
+                {Array.from({ length: m.competitions }, () => (
+                  <span class="carre" />
+                ))}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="cle-carres" aria-hidden="true">Un carré par compétition, sur la ligne de ses étiquettes.</p>
+    </div>
+
+    <div class="partie">
+      <p class="intitule" id="formats-records">
+        Les {totalRecords} records de l'île, selon le format où chacun a été établi
+      </p>
+      <p class="legende" aria-hidden="true">
+        <span><span class="pastille" />Full power</span>
+        {
+          avecMouvementSeul && (
+            <span>
+              <span class="pastille" data-seul />
+              Un seul mouvement
+            </span>
+          )
+        }
+      </p>
+      <ul class="records" aria-labelledby="formats-records">
+        {
+          records.map((r) => (
+            <li>
+              <p class="mouvement">
+                <span class="picto" aria-hidden="true">
+                  {TRACES_MOUVEMENTS[r.lift] && (
+                    <svg class="icone-mouvement" width="20" height="20" viewBox="0 0 24 24" focusable="false">
+                      {TRACES_MOUVEMENTS[r.lift]?.map((d) => <path d={d} />)}
+                    </svg>
+                  )}
+                </span>
+                {r.libelle}
+              </p>
+              <span class="jauge-records" aria-hidden="true">
+                {r.parFormat.map((p) => (
+                  <span
+                    class="segment"
+                    data-seul={p.code === 'SBD' ? undefined : ''}
+                    style={`--part:${p.records}`}
+                  />
+                ))}
+              </span>
+              <p class="detail">
+                <strong class="num-tab">{enTete(r)}</strong>{detail(r)}
+              </p>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="regle">
+        Chaque barre compte aux records de son mouvement, quel que soit le
+        format. Le total compte en full power seulement. Un record se rattache
+        à une catégorie de poids.{noteCategorie && ` ${noteCategorie}`}
+      </p>
+    </div>
+  </div>
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  /* Le conteneur des requêtes : les seuils ci-dessous lisent SA largeur. */
+  .cadre-formats {
+    container-type: inline-size;
+  }
+
+  .intitule {
+    margin-bottom: var(--space-3);
+    font-size: var(--step--1);
+    font-weight: 700;
+  }
+
+  /* Pas `.bloc` ni `.note` : deux classes globales de tokens.css, qui
+     ajouteraient leurs marges à celles-ci. */
+  .partie {
+    margin-top: var(--space-8);
+  }
+
+  /* LES QUATRE CARTES. Deux par rangée, quatre dès que l'infographie a la
+     largeur de la page : le nombre de colonnes divise toujours le nombre de
+     cartes, et aucune ne reste seule sur sa rangée. */
+  .formats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @container (min-width: 56rem) {
+    .formats {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  .format {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+
+  /* Sur un téléphone de 375 px, une carte mesure 148 px, mesuré. Le
+     rembourrage réduit rend 8 px au texte. */
+  @container (max-width: 30rem) {
+    .format {
+      padding: var(--space-3);
+    }
+  }
+
+  .pictos {
+    display: flex;
+    gap: var(--space-1);
+    color: var(--accent);
+  }
+
+  .nom {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 800;
+    line-height: 1.1;
+  }
+
+  /* Sur un écran de 320 px, une carte laisse 92 px au texte, mesuré, et
+     « Développé » en demande 103 au corps du titre. Le corps de texte le loge. */
+  @container (max-width: 17.5rem) {
+    .nom {
+      font-size: var(--step-0);
+    }
+  }
+
+  .mouvements {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /* Les chiffres se calent en bas de la carte, au même niveau d'une carte à
+     l'autre, quelle que soit la longueur du nom. */
+  .chiffres {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: auto;
+    padding-top: var(--space-2);
+  }
+
+  .effectif {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--space-2);
+  }
+  .effectif .num {
+    font-size: var(--step-3);
+    line-height: 1;
+  }
+  .unite {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /* La part des compétitions qui portent ce format, sur une piste pleine. */
+  .jauge {
+    display: block;
+    height: 0.5rem;
+    background: color-mix(in srgb, var(--muted) 30%, var(--bg));
+  }
+  .jauge > span {
+    display: block;
+    height: 100%;
+    width: calc(var(--part) * 100%);
+    min-width: 4px;
+    background: var(--accent-fill);
+  }
+
+  .resultats {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .resultats strong {
+    color: var(--text);
+  }
+
+  /* Ce que le format alimente. L'icône et le mot disent la même chose : la
+     couleur ne porte jamais l'information seule. */
+  .usage {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-1);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--border);
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .usage :global(.icone) {
+    margin-top: 0.1em;
+  }
+  .usage[data-compte] {
+    color: var(--text);
+  }
+  .usage[data-compte] :global(.icone) {
+    color: var(--accent);
+  }
+
+  /*
+   * LES MÉLANGES. Les étiquettes reprennent celles de la colonne Format.
+   *
+   * En colonne étroite, les étiquettes passent au-dessus de leurs carrés.
+   * L'écart entre deux mélanges vaut alors le double de l'écart interne, pour
+   * que chaque étiquette se lise avec ses carrés et non avec ceux du dessus.
+   */
+  .melanges {
+    display: grid;
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .melanges li {
+    display: grid;
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    min-width: 0;
+  }
+
+  .etiquettes {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-2);
+    min-width: 0;
+  }
+
+  /* Une rangée par mélange dès 36 rem, la colonne d'un article comprise. */
+  @container (min-width: 36rem) {
+    .melanges {
+      gap: var(--space-3);
+    }
+    .melanges li {
+      grid-template-columns: minmax(0, 17rem) 2.5rem minmax(0, 1fr);
+    }
+    .etiquettes {
+      grid-column: auto;
+    }
+  }
+
+  /* Pleine page, la colonne des étiquettes loge les trois du mélange le plus
+     large, 364 px mesurés à 1 280 px, sur une seule ligne. */
+  @container (min-width: 50rem) {
+    .melanges li {
+      grid-template-columns: minmax(0, 24rem) 2.5rem minmax(0, 1fr);
+    }
+  }
+
+  .etiquette {
+    display: inline-block;
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  [data-plusieurs] .etiquette {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  .compte {
+    text-align: right;
+    font-weight: 700;
+  }
+
+  .carres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    min-width: 0;
+  }
+  .carre {
+    width: 0.75rem;
+    height: 0.75rem;
+    background: color-mix(in srgb, var(--muted) 55%, var(--surface));
+  }
+  [data-plusieurs] .carre {
+    background: var(--accent-fill);
+  }
+
+  .cle-carres {
+    margin-top: var(--space-3);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /* LES RECORDS. Une jauge par mouvement, découpée par format d'origine. */
+  .legende {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-6);
+    margin-bottom: var(--space-3);
+    font-size: var(--step--1);
+  }
+  .legende > span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .pastille {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+
+  .records {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .records li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  @container (min-width: 36rem) {
+    .records li {
+      grid-template-columns: 12rem minmax(0, 1fr);
+      gap: var(--space-1) var(--space-4);
+      align-items: center;
+    }
+    .detail {
+      grid-column: 2;
+    }
+  }
+
+  .mouvement {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-weight: 700;
+  }
+
+  /* La case du pictogramme garde sa largeur pour le total, qui n'en a pas :
+     les quatre libellés restent alignés. */
+  .picto {
+    display: inline-flex;
+    width: 20px;
+    flex-shrink: 0;
+    color: var(--accent);
+  }
+
+  .jauge-records {
+    display: flex;
+    gap: 2px;
+    height: 1.25rem;
+  }
+
+  .segment {
+    flex: var(--part) 1 0;
+    min-width: 4px;
+  }
+
+  .segment,
+  .pastille {
+    background: color-mix(in srgb, var(--muted) 55%, var(--surface));
+  }
+  .segment[data-seul],
+  .pastille[data-seul] {
+    background: var(--accent-fill);
+  }
+
+  .detail {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .detail strong {
+    color: var(--text);
+  }
+
+  .regle {
+    max-width: 68ch;
+    margin-top: var(--space-4);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+</style>

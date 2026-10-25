@@ -2,6 +2,7 @@
 titre: "La saison 2026 de force athlétique à La Réunion"
 description: "Cinq compétitions, 112 athlètes et cinq records de l'île. La meilleure participation depuis 2017."
 date: 2026-10-15
+infographie: saisons
 athletes:
   - Gabriel Begue
   - Philippe René
@@ -37,8 +38,8 @@ Tous datent du 18 juillet, à Saint-Joseph.
 - Deadlift femmes, 218 kg, Leena Waitzmann, catégorie 76 kg
 - Total femmes, 490,5 kg, Leena Waitzmann, catégorie 76 kg
 
-Les records de l'île sont restés inchangés au Championnat Régional du
-26 septembre.
+Les records de l'île toutes catégories sont restés inchangés au Championnat
+Régional du 26 septembre.
 
 ## Les meilleurs scores aux points Dots
 
@@ -48,7 +49,7 @@ catégorie 93 kg. Philippe René suit avec 486,5 points et 790 kg en 105 kg.
 Mathilde Petit mène chez les femmes avec 480,5 points, pour 417,5 kg en
 catégorie 57 kg. Leena Waitzmann suit avec 477,4 points et 490,5 kg en 76 kg.
 
-## La moitié du plateau découvre la compétition
+## La moitié du plateau signe un premier résultat sur l'île
 
 58 des 112 athlètes de 2026 n'avaient aucun résultat à La Réunion avant cette
 année.

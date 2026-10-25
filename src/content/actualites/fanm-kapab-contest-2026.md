@@ -3,6 +3,7 @@ titre: "Fanm Kapab Contest 2026, cinq athlètes au Tampon"
 description: "Camille Malet signe 413,3 points Dots pour un total de 335 kg en catégorie 52 kg."
 date: 2026-03-08
 competition: fanm-kapab-contest/2026-03-08
+infographie: competition
 athletes:
   - Camille Malet
   - Elisa Mussard

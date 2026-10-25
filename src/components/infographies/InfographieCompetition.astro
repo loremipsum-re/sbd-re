@@ -1,0 +1,552 @@
+---
+/**
+ * Une compétition, en une image.
+ *
+ * CE QUE LE TABLEAU NE MONTRE PAS. Le tableau de résultats liste les athlètes
+ * un par un. L'infographie montre la forme du plateau : ce qu'on y a soulevé,
+ * et comment les athlètes se répartissent entre les catégories où ils se
+ * mesurent. C'est ce qui manque à qui découvre la discipline pour lire le
+ * tableau, où chaque catégorie a son podium.
+ *
+ * UN CARRÉ PAR ATHLÈTE, une colonne par catégorie de poids, de la plus légère
+ * à la plus lourde, une rangée par sexe. Les carrés se comptent sur la plus
+ * petite compétition comme sur la plus grosse, et le nombre écrit
+ * au-dessus de chaque colonne évite de les compter. Ils s'empilent deux par
+ * deux pour que la plus grosse catégorie tienne sur un téléphone.
+ *
+ * Quand la compétition mêle les familles d'équipement, le carré change de
+ * FORME en plus de la couleur : plein, à moitié plein ou vide. La légende et
+ * le texte réservé aux lecteurs d'écran donnent les effectifs.
+ *
+ * TROIS REPÈRES SOUS LE GRAPHIQUE, chacun affiché seulement s'il a quelque
+ * chose à dire : les athlètes qui signent leur premier résultat recensé sur
+ * l'île, les coupes du tableau recomptées, l'étendue des tranches d'âge. Les
+ * calculs vivent dans lib/infographie-competition.ts.
+ *
+ * TROIS MOTS CHOISIS POUR RESTER EXACTS. « Recensé », parce que les données
+ * commencent en 2017 : un athlète qui concourait avant y figure comme un
+ * débutant, et la source le rappelle. « Marques », parce qu'une coupe
+ * récompense aussi bien un total qu'une barre, et qu'un total n'est pas une
+ * barre. « Par catégorie », parce que les comptes rendus appellent « records
+ * de l'île » les records toutes catégories. Une compétition peut signer des
+ * records de catégorie sans toucher à ceux-là, et l'infographie posée dans
+ * son compte rendu doit pouvoir le dire sans le contredire.
+ */
+import Infographie from './Infographie.astro';
+import { EQUIPMENT_GROUPS, type EquipmentGroup, type WeightClass } from '../../lib/categories';
+import { periode } from '../../lib/data';
+import { annee, nombre, pluriel } from '../../lib/format';
+import {
+  profilCompetition,
+  type BlocFormat,
+  type Colonne,
+} from '../../lib/infographie-competition';
+import type { IdInfographie } from '../../lib/infographies';
+import { libelleEvent } from '../../lib/meets';
+import { TRACES_MOUVEMENTS } from '../../lib/mouvements';
+import type { EventCode, LiftKey, Sex } from '../../lib/types';
+
+interface Props {
+  /** Chemin de l'édition, tel qu'il apparaît dans l'adresse : « open-de-la-fournaise/2026-01-18 ». */
+  chemin: string;
+  lienArticle?: IdInfographie;
+}
+
+const { chemin, lienArticle } = Astro.props;
+
+const profil = profilCompetition(chemin);
+const { meet, formats } = profil;
+
+/** Préfixe des identifiants HTML, propre à cette compétition. */
+const prefixe = `competition-${meet.nomSlug}-${meet.date}`;
+
+const MOUVEMENTS: Record<EventCode, LiftKey[]> = {
+  SBD: ['squat', 'bench', 'deadlift'],
+  B: ['bench'],
+  S: ['squat'],
+  D: ['deadlift'],
+};
+
+/*
+ * La règle de chaque format, dans les mots de l'article « Combien soulève-t-on
+ * à sa première compétition » et de l'infographie du total.
+ */
+const SEUL = "L'athlète garde sa meilleure barre validée sur trois essais.";
+const REGLES: Record<EventCode, string> = {
+  SBD: 'Le total additionne les trois mouvements, chacun pris à la meilleure barre validée sur trois essais.',
+  B: SEUL,
+  S: SEUL,
+  D: SEUL,
+};
+
+const SEXES: Record<Sex, string> = { M: 'Hommes', F: 'Femmes' };
+
+const unite = profil.unAthleteParCarre ? 'athlète' : 'résultat';
+const effectif = (n: number) => `${nombre(n)} ${pluriel(n, unite)}`;
+
+const familles = new Map(EQUIPMENT_GROUPS.map((g) => [g.id, g]));
+const libelleFamille = (id: EquipmentGroup) => familles.get(id)?.label ?? id;
+/*
+ * La précision reprend le résumé d'EQUIPMENT_GROUPS, celui du glossaire.
+ * L'équipé n'en porte pas : son résumé, « combinaison de force », ne couvre
+ * pas la chemise des compétitions de développé couché.
+ */
+const precision: Partial<Record<EquipmentGroup, string>> = {
+  raw: familles.get('raw')?.hint.toLowerCase(),
+  wraps: familles.get('wraps')?.hint.toLowerCase(),
+};
+const plusieursFamilles = profil.equipements.length > 1;
+
+/** « −93 », « +120 », ou le tiret d'une catégorie absente. */
+const etiquette = (classe: WeightClass | null) => (classe ? classe.label.replace(' kg', '') : '—');
+
+/** Ce que lit un lecteur d'écran pour une colonne, qui nomme sa catégorie ou son sexe. */
+function lecture(c: Colonne, nom?: string): string {
+  const classe =
+    nom ??
+    (!c.classe
+      ? 'catégorie absente des résultats'
+      : c.classe.open
+        ? `plus de ${c.classe.kg} kg`
+        : `jusqu'à ${c.classe.kg} kg`);
+  const detail = plusieursFamilles
+    ? `, ${c.parEquipement
+        .map((e) => `${nombre(e.resultats)} en ${libelleFamille(e.equipement).toLowerCase()}`)
+        .join(', ')}`
+    : '';
+  return `${classe}, ${effectif(c.resultats)}${detail}.`;
+}
+
+/*
+ * LA TAILLE DU CARRÉ SUIT LA PLUS GROSSE CATÉGORIE. Sur une petite
+ * compétition, des carrés de 10 px tiennent sur une rangée ou deux et se
+ * voient à peine. Au-delà de douze athlètes dans une catégorie, le carré
+ * revient à 10 px pour que la colonne tienne sur un téléphone.
+ */
+const plusGrosse = Math.max(
+  ...formats.flatMap((f) => f.sexes.flatMap((s) => s.colonnes.map((c) => c.resultats))),
+);
+const carre = plusGrosse <= 6 ? '0.875rem' : plusGrosse <= 12 ? '0.75rem' : '0.625rem';
+
+/** Identifiant du nom d'un format, qui étiquette ses graphiques. */
+const idFormat = (bloc: BlocFormat) => `${prefixe}-${bloc.event}`.toLowerCase();
+
+interface Rangee {
+  id: string;
+  /** Le sexe de la rangée. Absent quand la rangée réunit les deux sexes. */
+  intitule?: string;
+  effectif: number;
+  nbColonnes: number;
+  /** `nom` remplace l'étiquette de catégorie quand la colonne est un sexe. */
+  colonnes: { colonne: Colonne; nom?: string }[];
+}
+
+/*
+ * Une rangée par sexe, une colonne par catégorie. Un format sans catégorie de
+ * poids n'aurait qu'une colonne par rangée : ses deux sexes se rangent alors
+ * côte à côte, sur une rangée unique.
+ */
+function rangees(bloc: BlocFormat): Rangee[] {
+  if (bloc.sansCategorie) {
+    return [
+      {
+        id: idFormat(bloc),
+        effectif: bloc.resultats,
+        nbColonnes: bloc.sexes.length,
+        colonnes: bloc.sexes.map((s) => ({ colonne: s.colonnes[0], nom: SEXES[s.sexe] })),
+      },
+    ];
+  }
+  return bloc.sexes.map((s) => ({
+    id: `${idFormat(bloc)}-${s.sexe}`.toLowerCase(),
+    intitule: SEXES[s.sexe],
+    effectif: s.resultats,
+    nbColonnes: profil.colonnesMax,
+    colonnes: s.colonnes.map((colonne) => ({ colonne })),
+  }));
+}
+
+/** Les carrés d'une colonne, de bas en haut : raw, bandes, équipé. */
+const carres = (c: Colonne) =>
+  c.parEquipement.flatMap((e) => Array.from({ length: e.resultats }, () => e.equipement));
+
+const athletes = meet.athletes;
+const accord = profil.femmesSeulement ? 'réparties' : 'répartis';
+const titre =
+  profil.categories > 0
+    ? `${nombre(athletes)} ${pluriel(athletes, 'athlète')} ${athletes > 1 ? accord : accord.replace(/s$/, '')} en ${profil.categories} ${pluriel(profil.categories, 'catégorie')}`
+    : formats.length > 1
+      ? `${nombre(athletes)} ${pluriel(athletes, 'athlète')} sur ${formats.length} formats`
+      : `${nombre(athletes)} ${pluriel(athletes, 'athlète')} en ${libelleEvent(formats[0].event).toLowerCase()}`;
+
+/*
+ * La légende sous les graphiques. Chaque phrase n'apparaît que si elle
+ * concerne cette compétition.
+ */
+const sansCategorie = formats.filter((f) => f.sansCategorie);
+const legende = [
+  profil.categories > 0
+    ? `Chaque carré est un ${unite}, rangé dans sa catégorie de poids.`
+    : `Chaque carré est un ${unite}.`,
+  profil.plusieursFormatsParAthlete &&
+    'Un athlète engagé dans deux formats compte une fois dans chacun.',
+  profil.categories > 0 && 'Une compétition se dispute catégorie par catégorie.',
+  plusieursFamilles && "Chaque famille d'équipement a son classement.",
+  sansCategorie.length === formats.length
+    ? 'Catégorie de poids absente des résultats de cette compétition.'
+    : sansCategorie.length > 0 &&
+      `Catégorie de poids absente des résultats en ${sansCategorie
+        .map((f) => libelleEvent(f.event).toLowerCase())
+        .join(' et ')}.`,
+  profil.tiret && 'Le tiret signale une catégorie absente des résultats.',
+].filter(Boolean);
+
+const { recordsCategorie: records, recordsAbsolus: absolus } = profil;
+/* L'espace insécable garde « toutes catégories » sur une même ligne. */
+const suiteRecords =
+  absolus === 0
+    ? ''
+    : absolus < records
+      ? `, dont ${nombre(absolus)} toutes catégories`
+      : `, ${pluriel(records, 'record')} toutes catégories`;
+
+const source = `Résultats publiés par OpenPowerlifting. Les compétitions de l'île sont recensées depuis ${annee(periode().debut)}.`;
+---
+
+<Infographie titre={titre} source={source} lienArticle={lienArticle}>
+  <div class="formats">
+    {
+      formats.map((bloc) => (
+        <div class="format">
+          <p class="format-nom" id={idFormat(bloc)}>
+            <span class="icones" aria-hidden="true">
+              {MOUVEMENTS[bloc.event].map((m) => (
+                <svg
+                  class="icone-mouvement"
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  focusable="false"
+                >
+                  {TRACES_MOUVEMENTS[m]?.map((d) => <path d={d} />)}
+                </svg>
+              ))}
+            </span>
+            {libelleEvent(bloc.event)}
+            {formats.length > 1 && (
+              <>
+                {' '}
+                <span class="format-effectif">{effectif(bloc.resultats)}</span>
+              </>
+            )}
+          </p>
+          <p class="regle">{REGLES[bloc.event]}</p>
+
+          {rangees(bloc).map((rangee) => (
+            <div class="sexe">
+              {rangee.intitule && (
+                <p class="intitule" id={rangee.id}>
+                  {rangee.intitule}{' '}
+                  <span class="intitule-effectif">{effectif(rangee.effectif)}</span>
+                </p>
+              )}
+              <ol
+                class="colonnes"
+                aria-labelledby={rangee.id}
+                style={`--colonnes:${rangee.nbColonnes};--carre:${carre}`}
+              >
+                {rangee.colonnes.map(({ colonne, nom }) => (
+                  <li>
+                    <span class="sr-only">{lecture(colonne, nom)}</span>
+                    <span class="compte num-tab" aria-hidden="true">
+                      {nombre(colonne.resultats)}
+                    </span>
+                    <span class="pile" aria-hidden="true">
+                      {carres(colonne).map((e) => (
+                        <span class="carre" data-equipement={e} />
+                      ))}
+                    </span>
+                    <span class:list={['classe', { 'num-tab': !nom }]} aria-hidden="true">
+                      {nom ?? etiquette(colonne.classe)}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
+        </div>
+      ))
+    }
+  </div>
+
+  <div class="legende">
+    <ul class="familles">
+      {
+        profil.equipements.map((e) => (
+          <li>
+            <span class="carre" data-equipement={e.equipement} aria-hidden="true" />
+            <span>
+              <strong>{libelleFamille(e.equipement)}</strong>
+              {precision[e.equipement] && `, ${precision[e.equipement]}`}
+              {plusieursFamilles && `, ${nombre(e.athletes)} ${pluriel(e.athletes, 'athlète')}`}
+            </span>
+          </li>
+        ))
+      }
+    </ul>
+    <p>{legende.join(' ')}</p>
+  </div>
+
+  {
+    (Boolean(profil.debutants) || records > 0 || profil.ages !== null) && (
+      <dl class="reperes">
+        {profil.debutants ? (
+          <div>
+            <dt>Premier résultat recensé</dt>
+            <dd>
+              <span class="num">{nombre(profil.debutants)}</span>{' '}
+              {pluriel(profil.debutants, 'athlète')} sur {nombre(athletes)}
+            </dd>
+          </div>
+        ) : null}
+        {records > 0 && (
+          <div>
+            <dt>Records actuels par catégorie</dt>
+            <dd>
+              <span class="num">{nombre(records)}</span>{' '}
+              {pluriel(records, 'marque')}
+              {suiteRecords}
+            </dd>
+          </div>
+        )}
+        {profil.ages && (
+          <div>
+            <dt>Tranches d'âge</dt>
+            <dd>
+              De <span class="num">{profil.ages.min}</span> à{' '}
+              <span class="num">{profil.ages.max}</span>&nbsp;ans{profil.ages.ouvert && ' et plus'}
+            </dd>
+          </div>
+        )}
+      </dl>
+    )
+  }
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  /*
+   * UN BLOC PAR FORMAT. Une compétition mixte, full power et développé
+   * couché, en compte deux. Côte à côte dès qu'il y a la place, ce qui garde
+   * les Éliminatoires et leurs trois mouvements séparés sur un seul écran.
+   */
+  .formats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+    gap: var(--space-8) var(--space-6);
+  }
+
+  .format {
+    min-width: 0;
+  }
+
+  .format-nom {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 800;
+  }
+
+  .icones {
+    display: inline-flex;
+    gap: var(--space-1);
+    color: var(--accent);
+  }
+
+  .format-effectif {
+    font-family: var(--font-body);
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .regle {
+    max-width: 62ch;
+    margin: var(--space-2) 0 var(--space-4);
+    color: var(--muted);
+  }
+
+  .sexe + .sexe {
+    margin-top: var(--space-6);
+  }
+
+  .intitule {
+    margin-bottom: var(--space-3);
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .intitule-effectif {
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--text);
+  }
+
+  /*
+   * LES COLONNES. Même nombre de colonnes dans toutes les rangées de la
+   * figure, pour qu'elles gardent la même largeur d'une rangée à l'autre.
+   * Larges de 4,5rem au plus : sur un grand écran, deux catégories ne
+   * s'étirent pas sur toute la largeur. Sans écart entre colonnes, le filet
+   * des étiquettes forme une seule ligne de base.
+   */
+  .colonnes {
+    display: grid;
+    grid-template-columns: repeat(var(--colonnes), minmax(0, 4.5rem));
+    align-items: end;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .colonnes li {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  .compte {
+    font-size: var(--step--1);
+    line-height: 1;
+  }
+
+  /* Deux carrés de front, empilés depuis le bas : `wrap-reverse` pose la
+     première rangée en bas de la pile. Un carré seul au sommet se centre. */
+  .pile {
+    display: flex;
+    flex-wrap: wrap-reverse;
+    justify-content: center;
+    align-content: flex-start;
+    gap: 2px;
+    width: calc(2 * var(--carre) + 2px);
+  }
+
+  .familles {
+    --carre: 0.75rem;
+  }
+
+  /*
+   * Le liseré de l'accent de texte détache le carré du fond. En thème clair,
+   * l'aplat jaune ne fait que 1,29:1 contre la surface, sous les 3:1 d'un
+   * élément graphique. Le liseré y atteint 4,93:1. En sombre, les deux
+   * jetons valent la même couleur et rien ne change.
+   */
+  .carre {
+    flex: none;
+    box-sizing: border-box;
+    width: var(--carre);
+    height: var(--carre);
+    border: 1px solid var(--accent);
+    background: var(--accent-fill);
+  }
+
+  /* La forme double la couleur. Le carré est plein pour le raw, à moitié
+     plein pour les bandes, vide pour l'équipé. */
+  .carre[data-equipement='wraps'] {
+    border: 2px solid var(--muted);
+    background: linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  }
+  .carre[data-equipement='equipped'] {
+    border: 2px solid var(--bleu);
+    background: transparent;
+  }
+
+  .classe {
+    justify-self: stretch;
+    padding-top: var(--space-1);
+    border-top: 2px solid var(--border);
+    font-size: var(--step--1);
+    color: var(--muted);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* LA LÉGENDE, sous les graphiques. */
+  .legende {
+    margin-top: var(--space-6);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .familles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-6);
+    margin: 0 0 var(--space-2);
+    padding: 0;
+    list-style: none;
+  }
+  .familles li {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+  .familles strong {
+    color: var(--text);
+  }
+
+  /* LES REPÈRES, en cases, côte à côte dès qu'il y a la place. `auto-fill`
+     garde les pistes vides : une case seule reste une case, sans s'étirer
+     sur toute la largeur. */
+  .reperes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 1fr));
+    gap: var(--space-3);
+    margin: var(--space-6) 0 0;
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border);
+  }
+
+  /*
+   * LES INTITULÉS ET LES VALEURS PARTAGENT LEURS RANGÉES, par `subgrid`, comme
+   * les blocs de chiffres clés de tokens.css. « Records actuels par
+   * catégorie » passe sur deux lignes dans la colonne d'un article : sans
+   * cela, sa valeur tombait plus bas que celles des cases voisines.
+   */
+  .reperes > div {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: span 2;
+    row-gap: var(--space-1);
+    min-width: 0;
+    padding: var(--space-3);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+
+  .reperes dt {
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .reperes dd {
+    margin: 0;
+    font-weight: 600;
+  }
+  .reperes .num {
+    font-size: var(--step-2);
+    line-height: 1.1;
+  }
+</style>

@@ -8,6 +8,7 @@ import Icone from '../components/Icone.astro';
 import Logo from '../components/Logo.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
+import { ID_ANNONCE_SORTIE, TEXTE_ANNONCE_SORTIE } from '../lib/liens-sortants';
 import { rubriquesPrincipales, rubriquesSecondaires } from '../lib/navigation';
 import { version } from '../../package.json';
 // Les déclarations de polices d'abord : tokens.css s'en sert immédiatement.
@@ -216,6 +217,13 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
       Une ancre de retour en haut ne doit jamais viser un élément collant.
     */}
     <span id="top"></span>
+
+    {/*
+      Annonce des liens sortants, lue par les lecteurs d'écran après le nom de
+      chaque lien vers un autre site. Masquée, et lue quand même : voir
+      lib/liens-sortants.ts.
+    */}
+    <span id={ID_ANNONCE_SORTIE} hidden>{TEXTE_ANNONCE_SORTIE}</span>
 
     <a class="evitement" href="#contenu">Aller au contenu</a>
 

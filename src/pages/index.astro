@@ -1,5 +1,7 @@
 ---
 import RankingTable from '../components/RankingTable.astro';
+import Repli from '../components/Repli.astro';
+import InfographieSaisons from '../components/infographies/InfographieSaisons.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import nextMeet from '../data/next-meet.json';
 import { nombreAthletes, periode, results } from '../lib/data';
@@ -137,6 +139,18 @@ const stats = [
         ))
       }
     </ul>
+
+    {/*
+      LES SAISONS EN IMAGES, REPLIÉES, SOUS LES COMPÉTITIONS RÉCENTES. Posée
+      après la liste, la pastille ne déplace ni le Top 10 ni les cartes : elle
+      coûte une ligne avant le bloc suivant. Dépliée, elle replace ces
+      compétitions dans la saison et dans les précédentes.
+    */}
+    <div class="rangee-replis">
+      <Repli titre="Les saisons en images">
+        <InfographieSaisons lienArticle="saisons" />
+      </Repli>
+    </div>
   </section>
 
   <section class="wrap bloc">
@@ -315,6 +329,12 @@ const stats = [
    */
   .recentes > li {
     min-width: 0;
+  }
+
+  /* La pastille suit la liste. Sa marge basse, prévue pour précéder une
+     liste, doublerait le rembourrage de la section. */
+  .recentes + .rangee-replis {
+    margin: var(--space-4) 0 0;
   }
 
   .carte {

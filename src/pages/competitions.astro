@@ -1,5 +1,8 @@
 ---
 import InteractiveTable from '../components/InteractiveTable.astro';
+import Repli from '../components/Repli.astro';
+import InfographieCommunes from '../components/infographies/InfographieCommunes.astro';
+import InfographieFormats from '../components/infographies/InfographieFormats.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { dateCourte } from '../lib/format';
 import { libelleEvent, listeMeets } from '../lib/meets';
@@ -24,6 +27,27 @@ const annees = [...new Set(meets.map((m) => m.date.slice(0, 4)))].sort().reverse
         détail des barres de chaque athlète engagé.
       </p>
     </header>
+
+    {/*
+      LES FORMATS EN IMAGES, REPLIÉS. La colonne Format porte une, deux ou
+      trois étiquettes par ligne. La pastille dit ce qu'elles désignent et où
+      chaque format compte, entre le chapeau et la recherche. Repliée, elle
+      fait descendre la liste de 60 px, mesuré à 375 comme à 1 280 px : la
+      pastille de 44 px et la marge de sa rangée, qui accueille d'autres
+      pastilles sur la même ligne.
+
+      LES COMMUNES SUR LA MÊME RANGÉE. Où se disputent les compétitions de la
+      liste, commune par commune. Les deux pastilles tiennent sur une ligne :
+      la seconde ne coûte rien de plus.
+    */}
+    <div class="rangee-replis">
+      <Repli titre="Formats en images">
+        <InfographieFormats lienArticle="formats" />
+      </Repli>
+      <Repli titre="Communes en images">
+        <InfographieCommunes lienArticle="communes" />
+      </Repli>
+    </div>
 
     <InteractiveTable
       recherche="Nom d'une compétition"

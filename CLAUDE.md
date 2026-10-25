@@ -128,6 +128,40 @@ Points à ne pas casser :
   partageable et permet aux badges d'une fiche de pointer vers un classement
   déjà filtré.
 
+## Infographies
+
+Vingt infographies, écrites en HTML et CSS dans `src/components/infographies/`,
+autour d'un cadre commun, `Infographie.astro`. Une par page qui demande une
+explication : seules les mentions légales, la page 404 et la liste des
+actualités n'en ont pas.
+
+- **Dans un article** : le champ `infographie` du frontmatter la pose entre le
+  chapeau et le texte. Le catalogue `lib/infographies.ts` liste celles qu'un
+  article peut choisir, et nourrit le schéma, le menu du CMS et l'aiguillage
+  `InfographieArticle.astro`. L'infographie `competition` lit le champ
+  `competition` de l'article, et la génération échoue s'il manque.
+- **Sur une page de données** : dans une pastille repliée, `Repli.astro`, qui
+  partage la classe `.repli` du glossaire. Plusieurs pastilles se rangent dans
+  `.rangee-replis`. Une infographie propre à une page (consentement,
+  partenariats, fiche d'athlète…) est appelée directement par la page, hors
+  catalogue.
+- **Les chiffres se lisent dans les données**, jamais recopiés. Les calculs
+  lourds vivent dans `src/lib/infographie-<nom>.ts`. Trois exemples sont
+  construits, et leur légende le dit : les neuf essais, le comparateur, le
+  calcul des Dots. L'infographie des suggestions lit ses limites dans
+  `public/api/suggestion.php` lui-même : modifier ce fichier peut arrêter la
+  génération, et c'est voulu.
+- `InfographieCategories` accepte `sexe` et `classe` pour mettre en avant la
+  catégorie de la page.
+- **Les classes globales `.note` et `.bloc`** de `tokens.css` s'appliquent aussi
+  dans une infographie. Une classe locale du même nom en hérite.
+
+Pour en ajouter une : un composant, et pour un article une ligne au catalogue
+et une entrée dans l'aiguillage. Vérifier comme les autres : débordement par
+élément, contraste calculé, captures à 375 et 1 280 px dans les deux thèmes,
+coût vertical mesuré contre la version précédente, chiffres recomptés par un
+script indépendant.
+
 ## Partage sur les réseaux sociaux
 
 La plomberie OpenGraph existe dans `BaseLayout.astro` mais reste inactive : la
@@ -196,6 +230,14 @@ régie publicitaire », ce qui reste vrai avec des partenaires directs.
 de `tokens.css` sur `a[href^="http"]`. Ne pas l'ajouter à la main dans le
 balisage : un nouveau lien externe l'obtient sans rien demander. Les adresses
 `mailto:` en sont exclues, un courriel n'étant pas un site externe.
+
+**Tout lien sortant s'ouvre dans un nouvel onglet et s'annonce**, demande de
+l'auteur du 24 octobre 2026. `src/middleware.ts` réécrit le HTML de chaque page
+à la génération : `target="_blank"`, `rel` complété de `noopener`, et
+`aria-describedby` vers la phrase unique « Nouvel onglet, quitte sbd.re »,
+posée masquée dans `BaseLayout.astro`. Ne rien écrire de tout cela à la main.
+Seul un lien fabriqué en JavaScript échappe au traitement : lui appeler
+`marquerLienSortant()` de `lib/liens-sortants.ts`, comme la carte des salles.
 
 **Une exception au pack unique : `Coupe.astro` et `Medaille.astro`.** Ce sont
 des tracés maison et PLEINS, antérieurs à Tabler, et ils le restent. Deux

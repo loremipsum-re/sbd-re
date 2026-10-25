@@ -1,0 +1,593 @@
+---
+/**
+ * D'où viennent les chiffres, en une image.
+ *
+ * TROIS ÉTAPES, DANS L'ORDRE DU CODE. La source, la sélection, la destination :
+ * c'est le trajet d'un résultat dans scripts/update-data.mjs, puis dans les
+ * bibliothèques de src/lib/. L'infographie n'affirme rien que ce code ne fasse.
+ *
+ * LES DEUX RÈGLES SONT COMPTÉES dans les données. Une compétition dont le nom
+ * contient « Réunion » doit sa présence à la première règle, toutes les autres
+ * à la liste vérifiée à la main, data/meets-include.json. Le test reprend
+ * celui du script, sans accents ni majuscules, comme normalize() dans
+ * scripts/lib/opl.mjs. La commune n'a pas de compte : elle signale une
+ * compétition, elle n'en ajoute aucune.
+ *
+ * LA DESTINATION SUIT LES INVARIANTS DU SITE. Le classement part de
+ * fullPowerResults, les records de tous les résultats de l'île, et les
+ * résultats hors de l'île ne vont qu'à /exterieur/ et aux fiches. Le nombre de
+ * classés vient de meilleurTotalParAthlete, la fonction même du classement.
+ *
+ * LE RYTHME est celui de .github/workflows/update-data.yml : le 1er de chaque
+ * mois. AUCUNE HEURE N'EST CITÉE. La tâche est prévue à 4 h UTC, mais GitHub
+ * retarde les tâches planifiées : celle du 1er octobre 2026 a commité à
+ * 10 h 49 UTC.
+ *
+ * LE RYTHME EST ÉCRIT POUR LA SÉLECTION, PAS POUR LES RÉSULTATS HORS DE L'ÎLE.
+ * Le workflow ne commite que src/data/results.json et
+ * data/meets-candidates.json : results-exterieur.json est recalculé sans être
+ * commité, et les tâches des 1er septembre et 1er octobre 2026 ne l'ont pas
+ * touché. Tant que cela dure, l'infographie ne promet aucune fréquence pour
+ * ces résultats.
+ */
+import Icone from '../Icone.astro';
+import Infographie from './Infographie.astro';
+import { fullPowerResults, nombreAthletes, periode, results } from '../../lib/data';
+import { statsExterieur } from '../../lib/exterieur';
+import { dateLongue, nombre, pluriel } from '../../lib/format';
+import type { IdInfographie } from '../../lib/infographies';
+import { listeMeets } from '../../lib/meets';
+import { RUBRIQUES } from '../../lib/navigation';
+import { meilleurTotalParAthlete } from '../../lib/rankings';
+
+interface Props {
+  lienArticle?: IdInfographie;
+}
+
+const { lienArticle } = Astro.props;
+
+/** Minuscules, sans accents : la règle du nom telle que le script l'applique. */
+const sansAccents = (texte: string) =>
+  texte.normalize('NFD').replace(/\p{Mn}/gu, '').toLowerCase();
+
+const meets = listeMeets();
+const parLeNom = meets.filter((m) => sansAccents(m.meetName).includes('reunion')).length;
+const parLaListe = meets.length - parLeNom;
+
+const { debut, fin } = periode();
+const exterieur = statsExterieur();
+// `false` : l'évolution sur douze mois ne change pas le nombre de classés.
+const classes = meilleurTotalParAthlete(fullPowerResults, false).length;
+const unMouvement = results.filter((r) => r.event !== 'SBD').length;
+
+/* Le libellé du menu, pour que l'infographie suive un changement de nom. */
+const libelleExterieur = RUBRIQUES.find((r) => r.href === '/exterieur/')?.label ?? 'Extérieur';
+
+/* Espace insécable : « Réunion » et « La Réunion » ne se coupent jamais. */
+const NBSP = '\u00a0';
+
+const regles = [
+  {
+    id: 'nom',
+    libelle: 'Par le nom',
+    competitions: parLeNom,
+    texte: `Son nom contient «${NBSP}Réunion${NBSP}».`,
+  },
+  {
+    id: 'liste',
+    libelle: 'Par la liste',
+    competitions: parLaListe,
+    texte: 'Elle figure sur une liste vérifiée à la main.',
+  },
+];
+
+interface Destination {
+  id: string;
+  genre: string;
+  resultats: number;
+  /** Une précision sous l'effectif. */
+  precision?: string;
+  cibles: { compte: boolean; texte: string }[];
+  raison?: string;
+}
+
+const destinations: Destination[] = [
+  {
+    id: 'full-power',
+    genre: `Full power à La${NBSP}Réunion`,
+    resultats: fullPowerResults.length,
+    cibles: [
+      {
+        compte: true,
+        texte: `Classement de ${nombre(classes)} athlètes, au total et aux points Dots`,
+      },
+      { compte: true, texte: 'Records des mouvements et du total' },
+      { compte: true, texte: "Fiches d'athlètes" },
+    ],
+  },
+  {
+    id: 'un-mouvement',
+    genre: `Un seul mouvement à La${NBSP}Réunion`,
+    resultats: unMouvement,
+    cibles: [
+      { compte: true, texte: 'Records du mouvement disputé' },
+      { compte: true, texte: "Fiches d'athlètes" },
+      { compte: false, texte: 'Écartés du classement et du record au total' },
+    ],
+    raison: 'OpenPowerlifting leur donne un total égal à la barre disputée.',
+  },
+  {
+    id: 'exterieur',
+    genre: `Hors de La${NBSP}Réunion`,
+    resultats: exterieur.resultats,
+    precision: `${nombre(exterieur.athletes)} ${pluriel(exterieur.athletes, 'athlète')}, ${nombre(exterieur.pays)} pays`,
+    cibles: [
+      { compte: true, texte: `Page ${libelleExterieur}` },
+      { compte: true, texte: "Fiches d'athlètes" },
+      { compte: false, texte: 'Écartés du classement et des records' },
+    ],
+    raison: "Le classement et les records portent sur les barres soulevées sur l'île.",
+  },
+];
+---
+
+<Infographie
+  titre="Tous les chiffres viennent d'un fichier public"
+  source="Données OpenPowerlifting. Effectifs de la version en ligne."
+  lienArticle={lienArticle}
+>
+  <ol class="etapes">
+    <li class="etape">
+      <p class="intitule">
+        <span class="rang" aria-hidden="true">1</span>
+        La source
+      </p>
+      <p>
+        <strong>OpenPowerlifting</strong> publie dans un fichier public les
+        résultats de compétitions de force athlétique du monde entier.
+      </p>
+      <p class="rythme">
+        Le 1<sup>er</sup> de chaque mois, une tâche automatique télécharge ce
+        fichier et refait la sélection.
+      </p>
+    </li>
+
+    <li class="etape">
+      <span class="liaison" aria-hidden="true"></span>
+      <p class="intitule">
+        <span class="rang" aria-hidden="true">2</span>
+        La sélection
+      </p>
+      <p>
+        Pour l'île, seules les compétitions de la FFForce sont examinées. Une
+        compétition entre par l'une des deux règles suivantes.
+      </p>
+
+      {/* Une règle sans compétition sort de la jauge : sa largeur minimale y
+          dessinerait une part qui n'existe pas. Sa carte dit « 0 ». */}
+      <p class="jauge" aria-hidden="true">
+        {
+          regles.filter((r) => r.competitions > 0).map((r) => (
+            <span class="segment" data-regle={r.id} style={`--part:${r.competitions}`} />
+          ))
+        }
+      </p>
+
+      <ul class="regles">
+        {
+          regles.map((r) => (
+            <li class="regle" data-regle={r.id}>
+              <p class="libelle">
+                <span class="pastille" aria-hidden="true" />
+                {r.libelle}
+              </p>
+              <p class="effectif">
+                <strong class="num">{nombre(r.competitions)}</strong>{' '}
+                {pluriel(r.competitions, 'compétition')}
+              </p>
+              <p class="texte">{r.texte}</p>
+            </li>
+          ))
+        }
+      </ul>
+
+      {/* La commune hors de la liste des règles : elle signale, elle n'ajoute
+          rien. Les pointillés le montrent, le texte le dit. LA VILLE EST
+          COMPARÉE PAR SON NOM, d'où « porte le nom » : Saint-Denis existe
+          aussi en métropole, et le script la signale tout autant. */}
+      <p class="signal">
+        <strong>Par la commune.</strong> Une autre compétition, tenue dans une
+        ville qui porte le nom d'une commune de l'île, est signalée. Elle est
+        ajoutée à la liste si une vérification à la main confirme qu'elle est
+        réunionnaise.
+      </p>
+
+      <section class="bilan" aria-labelledby="donnees-bilan-ile">
+        <p class="bilan-titre" id="donnees-bilan-ile">Données de l'île</p>
+        <dl class="stats chiffres-cles">
+          <div>
+            <dt>Compétitions</dt>
+            <dd class="num">{nombre(meets.length)}</dd>
+          </div>
+          <div>
+            <dt>Résultats</dt>
+            <dd class="num">{nombre(results.length)}</dd>
+          </div>
+          <div>
+            <dt>Athlètes</dt>
+            <dd class="num">{nombre(nombreAthletes())}</dd>
+          </div>
+        </dl>
+        <p class="discret">
+          Du {dateLongue(debut)} au {dateLongue(fin)}. Les résultats disqualifiés
+          et les forfaits sont écartés.
+        </p>
+      </section>
+
+      <p class="discret">
+        Hors de l'île, les compétitions des mêmes athlètes sont reprises à part,
+        toutes fédérations confondues. Le rattachement se fait par le nom.
+      </p>
+    </li>
+
+    <li class="etape">
+      <span class="liaison" aria-hidden="true"></span>
+      <p class="intitule">
+        <span class="rang" aria-hidden="true">3</span>
+        La destination
+      </p>
+
+      <ul class="destinations">
+        {
+          destinations.map((d) => (
+            <li class="destination" data-genre={d.id}>
+              <p class="genre">{d.genre}</p>
+              <div class="compte">
+                <p class="effectif">
+                  <strong class="num">{nombre(d.resultats)}</strong>{' '}
+                  {pluriel(d.resultats, 'résultat')}
+                </p>
+                {d.precision && <p class="precision">{d.precision}</p>}
+              </div>
+              <ul class="cibles">
+                {d.cibles.map((c) => (
+                  <li data-compte={c.compte ? 'oui' : 'non'}>
+                    <Icone nom={c.compte ? 'valide' : 'manque'} taille={16} />
+                    <span>{c.texte}</span>
+                  </li>
+                ))}
+              </ul>
+              {d.raison && <p class="raison">{d.raison}</p>}
+            </li>
+          ))
+        }
+      </ul>
+    </li>
+  </ol>
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  .etapes {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .etape {
+    display: grid;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+
+  /* LE NUMÉRO D'ÉTAPE. Un carré en aplat, comme la case mise en avant des
+     autres infographies. Le numéro est caché aux lecteurs d'écran : la liste
+     ordonnée l'annonce déjà. */
+  .intitule {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 800;
+  }
+
+  .rang {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--radius);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+    font-size: var(--step-0);
+  }
+
+  /* LA LIAISON. Un filet vertical sous le carré de l'étape précédente, terminé
+     par une pointe, comme l'axe de l'infographie de l'équipement. La boîte est
+     aussi large que la pointe, pour que rien n'en dépasse. */
+  /* Le gris est mêlé au fond, comme les barres secondaires des points Dots.
+     Le filet des cadres ne contrastait qu'à 1,22:1 sur la surface en thème
+     clair. Ce mélange donne 3,23:1 en clair et 4,88:1 en sombre, au-dessus
+     des 3:1 demandés à un élément graphique. */
+  .liaison {
+    --trait: color-mix(in srgb, var(--muted) 75%, var(--surface));
+    position: relative;
+    display: block;
+    width: 0.75rem;
+    height: var(--space-6);
+    margin: var(--space-3) 0 0 calc(1rem - 0.375rem);
+  }
+  .liaison::before {
+    content: '';
+    position: absolute;
+    left: calc(50% - 1px);
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--trait);
+  }
+  .liaison::after {
+    content: '';
+    position: absolute;
+    left: calc(50% - 0.25rem);
+    bottom: 2px;
+    width: 0.5rem;
+    height: 0.5rem;
+    box-sizing: border-box;
+    border-right: 2px solid var(--trait);
+    border-bottom: 2px solid var(--trait);
+    transform: rotate(45deg);
+  }
+
+  .rythme {
+    padding-left: var(--space-3);
+    border-left: 2px solid var(--accent);
+    color: var(--muted);
+  }
+
+  .discret {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /* LA JAUGE partage les compétitions de l'île entre les deux règles. Chaque
+     case reprend la couleur de son segment, et son libellé la nomme. */
+  .jauge {
+    display: flex;
+    height: 1.25rem;
+    gap: 2px;
+    margin-top: var(--space-1);
+  }
+
+  .segment {
+    flex: var(--part) 1 0;
+    min-width: 4px;
+  }
+
+  [data-regle='nom'] .pastille,
+  .segment[data-regle='nom'] {
+    background: var(--accent-fill);
+  }
+  [data-regle='liste'] .pastille,
+  .segment[data-regle='liste'] {
+    background: var(--bleu);
+  }
+
+  /* Côte à côte dès que chaque carte loge « compétitions » en entier. Mesuré
+     à 320 px de large, la largeur du zoom à 400 %, deux colonnes fixes
+     faisaient sortir le mot de sa carte : elles s'empilent sous 360 px. */
+  .regles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(8.5rem, 100%), 1fr));
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .regle {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: var(--space-3);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+
+  .libelle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .pastille {
+    flex: none;
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+
+  .effectif {
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .effectif .num {
+    font-size: var(--step-2);
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .texte {
+    font-size: var(--step--1);
+  }
+
+  /* LE SIGNALEMENT, en pointillés : il alerte, et la décision reste à la main. */
+  .signal {
+    padding: var(--space-3);
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    font-size: var(--step--1);
+  }
+
+  .bilan {
+    display: grid;
+    gap: var(--space-3);
+    min-width: 0;
+    margin-top: var(--space-1);
+    padding: var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+
+  .bilan-titre {
+    font-weight: 700;
+  }
+
+  /* LES CHIFFRES DE L'ÎLE PRENNENT LA GRAMMAIRE COMMUNE, `.chiffres-cles` de
+     tokens.css : deux colonnes sur téléphone, le dernier étalé, trois dès
+     40rem. Trois colonnes fixes faisaient chevaucher « Compétitions » et
+     « Résultats » à 320 px de large. */
+  .stats {
+    --colonnes: 3;
+    margin: 0;
+  }
+  /* La sous-grille garde sa propre gouttière entre l'intitulé et sa valeur :
+     héritée de la grille, elle les écartait de 20 px dans un encadré étroit. */
+  .stats > div {
+    row-gap: var(--space-1);
+  }
+
+  .stats dt {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .stats dd {
+    margin: 0;
+    font-size: var(--step-2);
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  /* LA DESTINATION. Une carte par genre de résultat, empilées sur téléphone,
+     sur trois colonnes dès qu'elles tiennent. */
+  .destinations {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Côte à côte, les cartes partagent leurs rangées par `subgrid` : « Full
+     power à La Réunion » tient sur deux lignes, « Hors de La Réunion » sur
+     une, et les effectifs tombaient à deux hauteurs différentes. Sans
+     `subgrid`, les cartes retombent sur leur colonne flexible. */
+  @media (min-width: 48rem) {
+    .destinations {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .destinations > .destination {
+      display: grid;
+      grid-template-rows: subgrid;
+      grid-row: span 4;
+      align-content: start;
+    }
+  }
+
+  .destination {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    min-width: 0;
+    padding: var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+
+  @media (max-width: 40rem) {
+    .destination {
+      padding: var(--space-3);
+    }
+  }
+
+  /* Le full power alimente tout le site : sa carte porte le filet de l'accent. */
+  .destination[data-genre='full-power'] {
+    border-color: var(--accent);
+  }
+
+  .genre {
+    font-weight: 700;
+  }
+
+  .compte {
+    display: grid;
+    align-content: start;
+    gap: var(--space-1);
+  }
+
+  .precision {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /* `start` : étirée à la hauteur de sa rangée partagée, la liste écarterait
+     ses lignes au lieu de garder son pas. */
+  .cibles {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--step--1);
+  }
+
+  .cibles li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+  .cibles li > :global(svg) {
+    flex: none;
+    margin-top: 0.15em;
+  }
+
+  [data-compte='oui'] {
+    font-weight: 600;
+  }
+  [data-compte='oui'] > :global(svg) {
+    color: var(--positif);
+  }
+
+  /* Ce qui reste à l'écart : le mot le dit, l'icône et le gris le doublent. */
+  [data-compte='non'] {
+    color: var(--muted);
+  }
+  [data-compte='non'] > :global(svg) {
+    color: var(--negatif);
+  }
+
+  .raison {
+    margin-top: auto;
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--border);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+</style>

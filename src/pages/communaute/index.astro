@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import InfographieCommunaute from '../../components/infographies/InfographieCommunaute.astro';
 import {
   COMMUNITY_AGE_BRACKETS,
   COMMUNITY_HEIGHT_BRACKETS,
@@ -89,6 +90,15 @@ import {
         </ul>
       </div>
     </div>
+
+    {/*
+      L'INFOGRAPHIE CLÔT LA SECTION DES TRANCHES, DÉPLIÉE. La page est un
+      texte, et non une liste de données qu'une figure repousserait : seul le
+      pied de page passe dessous. Posée après les listes, elle laisse le
+      paragraphe et ses tranches se suivre, puis met les deux classements côte
+      à côte et range les poids pesés sur l'île dans ces mêmes tranches.
+    */}
+    <InfographieCommunaute />
   </div>
 </BaseLayout>
 

@@ -10,6 +10,8 @@
  */
 import CarteSalles from '../components/CarteSalles.astro';
 import EtatVide from '../components/EtatVide.astro';
+import Repli from '../components/Repli.astro';
+import InfographieSalles from '../components/infographies/InfographieSalles.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 
@@ -71,6 +73,20 @@ const communes = [...new Set(salles.map((s) => s.commune))].sort((a, b) =>
               ))}
             </ul>
           </details>
+
+          {/*
+            LES SALLES EN IMAGES, REPLIÉES, APRÈS LA CARTE ET SA LISTE. La
+            carte reste le premier contenu de la page, et la pastille ne coûte
+            qu'une ligne avant la note. Ouverte, elle compte les salles de
+            toutes les communes, que le filtre de la carte donne une à une, et
+            mesure ce que les fiches renseignent. La note qui suit invite à
+            signaler une salle absente ou une information fausse.
+          */}
+          <div class="rangee-replis rangee-salles">
+            <Repli titre="Salles par commune en images">
+              <InfographieSalles />
+            </Repli>
+          </div>
         </>
       )
     }
@@ -102,6 +118,11 @@ const communes = [...new Set(salles.map((s) => s.commune))].sort((a, b) =>
 
   .repli {
     margin-top: var(--space-8);
+  }
+
+  /* La pastille des images se cale sous la liste, au même écart que la note. */
+  .rangee-salles {
+    margin-top: var(--space-4);
   }
 
   .repli summary {

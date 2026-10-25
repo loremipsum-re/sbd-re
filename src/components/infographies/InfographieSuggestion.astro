@@ -1,0 +1,616 @@
+---
+/**
+ * Le trajet d'une suggestion, en une image.
+ *
+ * TROIS ÉTAPES, DANS L'ORDRE DU SERVEUR. Ce que le formulaire envoie, les
+ * contrôles de public/api/suggestion.php, puis ce qu'il en fait : le fichier
+ * d'abord, le courriel ensuite. C'est l'ordre du code, où la suggestion est
+ * écrite sur le serveur AVANT la tentative d'envoi.
+ *
+ * TOUT VIENT DU CODE. Les limites, les natures, le destinataire, l'expéditeur
+ * et les champs conservés sont lus dans le PHP par lib/infographie-suggestion.ts,
+ * à la génération. Les phrases reprennent FormulaireSuggestion.astro et la
+ * section « La boîte à suggestions » de la page de confidentialité, sans rien
+ * y ajouter.
+ *
+ * LE MARQUAGE NE TIENT PAS À LA COULEUR. Les champs obligatoires sont cernés
+ * d'un filet plein et titrés « Obligatoires », les facultatifs d'un filet en
+ * tirets et titrés « Facultatifs ». Un contrôle dit son issue par un mot et la
+ * croix, un champ conservé porte la coche, un champ absent la croix.
+ *
+ * LA PAGE CONCERNÉE est décrite par ce que le script du formulaire en fait :
+ * remplie d'office quand on vient d'une page DU SITE, modifiable à la main.
+ * Venu d'un autre site, le champ reste vide. Le cas d'une arrivée directe sur
+ * la page n'est pas décrit : le script y écrit « / » au lieu de laisser le
+ * champ vide, défaut de FormulaireSuggestion.astro.
+ *
+ * L'ISSUE D'UN CONTRÔLE NOMME L'ENVOI. « Ignoré s'il est rempli », seul sous
+ * la phrase du champ masqué, se lisait comme le champ ignoré, à l'inverse du
+ * code : c'est l'envoi qui est écarté, sous une réponse de succès.
+ *
+ * Les grands chiffres des contrôles sont masqués aux lecteurs d'écran : la
+ * phrase voisine porte la même valeur.
+ *
+ * COMPACTE, parce qu'elle se déplie sous un formulaire : les quatre champs en
+ * deux groupes, une règle par rangée, une phrase par règle.
+ */
+import Icone from '../Icone.astro';
+import Infographie from './Infographie.astro';
+import { duree, parFenetre, REGLES_SUGGESTION as R } from '../../lib/infographie-suggestion';
+import { nombre, pluriel } from '../../lib/format';
+
+interface Props {
+  // Aucune propriété : la page des suggestions l'appelle directement.
+}
+
+/* Espace insécable : un nombre ne se sépare jamais de son unité. */
+const NBSP = '\u00a0';
+
+/* « 4 s » : le chiffre en grand, l'unité à côté. */
+const [delaiMinChiffre, delaiMinUnite] = duree(R.delaiMin, true).split(NBSP);
+
+const groupes = [
+  {
+    id: 'suggestion-obligatoires',
+    requis: true,
+    titre: 'Obligatoires',
+    champs: [
+      { nom: 'Nature', natures: R.natures },
+      {
+        nom: 'Message',
+        detail: `De ${nombre(R.messageMin)} à ${nombre(R.messageMax)}${NBSP}${pluriel(R.messageMax, 'caractère')}.`,
+      },
+    ],
+  },
+  {
+    id: 'suggestion-facultatifs',
+    requis: false,
+    titre: 'Facultatifs',
+    champs: [
+      {
+        nom: 'Page concernée',
+        detail: "Remplie d'office avec la page du site d'où vous venez. Vous pouvez la modifier.",
+      },
+      {
+        nom: 'Adresse électronique',
+        detail:
+          'Laissée vide, elle rend la suggestion anonyme. Renseignée, elle sert uniquement à vous répondre.',
+      },
+    ],
+  },
+];
+
+/* GARDÉS PAR LA GÉNÉRATION : lib/infographie-suggestion.ts arrête le build si
+   le PHP lit le navigateur, un cookie ou une session, ou emploie l'adresse IP
+   ailleurs que dans le compteur. */
+const ABSENTS = ['Votre adresse IP', 'Votre navigateur', 'Un identifiant de visite'];
+---
+
+<Infographie
+  titre="Sans adresse, une suggestion reste anonyme"
+  source="Limites, natures et destinataire lus dans le code du serveur à la génération du site."
+>
+  <ol class="etapes">
+    <li class="etape">
+      <p class="intitule">
+        <span class="rang">1</span>{' '}
+        Ce que vous envoyez
+      </p>
+
+      <div class="groupes">
+        {
+          groupes.map((g) => (
+            <div class="groupe" data-requis={g.requis ? 'oui' : 'non'}>
+              <p class="marque" id={g.id}>
+                {g.titre}
+              </p>
+              <ul class="champs" aria-labelledby={g.id}>
+                {g.champs.map((c) => (
+                  <li class="champ">
+                    <p class="nom">{c.nom}</p>
+                    {c.detail && <p class="detail">{c.detail}</p>}
+                    {c.natures && (
+                      <ul class="natures" aria-label="Natures proposées">
+                        {c.natures.map((n) => (
+                          <li>{n}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        }
+      </div>
+    </li>
+
+    <li class="etape">
+      <span class="liaison" aria-hidden="true"></span>
+      <p class="intitule">
+        <span class="rang">2</span>{' '}
+        Les contrôles du serveur
+      </p>
+
+      <ul class="controles">
+        <li class="controle">
+          <p class="valeur" aria-hidden="true">
+            <span class="num">{R.envoisMax}</span>{' '}
+            <span class="unite">{parFenetre(R.fenetreSecondes)}</span>
+          </p>
+          <div class="texte">
+            <p class="regle">
+              Au plus {R.envoisMax}&nbsp;{pluriel(R.envoisMax, 'suggestion')}{' '}
+              {parFenetre(R.fenetreSecondes)} et par adresse&nbsp;IP.
+            </p>
+            <p class="issue">
+              <Icone nom="manque" taille={16} />
+              Envoi refusé au-delà
+            </p>
+            <p class="detail">L'adresse IP sert uniquement à ce compteur, sous forme hachée.</p>
+          </div>
+        </li>
+
+        <li class="controle">
+          <p class="valeur" aria-hidden="true">
+            <span class="appat"></span>
+            <span class="unite">champ masqué</span>
+          </p>
+          <div class="texte">
+            <p class="regle">Un champ masqué sert de piège à robots.</p>
+            <p class="issue">
+              <Icone nom="manque" taille={16} />
+              Envoi ignoré s'il est rempli
+            </p>
+          </div>
+        </li>
+
+        <li class="controle">
+          <p class="valeur" aria-hidden="true">
+            <span class="ligne">
+              <span class="num">{delaiMinChiffre}</span>&nbsp;{delaiMinUnite}
+            </span>{' '}
+            <span class="unite">à {duree(R.delaiMax, true)}</span>
+          </p>
+          <div class="texte">
+            <p class="regle">
+              De {duree(R.delaiMin)} à {duree(R.delaiMax)} entre le chargement de la page et
+              l'envoi.
+            </p>
+            <p class="issue">
+              <Icone nom="manque" taille={16} />
+              Envoi refusé hors délai
+            </p>
+          </div>
+        </li>
+
+        <li class="controle">
+          <p class="valeur" aria-hidden="true">
+            <span class="num">{nombre(R.messageMin)}</span>{' '}
+            <span class="unite">{pluriel(R.messageMin, 'caractère')}</span>
+          </p>
+          <div class="texte">
+            <p class="regle">
+              Le message compte {nombre(R.messageMin)}&nbsp;{pluriel(R.messageMin, 'caractère')} au
+              moins.
+            </p>
+            <p class="issue">
+              <Icone nom="manque" taille={16} />
+              Envoi refusé en dessous
+            </p>
+            <p class="detail">
+              La nature doit venir de la liste. Une adresse donnée doit être valide.
+            </p>
+          </div>
+        </li>
+      </ul>
+
+      <p class="detail">
+        Ces contrôles se font sur le serveur du site, sans CAPTCHA ni service extérieur.
+      </p>
+    </li>
+
+    <li class="etape">
+      <span class="liaison" aria-hidden="true"></span>
+      <p class="intitule">
+        <span class="rang">3</span>{' '}
+        Gardée, puis envoyée
+      </p>
+
+      <ol class="sorties">
+        <li class="sortie">
+          <p class="sortie-titre">D'abord, un fichier sur le serveur</p>
+          <ul class="coches" aria-label="Contenu du fichier">
+            {
+              R.conserves.map((c) => (
+                <li data-present="oui">
+                  <Icone nom="valide" taille={16} />
+                  <span>{c}</span>
+                </li>
+              ))
+            }
+          </ul>
+          <p class="detail">
+            Inaccessible depuis le web. Gardé le temps de traiter ou d'écarter la
+            suggestion.
+          </p>
+        </li>
+
+        <li class="sortie">
+          <p class="sortie-titre">Puis, un courriel à la boîte du site</p>
+          <dl class="entetes">
+            <dt>À</dt>
+            <dd>{R.destinataire}</dd>
+            <dt>De</dt>
+            <dd>{R.expediteur}</dd>
+            <dt>Objet</dt>
+            <dd>{R.prefixeObjet} suivi de la nature choisie</dd>
+            <dt>Répondre&nbsp;à</dt>
+            <dd>Votre adresse électronique, si vous l'avez donnée</dd>
+          </dl>
+          <p class="detail">
+            Il reprend le contenu du fichier. Si l'envoi échoue, la suggestion reste
+            dans le fichier.
+          </p>
+        </li>
+      </ol>
+
+      <div class="absents">
+        <p class="intitule-absents" id="suggestion-absents">Absents du fichier et du courriel</p>
+        <ul class="coches en-ligne" aria-labelledby="suggestion-absents">
+          {
+            ABSENTS.map((a) => (
+              <li data-present="non">
+                <Icone nom="manque" taille={16} />
+                <span>{a}</span>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <p class="detail">
+        Pour faire effacer votre suggestion, suivez la démarche de la{' '}
+        <a href="/confidentialite/">page de confidentialité</a>.
+      </p>
+    </li>
+  </ol>
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  ul,
+  ol,
+  dl {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .detail {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .etape {
+    display: grid;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+
+  /* LE NUMÉRO D'ÉTAPE, en carré d'aplat, comme dans les infographies de la
+     provenance des données et du consentement. LE CHIFFRE RESTE LU. Sans
+     puce, la liste n'expose plus aucun numéro : mesuré dans l'arbre
+     d'accessibilité de Chromium, l'étape 1 commençait par « Ce que vous
+     envoyez » quand le carré était caché. */
+  .intitule {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 800;
+  }
+
+  .rang {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--radius);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+    font-size: var(--step-0);
+  }
+
+  /* LA LIAISON entre deux étapes : un filet vertical terminé par une pointe,
+     sous le carré de l'étape précédente. */
+  .liaison {
+    --trait: color-mix(in srgb, var(--muted) 75%, var(--surface));
+    position: relative;
+    display: block;
+    width: 0.75rem;
+    height: var(--space-6);
+    margin: var(--space-2) 0 0 calc(1rem - 0.375rem);
+  }
+  .liaison::before {
+    content: '';
+    position: absolute;
+    left: calc(50% - 1px);
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--trait);
+  }
+  .liaison::after {
+    content: '';
+    position: absolute;
+    left: calc(50% - 0.25rem);
+    bottom: 2px;
+    width: 0.5rem;
+    height: 0.5rem;
+    box-sizing: border-box;
+    border-right: 2px solid var(--trait);
+    border-bottom: 2px solid var(--trait);
+    transform: rotate(45deg);
+  }
+
+  /*
+   * ÉTAPE 1. Deux groupes dessinés comme des cadres de formulaire : un filet
+   * plein pour les obligatoires, en tirets pour les facultatifs. Côte à côte
+   * dès qu'il y a la place.
+   */
+  .groupes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+    gap: var(--space-3);
+  }
+
+  .groupe {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: var(--space-3);
+    border: 2px solid var(--text);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+  .groupe[data-requis='non'] {
+    border-style: dashed;
+    border-color: var(--muted);
+  }
+
+  /* L'intitulé du groupe : en aplat pour les obligatoires, cerné pour les
+     facultatifs. */
+  .marque {
+    padding: 0 var(--space-2);
+    border: 1px solid var(--accent-fill);
+    border-radius: var(--radius);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+    font-size: var(--step--1);
+    font-weight: 700;
+  }
+  [data-requis='non'] .marque {
+    border-color: var(--muted);
+    background: transparent;
+    color: var(--muted);
+  }
+
+  .champs {
+    display: grid;
+    align-self: stretch;
+  }
+
+  .champ {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+    padding-block: var(--space-2);
+  }
+  .champ + .champ {
+    border-top: 1px solid var(--border);
+  }
+  .champ:last-child {
+    padding-bottom: 0;
+  }
+
+  .nom {
+    font-weight: 700;
+  }
+
+  /* Les natures, comme les options d'une liste déroulante. */
+  .natures {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+  .natures li {
+    min-width: 0;
+    padding: 0 var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    font-size: var(--step--1);
+  }
+
+  /*
+   * ÉTAPE 2. Une règle par rangée : la valeur en grand à gauche, la phrase et
+   * l'issue à droite. Les rangées sont séparées par un filet, comme les lignes
+   * d'un tableau.
+   */
+  .controles {
+    display: grid;
+    border-top: 1px solid var(--border);
+  }
+
+  .controle {
+    display: grid;
+    grid-template-columns: 5rem minmax(0, 1fr);
+    gap: var(--space-3);
+    min-width: 0;
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--border);
+  }
+  @media (min-width: 40rem) {
+    .controle {
+      grid-template-columns: 7rem minmax(0, 1fr);
+      gap: var(--space-4);
+    }
+  }
+
+  .valeur {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+  .valeur .num {
+    font-size: var(--step-2);
+    line-height: 1;
+    color: var(--accent);
+  }
+  .valeur .ligne {
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .unite {
+    font-size: var(--step--1);
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--muted);
+  }
+
+  /* Le champ masqué : vide, cerné d'un tiret et hachuré. Les hachures sont
+     fonctionnelles, elles disent « à ne pas remplir ». */
+  .appat {
+    display: block;
+    width: 100%;
+    height: 1.5rem;
+    border: 2px dashed var(--muted);
+    border-radius: var(--radius);
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent 0 5px,
+      color-mix(in srgb, var(--muted) 45%, transparent) 5px 7px
+    );
+  }
+
+  .texte {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  .regle {
+    font-weight: 600;
+  }
+
+  /* L'issue passe à la ligne dans la colonne étroite d'un téléphone : la
+     croix reste en tête de la première ligne, comme devant les champs. */
+  .issue {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-1);
+    font-size: var(--step--1);
+    font-weight: 700;
+  }
+  .issue :global(.icone) {
+    flex: none;
+    margin-top: 0.15em;
+  }
+
+  /*
+   * ÉTAPE 3. Le fichier, puis le courriel, côte à côte dès qu'il y a la place.
+   */
+  .sorties {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+    gap: var(--space-3);
+  }
+
+  .sortie {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: var(--space-3);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+
+  .sortie-titre {
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  /* Une coche ou une croix devant chaque champ, l'icône en tête du libellé
+     quand celui-ci passe à la ligne. */
+  .coches {
+    display: grid;
+    gap: var(--space-1);
+  }
+  .coches li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    min-width: 0;
+    font-size: var(--step--1);
+    line-height: 1.4;
+  }
+  .coches :global(.icone) {
+    flex: none;
+    margin-top: 0.15em;
+  }
+  .coches [data-present='oui'] :global(.icone) {
+    color: var(--accent);
+  }
+  .coches [data-present='non'] :global(.icone) {
+    color: var(--muted);
+  }
+
+  /* Les absents sur une ligne quand ils tiennent. */
+  .coches.en-ligne {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+  }
+
+  /* L'en-tête du courriel, comme une messagerie l'affiche : le nom du champ
+     à gauche, sa valeur à droite. */
+  .entetes {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--space-1) var(--space-3);
+    padding: var(--space-2) 0;
+    border-block: 1px solid var(--border);
+    font-size: var(--step--1);
+  }
+  .entetes dt {
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .entetes dd {
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .absents {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .intitule-absents {
+    font-size: var(--step--1);
+    font-weight: 700;
+  }
+</style>

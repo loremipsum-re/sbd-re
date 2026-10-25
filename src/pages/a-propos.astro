@@ -1,4 +1,5 @@
 ---
+import InfographieDonnees from '../components/infographies/InfographieDonnees.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { nombreAthletes, periode, results } from '../lib/data';
 import { dateLongue } from '../lib/format';
@@ -6,6 +7,9 @@ import { listeMeets } from '../lib/meets';
 
 const { debut, fin } = periode();
 const meets = listeMeets();
+/* Compté plutôt qu'écrit : « 26 des 61 », écrit à la main, était périmé dès
+   la mise à jour suivante. */
+const developpeSeul = meets.filter((m) => m.events.length === 1 && m.events[0] === 'B').length;
 ---
 
 <BaseLayout
@@ -65,6 +69,16 @@ const meets = listeMeets();
       vérifiée à la main avant d'être ajoutée.
     </p>
 
+    {/*
+      L'INFOGRAPHIE EST DÉPLIÉE : la page est du texte suivi, et qui l'ouvre
+      vient chercher cette explication. Elle se lit dans la suite des deux
+      règles qu'elle compte, et sa troisième étape ouvre sur le périmètre
+      détaillé juste après. Posée plus haut, dans « Les données », elle aurait
+      devancé les règles qu'elle illustre. Mesuré le 24 octobre 2026 : le
+      périmètre descend de 2 197 px à 375 px de large, de 1 603 px à 1 280 px.
+    */}
+    <InfographieDonnees />
+
     <h2>Le périmètre retenu</h2>
     <ul>
       <li>
@@ -75,7 +89,8 @@ const meets = listeMeets();
         <strong>Records par mouvement</strong> : toutes les compétitions. Une
         barre compte dès lors qu'elle a été soulevée devant des juges, y compris
         lors d'une compétition ne comportant qu'un seul mouvement. Le développé
-        couché seul représente à lui seul 26 des 61 compétitions de l'île :
+        couché seul représente à lui seul {developpeSeul} des {meets.length}{' '}
+        compétitions de l'île :
         l'écarter afficherait un record inférieur à la réalité.
       </li>
       <li>
@@ -131,7 +146,7 @@ const meets = listeMeets();
 
     <h2>Indépendance</h2>
     <p>
-      Ce site est un projet personnel, sans but lucratif et sans publicité. Il
+      Ce site est un projet personnel, sans but lucratif et sans régie publicitaire. Il
       n'est affilié ni à la FFForce, ni à SBD Apparel, ni à aucun club. Le nom
       « SBD » désigne ici les trois mouvements de la discipline : Squat, Bench,
       Deadlift.

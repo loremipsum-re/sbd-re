@@ -1,6 +1,9 @@
 ---
 import InteractiveTable from '../components/InteractiveTable.astro';
 import Glossaire from '../components/Glossaire.astro';
+import Repli from '../components/Repli.astro';
+import InfographieDots from '../components/infographies/InfographieDots.astro';
+import InfographieTotal from '../components/infographies/InfographieTotal.astro';
 import RankingTable from '../components/RankingTable.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import {
@@ -76,7 +79,18 @@ const tranchesAge = [...new Set(classement.map((e) => e.ageClass).filter(Boolean
       </p>
     </header>
 
-    <Glossaire />
+    {/*
+      DEUX PASTILLES SUR UNE LIGNE. Le vocabulaire, puis le calcul du
+      classement en images. Repliées, elles coûtent une seule ligne avant la
+      liste. Le total et les Dots sont les deux nombres de chaque carte.
+    */}
+    <div class="rangee-replis">
+      <Glossaire />
+      <Repli titre="Calcul en images">
+        <InfographieTotal lienArticle="total" />
+        <InfographieDots lienArticle="dots" />
+      </Repli>
+    </div>
 
     <InteractiveTable
       recherche="Nom d'un athlète"

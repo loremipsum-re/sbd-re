@@ -8,6 +8,7 @@ athletes:
   - Leena Waitzmann
   - Myriam Fontaine
   - Camille Pailha
+infographie: records
 ---
 
 Meilleures barres soulevées en compétition officielle à La Réunion, toutes

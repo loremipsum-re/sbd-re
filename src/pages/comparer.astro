@@ -1,4 +1,6 @@
 ---
+import Repli from '../components/Repli.astro';
+import InfographieComparer from '../components/infographies/InfographieComparer.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { equipmentGroup, equipmentLabel } from '../lib/categories';
 import { results } from '../lib/data';
@@ -121,6 +123,21 @@ const nombreAthletes = athletes.length;
       L'écart s'affiche en pourcentage par rapport au meilleur de chaque ligne.
       L'adresse de la page garde votre sélection : le lien se partage tel quel.
     </p>
+
+    {/*
+      L'ÉCART EN IMAGES, REPLIÉ. Une pastille entre le chapeau et le choix des
+      athlètes : le chapeau annonce l'écart au meilleur de chaque ligne, la
+      pastille en donne le calcul à qui le demande. Mesuré, elle descend le
+      champ et le tableau de 60 px, à 375 comme à 1 280 px. Dépliée dans la
+      section « Ce que ces chiffres disent », l'infographie coupait le texte en
+      deux et repoussait ses deux derniers paragraphes de 1 720 px sur
+      téléphone.
+    */}
+    <div class="rangee-replis">
+      <Repli titre="L'écart en images">
+        <InfographieComparer />
+      </Repli>
+    </div>
 
     <div class="choix">
       <label for="recherche">Ajouter un athlète</label>

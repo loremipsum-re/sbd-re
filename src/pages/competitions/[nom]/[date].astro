@@ -3,6 +3,8 @@ import BadgeOfficiel from '../../../components/BadgeOfficiel.astro';
 import Coupe from '../../../components/Coupe.astro';
 import InteractiveTable from '../../../components/InteractiveTable.astro';
 import Medaille from '../../../components/Medaille.astro';
+import Repli from '../../../components/Repli.astro';
+import InfographieCompetition from '../../../components/infographies/InfographieCompetition.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import {
   EQUIPMENT_GROUPS,
@@ -135,6 +137,21 @@ const description =
         <dd class="num">{femmes}</dd>
       </div>
     </dl>
+
+    {/*
+      L'INFOGRAPHIE SE RANGE SOUS LES CHIFFRES CLÉS, REPLIÉE. Dépliée, elle
+      repousserait les résultats d'un écran entier sur téléphone. Posée après
+      le tableau, elle arriverait trop tard pour qui découvre la discipline :
+      sur une grosse compétition, la fin du tableau est à des milliers de
+      pixels. La pastille prend une partie de la marge qui séparait les
+      chiffres clés du titre « Résultats ». Mesuré : les résultats descendent
+      de 44 px, à 375 comme à 1 280 px.
+    */}
+    <div class="rangee-replis repli-competition">
+      <Repli titre="La compétition en images">
+        <InfographieCompetition chemin={meet.chemin} />
+      </Repli>
+    </div>
 
     <h2>Résultats</h2>
 
@@ -413,11 +430,17 @@ const description =
   .stats {
     --colonnes: 4;
     gap: var(--space-4);
-    margin: 0 0 var(--space-12);
+    margin: 0 0 var(--space-4);
     padding: var(--space-6);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     background: var(--surface);
+  }
+
+  /* La pastille colle aux chiffres clés qu'elle développe, et garde l'écart
+     d'une section avant le titre « Résultats ». */
+  .repli-competition {
+    margin-bottom: var(--space-8);
   }
 
   .stats dt {

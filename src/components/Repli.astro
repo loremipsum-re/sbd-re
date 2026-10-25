@@ -1,0 +1,41 @@
+---
+/**
+ * Un bloc replié, ouvert par une pastille, pour une explication facultative.
+ *
+ * Sur une page de données, une infographie dépliée repousserait la liste d'un
+ * écran entier sur téléphone. Repliée, elle tient sur la ligne d'une pastille,
+ * et qui connaît déjà la discipline ne l'ouvre jamais. C'est le raisonnement
+ * du glossaire, qui partage cette pastille : la forme est dans tokens.css,
+ * classe `.repli`.
+ *
+ * Un `<details>` natif : le navigateur gère l'ouverture, le clavier et
+ * l'annonce aux lecteurs d'écran, sans JavaScript.
+ */
+
+interface Props {
+  titre: string;
+}
+
+const { titre } = Astro.props;
+---
+
+<details class="repli">
+  <summary>
+    <span class="chevron" aria-hidden="true"></span>
+    {titre}
+  </summary>
+  <div class="contenu">
+    <slot />
+  </div>
+</details>
+
+<style>
+  /* La première infographie se cale sous la pastille, les suivantes gardent
+     l'écart qui les sépare. */
+  .contenu > :global(:first-child) {
+    margin-top: var(--space-3);
+  }
+  .contenu > :global(:last-child) {
+    margin-bottom: 0;
+  }
+</style>

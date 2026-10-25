@@ -1,0 +1,271 @@
+---
+/**
+ * Les salles de la carte, commune par commune.
+ *
+ * TOUTES LES COMMUNES D'UN COUP. Le filtre de la carte donne l'effectif d'une
+ * seule commune à la fois, dans son compteur. Une barre par commune, de la
+ * plus fournie à la moins fournie, les met toutes côte à côte.
+ *
+ * CE QUE CONTIENNENT LES FICHES. La description de la page promet adresse,
+ * horaires et contact. Le nom, la commune et la position sont obligatoires
+ * dans le schéma de la collection, content.config.ts : chaque fiche les porte,
+ * sans quoi la génération échoue. Les quatre autres champs sont facultatifs,
+ * et leur taux de remplissage se mesure ici, fiche par fiche.
+ *
+ * LES CHIFFRES SONT LUS DANS LA COLLECTION `salles`, fiches actives seulement,
+ * comme la page qui les affiche. Une fiche masquée depuis l'administration
+ * sort de tous les comptes et rejoint la note du bas.
+ *
+ * LA NOTE COMPTE DES FICHES, JAMAIS DES LIEUX, ET NE DONNE AUCUNE RAISON. Deux
+ * fiches masquées décrivent le même gymnase de Saint-Louis, doublon venu
+ * d'OpenStreetMap et laissé à l'auteur (commit 1c04a6a). Et aucun champ ne dit
+ * pourquoi une fiche est masquée : une raison écrite ici deviendrait fausse le
+ * jour où l'auteur masque une salle fermée.
+ */
+import { getCollection } from 'astro:content';
+import Infographie from './Infographie.astro';
+import { nombre, pluriel } from '../../lib/format';
+
+interface Props {
+  // Aucune propriété : l'infographie ne sert que la page des salles.
+}
+
+const toutes = await getCollection('salles');
+const salles = toutes.filter((s) => s.data.actif).map((s) => s.data);
+const total = salles.length;
+const masquees = toutes.length - total;
+
+const comptes = new Map<string, number>();
+for (const s of salles) comptes.set(s.commune, (comptes.get(s.commune) ?? 0) + 1);
+
+/* De la commune la plus fournie à la moins fournie, puis dans l'ordre
+   alphabétique à égalité. */
+const communes = [...comptes]
+  .map(([nom, salles]) => ({ nom, salles }))
+  .sort((a, b) => b.salles - a.salles || a.nom.localeCompare(b.nom, 'fr'));
+const plusFournie = communes[0]?.salles ?? 1;
+
+/*
+ * LE TITRE SE CALCULE, avec ses replis. Les deux premières communes ne sont
+ * nommées que si la troisième les suit de loin : à égalité, en nommer deux
+ * serait un choix arbitraire.
+ */
+function titre(): string {
+  const [a, b, c] = communes;
+  if (!a) return 'Aucune salle sur la carte';
+  if (!b) return `${a.nom} regroupe toutes les salles`;
+  if (!c) return `${a.nom} et ${b.nom} regroupent toutes les salles`;
+  if (b.salles > c.salles) {
+    return `${a.nom} et ${b.nom} regroupent ${nombre(a.salles + b.salles)} des ${nombre(total)} salles`;
+  }
+  if (a.salles > b.salles) return `${a.nom} compte ${nombre(a.salles)} des ${nombre(total)} salles`;
+  return `${nombre(total)} salles sur ${nombre(communes.length)} communes`;
+}
+
+/* Les champs facultatifs, dans l'ordre du panneau de détail de la carte, puis
+   triés du plus rempli au moins rempli. */
+const CHAMPS = [
+  { cle: 'rue', libelle: 'Rue' },
+  { cle: 'horaires', libelle: 'Horaires' },
+  { cle: 'telephone', libelle: 'Téléphone' },
+  { cle: 'site', libelle: 'Site web' },
+] as const;
+
+const champs = CHAMPS.map((c) => ({
+  ...c,
+  remplis: salles.filter((s) => (s[c.cle] ?? '').trim() !== '').length,
+})).sort((a, b) => b.remplis - a.remplis);
+---
+
+<Infographie
+  titre={titre()}
+  source="Fiches des salles affichées sur la carte, recomptées à chaque mise à jour du site."
+>
+  <div class="colonnes">
+    <div class="serie">
+      <p class="intitule" id="infographie-salles-communes">Salles par commune</p>
+      <ol class="rangees communes" aria-labelledby="infographie-salles-communes">
+        {
+          communes.map((c) => (
+            <li>
+              <span class="nom">{c.nom}</span>
+              <span class="sr-only">, </span>
+              <span class="piste" aria-hidden="true">
+                <span class="barre" style={`--part:${(c.salles / plusFournie) * 100}%`} />
+              </span>
+              <span class="compte">
+                <strong class="num-tab">{nombre(c.salles)}</strong>
+                <span class="sr-only"> {pluriel(c.salles, 'salle')}</span>
+              </span>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+
+    <div class="serie">
+      <p class="intitule" id="infographie-salles-fiches">
+        Ce que contiennent les {nombre(total)} fiches
+      </p>
+      <p class="regle">
+        Chaque fiche contient le nom, la commune et la position de la salle.
+      </p>
+      <ul class="rangees champs" aria-labelledby="infographie-salles-fiches">
+        {
+          champs.map((c) => (
+            <li>
+              <span class="nom">{c.libelle}</span>
+              <span class="sr-only">, </span>
+              <span class="piste" aria-hidden="true">
+                <span class="barre" style={`--part:${(c.remplis / Math.max(total, 1)) * 100}%`} />
+              </span>
+              <span class="compte">
+                <strong class="num-tab">{nombre(c.remplis)}</strong> sur&nbsp;{nombre(total)}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+
+  {
+    masquees > 0 && (
+      <p class="masquees">
+        {masquees > 1
+          ? `${nombre(masquees)} autres fiches sont masquées, hors de la carte et de la liste.`
+          : '1 autre fiche est masquée, hors de la carte et de la liste.'}
+      </p>
+    )
+  }
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  /*
+   * DEUX SÉRIES, CÔTE À CÔTE DÈS QU'IL Y A LA PLACE. Sur toute la largeur d'un
+   * écran de bureau, une barre de 850 px séparait le nom de la commune de son
+   * compte, mesuré à 1 280 px. En deux colonnes, l'œil va du nom au chiffre sans traverser le
+   * vide. Sur téléphone, les séries s'empilent.
+   */
+  .colonnes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr));
+    gap: var(--space-8) var(--space-12);
+  }
+
+  .serie {
+    min-width: 0;
+  }
+
+  .intitule {
+    margin-bottom: var(--space-3);
+    font-size: var(--step--1);
+    font-weight: 700;
+  }
+
+  /*
+   * UNE RANGÉE : le nom, la piste, le compte. Les trois colonnes sont fixes,
+   * si bien que toutes les pistes d'une série partent du même axe et se
+   * comparent à l'œil. Un nom long passe à la ligne et la rangée grandit. Un
+   * compte plus large que sa colonne l'élargit au lieu de déborder.
+   */
+  .rangees {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .rangees li {
+    display: grid;
+    grid-template-columns: 8.5rem minmax(0, 1fr) minmax(var(--colonne-compte), max-content);
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .communes {
+    --colonne-compte: 1.5rem;
+  }
+  .champs {
+    --colonne-compte: 4.5rem;
+  }
+
+  .nom {
+    min-width: 0;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .piste {
+    position: relative;
+    height: 1.25rem;
+    border-left: 2px solid var(--border);
+  }
+
+  .barre {
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: var(--part);
+    background: var(--accent-fill);
+  }
+
+  .compte {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* LES FICHES. La piste entière vaut toutes les fiches. La part hachurée est
+     celle des fiches où le champ manque, et le compte le dit en mots. */
+  .regle {
+    margin-bottom: var(--space-4);
+    font-size: var(--step--1);
+    color: var(--muted);
+    text-wrap: pretty;
+  }
+
+  .champs .piste {
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent 0 6px,
+      var(--border) 6px 8px
+    );
+  }
+
+  .champs .barre {
+    background: var(--bleu);
+  }
+
+  .champs .compte {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .champs .compte strong {
+    font-size: var(--step-0);
+    color: var(--text);
+  }
+
+  /*
+   * SUR TÉLÉPHONE, la colonne des noms se resserre. « Sainte-Suzanne » y
+   * tient encore sur une ligne, et la piste garde de quoi comparer.
+   */
+  @media (max-width: 40rem) {
+    .rangees li {
+      grid-template-columns: 7.5rem minmax(0, 1fr) minmax(var(--colonne-compte), max-content);
+      gap: var(--space-2);
+    }
+  }
+
+  .masquees {
+    margin-top: var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+</style>

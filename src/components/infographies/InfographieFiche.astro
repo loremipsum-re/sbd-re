@@ -1,0 +1,646 @@
+---
+/**
+ * Lire une fiche d'athlète, en une image.
+ *
+ * DEUX PARTIES. La première reprend les chiffres du haut de la fiche,
+ * meilleures barres, meilleur total et meilleur Dots, avec CEUX DE L'ATHLÈTE.
+ * C'est là que se lit l'invariant du site : le meilleur total et le meilleur
+ * Dots sont deux marques distinctes, chacune avec sa date et son poids de
+ * corps. La seconde partie est la légende des marques de la page, la même sur
+ * toutes les fiches.
+ *
+ * LES CHIFFRES VIENNENT DE LA PAGE, passés en propriétés. La fiche les a déjà
+ * calculés pour ses chiffres clés : les recalculer ici ouvrirait la porte à
+ * deux valeurs différentes sur une même page. Le composant les compare, et
+ * cherche dans l'historique de l'athlète la compétition de chaque barre.
+ *
+ * JUSTE POUR TOUS LES PROFILS. Chaque constat se choisit sur les données, et
+ * rien n'est affirmé que la fiche ne montre :
+ *  - sans total en full power, bench seul ou soulevé de terre seul, le
+ *    tableau affiche le tiret de la page et la somme des barres disparaît,
+ *    faute de trois mouvements à additionner ;
+ *  - la somme des meilleures barres dépasse le meilleur total sur 89 des 320
+ *    fiches qui ont un total, mesuré en octobre 2026. Chaque barre est la
+ *    meilleure de toute la carrière sur l'île, le total celui d'une seule
+ *    ligne de full power : une somme supérieure prouve que les trois barres
+ *    viennent de PLUSIEURS LIGNES DE L'HISTORIQUE, et non forcément de
+ *    plusieurs compétitions. Un athlète peut disputer deux épreuves d'une
+ *    même compétition, le full power et le développé couché seul : sur une
+ *    fiche, les trois meilleures barres viennent ainsi d'une seule
+ *    compétition, dont le développé couché seul a donné la meilleure barre.
+ *    Le constat cherche donc où chaque barre a été soulevée, dans
+ *    l'historique passé en propriété, au lieu de le déduire. Une somme égale
+ *    ne prouve rien, d'où un constat plus prudent ;
+ *  - meilleur total et meilleur Dots viennent de deux résultats différents
+ *    sur 20 fiches. Le tableau passe alors à deux colonnes. La comparaison se
+ *    fait PAR L'OBJET, celui que la fiche a retenu pour chacun : deux lignes
+ *    de full power d'une même compétition, en raw et en équipé par exemple,
+ *    se confondraient à la date et au nom, et la colonne unique afficherait
+ *    alors le Dots du meilleur total au lieu du meilleur Dots.
+ *
+ * LES MARQUES SONT LES VRAIS COMPOSANTS : BadgeOfficiel, Coupe,
+ * IconeMouvement, la classe `.evolution` de tokens.css. La légende ne peut
+ * donc pas dériver de la page. Elles sont décoratives ici : le terme écrit à
+ * côté les nomme, et leurs textes pour lecteurs d'écran sont masqués avec
+ * elles, pour ne pas être lus deux fois. IconeMouvement s'appuie sur le sprite
+ * que la fiche pose une fois en tête de page.
+ */
+import BadgeOfficiel from '../BadgeOfficiel.astro';
+import Coupe from '../Coupe.astro';
+import IconeMouvement from '../IconeMouvement.astro';
+import Infographie from './Infographie.astro';
+import { LIFTS, sexLabel } from '../../lib/categories';
+import { dateCourte, nombre, points } from '../../lib/format';
+import type { Result, Sex } from '../../lib/types';
+
+type Mouvement = 'squat' | 'bench' | 'deadlift';
+
+interface Props {
+  /** Sexe de la dernière compétition, celui de la première pastille. */
+  sexe: Sex;
+  /** Meilleure barre de chaque mouvement sur l'île, 0 si jamais disputé. */
+  barres: Record<Mouvement, number>;
+  /** Les résultats de l'athlète sur l'île, pour savoir d'où vient chaque barre. */
+  historique: Result[];
+  /** Le résultat full power au meilleur total, tel que la fiche l'a retenu. */
+  meilleurTotal: Result | null;
+  /** Le résultat full power au meilleur Dots, tel que la fiche l'a retenu. */
+  meilleurDots: Result | null;
+}
+
+const { sexe, barres, historique, meilleurTotal, meilleurDots } = Astro.props;
+
+const NBSP = '\u00a0';
+
+/* Libellés et abréviations lus dans LIFTS, leur source unique. */
+const mouvements = LIFTS.filter(
+  (l): l is (typeof LIFTS)[number] & { id: Mouvement } => l.id !== 'total',
+).map((l) => ({ ...l, kg: barres[l.id] }));
+
+/* L'historique écrit « Squat » en entier et abrège les deux autres : les
+   abréviations de la légende sont celles de ses en-têtes de colonne. */
+const abreviations = mouvements.filter((m) => m.id !== 'squat');
+const sigles = abreviations.map((m) => m.short).join(' et ');
+const nomsAbreges = abreviations
+  .map((m, i) => (i === 0 ? m.label : m.label.toLowerCase()))
+  .join(' et ');
+
+/* ---------- Les barres et leur somme ---------- */
+
+const somme = mouvements.every((m) => m.kg > 0)
+  ? mouvements.reduce((s, m) => s + m.kg, 0)
+  : null;
+const total = meilleurTotal?.totalKg ?? null;
+const ecartSomme = somme !== null && total !== null ? Number((somme - total).toFixed(1)) : null;
+
+/* Les compétitions où chaque meilleure barre a été soulevée, cherchées dans
+   l'historique. Une compétition qui les porte toutes les trois rend fausse la
+   phrase « plusieurs compétitions ». */
+const CHAMPS: Record<Mouvement, 'bestSquatKg' | 'bestBenchKg' | 'bestDeadliftKg'> = {
+  squat: 'bestSquatKg',
+  bench: 'bestBenchKg',
+  deadlift: 'bestDeadliftKg',
+};
+const competition = (r: Result) => `${r.date}|${r.meetName}`;
+const [sourcesSquat, ...autresSources] = mouvements.map(
+  (m) => new Set(historique.filter((r) => r[CHAMPS[m.id]] === m.kg).map(competition)),
+);
+const uneSeuleCompetition = [...sourcesSquat].some((c) => autresSources.every((s) => s.has(c)));
+
+/*
+ * Les constats sont construits ici plutôt que cousus dans le gabarit : des
+ * conditions au milieu d'un texte laissent des espaces parasites avant les
+ * points. C'est la règle déjà suivie par la fiche pour sa phrase extérieure.
+ */
+const noteBarres = ['Chaque barre est la meilleure du mouvement sur l’île.'];
+if (ecartSomme !== null && ecartSomme > 0) {
+  const provenance = uneSeuleCompetition
+    ? 'de plusieurs épreuves d’une même compétition'
+    : 'de plusieurs compétitions';
+  noteBarres.push(
+    `Elles viennent ${provenance} et dépassent ensemble le meilleur total de ${nombre(ecartSomme)}${NBSP}kg.`,
+  );
+} else if (ecartSomme === 0) {
+  noteBarres.push('Leur somme égale ici le meilleur total.');
+}
+
+/* ---------- Le meilleur total et le meilleur Dots ---------- */
+
+type Marque = 'total' | 'dots';
+interface Colonne {
+  titre: string;
+  resultat: Result;
+  marques: Marque[];
+}
+
+/* Le même résultat, par l'objet que la fiche a retenu : voir l'en-tête. */
+const memeResultat = meilleurTotal !== null && meilleurTotal === meilleurDots;
+const memeCompetition =
+  meilleurTotal !== null &&
+  meilleurDots !== null &&
+  competition(meilleurTotal) === competition(meilleurDots);
+
+/* Une colonne quand les deux marques coïncident, deux quand elles divergent,
+   aucune sans total en full power. */
+const colonnes: Colonne[] =
+  meilleurTotal === null || meilleurDots === null
+    ? []
+    : memeResultat
+      ? [{ titre: 'Les deux', resultat: meilleurTotal, marques: ['total', 'dots'] }]
+      : [
+          { titre: 'Meilleur total', resultat: meilleurTotal, marques: ['total'] },
+          { titre: 'Meilleur Dots', resultat: meilleurDots, marques: ['dots'] },
+        ];
+
+/** Écart de poids de corps entre les deux marques, quand les deux sont pesées. */
+const allege =
+  meilleurTotal?.bodyweightKg && meilleurDots?.bodyweightKg
+    ? Number((meilleurTotal.bodyweightKg - meilleurDots.bodyweightKg).toFixed(1))
+    : null;
+
+const noteDots: string[] = [];
+if (meilleurTotal === null) {
+  noteDots.push(
+    'Le total et le Dots se calculent en full power.',
+    'Cette fiche ne compte aucun total en full power sur l’île.',
+  );
+} else {
+  noteDots.push(
+    'Le total réunit les trois barres d’une même épreuve de full power.',
+    'Le Dots le ramène au poids de corps.',
+  );
+  const lieu = memeCompetition
+    ? 'd’une autre épreuve de la même compétition'
+    : 'd’une autre compétition';
+  if (memeResultat) {
+    noteDots.push(
+      'Les deux marques viennent ici de la même compétition.',
+      'Plus léger, un athlète peut marquer plus de points avec un total moins lourd.',
+    );
+  } else if (allege !== null && allege > 0) {
+    noteDots.push(
+      `Le meilleur Dots vient ici ${lieu}, à un poids de corps plus bas de ${nombre(allege)}${NBSP}kg.`,
+    );
+  } else {
+    noteDots.push(`Le meilleur Dots vient ici ${lieu}.`);
+  }
+}
+
+const article = sexe === 'F' ? 'cette' : 'cet';
+---
+
+<Infographie
+  titre="Lire une fiche d'athlète"
+  source={`Chiffres tirés des résultats de ${article} athlète à La Réunion. La légende vaut pour toutes les fiches.`}
+>
+  {/*
+    DES BLOCS ET NON DES `<section>`. Nommée, une section devient un repère de
+    navigation pour les lecteurs d'écran, et la figure en ajouterait deux à la
+    liste des repères de la page. L'intitulé nomme la liste qu'il précède,
+    comme dans les autres infographies.
+  */}
+  <div>
+    <p class="intitule" id="fiche-chiffres">Les chiffres de cette fiche</p>
+
+    <ul class="cartes" aria-labelledby="fiche-chiffres">
+      <li class="carte">
+        <p class="nom">Meilleures barres</p>
+        <dl class="meilleures">
+          {
+            mouvements.map((m) => (
+              <div>
+                <dt>
+                  <IconeMouvement mouvement={m.id} taille={20} />
+                  {m.label}
+                </dt>
+                <dd class="num-tab">{m.kg > 0 ? <>{nombre(m.kg)}&nbsp;kg</> : '—'}</dd>
+              </div>
+            ))
+          }
+          {
+            somme !== null && (
+              <div class="somme">
+                <dt>Somme</dt>
+                <dd class="num-tab">{nombre(somme)}&nbsp;kg</dd>
+              </div>
+            )
+          }
+        </dl>
+        <p class="constat">{noteBarres.join(' ')}</p>
+      </li>
+
+      <li class="carte">
+        {/*
+          UN TABLEAU, parce que la carte croise deux marques et quatre
+          mesures. Chaque marque ressort en grand dans sa colonne : le total
+          sous « Meilleur total », les points sous « Meilleur Dots ».
+        */}
+        <table class="duel">
+          <caption class="nom">Meilleur total et meilleur Dots</caption>
+          {
+            colonnes.length > 1 && (
+              <thead>
+                <tr>
+                  <td />
+                  {colonnes.map((c) => (
+                    <th scope="col">{c.titre}</th>
+                  ))}
+                </tr>
+              </thead>
+            )
+          }
+          <tbody>
+            <tr>
+              <th scope="row">Total</th>
+              {colonnes.length === 0 ? (
+                <td class="num">—</td>
+              ) : (
+                colonnes.map((c) => (
+                  <td class={c.marques.includes('total') ? 'num marque-forte' : 'num-tab'}>
+                    {nombre(c.resultat.totalKg)}
+                    <span class="unite">kg</span>
+                  </td>
+                ))
+              )}
+            </tr>
+            <tr>
+              <th scope="row">Dots</th>
+              {colonnes.length === 0 ? (
+                <td class="num">—</td>
+              ) : (
+                colonnes.map((c) => (
+                  <td class={c.marques.includes('dots') ? 'num marque-forte' : 'num-tab'}>
+                    {points(c.resultat.dots)}
+                  </td>
+                ))
+              )}
+            </tr>
+            {
+              colonnes.length > 0 && (
+                <tr>
+                  <th scope="row">Poids de corps</th>
+                  {colonnes.map((c) => (
+                    <td class="num-tab">
+                      {c.resultat.bodyweightKg ? (
+                        <>
+                          {nombre(c.resultat.bodyweightKg)}
+                          <span class="unite">kg</span>
+                        </>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              )
+            }
+            {
+              colonnes.length > 0 && (
+                <tr>
+                  <th scope="row">Date</th>
+                  {colonnes.map((c) => (
+                    <td class="num-tab">{dateCourte(c.resultat.date)}</td>
+                  ))}
+                </tr>
+              )
+            }
+          </tbody>
+        </table>
+        <p class="constat">{noteDots.join(' ')}</p>
+      </li>
+    </ul>
+  </div>
+
+  <div class="reperes-bloc">
+    <p class="intitule">Les repères d'une fiche</p>
+
+    <dl class="reperes">
+      <div class="repere">
+        <dt>
+          <span class="marque" aria-hidden="true"><BadgeOfficiel taille={20} /></span>
+          Coche
+        </dt>
+        <dd>Compétiteur officiel. Ses performances viennent de compétitions homologuées.</dd>
+      </div>
+
+      <div class="repere">
+        <dt>
+          <span class="marque" aria-hidden="true">
+            <span class="pastille-exemple">{sexLabel(sexe)}</span>
+          </span>
+          Pastilles
+        </dt>
+        <dd>
+          Le profil de la dernière compétition sur l'île. Chacune ouvre le classement filtré.
+        </dd>
+      </div>
+
+      <div class="repere">
+        <dt>
+          {/* Sans `detail`, la coupe dorée prendrait l'infobulle « Première
+              place », que le survol afficherait malgré `aria-hidden`. */}
+          <span class="marque" aria-hidden="true">
+            <Coupe metal="or" taille={20} detail="Record en cours" />
+          </span>
+          Coupe
+        </dt>
+        <dd>Record en cours de sa catégorie à La Réunion.</dd>
+      </div>
+
+      <div class="repere">
+        <dt>
+          <span class="marque" aria-hidden="true">
+            <svg class="trait" data-serie="ile" viewBox="0 0 36 12" width="36" height="12">
+              <line x1="1" y1="6" x2="35" y2="6"></line>
+              <circle cx="18" cy="6" r="3.5"></circle>
+            </svg>
+            <svg class="trait" data-serie="ailleurs" viewBox="0 0 36 12" width="36" height="12">
+              <line x1="1" y1="6" x2="35" y2="6"></line>
+              <circle cx="18" cy="6" r="3.5"></circle>
+            </svg>
+          </span>
+          Courbe
+        </dt>
+        <dd>
+          Trait plein pour les totaux en full power sur l'île. Pointillés pour ceux d'ailleurs, hors
+          du meilleur total, du classement et des records.
+        </dd>
+      </div>
+
+      <div class="repere">
+        <dt>
+          <span class="marque" aria-hidden="true">
+            {abreviations.map((m) => <IconeMouvement mouvement={m.id} taille={20} />)}
+          </span>
+          {sigles}
+        </dt>
+        <dd>{`${nomsAbreges}, abrégés dans l'historique.`}</dd>
+      </div>
+
+      <div class="repere">
+        <dt>
+          <span class="marque" aria-hidden="true">
+            <span class="evolution" data-sens="hausse">▲</span>
+            <span class="evolution" data-sens="baisse">▼</span>
+          </span>
+          Flèches
+        </dt>
+        <dd>Points Dots gagnés ou perdus depuis la compétition précédente en full power.</dd>
+      </div>
+    </dl>
+  </div>
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  .intitule {
+    margin-bottom: var(--space-3);
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* LES DEUX CARTES, dans l'ordre des chiffres clés de la fiche : les
+     barres, puis le total et le Dots. Empilées sur téléphone. */
+  .cartes {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Deux cinquièmes pour la liste, trois pour le tableau, qui compte jusqu'à
+     trois colonnes. À parts égales, la carte des barres finissait sur un vide
+     de 36 px, contre 13 px ainsi, mesuré à 1 280 px. */
+  @media (min-width: 48rem) {
+    .cartes {
+      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    }
+  }
+
+  .carte {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    min-width: 0;
+    padding: var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+
+  .nom {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 800;
+    line-height: 1.2;
+    text-align: left;
+    text-wrap: balance;
+  }
+
+  /* Le constat suit les chiffres qu'il commente, sous un filet. Pas de
+     classe `.note` ici : celle de tokens.css bornerait sa ligne à 68ch, et
+     le filet s'arrêterait avant le bord de la carte. */
+  .constat {
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--border);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .unite {
+    margin-left: 0.15rem;
+    font-family: var(--font-body);
+    font-size: var(--step--1);
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  /* Les trois barres : icône et mouvement à gauche, charge à droite. */
+  .meilleures {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+  }
+
+  .meilleures div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  .meilleures dt {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    font-weight: 600;
+  }
+
+  .meilleures dd {
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  /* La somme ferme la liste, précédée d'un filet, comme le total ferme les
+     barres dans les chiffres clés. */
+  .meilleures .somme {
+    margin-top: var(--space-1);
+    padding-top: var(--space-2);
+    border-top: 2px solid var(--border);
+  }
+  .somme dt {
+    color: var(--muted);
+  }
+
+  /* LE TABLEAU. Les intitulés de ligne à gauche, les valeurs alignées à
+     droite. Les deux marques de la fiche ressortent en grand. */
+  .duel {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .duel caption {
+    margin-bottom: var(--space-2);
+  }
+
+  .duel th,
+  .duel td {
+    padding: var(--space-1) 0;
+    vertical-align: baseline;
+  }
+
+  .duel td {
+    padding-left: var(--space-3);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .duel thead th {
+    padding-left: var(--space-3);
+    font-size: var(--step--1);
+    font-weight: 700;
+    line-height: 1.3;
+    text-align: right;
+    color: var(--muted);
+  }
+
+  .duel tbody th {
+    font-size: var(--step--1);
+    font-weight: 400;
+    text-align: left;
+    color: var(--muted);
+  }
+
+  .duel tbody tr + tr {
+    border-top: 1px solid var(--border);
+  }
+
+  .marque-forte {
+    font-size: var(--step-2);
+    line-height: 1.1;
+  }
+
+  /* LA LÉGENDE. Six repères, en une, deux ou trois colonnes : trois nombres
+     qui divisent six, donc jamais de rangée boiteuse. */
+  .reperes-bloc {
+    margin-top: var(--space-8);
+  }
+
+  .reperes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
+    gap: var(--space-3) var(--space-6);
+    margin: 0;
+  }
+
+  /* LA MARQUE, LE TERME ET LE SENS SE SUIVENT SUR LA LIGNE, comme dans une
+     légende de carte. Posé sur une ligne à part, le terme allongeait la
+     légende de 85 px, mesuré à 375 px. */
+  .repere {
+    min-width: 0;
+    padding-top: var(--space-2);
+    border-top: 2px solid var(--border);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .repere dt {
+    display: inline;
+    margin-right: var(--space-1);
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .repere dd {
+    display: inline;
+    margin: 0;
+  }
+
+  .marque {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-right: var(--space-2);
+    vertical-align: middle;
+    color: var(--text);
+  }
+
+  /* La coche et la coupe portent une marge pensée pour suivre un mot. Seules
+     en tête de ligne, elles n'en ont pas besoin. */
+  .marque :global(.badge),
+  .marque :global(.coupe) {
+    margin-left: 0;
+  }
+
+  /* La pastille d'exemple reprend celles de l'en-tête de la fiche. */
+  .pastille-exemple {
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: var(--step--1);
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+
+  /* Les deux séries de la courbe, aux réglages de ProgressChart : trait de 2,
+     point creux de rayon 3,5, pointillés de 5 et 4. */
+  .trait {
+    display: block;
+    overflow: visible;
+  }
+
+  .trait line {
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+
+  .trait circle {
+    stroke-width: 2;
+    fill: var(--surface);
+  }
+
+  .trait[data-serie='ile'] line,
+  .trait[data-serie='ile'] circle {
+    stroke: var(--accent);
+  }
+
+  .trait[data-serie='ailleurs'] line,
+  .trait[data-serie='ailleurs'] circle {
+    stroke: var(--muted);
+  }
+
+  .trait[data-serie='ailleurs'] line {
+    stroke-dasharray: 5 4;
+  }
+</style>

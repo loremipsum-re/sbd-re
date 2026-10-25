@@ -3,6 +3,7 @@ import { glob } from 'astro/loaders';
 // `z` depuis zod directement : celui réexporté par `astro:content` est déprécié
 // depuis Astro 7. Le paquet est déjà là, tiré par Astro lui-même.
 import { z } from 'zod';
+import { IDS_INFOGRAPHIES } from './lib/infographies';
 
 /**
  * Actualités : les articles du site.
@@ -39,6 +40,12 @@ const actualites = defineCollection({
      * lien vers leur fiche et rapprochent les articles entre eux.
      */
     athletes: z.array(z.string()).default([]),
+    /**
+     * Infographie posée entre le chapeau et le texte. Les valeurs possibles
+     * sont celles du catalogue, lib/infographies.ts : une valeur inconnue est
+     * rejetée à la génération.
+     */
+    infographie: z.enum(IDS_INFOGRAPHIES).optional(),
     /** Un brouillon reste invisible en production. */
     brouillon: z.boolean().default(false),
   }),

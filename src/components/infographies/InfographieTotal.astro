@@ -1,0 +1,320 @@
+---
+/**
+ * Le total, en neuf essais.
+ *
+ * L'EXEMPLE EST CONSTRUIT, ET LA LÉGENDE LE DIT. Les données
+ * d'OpenPowerlifting telles que le site les importe ne gardent que la
+ * meilleure barre de chaque mouvement, jamais les essais un à un : aucun
+ * résultat réel ne peut donc montrer un essai manqué. Les charges sont
+ * choisies pour montrer les trois cas utiles, un troisième essai manqué, un
+ * essai manqué puis réussi au même poids, trois essais validés.
+ *
+ * LA SOMME EST CALCULÉE. Les barres retenues et le total sortent des essais
+ * ci-dessous : modifier une charge met tout le reste à jour.
+ *
+ * L'ordre squat, développé couché, soulevé de terre est celui du plateau.
+ */
+import Icone from '../Icone.astro';
+import Infographie from './Infographie.astro';
+import { kg, nombre } from '../../lib/format';
+import type { IdInfographie } from '../../lib/infographies';
+import { TRACES_MOUVEMENTS } from '../../lib/mouvements';
+import type { LiftKey } from '../../lib/types';
+
+interface Props {
+  lienArticle?: IdInfographie;
+}
+
+const { lienArticle } = Astro.props;
+
+/** Une charge, et si les arbitres l'ont validée. */
+type Essai = [charge: number, valide: boolean];
+
+const EXEMPLE: { mouvement: LiftKey; nom: string; essais: Essai[] }[] = [
+  { mouvement: 'squat', nom: 'Squat', essais: [[150, true], [160, true], [167.5, false]] },
+  {
+    mouvement: 'bench',
+    nom: 'Développé couché',
+    essais: [[100, true], [105, false], [105, true]],
+  },
+  {
+    mouvement: 'deadlift',
+    nom: 'Soulevé de terre',
+    essais: [[190, true], [205, true], [215, true]],
+  },
+];
+
+const mouvements = EXEMPLE.map((m) => {
+  const retenu = Math.max(...m.essais.filter(([, valide]) => valide).map(([charge]) => charge));
+  // L'essai mis en avant est le DERNIER qui atteint la barre retenue : au
+  // développé couché, 105 kg manqué puis réussi, c'est le troisième qui compte.
+  const indexRetenu = m.essais.findLastIndex(([charge, valide]) => valide && charge === retenu);
+  return { ...m, retenu, indexRetenu };
+});
+
+const total = mouvements.reduce((somme, m) => somme + m.retenu, 0);
+
+const RANGS = ['1er essai', '2e essai', '3e essai'];
+---
+
+<Infographie
+  titre="Neuf essais pour un total"
+  source="Exemple construit pour l'illustration."
+  lienArticle={lienArticle}
+>
+  <p class="pesee">
+    La pesée a lieu le jour de la compétition. Elle fixe la catégorie de
+    l'athlète.
+  </p>
+
+  <ol class="mouvements">
+    {
+      mouvements.map((m) => (
+        <li class="mouvement">
+          <p class="nom">
+            <svg
+              class="icone-mouvement"
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              focusable="false"
+            >
+              {TRACES_MOUVEMENTS[m.mouvement]?.map((d) => <path d={d} />)}
+            </svg>
+            {m.nom}
+          </p>
+
+          <ol class="essais">
+            {m.essais.map(([charge, valide], i) => (
+              <li
+                class="essai"
+                data-etat={valide ? 'valide' : 'manque'}
+                data-retenu={i === m.indexRetenu ? '' : undefined}
+              >
+                <span class="rang">{RANGS[i]}</span>
+                {/* Le nombre et l'unité peuvent passer à la ligne l'un sous
+                    l'autre : sur téléphone, « 167,5 kg » déborde d'une case
+                    de 70 px. */}
+                <span class="charge">
+                  <span class="num-tab">{nombre(charge)}</span> kg
+                </span>
+                <span class="etat">
+                  <Icone nom={valide ? 'valide' : 'manque'} taille={16} />
+                  {valide ? 'Validé' : 'Manqué'}
+                </span>
+              </li>
+            ))}
+          </ol>
+
+          <p class="retenu">
+            <span class="rang">Retenu</span>
+            <span class="charge num">{kg(m.retenu)}</span>
+          </p>
+        </li>
+      ))
+    }
+  </ol>
+
+  <p class="somme">
+    <span class="addition num-tab">
+      {mouvements.map((m) => m.retenu).join(' + ')} =
+    </span>
+    <span class="total">
+      <span class="num">{kg(total)}</span> au total
+    </span>
+  </p>
+
+  <p class="regle">
+    Chaque mouvement se tente trois fois. La meilleure barre validée compte. Un
+    mouvement sans barre validée prive l'athlète de total.
+  </p>
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  .pesee {
+    margin-bottom: var(--space-6);
+    padding-left: var(--space-3);
+    border-left: 2px solid var(--accent);
+    color: var(--muted);
+  }
+
+  .mouvements {
+    display: grid;
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /*
+   * UNE RANGÉE PAR MOUVEMENT. Sur grand écran, le nom à gauche, les trois
+   * essais, puis la barre retenue. Sur téléphone, quatre cases de 70 px
+   * coupaient « 167,5 kg » en deux lignes : le nom et la barre retenue
+   * partagent donc la première ligne, et les trois essais prennent toute la
+   * largeur dessous.
+   */
+  .mouvement {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  .nom {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-weight: 700;
+  }
+
+  .mouvement > .retenu {
+    grid-row: 1;
+    grid-column: 2;
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-3);
+  }
+
+  @media (min-width: 48rem) {
+    .mouvement {
+      grid-template-columns: 11rem repeat(4, minmax(0, 1fr));
+      align-items: stretch;
+    }
+    .nom {
+      align-self: center;
+    }
+    .essais {
+      grid-column: span 3;
+    }
+    .mouvement > .retenu {
+      grid-row: auto;
+      grid-column: auto;
+      display: grid;
+      align-content: start;
+      gap: var(--space-1);
+      padding: var(--space-2);
+    }
+  }
+
+  /*
+   * Les trois essais occupent trois colonnes de la rangée. Leur propre grille
+   * reprend le même écart : les cases tombent donc exactement sur les
+   * colonnes de la rangée, d'un mouvement à l'autre. `display: contents`
+   * aurait évité cette grille, mais retire la liste de l'arbre
+   * d'accessibilité dans une partie des navigateurs.
+   */
+  .essais {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .essai,
+  .retenu {
+    display: grid;
+    align-content: start;
+    gap: var(--space-1);
+    min-width: 0;
+    padding: var(--space-2);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+
+  .rang {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .charge {
+    font-weight: 700;
+  }
+  .charge .num-tab {
+    white-space: nowrap;
+  }
+
+  .etat {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
+    font-size: var(--step--1);
+    font-weight: 600;
+  }
+
+  [data-etat='valide'] .etat {
+    color: var(--positif);
+  }
+
+  /* Un essai manqué : barré, atténué, et le mot le dit. La couleur ne porte
+     jamais l'information seule. */
+  [data-etat='manque'] .charge {
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+  }
+  [data-etat='manque'] .etat {
+    color: var(--negatif);
+  }
+
+  /* L'essai qui compte porte le filet de l'accent, la barre retenue son
+     aplat. */
+  [data-retenu] {
+    border-color: var(--accent);
+  }
+
+  .retenu {
+    border-color: var(--accent-fill);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+  }
+  .retenu .rang {
+    color: var(--on-accent);
+    font-weight: 700;
+  }
+  .retenu .charge {
+    font-size: var(--step-1);
+    white-space: nowrap;
+  }
+
+  .somme {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: var(--space-2) var(--space-3);
+    margin-top: var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 2px solid var(--border);
+  }
+
+  .addition {
+    color: var(--muted);
+  }
+
+  .total {
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .total .num {
+    font-size: var(--step-3);
+    color: var(--accent);
+  }
+
+  .regle {
+    margin-top: var(--space-4);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+</style>

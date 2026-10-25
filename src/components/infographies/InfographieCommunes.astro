@@ -1,0 +1,375 @@
+---
+/**
+ * Les communes organisatrices, en une image.
+ *
+ * UN CLASSEMENT EN BARRES, ET NON UNE CARTE. ile-reunion.json ne porte que le
+ * tracé de la côte et sa projection, sans aucune commune. Les seules positions
+ * du dépôt sont celles des salles, et quatre des sept communes organisatrices
+ * n'en ont aucune : L'Étang-Salé, Saint-Joseph, Saint-Leu et La
+ * Plaine-des-Palmistes. Une carte aurait demandé d'inventer leurs coordonnées.
+ *
+ * DEUX LECTURES, DEUX VOLETS. La barre compte les compétitions de chaque
+ * commune, la grille des saisons dit quand elle a organisé. Chaque volet a ses
+ * propres rangées : une barre posée au-dessus des années se lirait comme une
+ * période, de 2017 jusqu'au bout de la barre.
+ *
+ * LA GRILLE PORTE UN CHIFFRE DANS CHAQUE CASE PLEINE. L'aplat seul dirait
+ * « il y a eu compétition », le chiffre dit combien, et une case vide se
+ * distingue d'une case pleine sans passer par la couleur.
+ *
+ * TOUT EST COMPTÉ à la génération par listeMeets, comme sur la page des
+ * compétitions : une compétition est une date et un nom, sa commune est le
+ * champ meetTown d'OpenPowerlifting. Le titre nomme la commune en tête, et
+ * retombe sur une formule neutre en cas d'égalité.
+ */
+import Infographie from './Infographie.astro';
+import { periode, results } from '../../lib/data';
+import { annee, dateLongue, nombre, pluriel } from '../../lib/format';
+import type { IdInfographie } from '../../lib/infographies';
+import { listeMeets, type Meet } from '../../lib/meets';
+import { meetKey } from '../../lib/slug';
+
+interface Props {
+  lienArticle?: IdInfographie;
+}
+
+const { lienArticle } = Astro.props;
+
+const meets = listeMeets();
+const { debut, fin } = periode();
+const premiere = Number(annee(debut));
+const derniere = Number(annee(fin));
+const saisons = Array.from({ length: derniere - premiere + 1 }, (_, i) => premiere + i);
+
+const parCommune = new Map<string, Meet[]>();
+for (const m of meets) {
+  if (!m.meetTown) continue;
+  const liste = parCommune.get(m.meetTown);
+  if (liste) liste.push(m);
+  else parCommune.set(m.meetTown, [m]);
+}
+const sansCommune = meets.filter((m) => !m.meetTown).length;
+
+const communes = [...parCommune].map(([nom, liste]) => {
+  const cles = new Set(liste.map((m) => m.key));
+  const noms = new Set(
+    results.filter((r) => cles.has(meetKey(r.date, r.meetName))).map((r) => r.name),
+  );
+  const parSaison = new Map<number, number>();
+  for (const m of liste) {
+    const s = Number(annee(m.date));
+    parSaison.set(s, (parSaison.get(s) ?? 0) + 1);
+  }
+  const annees = [...parSaison.keys()].sort((a, b) => a - b);
+  const resultats = liste.reduce((t, m) => t + m.resultats, 0);
+  return {
+    nom,
+    competitions: liste.length,
+    resultats,
+    athletes: noms.size,
+    parSaison,
+    debut: annees[0],
+    fin: annees.at(-1)!,
+  };
+});
+
+communes.sort(
+  (a, b) =>
+    b.competitions - a.competitions ||
+    b.resultats - a.resultats ||
+    a.nom.localeCompare(b.nom, 'fr'),
+);
+
+const plusHaut = communes[0]?.competitions ?? 1;
+const totalCompetitions = communes.reduce((t, c) => t + c.competitions, 0);
+
+const [tete, second] = communes;
+const titre =
+  tete && (!second || second.competitions < tete.competitions)
+    ? `${tete.nom} accueille le plus de compétitions`
+    : 'Les communes qui accueillent les compétitions';
+
+/** « depuis 2017 » pour une commune qui organise encore, sinon ses bornes. */
+function periodeDe(c: (typeof communes)[number]): string {
+  if (c.fin === derniere) return `depuis ${c.debut}`;
+  if (c.debut === c.fin) return `en ${c.debut}`;
+  return `de ${c.debut} à ${c.fin}`;
+}
+---
+
+<Infographie
+  titre={titre}
+  source={`Compétitions de La Réunion du ${dateLongue(debut)} au ${dateLongue(fin)}, tous formats.${
+    sansCommune > 0
+      ? ` ${sansCommune} ${pluriel(sansCommune, 'compétition')} sans commune renseignée ${sansCommune > 1 ? 'sont écartées' : 'est écartée'}.`
+      : ''
+  }`}
+  lienArticle={lienArticle}
+>
+  <div class="volet">
+    <p class="intitule" id="communes-classement">
+      {totalCompetitions} {pluriel(totalCompetitions, 'compétition')} dans {communes.length}{' '}
+      {pluriel(communes.length, 'commune')}
+    </p>
+    <ol class="classement" aria-labelledby="communes-classement">
+      {
+        communes.map((c) => (
+          <li class="commune">
+            <p class="nom">{c.nom}</p>
+            <p class="piste">
+              <span
+                class="barre"
+                style={`--part:${c.competitions / plusHaut}`}
+                aria-hidden="true"
+              />
+              <strong class="num-tab">{c.competitions}</strong>
+              <span class="sr-only"> {pluriel(c.competitions, 'compétition')}</span>
+            </p>
+            <p class="detail">
+              <span class="num-tab">{nombre(c.resultats)}</span>{' '}
+              {pluriel(c.resultats, 'résultat')},{' '}
+              <span class="num-tab">{nombre(c.athletes)}</span> {pluriel(c.athletes, 'athlète')}
+            </p>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+
+  <div class="volet">
+    <p class="intitule" id="communes-saisons">
+      Compétitions par saison de {premiere} à {derniere}
+    </p>
+
+    {/* L'axe des années, pour l'œil. Chaque case porte sa saison en texte. */}
+    <div class="ligne axe" aria-hidden="true">
+      <span class="vide" />
+      <ol class="cases" style={`--saisons:${saisons.length}`}>
+        {
+          saisons.map((s) => (
+            <li>
+              <span class="siecle">{String(s).slice(0, 2)}</span>
+              {String(s).slice(2)}
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+
+    <ul class="saisons" aria-labelledby="communes-saisons">
+      {
+        communes.map((c) => (
+          <li class="ligne">
+            <p class="nom">
+              {c.nom}{' '}
+              <span class="periode">{periodeDe(c)}</span>
+            </p>
+            <ol class="cases" style={`--saisons:${saisons.length}`}>
+              {saisons.map((s) => {
+                const n = c.parSaison.get(s) ?? 0;
+                return (
+                  <li data-pleine={n > 0 ? '' : undefined}>
+                    <span class="sr-only">{s} : </span>
+                    {n > 0 ? (
+                      <>
+                        {n}
+                        <span class="sr-only"> {pluriel(n, 'compétition')}</span>
+                      </>
+                    ) : (
+                      <span class="sr-only">aucune compétition</span>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  /* « volet » et non « bloc » : la classe globale `.bloc` de tokens.css
+     ajoute 48 px sous chaque section de page. */
+  .volet + .volet {
+    margin-top: var(--space-8);
+  }
+
+  .intitule {
+    margin-bottom: var(--space-4);
+    font-size: var(--step--1);
+    font-weight: 700;
+  }
+
+  /* LE CLASSEMENT. Le nom à gauche de sa barre, le chiffre au bout de la
+     barre. Sur téléphone, le détail passe sous le nom et la barre réunis :
+     une rangée de deux lignes au lieu de trois. */
+  .classement,
+  .saisons {
+    display: grid;
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .commune {
+    display: grid;
+    grid-template-columns: minmax(0, 8rem) minmax(0, 1fr);
+    grid-template-areas: 'nom piste' 'detail detail';
+    column-gap: var(--space-3);
+    min-width: 0;
+  }
+
+  .nom {
+    min-width: 0;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .commune .nom {
+    grid-area: nom;
+  }
+
+  .piste {
+    grid-area: piste;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    font-size: var(--step-0);
+  }
+
+  /* La barre laisse au chiffre la place de se loger après elle, même au
+     maximum. Une commune à une compétition garde une barre visible. */
+  .barre {
+    flex: 0 0 calc(var(--part) * (100% - 2.5rem));
+    min-width: 4px;
+    height: 1rem;
+    background: var(--accent-fill);
+  }
+
+  .detail {
+    grid-area: detail;
+    min-width: 0;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  /* Le chiffre en couleur de texte, le mot en gris : la règle des autres
+     infographies pour une ligne secondaire. */
+  .detail .num-tab {
+    color: var(--text);
+  }
+
+  /* Dès 40 rem, le classement et la grille des saisons partagent la même
+     colonne de noms, de 14 rem : les deux volets s'alignent l'un sous l'autre. */
+  @media (min-width: 40rem) {
+    .commune {
+      grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
+      grid-template-areas: 'nom piste' 'detail .';
+      column-gap: var(--space-4);
+    }
+  }
+
+  /* LA GRILLE DES SAISONS. Une case par saison, de la première à la dernière
+     des données. */
+  .saisons {
+    gap: var(--space-3);
+  }
+
+  .ligne {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  .periode {
+    font-size: var(--step--1);
+    font-weight: 400;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .cases {
+    display: grid;
+    grid-template-columns: repeat(var(--saisons), minmax(0, 1fr));
+    gap: 2px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .cases li {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 1.75rem;
+    /* Une saison vide garde son filet sur le fond du cadre. Posée sur le fond
+       de page, elle se creusait en trou noir dans le thème sombre, plus
+       voyante que les saisons pleines. */
+    border: 2px solid var(--border);
+    font-size: var(--step--1);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cases li[data-pleine] {
+    border-color: var(--accent-fill);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+  }
+
+  /* L'axe : « 17 », et « 2017 » seulement quand la case a la place. L'intitulé
+     donne les deux années complètes.
+
+     LA LARGEUR DE LA CASE DÉCIDE. Une saison de plus chaque année rétrécit
+     les cases. Avec une requête sur la largeur d'écran, l'article de
+     68 caractères montrait des années collées dès douze saisons : mesuré
+     sur des données prolongées jusqu'en 2028, case de 30 px, « 2028 » de
+     30 px. Chaque année de l'axe est donc un conteneur, et « 2017 » demande
+     34 px, soit le texte mesuré à 1 280 px et 4 px d'air. Sans requête de
+     conteneur, le navigateur garde « 17 ». */
+  .axe {
+    margin-bottom: var(--space-1);
+  }
+  .axe .vide {
+    display: none;
+  }
+  .axe .cases li {
+    container-type: inline-size;
+    min-height: 0;
+    border: 0;
+    background: none;
+    font-family: var(--font-display);
+    font-stretch: var(--stretch-condense);
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .siecle {
+    display: none;
+  }
+  @container (min-width: 2.125rem) {
+    .siecle {
+      display: inline;
+    }
+  }
+
+  @media (min-width: 40rem) {
+    .ligne {
+      grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
+      column-gap: var(--space-4);
+      align-items: center;
+    }
+    .axe .vide {
+      display: block;
+    }
+  }
+</style>

@@ -1,0 +1,578 @@
+---
+/**
+ * La lecture de /comparer/, en une image : l'écart au meilleur de la ligne.
+ *
+ * LE CALCUL EST CELUI DU SCRIPT DE LA PAGE, À L'IDENTIQUE. Le tableau de
+ * comparaison se construit dans le navigateur, par un script `is:inline` qui
+ * ne peut rien importer. Ses règles sont donc reprises ici telles quelles, et
+ * toute modification de l'une doit être portée dans l'autre :
+ *
+ * - une valeur nulle est ABSENTE : un tiret, et elle sort du calcul ;
+ * - le meilleur est la plus haute valeur connue ;
+ * - toute case égale au meilleur porte « meilleur », égalité comprise ;
+ * - les autres affichent (valeur − meilleur) ÷ meilleur × 100, formaté par
+ *   `toLocaleString('fr-FR')` à une décimale au plus ;
+ * - au rang, le meilleur est le plus petit et l'écart se compte en places.
+ *   Cette exception est dite en une phrase : une troisième carte allongeait
+ *   l'infographie de 220 px sur téléphone.
+ *
+ * L'EXEMPLE EST CONSTRUIT, ET LA LÉGENDE LE DIT. La comparaison d'exemple de la
+ * page met le même athlète en tête de toutes les lignes : elle ne montre ni un
+ * meilleur qui change d'une ligne à l'autre, ni une valeur absente. Trois
+ * athlètes fictifs montrent les deux, et le développé couché de l'athlète B
+ * montre l'arrondi.
+ *
+ * LA RÉPARTITION DES MEILLEURES BARRES EST COMPTÉE. La page prévient que les
+ * meilleures barres d'un athlète viennent de compétitions et d'années
+ * différentes. Le compte suit la page : meilleure barre de chaque mouvement,
+ * tous formats confondus, sur les résultats de La Réunion.
+ */
+import Infographie from './Infographie.astro';
+import { results } from '../../lib/data';
+import { meetKey } from '../../lib/slug';
+import type { Result } from '../../lib/types';
+
+interface Props {
+  // Aucune propriété : la page l'appelle seule.
+}
+
+/** Le `nombre` du script de la page, recopié sans rien changer. */
+const nombre = (v: number, dec: number) =>
+  v.toLocaleString('fr-FR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: dec,
+  });
+
+type Etat = 'meilleur' | 'ecart' | 'absent';
+
+interface Case {
+  athlete: string;
+  valeur: number;
+  etat: Etat;
+  /** Ce que la case du tableau écrit sous la valeur. */
+  mention: string;
+  /** Écart brut, avant arrondi, en pourcentage. */
+  brut: number;
+  /** Valeur rapportée au meilleur, pour la longueur de la barre. */
+  part: number;
+}
+
+const ATHLETES = ['Athlète A', 'Athlète B', 'Athlète C'];
+
+/** Une valeur par athlète, dans l'ordre de sélection. 0 signifie absente. */
+const EXEMPLE = [
+  { label: 'Squat', valeurs: [200, 170, 0] },
+  { label: 'Développé couché', valeurs: [120, 140, 150] },
+];
+
+/** Une ligne en kilos du tableau, calculée comme le fait la page. */
+function cases(valeurs: number[]): { meilleur: number; cases: Case[] } {
+  const connus = valeurs.filter((v) => v > 0);
+  const meilleur = connus.length ? Math.max(...connus) : 0;
+
+  return {
+    meilleur,
+    cases: valeurs.map((valeur, i) => {
+      const athlete = ATHLETES[i];
+      if (!valeur) {
+        return { athlete, valeur, etat: 'absent', mention: 'aucune barre', brut: 0, part: 0 };
+      }
+      if (valeur === meilleur) {
+        return { athlete, valeur, etat: 'meilleur', mention: 'meilleur', brut: 0, part: 1 };
+      }
+      const brut = ((valeur - meilleur) / meilleur) * 100;
+      // Espace insécable entre le nombre et son signe : la page écrit une
+      // espace simple, qu'une colonne étroite pourrait couper.
+      const mention = `${nombre(brut, 1)}\u00a0%`;
+      return { athlete, valeur, etat: 'ecart', mention, brut, part: valeur / meilleur };
+    }),
+  };
+}
+
+const lignes = EXEMPLE.map((l) => ({ ...l, ...cases(l.valeurs) }));
+
+/**
+ * L'écart brut, à trois décimales au plus, suivi de points de suspension
+ * quand le calcul continue : « -6,666… ». Le signe est le trait d'union de
+ * `toLocaleString`, celui que la page affiche.
+ */
+function developpe(x: number): string {
+  const [entier, decimales] = Math.abs(x).toFixed(6).split('.');
+  const trois = decimales.slice(0, 3).replace(/0+$/, '');
+  const suite = /[1-9]/.test(decimales.slice(3));
+  return `${x < 0 ? '-' : ''}${entier}${trois ? `,${trois}` : ''}${suite ? '…' : ''}`;
+}
+
+// La case détaillée : l'athlète B au développé couché, dont l'écart s'arrondit.
+const ligneDetail = lignes[1];
+const detail = ligneDetail.cases[1];
+
+/*
+ * LA RÉPARTITION. Pour chaque mouvement, la meilleure barre tombe dans une ou
+ * plusieurs compétitions, plusieurs en cas d'égalité. Les trois sont réunies
+ * si une même compétition les porte toutes. Seuls comptent les athlètes qui
+ * ont une barre aux trois mouvements, et plus d'une compétition, ou plus d'une
+ * année, pour que la répartition soit possible.
+ */
+const MOUVEMENTS = ['bestSquatKg', 'bestBenchKg', 'bestDeadliftKg'] as const;
+
+const parAthlete = new Map<string, Result[]>();
+for (const r of results) {
+  const liste = parAthlete.get(r.name);
+  if (liste) liste.push(r);
+  else parAthlete.set(r.name, [r]);
+}
+
+function repartition(cle: (r: Result) => string): { reparties: number; total: number } {
+  let reparties = 0;
+  let total = 0;
+  for (const lignesAthlete of parAthlete.values()) {
+    const meilleures = MOUVEMENTS.map((m) => Math.max(0, ...lignesAthlete.map((r) => r[m] ?? 0)));
+    if (meilleures.some((kg) => kg === 0)) continue;
+    if (new Set(lignesAthlete.map(cle)).size < 2) continue;
+    total++;
+    const ou = MOUVEMENTS.map(
+      (m, i) => new Set(lignesAthlete.filter((r) => r[m] === meilleures[i]).map(cle)),
+    );
+    const reunies = [...ou[0]].some((v) => ou.every((e) => e.has(v)));
+    if (!reunies) reparties++;
+  }
+  return { reparties, total };
+}
+
+const constats = [
+  {
+    ...repartition((r) => meetKey(r.date, r.meetName)),
+    texte:
+      "athlètes passés par plusieurs compétitions ont établi leurs trois meilleures barres lors d'au moins deux d'entre elles.",
+  },
+  {
+    ...repartition((r) => r.date.slice(0, 4)),
+    texte:
+      'athlètes en compétition sur plusieurs années ont établi leurs trois meilleures barres sur au moins deux années.',
+  },
+].filter((c) => c.total > 0);
+---
+
+<Infographie
+  titre="Chaque écart se calcule par rapport au meilleur de la ligne"
+  source="Exemple construit avec trois athlètes fictifs. Répartitions comptées sur les résultats de La Réunion, parmi les athlètes qui ont une barre aux trois mouvements."
+>
+  <p class="formule">
+    {/* « LE TOUT » REMPLACE, POUR L'OREILLE, LE CADRE qui groupe la
+        soustraction à l'écran : la différence entière est divisée par le
+        meilleur. */}
+    <span class="sr-only">
+      L'écart en pourcentage égale la valeur moins le meilleur, le tout divisé
+      par le meilleur puis multiplié par 100.
+    </span>
+    <span class="facteur" aria-hidden="true">valeur − meilleur</span>
+    <span class="groupe" aria-hidden="true">
+      <span class="operateur">÷</span>
+      <span class="facteur">meilleur</span>
+    </span>
+    <span class="groupe" aria-hidden="true">
+      <span class="operateur">× 100</span>
+      <span class="operateur">=</span>
+      <span class="facteur resultat">écart en %</span>
+    </span>
+  </p>
+
+  <p class="intitule" id="comparer-exemple">Deux lignes du tableau, trois athlètes</p>
+  <ul class="lignes" aria-labelledby="comparer-exemple">
+    {
+      lignes.map((l) => (
+        <li class="ligne">
+          <p class="nom-ligne">{l.label}</p>
+          {/* Les espaces explicites séparent les trois textes d'une rangée
+              pour un lecteur d'écran. La grille les ignore à l'affichage. */}
+          <ul class="cases">
+            {l.cases.map((c) => (
+              <li data-etat={c.etat}>
+                <span class="athlete">{c.athlete}</span>{' '}
+                <span class="valeur num-tab">
+                  {c.etat === 'absent' ? (
+                    <span aria-hidden="true">—</span>
+                  ) : (
+                    <>{nombre(c.valeur, 1)}&nbsp;kg</>
+                  )}
+                </span>{' '}
+                <span class="mention num-tab">{c.mention}</span>
+                <span class="jauge" aria-hidden="true">
+                  {c.etat !== 'absent' && <span class="plein" style={`--part:${c.part}`} />}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </li>
+      ))
+    }
+  </ul>
+  <p class="cle" aria-hidden="true">
+    <span class="echantillon"></span>
+    La partie hachurée de la barre correspond à l'écart.
+  </p>
+
+  <div class="lecture">
+    <div class="calcul">
+      <p class="intitule">Athlète B, développé couché</p>
+      <p class="expression num-tab">
+        <span class="sr-only">
+          {nombre(detail.valeur, 1)} moins {nombre(ligneDetail.meilleur, 1)}, le tout divisé
+          par {nombre(ligneDetail.meilleur, 1)} puis multiplié par 100, égale{' '}
+          {developpe(detail.brut)}
+        </span>
+        <span aria-hidden="true">
+          ({nombre(detail.valeur, 1)} − {nombre(ligneDetail.meilleur, 1)}) ÷{' '}
+          {nombre(ligneDetail.meilleur, 1)} × 100{' '}
+          <span class="insecable">= {developpe(detail.brut)}</span>
+        </span>
+      </p>
+      <p class="affiche">
+        Arrondi au dixième, l'écart affiché est <strong class="num-tab">{detail.mention}</strong>.
+      </p>
+    </div>
+
+    <ul class="regles">
+      <li>
+        La plus haute valeur de la ligne porte la mention « meilleur ». À&nbsp;égalité,
+        chaque athlète concerné la porte.
+      </li>
+      <li>Un tiret marque une valeur absente. Elle sort du calcul.</li>
+      <li>
+        Sur la ligne du rang à La Réunion, le plus petit nombre est le meilleur.
+        L'écart s'y compte en places.
+      </li>
+    </ul>
+  </div>
+
+  {
+    constats.length > 0 && (
+      <div class="dates">
+        {/* L'INTITULÉ DIT CE QUI PEUT ARRIVER. Les comptes qui suivent
+            montrent qu'une part des athlètes réunit ses trois meilleures
+            barres dans une même compétition. */}
+        <p class="intitule" id="comparer-dates">
+          Les trois meilleures barres d'un athlète peuvent venir de compétitions
+          et d'années différentes
+        </p>
+        <ul class="constats" aria-labelledby="comparer-dates">
+          {constats.map((c) => (
+            <li>
+              <p>
+                <strong class="num">{c.reparties}</strong>{' '}
+                <span class="phrase">
+                  sur{' '}<span class="num-tab">{c.total}</span> {c.texte}
+                </span>
+              </p>
+              <span class="jauge" aria-hidden="true">
+                <span class="plein" style={`--part:${c.reparties / c.total}`} />
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  /* LA FORMULE. Les termes passent à la ligne sur téléphone, chacun gardé
+     d'un bloc. Le cadre de la soustraction tient lieu de parenthèses. Chaque
+     signe reste attaché au terme qui le suit. Sans cela, « ÷ » finissait
+     seul la première ligne à 320 px, et le signe égal ouvrait seul la
+     deuxième à 375. */
+  .formule {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+    font-weight: 700;
+  }
+  .facteur {
+    padding: var(--space-1) var(--space-3);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    white-space: nowrap;
+  }
+  .formule .resultat {
+    border-color: var(--accent-fill);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+  }
+  .groupe {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .operateur {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 800;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .intitule {
+    margin-bottom: var(--space-3);
+    font-size: var(--step--1);
+    font-weight: 700;
+  }
+
+  /* LES DEUX LIGNES, côte à côte dès que chaque carte loge un nom, une valeur
+     et une mention sur une seule rangée. */
+  .lignes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .ligne {
+    min-width: 0;
+    padding: var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+
+  /* SOUS 352 PX, la colonne des noms tombait à 51 px à 320 de large, et
+     « Athlète » en mesure 53 : il débordait. La carte rend 8 px de marge. */
+  @media (max-width: 22rem) {
+    .ligne {
+      padding: var(--space-3);
+    }
+  }
+
+  /* Le libellé reprend celui des lignes du tableau de la page. */
+  .nom-ligne {
+    margin-bottom: var(--space-3);
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /*
+   * UNE GRILLE POUR LES TROIS RANGÉES. `subgrid` aligne les valeurs et les
+   * mentions d'une rangée à l'autre. Sans lui, chaque rangée garde sa propre
+   * grille et rien ne casse.
+   */
+  .cases {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cases > li {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+    align-items: baseline;
+    row-gap: var(--space-1);
+    min-width: 0;
+  }
+
+  .athlete {
+    min-width: 0;
+    font-weight: 600;
+  }
+
+  .valeur {
+    font-weight: 700;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .mention {
+    font-size: var(--step--1);
+    font-weight: 700;
+    white-space: nowrap;
+    color: var(--muted);
+  }
+
+  /* Les couleurs du tableau de la page. Le mot et le signe portent le sens,
+     la couleur le double. */
+  [data-etat='meilleur'] .valeur {
+    color: var(--accent);
+  }
+  [data-etat='meilleur'] .mention {
+    color: var(--positif);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  [data-etat='ecart'] .mention {
+    color: var(--negatif);
+  }
+  [data-etat='absent'] .valeur {
+    color: var(--muted);
+  }
+
+  /*
+   * LA BARRE PART DE ZÉRO. Sa longueur entière vaut le meilleur de la ligne :
+   * la partie pleine est la valeur, la partie hachurée l'écart. Une valeur
+   * absente laisse un rail vide en pointillés.
+   */
+  .jauge {
+    grid-column: 1 / -1;
+    display: flex;
+    height: 0.625rem;
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent 0 3px,
+      var(--muted) 3px 4.5px
+    );
+  }
+  .plein {
+    width: calc(var(--part) * 100%);
+    background: color-mix(in srgb, var(--muted) 55%, var(--bg));
+  }
+  [data-etat='meilleur'] .plein {
+    background: var(--accent-fill);
+  }
+  [data-etat='absent'] .jauge {
+    background: none;
+    border: 2px dashed var(--border);
+  }
+
+  .cle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .echantillon {
+    flex: none;
+    width: 1.5rem;
+    height: 0.625rem;
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent 0 3px,
+      var(--muted) 3px 4.5px
+    );
+  }
+
+  /* LA CASE DÉTAILLÉE ET LES RÈGLES, côte à côte sur grand écran : seule, la
+     case laissait la moitié droite du cadre vide. */
+  .lecture {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+    align-items: start;
+    gap: var(--space-6);
+    margin-top: var(--space-6);
+  }
+
+  .calcul {
+    min-width: 0;
+    padding: var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+  .calcul .intitule {
+    margin-bottom: var(--space-2);
+  }
+
+  .expression {
+    font-size: var(--step-1);
+    font-weight: 700;
+  }
+  .insecable {
+    white-space: nowrap;
+  }
+
+  .affiche {
+    margin-top: var(--space-2);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .affiche strong {
+    color: var(--negatif);
+  }
+
+  /* Les règles, en carrés : le système de marque n'a que des angles. */
+  .regles {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .regles li {
+    position: relative;
+    padding-left: var(--space-4);
+    text-wrap: pretty;
+  }
+  .regles li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.6em;
+    width: 0.4rem;
+    height: 0.4rem;
+    background: var(--accent);
+  }
+
+  /* LA RÉPARTITION DES MEILLEURES BARRES. Le nombre à gauche, sa phrase à
+     droite, la jauge dessous. */
+  .dates {
+    margin-top: var(--space-8);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border);
+  }
+
+  .constats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+    gap: var(--space-6);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .constats li {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+  .constats p {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-3);
+  }
+
+  .constats .num {
+    font-size: var(--step-3);
+    font-weight: 800;
+    line-height: 1;
+    color: var(--accent);
+  }
+
+  .phrase {
+    min-width: 0;
+    font-size: var(--step--1);
+  }
+
+  /* La partie pleine mesure la part, sur un rail mêlé au fond. */
+  .constats .jauge {
+    margin-top: auto;
+    background: color-mix(in srgb, var(--muted) 30%, var(--surface));
+  }
+  .constats .plein {
+    background: var(--accent-fill);
+  }
+</style>

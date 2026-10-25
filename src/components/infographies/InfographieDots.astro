@@ -1,0 +1,302 @@
+---
+/**
+ * Les points Dots, en une image.
+ *
+ * DEUX HOMMES, UN MÊME TOTAL DE 500 KG, deux poids de corps. Le calcul est
+ * posé en entier, total × coefficient = points, pour que la règle se lise dans
+ * l'exemple au lieu d'être énoncée. 500 kg à 70 kg contre 500 kg à 120 kg :
+ * c'est l'exemple du glossaire, repris tel quel pour que les deux disent la
+ * même chose.
+ *
+ * LE COEFFICIENT VIENT DE lib/dots.ts, la formule officielle déjà vérifiée
+ * contre 832 scores publiés par OpenPowerlifting. `dots(1, poids)` rend
+ * exactement le coefficient par kilo de total. Rien n'est recopié.
+ *
+ * L'histogramme part de zéro. Tronqué, il aurait creusé l'écart entre 60 et
+ * 120 kg bien au-delà des 32 % réels.
+ */
+import Infographie from './Infographie.astro';
+import { fullPowerResults } from '../../lib/data';
+import { dots } from '../../lib/dots';
+import { points } from '../../lib/format';
+import type { IdInfographie } from '../../lib/infographies';
+import type { Sex } from '../../lib/types';
+
+interface Props {
+  lienArticle?: IdInfographie;
+}
+
+const { lienArticle } = Astro.props;
+
+const TOTAL = 500;
+const coefficient = (poids: number) => dots(1, poids, 'M');
+
+const exemples = [70, 120].map((poids) => ({
+  poids,
+  coefficient: coefficient(poids),
+  points: dots(TOTAL, poids, 'M'),
+}));
+const ecart = exemples[0].points - exemples[1].points;
+
+const POIDS = [60, 70, 80, 90, 100, 110, 120];
+const plusFort = coefficient(POIDS[0]);
+const barres = POIDS.map((poids) => ({
+  poids,
+  coefficient: coefficient(poids),
+  hauteur: (coefficient(poids) / plusFort) * 100,
+  enAvant: exemples.some((e) => e.poids === poids),
+}));
+
+/** Coefficient à trois décimales, virgule française. */
+const coef = (valeur: number) => valeur.toFixed(3).replace('.', ',');
+
+const meilleur = (sexe: Sex) =>
+  Math.max(...fullPowerResults.filter((r) => r.sex === sexe).map((r) => r.dots ?? 0));
+---
+
+<Infographie
+  titre="À total égal, le plus léger marque plus de points"
+  source="Calcul pour un homme, avec la formule Dots officielle. La formule des femmes emploie ses propres coefficients."
+  lienArticle={lienArticle}
+>
+  <p class="formule">
+    <span class="facteur">Total</span>
+    <span class="operateur" aria-hidden="true">×</span>
+    <span class="sr-only">multiplié par</span>
+    <span class="facteur">coefficient du poids de corps</span>
+    <span class="operateur" aria-hidden="true">=</span>
+    <span class="sr-only">égale</span>
+    <span class="facteur resultat">points Dots</span>
+  </p>
+
+  <ul class="exemples">
+    {
+      exemples.map((e) => (
+        <li class="exemple">
+          <p class="pesee">
+            Pesé à <strong class="num-tab">{e.poids} kg</strong>
+          </p>
+          <p class="calcul">
+            <span class="terme">
+              <span class="num">{TOTAL}</span> kg
+            </span>
+            <span class="operateur" aria-hidden="true">×</span>
+            <span class="sr-only">multiplié par</span>
+            <span class="terme">
+              <span class="num">{coef(e.coefficient)}</span>
+            </span>
+            <span class="operateur" aria-hidden="true">=</span>
+            <span class="sr-only">égale</span>
+            <span class="terme resultat">
+              <span class="num">{points(e.points)}</span> points
+            </span>
+          </p>
+        </li>
+      ))
+    }
+  </ul>
+
+  <p class="ecart">
+    Écart pour les mêmes {TOTAL} kg : <strong class="num-tab">{points(ecart)} points</strong>
+  </p>
+
+  <div class="coefficients">
+    <p class="intitule" id="dots-coefficients">
+      Le coefficient d'un homme baisse quand son poids de corps monte
+    </p>
+    <ol class="barres" aria-labelledby="dots-coefficients">
+      {
+        barres.map((b) => (
+          <li data-en-avant={b.enAvant ? '' : undefined} style={`--hauteur:${b.hauteur}%`}>
+            <span class="poids num-tab">
+              {b.poids}
+              <span class="sr-only"> kg</span>
+            </span>
+            <span class="sr-only">, coefficient</span>
+            <span class="valeur num-tab">{coef(b.coefficient)}</span>
+            <span class="barre" aria-hidden="true" />
+          </li>
+        ))
+      }
+    </ol>
+    <p class="unite-axe" aria-hidden="true">Poids de corps, en kg</p>
+  </div>
+
+  <p class="repere">
+    Meilleurs scores de l'île : <strong class="num-tab">{points(meilleur('M'))}</strong> chez
+    les hommes, <strong class="num-tab">{points(meilleur('F'))}</strong> chez les femmes.
+  </p>
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  /* LA FORMULE. Trois termes et deux signes, qui passent à la ligne sur
+     téléphone sans jamais séparer un signe de son terme suivant. */
+  .formule {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+    font-weight: 700;
+  }
+  .facteur {
+    padding: var(--space-1) var(--space-3);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .formule .resultat {
+    border-color: var(--accent-fill);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+  }
+
+  .operateur {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 800;
+    color: var(--muted);
+  }
+
+  /* LES DEUX EXEMPLES, côte à côte dès qu'il y a la place. */
+  .exemples {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .exemple {
+    min-width: 0;
+    padding: var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+
+  .pesee {
+    margin-bottom: var(--space-3);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .pesee strong {
+    color: var(--text);
+  }
+
+  .calcul {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-2);
+  }
+
+  .terme {
+    white-space: nowrap;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .terme .num {
+    font-size: var(--step-2);
+    color: var(--text);
+  }
+  .calcul .resultat .num {
+    color: var(--accent);
+  }
+
+  .ecart {
+    margin-top: var(--space-4);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .ecart strong {
+    color: var(--text);
+  }
+
+  /* L'HISTOGRAMME. Sept colonnes, de 60 à 120 kg. Le texte vient avant la
+     barre dans le document, pour être lu dans cet ordre : poids, puis
+     coefficient. La grille remet la valeur au-dessus et le poids dessous. */
+  .coefficients {
+    margin-top: var(--space-8);
+  }
+
+  .intitule {
+    margin-bottom: var(--space-3);
+    font-size: var(--step--1);
+    font-weight: 700;
+  }
+
+  .barres {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .barres li {
+    display: grid;
+    grid-template-rows: auto 6rem auto;
+    grid-template-areas: 'valeur' 'barre' 'poids';
+    min-width: 0;
+    text-align: center;
+  }
+
+  .valeur {
+    grid-area: valeur;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /* Le gris des barres secondaires est mêlé au fond : en thème sombre, le
+     gris de texte seul pesait autant que l'accent et brouillait la lecture. */
+  .barre {
+    grid-area: barre;
+    align-self: end;
+    height: var(--hauteur);
+    border-radius: 2px 2px 0 0;
+    background: color-mix(in srgb, var(--muted) 55%, var(--surface));
+  }
+
+  .poids {
+    grid-area: poids;
+    padding-top: var(--space-1);
+    border-top: 2px solid var(--border);
+    font-size: var(--step--1);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* Les deux poids des exemples ressortent en aplat accentué. */
+  [data-en-avant] .barre {
+    background: var(--accent-fill);
+  }
+  [data-en-avant] .valeur,
+  [data-en-avant] .poids {
+    color: var(--text);
+    font-weight: 800;
+  }
+
+  .unite-axe {
+    margin-top: var(--space-1);
+    font-size: var(--step--1);
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .repere {
+    margin-top: var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .repere strong {
+    color: var(--text);
+  }
+</style>

@@ -20,6 +20,7 @@
  * qu'ils ne rapportaient.
  */
 import InteractiveTable from '../../components/InteractiveTable.astro';
+import InfographieCategories from '../../components/infographies/InfographieCategories.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { SEXE_LABEL, listeCategories } from '../../lib/categoriesPages';
 import { kg } from '../../lib/format';
@@ -79,6 +80,14 @@ const parSexe: { sex: Sex; label: string; liste: typeof categories }[] = [
         ))
       }
     </nav>
+
+    {/*
+      L'INFOGRAPHIE APRÈS LE SÉLECTEUR, DÉPLIÉE. Le sélecteur reste le premier
+      geste de la page. L'image sert qui ne sait pas encore dans quelle
+      catégorie il se range, et elle précède les tableaux, qui s'adressent à
+      qui le sait.
+    */}
+    <InfographieCategories lienArticle="categories" />
 
     {/*
       Ni recherche, ni filtre, ni compteur : le sélecteur au-dessus fait ce

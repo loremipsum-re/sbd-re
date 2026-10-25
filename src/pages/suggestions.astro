@@ -15,6 +15,8 @@
  * du raisonnement vit dans public/api/contact.php.
  */
 import FormulaireSuggestion from '../components/FormulaireSuggestion.astro';
+import InfographieSuggestion from '../components/infographies/InfographieSuggestion.astro';
+import Repli from '../components/Repli.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
@@ -33,13 +35,36 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
     <section class="formulaire">
       <noscript>
-        <p class="repli">
+        <p class="sans-script">
           Ce formulaire demande JavaScript. Écrivez directement à{' '}
           <a href="mailto:hello@loremipsum.re">hello@loremipsum.re</a>.
         </p>
       </noscript>
 
       <FormulaireSuggestion prefixe="page" origine="page" />
+
+      {/*
+        L'INFOGRAPHIE VIENT APRÈS LE FORMULAIRE, REPLIÉE. Le formulaire est la
+        raison de la page et reste le premier geste. La figure répond à la
+        question de qui hésite à envoyer : ce qui part, ce qui est vérifié, ce
+        qui est gardé.
+
+        LE COÛT EST MESURÉ. Dépliée, la figure mesure environ 2 140 px de haut
+        à 375 px de large, et 1 490 px à 1 280 px : elle séparerait le bouton
+        d'envoi de la section « Autrement » de plusieurs écrans. Repliée, elle
+        tient sur la ligne d'une pastille, celle du glossaire et des pages de
+        données. Le bouton d'envoi ne bouge pas, « Autrement » descend de 68 px
+        aux deux largeurs.
+
+        La classe du message sans JavaScript s'appelait `.repli`, comme la
+        pastille de tokens.css. Elle est renommée pour que les deux ne se
+        confondent pas sur la même page.
+      */}
+      <div class="rangee-replis trajet">
+        <Repli titre="Le trajet d'une suggestion">
+          <InfographieSuggestion />
+        </Repli>
+      </div>
     </section>
 
     <section class="autrement">
@@ -66,11 +91,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     margin-bottom: var(--space-12);
   }
 
-  .repli {
+  .sans-script {
     margin: 0;
     font-size: var(--step--1);
     color: var(--muted);
     max-width: 68ch;
+  }
+
+  /* La pastille se détache du formulaire. Ouverte, la figure prend la
+     largeur du formulaire. */
+  .trajet {
+    margin: var(--space-6) 0 0;
   }
 
   .autrement {

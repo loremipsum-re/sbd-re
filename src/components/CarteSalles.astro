@@ -177,6 +177,8 @@ const MARGE = 40;
 </div>
 
 <script>
+  import { marquerLienSortant } from '../lib/liens-sortants';
+
   interface SallePoint {
     nom: string;
     commune: string;
@@ -392,6 +394,8 @@ const MARGE = 40;
         a.href = s.site;
         a.rel = 'noopener nofollow';
         a.textContent = 'Site de la salle';
+        // Fabriqué ici, ce lien échappe au traitement de la génération.
+        marquerLienSortant(a);
         details.append(a);
       }
     }

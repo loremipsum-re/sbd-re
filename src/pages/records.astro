@@ -2,6 +2,9 @@
 import IconeMouvement from '../components/IconeMouvement.astro';
 import SpriteMouvements from '../components/SpriteMouvements.astro';
 import InteractiveTable from '../components/InteractiveTable.astro';
+import Repli from '../components/Repli.astro';
+import InfographieEquipement from '../components/infographies/InfographieEquipement.astro';
+import InfographieRecords from '../components/infographies/InfographieRecords.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import {
   EQUIPMENT_GROUPS,
@@ -138,6 +141,33 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
         équipé.
       </p>
     </header>
+
+    {/*
+      L'ÉQUIPEMENT EN IMAGES, REPLIÉ. Une pastille de 44 px entre le chapeau
+      et les commandes : le choix Raw ou Équipé se fait juste dessous, et qui
+      ignore ce qui les sépare l'apprend avant de choisir.
+
+      LES RECORDS DE L'ÎLE, REPLIÉS DANS LA MÊME RANGÉE. Les grilles donnent
+      le record de chaque catégorie. L'image donne la barre la plus lourde de
+      chaque mouvement, toutes catégories confondues, avec sa saison. Dépliée,
+      elle mesure 1 487 px à 375 px de large et repousserait les commandes de
+      près de deux écrans.
+
+      DEUX LIGNES SUR TÉLÉPHONE, mesuré à 375 px le 24 octobre 2026. Aucune
+      paire de libellés en « en images » ne tient sur une ligne, même
+      raccourcie en « Équipement en images » et « Records en images » : 182 et
+      160 px, plus l'écart de 8, pour 343 disponibles. La seconde pastille
+      ajoute donc 52 px au-dessus des commandes. À 1 280 px, les deux
+      partagent la ligne et la page ne bouge pas.
+    */}
+    <div class="rangee-replis">
+      <Repli titre="Raw, bandes et équipé en images">
+        <InfographieEquipement lienArticle="equipement" />
+      </Repli>
+      <Repli titre="Records de l'île en images">
+        <InfographieRecords lienArticle="records" />
+      </Repli>
+    </div>
 
     <InteractiveTable
       recherche="Nom d'athlète, catégorie…"
@@ -311,8 +341,9 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
 
     <p class="note">
       Le développé couché tient compte des compétitions dédiées à ce mouvement.
-      Squat, soulevé de terre et total viennent du full power, seul format où
-      ces barres se disputent. Un tiret signale une catégorie où aucune
+      Squat, soulevé de terre et total viennent du full power. Les résultats
+      de squat seul et de soulevé de terre seul figurent sans catégorie de
+      poids dans les données. Un tiret signale une catégorie où aucune
       performance n'a encore été enregistrée lors d'une compétition
       réunionnaise. Chaque{' '}
       <a href="/categories/">catégorie de poids</a> a aussi sa page, avec son

@@ -1,0 +1,117 @@
+---
+/**
+ * Le cadre commun des infographies.
+ *
+ * Toutes partagent ce cadre, pour qu'une infographie d'article et une
+ * infographie de page se reconnaissent d'un coup d'œil. Il suit le système
+ * Modernist : aplat de surface, filet de 2 px, aucune ombre. Le symbole des
+ * trois barres signe l'image comme une production du site.
+ *
+ * UN `<figure>` ET SA LÉGENDE. Le titre est la légende, et un lecteur d'écran
+ * annonce la figure par ce titre. Ce n'est pas un intertitre : posée dans un
+ * article, l'infographie ne doit pas s'insérer dans le plan de ses `h2`.
+ *
+ * LE TEXTE RESTE DU TEXTE. Les infographies sont écrites en HTML et en CSS,
+ * jamais en image. Elles suivent le thème, passent à la ligne sur téléphone,
+ * se lisent au lecteur d'écran et se traduisent. Une image SVG figée réduirait
+ * ses libellés à 7 px sur un écran de 375 px.
+ */
+import Logo from '../Logo.astro';
+import { INFOGRAPHIES, type FicheInfographie, type IdInfographie } from '../../lib/infographies';
+
+interface Props {
+  titre: string;
+  /** Provenance des chiffres, ou nature de l'exemple. */
+  source?: string;
+  /**
+   * L'infographie dont il s'agit, pour le lien vers l'article qui la
+   * développe. Absent dans l'article lui-même, où ce lien tournerait en rond.
+   */
+  lienArticle?: IdInfographie;
+}
+
+const { titre, source, lienArticle } = Astro.props;
+const fiche: FicheInfographie | undefined = lienArticle ? INFOGRAPHIES[lienArticle] : undefined;
+const article = fiche?.article;
+---
+
+<figure class="infographie">
+  <figcaption>
+    {/* Le surtitre est un repère visuel. Le titre seul nomme la figure. */}
+    <span class="surtitre" aria-hidden="true">
+      <Logo variante="icone" taille="1em" />
+      En images
+    </span>{' '}
+    {/* L'espace sépare le surtitre du titre dans le texte copié. */}
+    <span class="titre">{titre}</span>
+  </figcaption>
+
+  <slot />
+
+  {
+    (source || article) && (
+      <p class="pied">
+        {source}
+        {article && (
+          <>
+            {source && ' '}
+            <a href={`/actualites/${article}/`}>Lire l'article</a>
+          </>
+        )}
+      </p>
+    )
+  }
+</figure>
+
+<style>
+  .infographie {
+    margin: var(--space-8) 0;
+    padding: var(--space-6);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    /* Un élément de grille ou de flex vaut `min-width: auto` et déborderait
+       de sa colonne pour loger un enfant insécable. */
+    min-width: 0;
+  }
+
+  @media (max-width: 40rem) {
+    .infographie {
+      padding: var(--space-4);
+    }
+  }
+
+  figcaption {
+    display: grid;
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+  }
+
+  .surtitre {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: var(--space-2);
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .titre {
+    font-family: var(--font-display);
+    font-size: var(--step-2);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    color: var(--text);
+  }
+
+  .pied {
+    max-width: 68ch;
+    margin: var(--space-6) 0 0;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+</style>

@@ -3,6 +3,8 @@ import Coupe from '../../../components/Coupe.astro';
 import InteractiveTable from '../../../components/InteractiveTable.astro';
 import Glossaire from '../../../components/Glossaire.astro';
 import RankingTable from '../../../components/RankingTable.astro';
+import Repli from '../../../components/Repli.astro';
+import InfographieCategories from '../../../components/infographies/InfographieCategories.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { EQUIPMENT_GROUPS, LIFTS, type EquipmentGroup } from '../../../lib/categories';
 import {
@@ -152,7 +154,27 @@ const description =
     <section class="bloc">
       <h2>Classement de la catégorie</h2>
 
-      <Glossaire />
+      {/*
+        DEUX PASTILLES SUR UNE LIGNE, comme sur /classement/. Le vocabulaire,
+        puis la règle des catégories avec CELLE DE LA PAGE mise en avant.
+        Repliées, elles tiennent sur la ligne que le glossaire occupait déjà :
+        mesuré à 375 comme à 1 280 px, la liste ne bouge pas d'un pixel. Le
+        libellé est court pour cette raison, « Catégorie en images » passait à
+        la ligne sur téléphone. À 360 px, la seconde pastille passe dessous et
+        la liste descend de 52 px, comme sur /classement/ et /simulateur/. Une
+        catégorie qui n'est plus disputée y trouve la tranche qu'elle couvrait,
+        sous la règle actuelle.
+      */}
+      <div class="rangee-replis">
+        <Glossaire />
+        <Repli titre="Poids en images">
+          <InfographieCategories
+            sexe={cat.sex}
+            classe={cat.classe.id}
+            lienArticle="categories"
+          />
+        </Repli>
+      </div>
 
       <InteractiveTable
         recherche="Nom d'un athlète"

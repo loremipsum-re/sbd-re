@@ -3,6 +3,7 @@ titre: "Open de la Fournaise 2026, 16 athlètes à L'Étang-Salé"
 description: "Jean-Gérald Hoareau signe 474,2 points Dots pour un total de 700 kg en catégorie 83 kg."
 date: 2026-01-18
 competition: open-de-la-fournaise/2026-01-18
+infographie: competition
 athletes:
   - Jean-Gérald Hoareau
   - Benjamin Ragou

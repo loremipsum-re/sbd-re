@@ -1,0 +1,473 @@
+---
+/**
+ * Le consentement à la mesure d'audience, en une image.
+ *
+ * TROIS ÉTAPES, DANS L'ORDRE DU VISITEUR : avant toute réponse, la réponse,
+ * le changement d'avis. Chaque cas se lit à l'état de Microsoft Clarity,
+ * absent ou chargé. Un mot et une icône le disent, le filet plein ou en
+ * tirets le redit : la couleur ne porte rien.
+ *
+ * RIEN N'EST AFFIRMÉ QUI N'AIT ÉTÉ CONSTATÉ. Le parcours suit le code de
+ * BanniereConsentement.astro, le script de tête de BaseLayout.astro et le bloc
+ * de choix de confidentialite.astro. Chaque phrase a été éprouvée dans le
+ * navigateur sur le site généré, le 24 octobre 2026, les requêtes vers
+ * clarity.ms interceptées et annulées pour ne rien envoyer au projet réel :
+ *
+ * - sans réponse, 18 pages ouvertes à la suite n'ont contacté que le site
+ *   lui-même, sans un cookie ;
+ * - la bannière se tient en bas de l'écran, et ses deux boutons ont la même
+ *   taille, à 375 px comme à 1 280 px de large ;
+ * - « Refuser » écrit « non », ferme la bannière, et aucune page suivante ne
+ *   demande clarity.ms ;
+ * - « Accepter » écrit « oui » et demande aussitôt www.clarity.ms/tag/, sans
+ *   rechargement ; chaque page suivante le demande dès son ouverture ;
+ * - « Refuser la mesure » après un accord recharge la page, qui ne demande
+ *   plus rien ; « Accepter la mesure » charge sans recharger ;
+ * - le stockage local effacé, la bannière revient.
+ *
+ * Un cas constaté reste hors de la figure, pour la garder courte : quand le
+ * navigateur bloque le stockage local, la bannière revient à chaque page, et
+ * un accord ne vaut que pour la page ouverte.
+ *
+ * LES COOKIES DE MICROSOFT NE SONT PAS CITÉS ICI. Les requêtes étant annulées,
+ * leur dépôt n'a pas pu être constaté. La page les nomme, dans « Ce qui est
+ * alors collecté ».
+ *
+ * LES DEUX RÉPONSES ONT LE MÊME POIDS, comme dans la bannière : même carte,
+ * dans l'ordre de ses boutons, Refuser puis Accepter. La troisième étape suit
+ * l'ordre des boutons de la page, Accepter puis Refuser.
+ *
+ * LA FIGURE SE POSE JUSTE SOUS LE BLOC DE CHOIX de confidentialite.astro, et
+ * sa troisième étape le désigne « juste au-dessus ». Placée avant, elle
+ * repoussait les deux boutons de retrait de 1 521 px à 375 px de large.
+ *
+ * L'APERÇU DE LA BANNIÈRE reprend son titre et ses deux boutons, en gris pour
+ * ne pas imiter les vrais boutons voisins. Il est décoratif et masqué aux
+ * lecteurs d'écran, la phrase voisine disant la même chose. Il doit suivre
+ * BanniereConsentement.astro si celle-ci change.
+ *
+ * AUCUN CHIFFRE N'EST AFFICHÉ, hors des numéros d'étape : le consentement
+ * n'a pas de donnée à compter.
+ */
+import Icone from '../Icone.astro';
+import Infographie from './Infographie.astro';
+
+interface Props {
+  // Aucune propriété : l'infographie ne sert qu'à la page de confidentialité.
+}
+---
+
+<Infographie titre="Clarity se charge après votre accord">
+  <ol class="etapes">
+    <li class="etape">
+      <p class="intitule">
+        <span class="rang" aria-hidden="true">1</span>
+        Avant votre réponse
+      </p>
+
+      <div class="avant">
+        <div class="constat">
+          <p>
+            La bannière «&nbsp;Améliorer le site&nbsp;» s'affiche en bas de
+            l'écran. Ses deux boutons ont la même taille.
+          </p>
+          <p class="etat" data-etat="absent">
+            <Icone nom="manque" taille={16} />
+            Clarity absent
+          </p>
+          <p class="detail">
+            Chaque page se charge uniquement depuis sbd.re. Aucun cookie n'est
+            déposé.
+          </p>
+        </div>
+
+        {/* L'écran en miniature : quelques lignes de page et la bannière posée
+            en bas, à droite comme sur grand écran. Rien n'y est cliquable. */}
+        <div class="ecran" aria-hidden="true">
+          <span class="factice">
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
+          <span class="mini-banniere">
+            <span class="mini-titre">Améliorer le site</span>
+            <span class="mini-boutons">
+              <span>Refuser</span>
+              <span>Accepter</span>
+            </span>
+          </span>
+        </div>
+      </div>
+    </li>
+
+    <li class="etape">
+      <span class="liaison" aria-hidden="true"></span>
+      <p class="intitule">
+        <span class="rang" aria-hidden="true">2</span>
+        Votre réponse
+      </p>
+
+      <ul class="reponses">
+        <li class="reponse">
+          <p class="bouton">«&nbsp;Refuser&nbsp;»</p>
+          <p class="effet">Le navigateur garde la réponse «&nbsp;non&nbsp;».</p>
+          <p class="etat" data-etat="absent">
+            <Icone nom="manque" taille={16} />
+            Clarity absent
+          </p>
+          <p class="detail">Aucune requête ne part vers www.clarity.ms.</p>
+        </li>
+
+        <li class="reponse">
+          <p class="bouton">«&nbsp;Accepter&nbsp;»</p>
+          <p class="effet">Le navigateur garde la réponse «&nbsp;oui&nbsp;».</p>
+          <p class="etat" data-etat="charge">
+            <Icone nom="valide" taille={16} />
+            Clarity chargé
+          </p>
+          <p class="detail">
+            <code>window.sbdChargerMesure()</code> télécharge le script de
+            Clarity depuis www.clarity.ms, sans recharger la page.
+          </p>
+        </li>
+      </ul>
+
+      <p class="suite">
+        Dans les deux cas, la bannière se ferme. La réponse s'applique ensuite
+        à chaque page, dès son ouverture.
+      </p>
+    </li>
+
+    <li class="etape">
+      <span class="liaison" aria-hidden="true"></span>
+      <p class="intitule">
+        <span class="rang" aria-hidden="true">3</span>
+        Changer d'avis
+      </p>
+
+      <p>Les deux boutons juste au-dessus de cette image remplacent votre réponse.</p>
+
+      <ul class="bascules">
+        <li class="bascule">
+          <p class="bouton">«&nbsp;Accepter la mesure&nbsp;»</p>
+          <p class="etat" data-etat="charge">
+            <Icone nom="valide" taille={16} />
+            Clarity chargé
+          </p>
+          <p class="detail">Le chargement se fait aussitôt, sur la page ouverte.</p>
+        </li>
+
+        <li class="bascule">
+          <p class="bouton">«&nbsp;Refuser la mesure&nbsp;»</p>
+          <p class="etat" data-etat="absent">
+            <Icone nom="manque" taille={16} />
+            Clarity absent
+          </p>
+          <p class="detail">Si Clarity était chargé, la page se recharge sans lui.</p>
+        </li>
+      </ul>
+
+      <p class="detail">
+        Effacer les données de sbd.re dans votre navigateur fait revenir la
+        bannière.
+      </p>
+    </li>
+  </ol>
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  .etapes {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .etape {
+    display: grid;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+
+  /* LE NUMÉRO D'ÉTAPE, en carré d'aplat, comme dans l'infographie de la
+     provenance des données. La liste ordonnée l'annonce déjà : le chiffre est
+     caché aux lecteurs d'écran. */
+  .intitule {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 800;
+  }
+
+  .rang {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--radius);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+    font-size: var(--step-0);
+  }
+
+  /* LA LIAISON entre deux étapes : un filet vertical terminé par une pointe,
+     sous le carré de l'étape précédente. Le gris mêlé au fond passe les 3:1
+     d'un élément graphique dans les deux thèmes. */
+  .liaison {
+    --trait: color-mix(in srgb, var(--muted) 75%, var(--surface));
+    position: relative;
+    display: block;
+    width: 0.75rem;
+    height: var(--space-6);
+    margin: var(--space-3) 0 0 calc(1rem - 0.375rem);
+  }
+  .liaison::before {
+    content: '';
+    position: absolute;
+    left: calc(50% - 1px);
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--trait);
+  }
+  .liaison::after {
+    content: '';
+    position: absolute;
+    left: calc(50% - 0.25rem);
+    bottom: 2px;
+    width: 0.5rem;
+    height: 0.5rem;
+    box-sizing: border-box;
+    border-right: 2px solid var(--trait);
+    border-bottom: 2px solid var(--trait);
+    transform: rotate(45deg);
+  }
+
+  /* L'ÉTAT DE CLARITY. Plein quand il est chargé, en tirets quand il est
+     absent : la forme double le mot, la couleur reste la même. */
+  .etat {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: fit-content;
+    max-width: 100%;
+    padding: var(--space-1) var(--space-3);
+    border: 2px solid var(--text);
+    border-radius: var(--radius);
+    font-size: var(--step--1);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .etat[data-etat='absent'] {
+    border-style: dashed;
+    border-color: var(--muted);
+  }
+
+  .detail {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.95em;
+    color: var(--text);
+    /* Le nom de la fonction est d'un seul tenant : il passe à la ligne
+       plutôt que de sortir de sa carte sur un écran étroit. */
+    overflow-wrap: anywhere;
+  }
+
+  /* ÉTAPE 1. Le constat et l'écran côte à côte dès qu'il y a la place. */
+  .avant {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+    gap: var(--space-4);
+    align-items: center;
+  }
+
+  .constat {
+    display: grid;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+
+  .ecran {
+    position: relative;
+    min-width: 0;
+    min-height: 8.5rem;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    cursor: default;
+    user-select: none;
+  }
+
+  /* Sous le texte, sur téléphone, l'écran n'a plus de voisin à égaler : il
+     reprend la hauteur juste utile à la bannière et à deux lignes de page. */
+  @media (max-width: 40rem) {
+    .ecran {
+      min-height: 7.5rem;
+    }
+  }
+
+  /* Les lignes de la page, en gris mêlé au fond : elles situent la bannière
+     sans rien dire. */
+  .factice {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-3);
+  }
+  .factice span {
+    display: block;
+    height: 0.5rem;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--muted) 35%, var(--bg));
+  }
+  .factice span:nth-child(1) {
+    width: 45%;
+    height: 0.75rem;
+  }
+  .factice span:nth-child(2) {
+    width: 85%;
+  }
+  .factice span:nth-child(3) {
+    width: 70%;
+  }
+
+  .mini-banniere {
+    position: absolute;
+    right: var(--space-2);
+    bottom: var(--space-2);
+    display: grid;
+    gap: var(--space-2);
+    width: min(15rem, calc(100% - 2 * var(--space-2)));
+    padding: var(--space-2) var(--space-3);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  .mini-titre {
+    font-family: var(--font-display);
+    font-size: var(--step--1);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  /* Deux boutons de même largeur, comme dans la vraie bannière.
+     EN GRIS, et non à l'accent de la vraie bannière. Les boutons du bloc de
+     choix, posés juste au-dessus de la figure, ont cette apparence : une copie
+     à l'identique, inerte, se prendrait pour un contrôle et laisserait croire
+     à un refus ou à un accord enregistré. */
+  .mini-boutons {
+    display: flex;
+    gap: var(--space-2);
+  }
+  .mini-boutons span {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0.125rem var(--space-2);
+    border: 1px solid var(--muted);
+    border-radius: calc(var(--radius) / 2);
+    background: var(--bg);
+    color: var(--muted);
+    font-size: var(--step--1);
+    font-weight: 700;
+    text-align: center;
+  }
+
+  /* ÉTAPE 2. Les deux réponses, empilées sur téléphone, côte à côte dès que
+     les cartes tiennent. */
+  .reponses {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .reponse {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+
+  /* Côte à côte, les deux cartes partagent leurs rangées par `subgrid` : le
+     détail de l'accord tient sur trois lignes, celui du refus sur une, et
+     les états tombent quand même à la même hauteur. Sans `subgrid`, les
+     cartes retombent sur leur colonne flexible. */
+  @media (min-width: 40rem) {
+    .reponses {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .reponses > .reponse {
+      display: grid;
+      grid-template-rows: subgrid;
+      grid-row: span 4;
+      align-content: start;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .reponse {
+      padding: var(--space-3);
+    }
+  }
+
+  .bouton {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 800;
+    line-height: 1.15;
+  }
+
+  .suite {
+    padding-left: var(--space-3);
+    border-left: 2px solid var(--accent);
+    color: var(--muted);
+  }
+
+  /* ÉTAPE 3. Deux rangées, le bouton à gauche et son effet à droite sur
+     grand écran, l'un sous l'autre sur téléphone. */
+  .bascules {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--border);
+  }
+
+  .bascule {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .bascule .bouton {
+    font-size: var(--step-0);
+  }
+
+  @media (min-width: 40rem) {
+    .bascule {
+      grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
+      column-gap: var(--space-4);
+      align-items: center;
+    }
+    .bascule .bouton {
+      grid-row: span 2;
+    }
+  }
+</style>

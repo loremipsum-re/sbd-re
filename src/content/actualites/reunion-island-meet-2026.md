@@ -3,6 +3,7 @@ titre: "Reunion Island Meet 2026, 86 athlètes et cinq records"
 description: "Le plateau le plus fourni depuis 2017 s'est tenu le 18 juillet à Saint-Joseph."
 date: 2026-07-18
 competition: reunion-island-meet/2026-07-18
+infographie: competition
 athletes:
   - Gabriel Begue
   - Philippe René
