@@ -598,7 +598,8 @@ const interactif = recherche !== undefined || aFiltres;
     background: var(--bg);
     color: var(--text);
     font: inherit;
-    font-size: var(--step--1);
+    /* Jamais sous 16 px, sans quoi Safari zoome au toucher : voir tokens.css. */
+    font-size: var(--police-champ);
   }
 
   .outils :global(select:hover) {
@@ -611,14 +612,21 @@ const interactif = recherche !== undefined || aFiltres;
     color: var(--muted);
   }
 
+  /* `width: 100%` : sans largeur, le champ prend celle de vingt caractères,
+     qui grandit avec la police et dépassait sa colonne sur téléphone. */
   input {
+    width: 100%;
+    min-width: 0;
     padding: var(--space-2) var(--space-3);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     background: var(--bg);
     color: var(--text);
     font: inherit;
-    font-size: var(--step--1);
+    font-size: var(--police-champ);
+    /* L'interligne du texte courant, 1,6, portait le champ à 46 px sur grand
+       écran une fois la police à 17 px : il ne s'aligne plus sur les menus. */
+    line-height: 1.25;
   }
 
   .compteur {

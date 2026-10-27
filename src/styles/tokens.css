@@ -238,6 +238,24 @@
   --step-4: clamp(2.07rem, 1.76rem + 1.56vw, 3.44rem);
 
   /*
+   * LA POLICE D'UN CHAMP DE SAISIE, JAMAIS SOUS 16 PX.
+   *
+   * Safari sur iPhone agrandit toute la page dès qu'on touche un champ dont la
+   * police fait moins de 16 px, et la laisse agrandie une fois la saisie
+   * finie. Mesuré le 27 octobre 2026 à 375 px de large : les champs des listes
+   * et du simulateur valaient 13,36 px, ceux des formulaires 16,11 px.
+   *
+   * Le jeton reprend la taille du texte courant, et `max()` garde le plancher
+   * même si --step-0 venait à baisser. Le seuil d'Apple s'exprime en pixels
+   * CSS, d'où l'unité, comme pour le plancher des boutons de tri.
+   *
+   * Ne jamais régler le problème par `maximum-scale` ou `user-scalable=no`
+   * dans la balise viewport : ils suppriment aussi le zoom que le visiteur
+   * demande lui-même, ce que le critère WCAG 1.4.4 interdit.
+   */
+  --police-champ: max(16px, var(--step-0));
+
+  /*
    * ESPACEMENTS — grille de 4 points, pas de 8 points préféré.
    *
    * Vérifié à l'audit du 2 août 2026 : sept jetons sur huit sont déjà des
@@ -533,6 +551,21 @@ summary,
 [role='button'],
 input:not([type='checkbox']):not([type='radio']) {
   min-height: var(--cible-min);
+}
+
+/*
+ * LES CHAMPS DE SAISIE ÉCRIVENT À LA TAILLE DU JETON --police-champ.
+ *
+ * La règle vise tous les champs du site, présents et à venir. Elle a une
+ * limite : un style de composant passe devant elle, et `font: inherit`
+ * ramène la taille à celle du parent. Un composant qui redéclare `font` écrit
+ * donc `font-size: var(--police-champ)` juste après, jamais une autre taille.
+ */
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: var(--police-champ);
 }
 
 /*
