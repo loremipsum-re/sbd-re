@@ -392,6 +392,18 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
 
       Ces quelques lignes n'ajoutent RIEN d'indispensable : sans JavaScript,
       le menu s'ouvre et se referme toujours par son propre bouton.
+
+      LE FOCUS QUI QUITTE LE MENU LE REFERME. Après la dernière rubrique, la
+      tabulation passait au contenu de la page, caché sous le panneau et son
+      voile : mesuré à 375 comme à 1 280 px, le lien suivant recevait le focus
+      sans qu'aucun pixel n'en soit visible (critère 2.4.11 des WCAG 2.2). Le
+      focus poursuit sa route, il n'est pas ramené au bouton. Sans élément de
+      destination, rien ne se ferme : un clic dans le vide du panneau, ou sur
+      une commande que Safari ne focalise pas, laisse le focus nulle part, et
+      le clic à côté a son propre traitement.
+
+      Cette note vit ici et non dans le script : un script `is:inline` part
+      tel quel, commentaires compris, dans chacune des pages du site.
     */}
     <script is:inline>
       (() => {
@@ -422,6 +434,12 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
           const cible = evenement.target;
           if (cible.closest('.panneau') || cible.closest('summary')) return;
           fermer();
+        });
+
+        // Le focus qui sort du menu le referme : voir la note avant ce script.
+        menu.addEventListener('focusout', (evenement) => {
+          const suivant = evenement.relatedTarget;
+          if (menu.open && suivant && !menu.contains(suivant)) menu.open = false;
         });
       })();
 
