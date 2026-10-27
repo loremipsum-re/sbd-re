@@ -267,8 +267,9 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
           pour plusieurs rubriques.
 
           Mesuré sur un écran de 375 × 812 : le panneau passe de 1 417 px à
-          797 px. Il montrait 6 rubriques sur 14 sans défiler, il en montre 12
-          sur 13. Les mises à jour et les pages légales vivent au pied de page.
+          492 px. Il montrait 6 rubriques sur 14 sans défiler, il montre
+          désormais ses 13 rubriques. Les mises à jour et les pages légales
+          vivent au pied de page.
         */}
         <details class="menu">
           <summary aria-label="Ouvrir le menu">
@@ -317,7 +318,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
               <div class="familles">
                 {
                   groupesMenu.map((groupe) => (
-                    <div class="famille">
+                    <div class:list={['famille', `famille-${groupe.id}`]}>
                       <p class="titre-famille" id={`menu-${groupe.id}`}>
                         {groupe.titre}
                       </p>
@@ -620,6 +621,18 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     max-height: calc(100vh - 100%);
     max-height: calc(100dvh - 100%);
     overflow-y: auto;
+    /*
+     * LE RETRAIT DES RUBRIQUES, partagé par les titres de famille et par
+     * l'intitulé « Apparence », qui s'alignent sur les icônes. 8 px au
+     * téléphone, où chaque pixel de colonne compte, 12 px dès 48rem.
+     */
+    --retrait: var(--space-2);
+  }
+
+  @media (min-width: 48rem) {
+    .panneau {
+      --retrait: var(--space-3);
+    }
   }
 
   /*
@@ -637,36 +650,79 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     border-bottom: 1px solid var(--border);
   }
 
-  /* Sur l'axe des icônes et des titres de famille, qui portent le même
-     retrait de 12 px. */
+  /* Sur l'axe des icônes : le retrait des rubriques, plus leur filet
+     transparent d'un pixel. */
   .intitule-reglage {
-    padding-left: var(--space-3);
+    padding-left: calc(var(--retrait) + 1px);
     font-family: var(--font-display);
     font-weight: 700;
     font-size: var(--step-0);
   }
 
   /*
-   * LES TROIS FAMILLES, empilées sur téléphone, côte à côte dès qu'elles
-   * tiennent.
+   * LES TROIS FAMILLES : deux colonnes au téléphone, trois dès 48rem.
    *
-   * La rubrique la plus large est « Communauté » suivie de son étiquette :
-   * 240 px avec l'icône et les retraits, mesuré à 768 px. Plus étroite, sa
-   * ligne se replie, l'étiquette passe dessous et l'icône flotte entre les
-   * deux lignes. D'où 15,5rem par famille tant que la grille choisit seule
-   * ses colonnes, puis trois colonnes dès 48rem, la famille « Le site » un
-   * quart plus large que les deux autres : 258 px à 768 px de large.
+   * Au téléphone, Classements et Outils s'empilent à gauche, Le site occupe
+   * la droite. Empilées sur une seule colonne, les familles mesuraient 797 px,
+   * et le panneau défilait : de 59 px sur un écran de 375 × 812, de 231 px
+   * sur un écran de 360 × 640, Communauté restant hors de vue. Sur deux
+   * colonnes, le panneau mesure 492 px et tient entier sur ces écrans.
+   *
+   * Le prix : deux libellés passent sur deux lignes, « Proposer une idée » et
+   * « Communauté » avec son étiquette. Ils restent lisibles, voir l'alignement
+   * de l'icône plus bas. Les deux colonnes ne s'écartent que de 8 px : chaque
+   * rubrique porte déjà son propre retrait, de part et d'autre.
+   *
+   * DEUX COLONNES DÈS 22,5rem, soit 360 px, et une seule en dessous. Les mots
+   * les plus longs, « Communauté » et « Compétitions », mesurent 104 px et
+   * ne se coupent pas. Avec l'icône, ses 8 px d'écart, le retrait et le
+   * filet, une rubrique demande 150 px, que la colonne offre dès 340 px de
+   * largeur utile. À 320 px, elle n'en offre que 140, et le mot sortirait de
+   * sa colonne. La bascule en rem suit la taille de texte choisie dans le
+   * navigateur, qui agrandit aussi les mots.
+   *
+   * Dès 48rem, trois colonnes, la famille « Le site » un quart plus large que
+   * les deux autres : « Communauté » et son étiquette y tiennent sur une ligne,
+   * 258 px de colonne pour 240 px de rubrique, mesuré à 768 px de large.
+   *
+   * Les zones portent l'identifiant des familles de lib/navigation.
    */
   .familles {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(15.5rem, 100%), 1fr));
-    gap: var(--space-4) var(--space-8);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'classements'
+      'outils'
+      'site';
+    align-items: start;
+    gap: var(--space-4) var(--space-2);
+  }
+
+  @media (min-width: 22.5rem) {
+    .familles {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-areas:
+        'classements site'
+        'outils site';
+    }
   }
 
   @media (min-width: 48rem) {
     .familles {
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr);
+      grid-template-areas: 'classements outils site';
+      column-gap: var(--space-8);
     }
+  }
+
+  .famille-classements {
+    grid-area: classements;
+  }
+  .famille-outils {
+    grid-area: outils;
+  }
+  .famille-site {
+    grid-area: site;
   }
 
   .famille {
@@ -681,7 +737,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
    */
   .titre-famille {
     margin: 0 0 var(--space-1);
-    padding-inline: var(--space-3);
+    padding-inline: calc(var(--retrait) + 1px);
     font-size: var(--step--1);
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -698,20 +754,38 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
   }
 
   /*
-   * Une rubrique tient sur une ligne : l'icône et le libellé se centrent
-   * l'un sur l'autre. Le rayon ordinaire du site, le panneau n'ayant pas
-   * d'angles arrondis dans lesquels ces liens seraient emboîtés.
+   * L'ICÔNE SUR LA PREMIÈRE LIGNE DU LIBELLÉ, et non au milieu du bloc.
+   * Centrée, elle flottait entre les deux lignes d'un libellé replié, au lieu
+   * de marquer le début de la rubrique.
+   *
+   * D'où `flex-start`, et un rembourrage vertical calculé pour qu'une ligne
+   * seule, filets compris, fasse exactement 44 px : (44 px − 2 px − une
+   * ligne) / 2, soit 8 px à 375 px de large. Une rubrique d'une ligne reste
+   * donc centrée dans sa cible. La ligne vaut 1,6 em, écrit ici pour que le
+   * calcul ne dépende pas d'un héritage. `max()` garde 4 px au moins quand le
+   * visiteur agrandit le texte. L'icône descend de la moitié de l'écart entre
+   * la ligne et ses 20 px.
+   *
+   * 8 px entre l'icône et le libellé, comme dans la barre et au pied de page.
+   *
+   * Le rayon ordinaire du site, le panneau n'ayant pas d'angles arrondis dans
+   * lesquels ces liens seraient emboîtés.
    */
   .famille a {
     display: flex;
-    align-items: center;
-    gap: var(--space-3);
+    align-items: flex-start;
+    gap: var(--space-2);
     min-height: var(--cible-min);
-    padding: var(--space-2) var(--space-3);
+    padding: max(var(--space-1), calc((var(--cible-min) - 2px - 1.6em) / 2)) var(--retrait);
     border: 1px solid transparent;
     border-radius: var(--radius);
     color: var(--muted);
     font-size: var(--step-0);
+    line-height: 1.6;
+  }
+
+  .famille a > :global(.icone) {
+    margin-top: calc((1.6em - 20px) / 2);
   }
 
   /* La bordure existe déjà, transparente : sans elle, le survol décalerait le

@@ -54,6 +54,10 @@ export type NomIcone =
  *
  * Le menu et le pied de page lisent cette même liste. Un titre changé ici
  * change aux deux endroits.
+ *
+ * LES IDENTIFIANTS NOMMENT AUSSI DES ZONES DE GRILLE, dans BaseLayout : au
+ * téléphone, Classements et Outils s'empilent à gauche et Le site occupe la
+ * droite. Une famille ajoutée ou renommée demande d'y écrire sa zone.
  */
 export const FAMILLES = [
   { id: 'classements', titre: 'Classements' },
