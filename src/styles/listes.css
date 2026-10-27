@@ -265,6 +265,42 @@
   }
 }
 
+/*
+ * ENTRE 60 ET 80rem, LE REMBOURRAGE SE RESSERRE ENCORE. Le tableau y apparaît
+ * avec à peine la place de ses colonnes, et le cadre, en `overflow: hidden`,
+ * coupait sans bruit ce qui dépassait. Mesuré le 27 octobre 2026 à 960 px
+ * sur les 514 pages : 366 listes coupées, jusqu'à 126 px de l'historique
+ * d'une fiche, soit la colonne « Place » entière, et 43 px de /exterieur/.
+ * Avec 8 px de chaque côté, et 16 aux deux bords, il en reste 17, coupées de
+ * 4 à 8 px dans le rembourrage de la dernière colonne, sans toucher au
+ * texte. À 1 280 px rien ne change.
+ *
+ * Les icônes d'en-tête se retirent dans cette plage : à 960 px, celle du
+ * soulevé de terre touchait la flèche de tri de la colonne voisine. Le
+ * libellé dit déjà le mouvement, l'icône le doublait.
+ */
+@media (min-width: 60rem) and (max-width: 79.999rem) {
+  .liste thead th,
+  .liste:not(.liste-perfs) tbody td,
+  .liste:not(.liste-perfs) tbody th {
+    padding-inline: var(--space-2);
+  }
+
+  .liste thead th svg {
+    display: none;
+  }
+
+  .liste thead th:first-child,
+  .liste:not(.liste-perfs) tbody tr > :first-child {
+    padding-left: var(--space-4);
+  }
+
+  .liste thead th:last-child,
+  .liste:not(.liste-perfs) tbody tr > :last-child {
+    padding-right: var(--space-4);
+  }
+}
+
 /* =============================================================================
  * VARIANTE « PERFORMANCES » : `.liste.liste-perfs`
  *

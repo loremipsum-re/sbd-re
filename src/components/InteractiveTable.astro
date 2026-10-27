@@ -723,6 +723,19 @@ const repliable = aFiltres && replier !== undefined;
     justify-content: flex-end;
   }
 
+  /*
+   * LE LIBELLÉ NE SE TASSE JAMAIS SOUS LA FLÈCHE. Dans un tableau serré, la
+   * colonne reçoit moins que la largeur de son en-tête : le libellé, élément
+   * souple, rétrécissait et la flèche se posait sur ses dernières lettres.
+   * Mesuré le 27 octobre 2026 sur l'historique d'une fiche à 1 280 px :
+   * « Squat » 75 px de contenu dans 59, « DC » 45 dans 34, « SDT » 53 dans 37.
+   * Il garde désormais sa largeur, et l'ensemble prend sur le rembourrage de
+   * la cellule, qui compte 16 px de chaque côté.
+   */
+  :global(.bouton-tri > span:first-child) {
+    flex-shrink: 0;
+  }
+
   :global(.bouton-tri:hover) {
     color: var(--accent);
   }
