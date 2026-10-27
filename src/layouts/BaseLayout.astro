@@ -483,7 +483,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
   }
 
   /* ----------------------------------------------------------------------
-   * Navigation : trois entrées sur grand écran, un menu sur téléphone.
+   * Navigation : trois entrées et le menu dès 48rem, le menu seul en dessous.
    *
    * Les deux existent dans le HTML et c'est le CSS qui choisit. Basculer en
    * JavaScript imposerait d'attendre son exécution, avec un scintillement à
@@ -494,9 +494,9 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     /*
      * Pousse le bouton de menu contre le bord droit.
      *
-     * Sur grand écran c'est la navigation, en `flex: 1`, qui occupe l'espace
-     * disponible. Elle disparaît sur téléphone, et sans cette marge
-     * automatique le bouton se tasserait à gauche contre le logo.
+     * Dès 48rem c'est la navigation, en `flex: 1`, qui occupe l'espace
+     * disponible. Elle disparaît en dessous, et sans cette marge automatique
+     * le bouton se tasserait à gauche contre le logo.
      *
      * VOLONTAIREMENT SANS `position: relative` : le panneau se cale alors sur
      * l'en-tête, qui est collante et fait donc bloc de référence, et peut
@@ -723,10 +723,17 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     color: var(--text);
   }
 
-  /* Sous 52rem, les onglets cèdent la place au seul bouton de menu. Au-dessus,
-     les deux cohabitent : les trois rubriques de la barre en accès direct, et
-     le menu pour l'ensemble. */
-  @media (max-width: 51.99rem) {
+  /*
+   * Sous 48rem, les onglets cèdent la place au seul bouton de menu. Au-dessus,
+   * les deux cohabitent : les trois rubriques de la barre en accès direct, et
+   * le menu pour l'ensemble.
+   *
+   * 48rem et non plus 52rem. Mesuré à 768 px, logo, onglets et bouton
+   * demandent 668 px pour 736 px de largeur utile. Les anciens libellés,
+   * « Classement officiel », « Communauté » et « Comparer », en demandaient
+   * 754 : ils ne pouvaient pas descendre jusque-là.
+   */
+  @media (max-width: 47.99rem) {
     .nav-large {
       display: none;
     }
@@ -802,9 +809,9 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
   }
 
   /*
-   * Les onglets s'affichent dès 52rem, soit 832 px : un iPad en paysage y est,
-   * et c'est un écran tactile. Ils relèvent donc bien de la règle des 44 px,
-   * qu'ils manquaient de 5 px.
+   * Les onglets s'affichent dès 48rem, soit 768 px : une tablette en portrait
+   * y est, et c'est un écran tactile. Ils relèvent donc bien de la règle des
+   * 44 px.
    *
    * Le passage en `flex` sert uniquement à recentrer le libellé une fois la
    * hauteur imposée ; sans lui il collerait en haut de l'onglet.
