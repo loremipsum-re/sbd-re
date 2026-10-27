@@ -868,8 +868,17 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     padding-block: var(--space-3);
   }
 
+  /*
+   * Le logo est un lien vers l'accueil : il relève de la règle des 44 px. Il
+   * mesurait 26 px de haut à 375 px de large, 31 à 1 280, le dessin seul
+   * faisant la cible. La boîte du lien grandit autour de lui, le dessin
+   * garde sa taille et sa place, centré comme avant dans la barre. La barre
+   * ne grandit pas : le bouton Menu y mesure déjà 46 px.
+   */
   .marque {
     display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
     font-size: var(--step-1);
     color: var(--text);
     flex-shrink: 0;
