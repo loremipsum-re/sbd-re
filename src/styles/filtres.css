@@ -73,16 +73,28 @@
 
 /* ---------- 1. La recherche ----------
  * En flex et non en grille : quand le bouton « Filtres » disparaît, sur grand
- * écran, aucun écart fantôme ne reste au bout du champ. */
+ * écran, aucun écart fantôme ne reste au bout du champ.
+ *
+ * LE CHAMP GARDE 9rem AU MOINS, et le bouton passe dessous plutôt que de le
+ * réduire. Mesuré le 27 octobre 2026 à 320 px de large : à côté de
+ * « Filtres 1 », le champ tombait à 108 px et coupait son invite, « Nom d'un
+ * athl ». Le bouton reste calé à droite, sur la rangée suivante, comme
+ * « Réinitialiser » plus bas : les commandes de la barre tiennent le bord
+ * droit, le texte le bord gauche. Dès 375 px, tout tient sur une rangée. */
 
 .barre-filtres .rangee-recherche {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: var(--space-3);
 }
 
 .barre-filtres .rangee-recherche > .champ {
-  flex: 1 1 auto;
+  flex: 1 1 9rem;
+}
+
+.barre-filtres .rangee-recherche > button {
+  margin-left: auto;
 }
 
 /* ---------- Un champ : le libellé au-dessus, la commande dessous ---------- */
@@ -171,48 +183,42 @@
  * l'autre. `auto-fit` partage toute la largeur entre les filtres présents :
  * cinq menus font cinq colonnes égales sur grand écran, trois en font trois.
  *
- * 8,5rem de largeur minimale, mesurée : deux colonnes de 146 px sur un
+ * 8,5rem de largeur minimale, mesurée : deux colonnes de 146,5 px sur un
  * téléphone de 375 px, et tous les filtres d'une page sur une rangée dès
- * 1 280 px. `min()` laisse la colonne rétrécir sous 8,5rem plutôt que de
- * déborder sur un écran plus étroit encore.
+ * 1 024 px, donc symétriques sur grand écran. À 768 px, cinq menus font une
+ * rangée de quatre et une de un. `min()` laisse la colonne rétrécir sous
+ * 8,5rem plutôt que de déborder sur un écran plus étroit encore.
+ *
+ * 13,5rem dès qu'une bascule est dans la grille : ses trois segments y
+ * tiennent, et le menu voisin prend la même largeur qu'elles. Sur un
+ * téléphone, les trois filtres de /records/ passent ainsi en pleine largeur
+ * tous les trois, au lieu de deux bascules pleines au-dessus d'un menu de
+ * 146 px. À 768 px, ils tiennent sur une rangée de trois colonnes égales :
+ * à 15rem, la troisième passait seule dessous.
  */
 .barre-filtres .grille-champs {
+  --largeur-filtre: 8.5rem;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(8.5rem, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--largeur-filtre), 100%), 1fr));
   align-items: end;
   gap: var(--space-3) var(--space-4);
+}
+
+.barre-filtres .grille-champs:has(> .bascule) {
+  --largeur-filtre: 13.5rem;
 }
 
 /* ---------- Les bascules ----------
  * Trois choix côte à côte, d'un seul geste : Tous, Hommes, Femmes. Une seule
  * commande de 44 px, au filet et au rayon des menus, dont les segments se
- * partagent la largeur à parts égales.
- *
- * Toute la rangée sur téléphone : trois segments de 103 px y tiennent, quand
- * une colonne de 146 px les écraserait. Deux colonnes entre 40 et 60rem, une
- * seule au-delà, où la grille de /records/ donne trois colonnes de 341 px.
+ * partagent la largeur à parts égales. Leur colonne vaut 13,5rem au moins :
+ * voir la grille plus haut.
  *
  * Les boutons radio restent dans la page, invisibles mais focalisables : le
  * clavier les parcourt aux flèches, et le contour de focus se pose sur le
  * segment. Le segment choisi prend l'aplat d'accent, comme la catégorie
  * active du simulateur : texte sur aplat, 10,66:1 en clair et 11,05:1 en
  * sombre. L'ancienne teinte à 12 % ne donnait que 4,22:1 en thème clair. */
-
-.barre-filtres .bascule {
-  grid-column: 1 / -1;
-}
-
-@media (min-width: 40rem) {
-  .barre-filtres .bascule {
-    grid-column: span 2;
-  }
-}
-
-@media (min-width: 60rem) {
-  .barre-filtres .bascule {
-    grid-column: auto;
-  }
-}
 
 .barre-filtres .segments {
   display: flex;
