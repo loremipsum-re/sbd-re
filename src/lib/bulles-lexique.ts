@@ -27,7 +27,8 @@
  *   4. LA FERMER PAR ÉCHAP, sans déplacer le pointeur ni le focus, comme le
  *      demande le critère 1.4.13 des WCAG 2.2 pour tout contenu qui apparaît
  *      au survol ou au focus. Elle revient quand le pointeur ou le focus
- *      quitte le mot puis y revient.
+ *      quitte le mot puis y revient, ou quand le pointeur, parti avant Échap,
+ *      revient sur le mot.
  *
  * Trois états, en attributs sur le terme, lus par tokens.css :
  *   data-ouvert  épinglée par un toucher, un clic, Entrée ou Espace,
@@ -140,12 +141,19 @@ function basculer(terme: HTMLElement) {
 }
 
 if (document.querySelector('.lexique')) {
-  // Le pointeur arrive sur le mot : la bulle se place avant de s'afficher.
+  /*
+   * Le pointeur arrive sur le mot : la bulle se place avant de s'afficher.
+   * Arriver de l'extérieur du terme est un nouveau survol, qui lève aussi la
+   * fermeture par Échap. Sans cela, une bulle épinglée d'un clic puis fermée
+   * par Échap, le pointeur déjà parti, restait close au retour suivant :
+   * aucune sortie du pointeur n'était venue lever l'état. Mesuré, le premier
+   * retour ne montrait rien et seul le deuxième rouvrait la bulle.
+   */
   document.addEventListener('pointerover', (e) => {
     const terme = termeDe(e.target);
-    if (terme && hors(terme, e.relatedTarget) && !terme.hasAttribute('data-ouvert')) {
-      placer(terme);
-    }
+    if (!terme || !hors(terme, e.relatedTarget)) return;
+    terme.removeAttribute('data-ferme');
+    if (!terme.hasAttribute('data-ouvert')) placer(terme);
   });
 
   document.addEventListener('pointerout', (e) => {
