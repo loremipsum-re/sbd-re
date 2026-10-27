@@ -1,10 +1,11 @@
 /* =============================================================================
  * LA BARRE DE FILTRES, COMMUNE À TOUTES LES LISTES
  *
- * Une seule forme pour chaque endroit où l'on choisit ce qu'une liste montre :
- * les listes pilotées par InteractiveTable, la carte des salles et la
- * sélection de /comparer/. Elle est importée par ces composants, et ne
- * s'applique qu'à l'intérieur de `.barre-filtres`.
+ * Une seule forme pour chaque endroit où l'on choisit ce qu'une page montre :
+ * les listes pilotées par InteractiveTable, la carte des salles, la
+ * sélection de /comparer/ et le formulaire de /simulateur/. Elle est
+ * importée par ces composants, et ne s'applique qu'à l'intérieur de
+ * `.barre-filtres`.
  *
  * ELLE VIVAIT EN QUATRE COPIES QUI DIVERGEAIENT, relevé le 27 octobre 2026.
  * Sur téléphone, la recherche partageait sa colonne avec le menu Sexe et
@@ -63,7 +64,8 @@
 }
 
 /* Masquée tant que le script n'a pas pris la main : sans lui, ces commandes
-   ne feraient rien. Le script pose `data-pret`. */
+   ne feraient rien. Le script pose `data-pret`. La comparaison et le
+   simulateur l'écrivent d'office : leur barre restait visible sans script. */
 .barre-filtres:not([data-pret]) {
   display: none;
 }
@@ -124,9 +126,14 @@
  * champ de saisie à 46 px sur grand écran, contre 44 aux menus voisins.
  * La police suit le jeton --police-champ, jamais sous 16 px : en dessous,
  * Safari zoome sur iPhone dès qu'on touche le champ.
+ *
+ * L'exclusion des cases et des boutons radio passe par `:where()`, qui ne
+ * compte pas dans la spécificité : un champ de page qui règle son propre
+ * rembourrage, comme les champs à unité de /simulateur/, l'emporte ainsi
+ * sans surenchère.
  */
 .barre-filtres select,
-.barre-filtres input:not([type='radio']):not([type='checkbox']) {
+.barre-filtres input:where(:not([type='radio'], [type='checkbox'])) {
   width: 100%;
   min-width: 0;
   min-height: var(--cible-min);
@@ -141,7 +148,7 @@
 }
 
 .barre-filtres select:hover,
-.barre-filtres input:not([type='radio']):not([type='checkbox']):hover {
+.barre-filtres input:where(:not([type='radio'], [type='checkbox'])):hover {
   border-color: var(--accent);
 }
 
@@ -460,7 +467,9 @@
   color: var(--accent);
 }
 
-.barre-filtres [data-reinitialiser] {
+/* Une classe et non un attribut : la carte des salles nomme déjà
+   `data-reinitialiser` le bouton « Tout » de sa vue. */
+.barre-filtres .bouton-reinitialiser {
   grid-column: 2;
 }
 

@@ -32,6 +32,7 @@ import Glossaire from '../components/Glossaire.astro';
 import Repli from '../components/Repli.astro';
 import InfographieDots from '../components/infographies/InfographieDots.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import '../styles/filtres.css';
 import { EQUIPMENT_GROUPS, weightClassesFor } from '../lib/categories';
 import { fullPowerResults } from '../lib/data';
 import { equipementsPresents } from '../lib/records';
@@ -104,11 +105,22 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
       </Repli>
     </div>
 
-    <form class="formulaire" id="formulaire" autocomplete="off">
+    {/*
+      LA BARRE COMMUNE DES ZONES DE CHOIX, celle des listes, de la carte et
+      de la comparaison : libellés au-dessus, champs de 44 px sur une même
+      grille, puis la rangée d'état, le total à gauche et « Réinitialiser » à
+      droite. La forme vit dans src/styles/filtres.css. Les deux groupes
+      partagent la même grille : leurs bords tombent les uns sous les autres,
+      deux colonnes sur un téléphone, où chaque champ en prenait une rangée.
+
+      `data-pret` est écrit d'office : la barre reste visible sans script,
+      comme le formulaire l'était.
+    */}
+    <form class="barre-filtres formulaire" id="formulaire" autocomplete="off" data-pret>
       {/* Ce qu'on CHOISIT dans une liste. */}
       <fieldset class="groupe">
         <legend>Votre profil</legend>
-        <div class="champs deux">
+        <div class="grille-champs">
           <div class="champ">
             <label for="sexe">Sexe</label>
             <select id="sexe" name="sexe">
@@ -131,7 +143,7 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
           première frappe, au moment précis où elle devient utile. */}
       <fieldset class="groupe">
         <legend>Vos barres</legend>
-        <div class="champs quatre">
+        <div class="grille-champs">
           <div class="champ">
             <label for="poids">Poids de corps<span class="sr-only"> en kilogrammes</span></label>
             <div class="saisie">
@@ -165,6 +177,13 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
           </div>
         </div>
       </fieldset>
+
+      {/* Masquée tant que rien n'est saisi : il n'y a alors rien à
+          totaliser, ni rien à effacer. Sans `aria-live`, voir le script. */}
+      <div class="rangee-etat" data-etat hidden>
+        <p class="compteur" data-total></p>
+        <button type="reset" class="bouton-outil bouton-reinitialiser">Réinitialiser</button>
+      </div>
     </form>
 
     {/* `aria-live` : le résultat change sans rechargement, il doit donc
@@ -230,6 +249,20 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     const select = (id: string) => (document.getElementById(id) as HTMLSelectElement).value;
 
     /*
+     * LA RANGÉE D'ÉTAT, comme celle des listes : le total des trois barres à
+     * gauche, « Réinitialiser » à droite, dès qu'une valeur est saisie. Le
+     * total se lit ainsi sous les champs, au moment de la saisie, quand le
+     * résultat est encore hors de l'écran d'un téléphone. Sans `aria-live` :
+     * le résultat s'annonce déjà, une seconde annonce ferait doublon.
+     */
+    const etat = form.querySelector<HTMLElement>('[data-etat]');
+    const totalSaisi = form.querySelector<HTMLElement>('[data-total]');
+    const afficherEtat = (total: number, poids: number) => {
+      if (etat) etat.hidden = total <= 0 && poids <= 0;
+      if (totalSaisi) totalSaisi.textContent = `Total : ${nombre(total)} kg`;
+    };
+
+    /*
      * La catégorie d'un poids de corps : la plus légère dont la borne n'est
      * pas dépassée. Au-delà de la dernière borne, c'est la catégorie ouverte,
      * celle qui porte le « + ».
@@ -258,6 +291,7 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
       const equipement = select('equipement');
       const total = champ('squat') + champ('bench') + champ('deadlift');
       const poids = champ('poids');
+      afficherEtat(total, poids);
 
       if (total <= 0) {
         sortie.innerHTML =
@@ -349,6 +383,20 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
       categorieForcee = null;
       calculer();
     });
+
+    /*
+     * « Réinitialiser » est un bouton `reset` natif : le navigateur rend à
+     * chaque champ sa valeur d'origine, mais APRÈS l'événement, d'où le
+     * calcul différé. Le bouton disparaît avec la rangée : le focus passe au
+     * premier champ, un menu, qui n'ouvre pas le clavier d'un téléphone.
+     */
+    form.addEventListener('reset', () => {
+      setTimeout(() => {
+        categorieForcee = null;
+        calculer();
+        document.getElementById('sexe')?.focus();
+      });
+    });
   }
 </script>
 
@@ -359,32 +407,44 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     font-size: var(--step--1);
   }
 
+  /*
+   * Le cadre, les champs, leur grille et la rangée d'état viennent de la
+   * barre commune, src/styles/filtres.css. Ne restent ici que l'écart avant
+   * le résultat, les deux groupes et l'unité posée dans le champ.
+   */
   .formulaire {
     margin-bottom: var(--space-6);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    background: var(--surface);
   }
 
   /*
    * DEUX GROUPES SÉPARÉS PAR UN FILET : ce qu'on choisit, ce qu'on chiffre.
    * Un `fieldset` et non un `div` : la légende nomme le groupe pour les
    * lecteurs d'écran, qui annoncent alors « Vos barres, Squat » plutôt que
-   * « Squat » seul au milieu de sept champs.
+   * « Squat » seul au milieu de six champs. Le filet reprend celui de la
+   * rangée d'état.
    */
   .groupe {
+    min-width: 0;
     margin: 0;
-    padding: var(--space-4);
+    padding: 0;
     border: 0;
-    border-bottom: 1px solid var(--border);
   }
 
-  .groupe:last-child {
-    border-bottom: 0;
+  .groupe + .groupe {
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border);
   }
 
+  /*
+   * LA LÉGENDE FLOTTE, comme celles des bascules de /records/. Dessinée à
+   * part, dans la bordure du groupe, elle échappait au rembourrage du cadre
+   * et touchait presque son bord haut : 4 px mesurés à 375 px.
+   */
   legend {
-    padding: 0 0 var(--space-2);
+    float: left;
+    width: 100%;
+    padding: 0;
+    margin-bottom: var(--space-2);
     font-size: var(--step--1);
     font-weight: 700;
     color: var(--muted);
@@ -392,55 +452,8 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     letter-spacing: 0.04em;
   }
 
-  .champs {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr));
-    gap: var(--space-3) var(--space-4);
-  }
-
-  /* Sur grand écran, chaque groupe tient sur UNE rangée : deux colonnes pour
-     le profil, quatre pour les barres. En dessous, la grille se réenroule. */
-  @media (min-width: 48rem) {
-    .deux {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    .quatre {
-      grid-template-columns: repeat(4, 1fr);
-    }
-  }
-
-  .champ {
-    display: grid;
-    gap: var(--space-1);
-    min-width: 0;
-  }
-
-  label {
-    font-size: var(--step--1);
-    font-weight: 600;
-    color: var(--muted);
-  }
-
-  input,
-  select {
-    width: 100%;
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--bg);
-    color: var(--text);
-    font: inherit;
-    /* Jamais sous 16 px, sans quoi Safari zoome au toucher : voir tokens.css. */
-    font-size: var(--police-champ);
-    /* L'interligne du texte courant, 1,6, portait les champs numériques à
-       46 px sur grand écran, contre 44 aux menus voisins. */
-    line-height: 1.25;
-  }
-
-  input:hover,
-  select:hover {
-    border-color: var(--accent);
+  .groupe > .grille-champs {
+    clear: both;
   }
 
   /*

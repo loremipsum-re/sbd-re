@@ -1,6 +1,7 @@
 ---
 import Repli from '../components/Repli.astro';
 import InfographieComparer from '../components/infographies/InfographieComparer.astro';
+import '../styles/filtres.css';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { equipmentGroup, equipmentLabel } from '../lib/categories';
 import { results } from '../lib/data';
@@ -139,28 +140,43 @@ const nombreAthletes = athletes.length;
       </Repli>
     </div>
 
-    <div class="choix">
-      <label for="recherche">Ajouter un athlète</label>
-      <div class="ligne-choix">
-        <input
-          id="recherche"
-          type="text"
-          list="liste-athletes"
-          placeholder="Tapez un nom, par exemple Gabriel Begue"
-          autocomplete="off"
-        />
-        <button type="button" id="ajouter">Ajouter</button>
+    {/*
+      LA BARRE DE FILTRES COMMUNE, celle des listes et de la carte. Le champ
+      en tête sur toute la largeur, « Ajouter » au bout comme « Filtres »
+      ailleurs, puis la rangée d'état : le compte à gauche, « Réinitialiser »
+      à droite, et les athlètes choisis en étiquettes qu'un geste retire.
+      La forme vit dans src/styles/filtres.css.
+    */}
+    <div class="barre-filtres choix" data-pret>
+      <div class="rangee-recherche">
+        <div class="champ">
+          <label for="recherche">Ajouter un athlète</label>
+          {/* L'invite des listes : l'ancienne, « Tapez un nom, par exemple
+              Gabriel Begue », était coupée à 375 px par le bouton voisin. */}
+          <input
+            id="recherche"
+            type="text"
+            list="liste-athletes"
+            placeholder="Nom d'un athlète"
+            autocomplete="off"
+            aria-describedby="aide-recherche"
+          />
+        </div>
+        <button type="button" id="ajouter" class="ajouter">Ajouter</button>
       </div>
       <datalist id="liste-athletes">
         {athletes.map((a) => <option value={a.n} />)}
       </datalist>
-      <p class="aide">
+      <p class="aide" id="aide-recherche">
         {nombreAthletes} athlètes disponibles. Quatre au maximum dans une
         comparaison, au-delà le tableau devient illisible.
       </p>
+      <div class="rangee-etat" id="etat-selection" hidden>
+        <p class="compteur" id="compte-selection" aria-live="polite" tabindex="-1"></p>
+        <button type="button" id="vider" class="bouton-outil bouton-reinitialiser" hidden>Réinitialiser</button>
+        <ul id="selection" class="etiquettes-actives" aria-label="Athlètes comparés"></ul>
+      </div>
     </div>
-
-    <div id="selection" class="selection" aria-live="polite"></div>
 
     <div id="vide" class="vide">
       <p>Aucun athlète sélectionné pour l'instant.</p>
@@ -207,6 +223,9 @@ const nombreAthletes = athletes.length;
     const champ = document.getElementById('recherche');
     const bouton = document.getElementById('ajouter');
     const zoneSelection = document.getElementById('selection');
+    const rangeeEtat = document.getElementById('etat-selection');
+    const compte = document.getElementById('compte-selection');
+    const vider = document.getElementById('vider');
     const zoneTableau = document.getElementById('tableau');
     const indication = document.querySelector('[data-indication-defilement]');
     const zoneVide = document.getElementById('vide');
@@ -280,17 +299,22 @@ const nombreAthletes = athletes.length;
       const slugs = selection();
       const choisis = slugs.map((s) => parSlug.get(s));
 
-      zoneSelection.innerHTML = choisis.length
-        ? choisis
-            .map(
-              (a) =>
-                `<span class="jeton">${echapper(a.n)}<button type="button" data-retirer="${echapper(a.s)}" aria-label="Retirer ${echapper(a.n)}">×</button></span>`,
-            )
-            .join('') +
-          (choisis.length > 1
-            ? '<button type="button" id="vider" class="vider">Tout retirer</button>'
-            : '')
-        : '';
+      /*
+       * LES ATHLÈTES CHOISIS, EN ÉTIQUETTES DE LA BARRE COMMUNE. L'étiquette
+       * entière est le bouton qui la retire : la croix seule, d'avant, faisait
+       * une cible de 18 px de large. « Réinitialiser » paraît dès le premier
+       * athlète, comme dans les listes dès le premier filtre : il est au même
+       * endroit sur toutes les pages, quoi qu'il y ait à défaire.
+       */
+      zoneSelection.innerHTML = choisis
+        .map(
+          (a) =>
+            `<li><button type="button" class="etiquette-active" data-retirer="${echapper(a.s)}" aria-label="Retirer ${echapper(a.n)}">${echapper(a.n)}</button></li>`,
+        )
+        .join('');
+      rangeeEtat.hidden = choisis.length === 0;
+      vider.hidden = choisis.length === 0;
+      compte.textContent = `${choisis.length} athlète${choisis.length > 1 ? 's' : ''} sur ${MAX}`;
 
       zoneVide.hidden = choisis.length > 0;
       zoneTableau.hidden = choisis.length === 0;
@@ -420,13 +444,25 @@ const nombreAthletes = athletes.length;
       }
     });
 
+    /*
+     * Retirer un athlète redessine les étiquettes : le focus passe à la
+     * suivante, sinon à la précédente, sinon au compte. Le champ, autre
+     * candidat, ferait surgir le clavier d'un téléphone.
+     */
     zoneSelection.addEventListener('click', (e) => {
       const cible = e.target.closest('[data-retirer]');
-      if (cible) {
-        ecrire(selection().filter((s) => s !== cible.dataset.retirer));
-        return;
-      }
-      if (e.target.id === 'vider') ecrire([]);
+      if (!cible) return;
+      const position = [...zoneSelection.querySelectorAll('[data-retirer]')].indexOf(cible);
+      ecrire(selection().filter((s) => s !== cible.dataset.retirer));
+      const restantes = zoneSelection.querySelectorAll('[data-retirer]');
+      (restantes[position] ?? restantes[position - 1] ?? (rangeeEtat.hidden ? champ : compte)).focus();
+    });
+
+    vider.addEventListener('click', () => {
+      ecrire([]);
+      // Le compte disparaît avec la sélection : le focus revient au champ,
+      // seul point de départ qui reste.
+      champ.focus();
     });
 
     // Les boutons Précédent et Suivant du navigateur doivent fonctionner :
@@ -444,48 +480,25 @@ const nombreAthletes = athletes.length;
 </script>
 
 <style>
-
+  /*
+   * La barre, son champ, son compte et ses étiquettes viennent de
+   * src/styles/filtres.css. Ne restent ici que l'écart avant la suite de la
+   * page, le bouton « Ajouter » et la phrase d'aide.
+   */
   .choix {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-6);
     margin-bottom: var(--space-6);
   }
 
-  .choix label {
-    display: block;
-    font-size: var(--step--1);
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: var(--space-2);
-  }
-
-  .ligne-choix {
-    display: flex;
-    gap: var(--space-2);
-    flex-wrap: wrap;
-  }
-
-  .ligne-choix input {
-    flex: 1 1 18rem;
-    padding: var(--space-3);
-    border: 2px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--bg);
-    color: var(--text);
-    font: inherit;
-    font-size: var(--police-champ);
-  }
-  .ligne-choix input:focus-visible {
-    border-color: var(--accent);
-  }
-
-  .ligne-choix button {
-    padding: var(--space-3) var(--space-6);
-    border: 0;
+  /*
+   * « AJOUTER » EST L'ACTION DE LA PAGE, d'où l'aplat que n'ont pas les
+   * boutons de la barre. Son survol passait en --accent sous du texte
+   * --bg : --accent est un accent de texte, l'aplat survolé a son jeton.
+   */
+  .ajouter {
+    flex-shrink: 0;
+    min-height: var(--cible-min);
+    padding: 0 var(--space-6);
+    border: 1px solid var(--accent-fill);
     border-radius: var(--radius);
     background: var(--accent-fill);
     color: var(--on-accent);
@@ -493,26 +506,15 @@ const nombreAthletes = athletes.length;
     font-weight: 700;
     cursor: pointer;
   }
-  .ligne-choix button:hover {
-    background: var(--accent);
-    color: var(--bg);
+  .ajouter:hover {
+    border-color: var(--accent-fill-hover);
+    background: var(--accent-fill-hover);
   }
 
   .aide {
+    margin: 0;
     font-size: var(--step--1);
     color: var(--muted);
-    margin: var(--space-3) 0 0;
-  }
-
-  .selection {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    margin-bottom: var(--space-6);
-  }
-
-  .selection:empty {
-    margin-bottom: 0;
   }
 
   .vide {
@@ -571,47 +573,16 @@ const nombreAthletes = athletes.length;
 
   Astro limite ses styles aux éléments présents au moment du build : il leur
   ajoute un attribut de portée que le navigateur exige pour appliquer la règle.
-  Les jetons et le tableau de comparaison n'existant qu'après un clic, ils ne
-  portent pas cet attribut et les règles scopées les ignorent purement et
-  simplement — le tableau s'affiche alors sans aucune mise en forme.
+  Le tableau de comparaison n'existant qu'après un clic, il ne porte pas cet
+  attribut et les règles scopées l'ignorent purement et simplement — il
+  s'affiche alors sans aucune mise en forme. Les étiquettes des athlètes
+  choisis, elles aussi construites ici, prennent leur forme dans la feuille
+  globale de la barre, src/styles/filtres.css.
 
   D'où ce second bloc en `is:global`, volontairement préfixé par
   `.page-comparer` pour qu'il ne déborde sur aucune autre page.
 */}
 <style is:global>
-  .page-comparer .jeton {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
-    border: 2px solid var(--accent);
-    border-radius: 999px;
-    font-size: var(--step--1);
-    font-weight: 600;
-  }
-
-  .page-comparer .jeton button,
-  .page-comparer .vider {
-    border: 0;
-    background: none;
-    color: var(--muted);
-    font: inherit;
-    font-size: var(--step-0);
-    line-height: 1;
-    cursor: pointer;
-    padding: 0 var(--space-1);
-  }
-  .page-comparer .jeton button:hover,
-  .page-comparer .vider:hover {
-    color: var(--accent);
-  }
-
-  .page-comparer .vider {
-    font-size: var(--step--1);
-    text-decoration: underline;
-    align-self: center;
-  }
-
   .page-comparer .comparaison {
     width: 100%;
     border-collapse: collapse;

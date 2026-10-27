@@ -26,7 +26,8 @@
  *
  * LA BARRE DE FILTRES a sa propre feuille, src/styles/filtres.css, qui en
  * explique l'ordre : la recherche, le panneau des filtres et du tri, puis la
- * rangée d'état. La carte des salles et la comparaison en reprennent la forme.
+ * rangée d'état. La carte des salles, la comparaison et le simulateur en
+ * reprennent la forme.
  */
 
 import EtatVide from './EtatVide.astro';
@@ -152,7 +153,7 @@ const repliable = aFiltres && replier !== undefined;
           <p class="compteur" aria-live="polite" data-compteur tabindex="-1">
             {total !== undefined && `${total} ${total > 1 ? plurielFinal : singulier}`}
           </p>
-          <button type="button" class="bouton-outil" data-reinitialiser hidden>
+          <button type="button" class="bouton-outil bouton-reinitialiser" data-reinitialiser hidden>
             Réinitialiser
           </button>
           <ul class="etiquettes-actives" data-etiquettes-actives aria-label="Filtres actifs" hidden>
