@@ -292,9 +292,9 @@ const description =
                       <span class="etiquette secondaire">{sexLabel(r.sex)}</span>
                       <span class="etiquette">{equipmentLabel(equipmentGroup(r.equipment))}</span>
                       <span class="etiquette">
-                        {r.weightClassKg ? `${r.weightClassKg} kg` : 'cat. inconnue'}
+                        {r.weightClassKg ? `${r.weightClassKg} kg` : 'cat. inconnue'}
                       </span>
-                      <span class="etiquette">{nombre(r.bodyweightKg)} kg de corps</span>
+                      <span class="etiquette">{`${nombre(r.bodyweightKg)} kg de corps`}</span>
                       {r.division && <span class="etiquette secondaire">{r.division}</span>}
                       {r.ageClass && <span class="etiquette secondaire">{r.ageClass} ans</span>}
                     </td>
@@ -564,6 +564,14 @@ const description =
     .etiquette.secondaire {
       display: inline-block;
     }
+  }
+
+  /* Une pastille plus large que sa colonne passe sur deux lignes plutôt que
+     de déborder : à 320 px, « 101,8 kg de corps » dépassait de 38 px. Des
+     espaces insécables tiennent le nombre avec son unité et « de corps »
+     ensemble : la coupure tombe entre les deux. */
+  .contexte .etiquette {
+    white-space: normal;
   }
 
   .sans-total {

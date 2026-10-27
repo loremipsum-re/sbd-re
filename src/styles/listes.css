@@ -623,6 +623,13 @@
     align-items: start;
   }
 
+  /* Une pastille plus large que la demi-carte passe sur deux lignes plutôt
+     que de déborder : à 320 px, « Développé couché » dépassait de 17 px. Dès
+     375 px, elle tient sur une ligne. */
+  .liste.liste-barres tbody .cellule-annexe .etiquette {
+    white-space: normal;
+  }
+
   /* Le bloc compétition reprend sa forme habituelle, nom puis commune, et
      tient la largeur de la carte. */
   .liste.liste-barres tbody .competition {

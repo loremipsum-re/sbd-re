@@ -437,10 +437,14 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
     line-height: 1.1;
   }
 
+  /* Le nom passe à la ligne : la cellule d'un nombre interdit le retour, et
+     à 320 px « Christan Pounoussamy » recouvrait le nom de la colonne
+     voisine, mesuré le 27 octobre 2026. */
   .detenteur {
     display: block;
     font-size: var(--step--1);
     color: var(--muted);
+    white-space: normal;
   }
   .detenteur:hover {
     color: var(--accent);
