@@ -79,17 +79,30 @@ export const GET: APIRoute = async () => {
       .map((id) => EMPLACEMENTS[id].libelle.toLowerCase())
       .join(', ');
 
+  /*
+   * La règle des SVG, dite dans le CMS avant que la génération ne la fasse
+   * respecter : voir `contenuActifSvg` dans src/content.config.ts.
+   */
+  const regleSvg = "Un SVG est refusé s'il porte un script ou une ressource extérieure.";
+
   const aideBanniere =
     `Exigée par une place en bannière : ${pagesDu('banniere')}. ` +
     `Exactement ${dimensions(IMAGES.banniere)} px, ou un multiple. Elle s'affiche sur ` +
     `${FORMATS.banniere.affichage.largeur} px de large au plus, et sur ${BANNIERE_SUR_TELEPHONE} px ` +
-    `sur le plus petit téléphone : écrire le texte de l'image en ${TEXTE_BANNIERE_MIN} px de haut au moins.`;
+    `sur le plus petit téléphone : écrire le texte de l'image en ${TEXTE_BANNIERE_MIN} px de haut au moins. ` +
+    regleSvg;
 
+  /*
+   * « ou un multiple », comme pour la bannière : le schéma accepte toute image
+   * au bon rapport et assez large. L'aide disait « exactement », et un logo de
+   * 800 × 400 px aurait semblé refusé.
+   */
   const aideLogo =
     `Exigé par une carte (${pagesDu('carte')}) et par le pied de page. ` +
-    `Exactement ${dimensions(IMAGES.logo)} px, ou un SVG au même rapport. Il s'affiche sur ` +
+    `Exactement ${dimensions(IMAGES.logo)} px, ou un multiple, ou un SVG au même rapport. Il s'affiche sur ` +
     `${dimensions(FORMATS.carte.affichage)} px dans la carte, ` +
-    `${dimensions(FORMATS.logo.affichage)} px au pied de page. Un fond plein le garde lisible dans les deux thèmes.`;
+    `${dimensions(FORMATS.logo.affichage)} px au pied de page. Un fond plein le garde lisible dans les deux thèmes. ` +
+    regleSvg;
 
   const yaml = `# ---------------------------------------------------------------------------
 # CONFIGURATION GÉNÉRÉE — ne pas modifier ce fichier à la main.
