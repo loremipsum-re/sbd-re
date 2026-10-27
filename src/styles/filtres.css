@@ -25,8 +25,9 @@
  * les pages, quel que soit le nombre de filtres.
  *
  * QUAND LE PANNEAU SE REPLIE. `data-repli="toujours"` le replie à toutes les
- * largeurs, `data-repli="telephone"` sous 40rem seulement. Le choix de chaque
- * page est écrit et justifié là où elle appelle InteractiveTable.
+ * largeurs, `data-repli="telephone"` sous 40rem seulement. La règle du site
+ * est écrite dans InteractiveTable.astro, au paramètre `replier`, et chaque
+ * page justifie son choix là où elle appelle le composant.
  * ========================================================================== */
 
 /*

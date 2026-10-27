@@ -52,6 +52,12 @@ interface Props {
    *   'telephone' : sous 40rem seulement, le panneau restant ouvert au-delà.
    * Sans valeur, le panneau reste ouvert. Sans effet sur une liste sans
    * filtre : un bouton « Filtres » qui n'ouvrirait qu'un tri mentirait.
+   *
+   * LA RÈGLE DU SITE. 'toujours' pour le classement, à la demande de
+   * l'auteur. 'telephone' dès trois filtres, qui prennent alors deux rangées
+   * ou plus sur un téléphone : résultats d'une compétition, /exterieur/. Les
+   * bascules de /records/ restent ouvertes, elles sont la navigation de la
+   * page. Une ou deux commandes tiennent sur une rangée et restent ouvertes.
    */
   replier?: 'toujours' | 'telephone';
 }
@@ -647,10 +653,27 @@ const repliable = aFiltres && replier !== undefined;
      * barre. Le panneau suit le bouton dans le document : la tabulation y
      * entre juste après l'avoir ouvert.
      */
-    boutonFiltres?.addEventListener('click', () => {
-      const ouvrir = boutonFiltres.getAttribute('aria-expanded') !== 'true';
-      boutonFiltres.setAttribute('aria-expanded', String(ouvrir));
+    function basculerPanneau(ouvrir: boolean) {
+      boutonFiltres?.setAttribute('aria-expanded', String(ouvrir));
       barreFiltres?.toggleAttribute('data-ouvert', ouvrir);
+    }
+
+    boutonFiltres?.addEventListener('click', () => {
+      basculerPanneau(boutonFiltres.getAttribute('aria-expanded') !== 'true');
+    });
+
+    /*
+     * ÉCHAP REFERME LE PANNEAU, depuis n'importe quelle commande de la barre,
+     * et rend le focus au bouton qui l'a ouvert. Sans effet quand le bouton
+     * est masqué : sur grand écran, le panneau d'une compétition reste ouvert
+     * d'office. Un menu déroulant ouvert garde la touche pour lui-même.
+     */
+    barreFiltres?.addEventListener('keydown', (evenement) => {
+      if (evenement.key !== 'Escape' || !boutonFiltres) return;
+      if (boutonFiltres.getAttribute('aria-expanded') !== 'true') return;
+      if (boutonFiltres.offsetParent === null) return;
+      basculerPanneau(false);
+      boutonFiltres.focus();
     });
 
     if (interactif) lireAdresse();
