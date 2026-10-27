@@ -31,9 +31,20 @@
  * -----------------------------------------------------------------------------
  * Les salles et la côte doivent employer EXACTEMENT la même règle, sinon les
  * points flottent à côté de l'île. Les bornes sont lues depuis le fichier qui a
- * produit le tracé, jamais recalculées.
+ * produit le tracé, jamais recalculées : voir `projeter` dans lib/carte.ts.
+ *
+ * -----------------------------------------------------------------------------
+ * LE TRACÉ VIENT DE L'IGN
+ * -----------------------------------------------------------------------------
+ * Côte et limites des 24 communes, IGN Admin Express, générées par
+ * scripts/generer-carte-ile.mjs. À la génération d'octobre 2026, la côte
+ * compte 769 points, contre 387 pour l'ancien tracé d'OpenStreetMap, et les
+ * limites communales sont nouvelles. Le générateur garde tous les points de
+ * la source : le fichier de l'IGN est déjà allégé, et le simplifier encore ne
+ * retirait presque rien (mesure dans le générateur).
  */
 import ile from '../data/ile-reunion.json';
+import { projeter } from '../lib/carte';
 
 interface Salle {
   nom: string;
@@ -52,15 +63,8 @@ interface Props {
 }
 
 const { salles, communes } = Astro.props;
-const { x0, x1, y0, y1, kx } = ile.bornes;
 
-/** Même projection que celle qui a produit le tracé de la côte. */
-const enSvg = (lat: number, lon: number) => ({
-  x: ((lon * kx - x0) / (x1 - x0)) * ile.largeur,
-  y: ((-lat - y0) / (y1 - y0)) * ile.hauteur,
-});
-
-const points = salles.map((s) => ({ ...s, ...enSvg(s.lat, s.lon) }));
+const points = salles.map((s) => ({ ...s, ...projeter(s.lat, s.lon) }));
 
 /*
  * Les étiquettes de commune se posent au barycentre de leurs salles, et non au
@@ -102,6 +106,8 @@ const MARGE = 40;
         tabindex="0"
       >
         <path class="ile" d={ile.chemin} />
+        {/* Les limites des communes, en pointillé fin, pour situer chaque salle. */}
+        <path class="limites" d={ile.limites} />
 
         {/* Étiquettes de commune : visibles de loin, effacées de près. */}
         <g data-couche-communes>
@@ -558,6 +564,22 @@ const MARGE = 40;
     stroke-width: 2.5;
     stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
+  }
+
+  /*
+   * Les limites communales, discrètes : un pixel en pointillé, contre deux et
+   * demi en trait plein pour la côte. La couleur reste --muted, qui donne
+   * 8,34:1 sur le fond de l'île en sombre et 5,83:1 en clair. La discrétion
+   * vient de l'épaisseur et du pointillé, jamais d'un contraste sous 3:1.
+   */
+  .limites {
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+    pointer-events: none;
   }
 
   .cible {
