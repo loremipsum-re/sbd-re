@@ -72,7 +72,7 @@ const { debut, fin } = periode();
       <nav class="plan" aria-label="Plan du site">
         {
           groupesPied.map((groupe) => (
-            <div class="famille">
+            <div class:list={['famille', `famille-${groupe.id}`]}>
               <p class="titre" id={`pied-${groupe.id}`}>
                 {groupe.titre}
               </p>
@@ -218,15 +218,47 @@ const { debut, fin } = periode();
     }
   }
 
-  /* Les trois familles empilées sur téléphone, côte à côte dès 48rem. */
+  /*
+   * LES TROIS FAMILLES SUR DEUX COLONNES AU TÉLÉPHONE, comme dans le menu :
+   * Classements et Outils à gauche, Le site à droite. Trois colonnes dès
+   * 48rem.
+   *
+   * Empilées sur une colonne, elles mesuraient 768 px à 375 px de large, et
+   * le pied de page 1 513 px, plus haut que le contenu de pages courtes comme
+   * /simulateur/ ou /comparer/. Sur deux colonnes, le plan mesure 399 px et
+   * le pied de page 1 144 px.
+   *
+   * Un libellé long passe sur deux lignes, « Me situer dans le classement »
+   * à 375 px. Deux lignes de ce corps tiennent dans les 44 px de la cible :
+   * la rubrique ne grandit pas, et l'icône reste centrée sur elle.
+   *
+   * Les zones portent l'identifiant des familles de lib/navigation.
+   */
   .plan {
     display: grid;
-    gap: var(--space-8);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      'classements site'
+      'outils site';
+    align-items: start;
+    gap: var(--space-8) var(--space-4);
+  }
+
+  .famille-classements {
+    grid-area: classements;
+  }
+  .famille-outils {
+    grid-area: outils;
+  }
+  .famille-site {
+    grid-area: site;
   }
 
   @media (min-width: 48rem) {
     .plan {
       grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-areas: 'classements outils site';
+      column-gap: var(--space-8);
     }
   }
 
