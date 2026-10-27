@@ -152,12 +152,21 @@ const description =
 
     <h2>Résultats</h2>
 
+    {/*
+      LES FILTRES REPLIÉS SUR TÉLÉPHONE SEULEMENT. Ouvert, le panneau y
+      mesure de 363 à 444 px selon la compétition, soit 45 à 55 % d'un écran
+      de 812 : quatre ou cinq menus et neuf critères de tri. Le bouton
+      « Filtres » les range sous 40rem, comme sur le classement, dont cette
+      liste partage la forme. Au-delà, ils tiennent sur une rangée et restent
+      ouverts.
+    */}
     <InteractiveTable
       recherche="Nom d'un athlète"
       singulier="résultat"
       pluriel="résultats"
       total={resultats.length}
       barreDeTri
+      replier="telephone"
     >
       <Fragment slot="filtres">
         <div class="champ">
