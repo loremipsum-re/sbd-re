@@ -197,7 +197,7 @@ const etiquettesCommunes = placerEtiquettes(
     </div>
 
     <div class="details" data-details role="status" aria-live="polite">
-      <p class="invite">Touchez un point pour voir la salle.</p>
+      <p class="invite">Choisissez un point pour voir la salle.</p>
     </div>
   </div>
 
@@ -332,6 +332,8 @@ const etiquettesCommunes = placerEtiquettes(
     const doigts = new Map<number, { x: number; y: number }>();
     let depart: { x: number; y: number; vue: typeof vue; ecart: number } | null = null;
     let bouge = 0;
+    /** Le marqueur sous le pointeur à l'appui, lu avant la capture. */
+    let vise: SVGGElement | null = null;
 
     svg.addEventListener('pointerdown', (e) => {
       // L'état AVANT la capture, et la capture protégée. Elle échoue si le
@@ -340,6 +342,7 @@ const etiquettesCommunes = placerEtiquettes(
       // déplacement. Le glissé doit survivre à l'échec de la capture.
       doigts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       bouge = 0;
+      vise = (e.target as Element | null)?.closest<SVGGElement>('[data-marqueur]') ?? null;
       try {
         svg.setPointerCapture(e.pointerId);
       } catch {
@@ -464,15 +467,21 @@ const etiquettesCommunes = placerEtiquettes(
      *
      * `setPointerCapture`, nécessaire au glissé, détourne toute la séquence de
      * pointeur vers le SVG : le marqueur ne recevait donc plus le clic, et
-     * cliquer un point ne faisait rien. Écouter en amont puis remonter au
-     * marqueur avec `closest` rend la capture sans effet sur la sélection.
+     * cliquer un point ne faisait rien. Écouter en amont rend la capture sans
+     * effet sur la sélection.
+     *
+     * LE MARQUEUR SE LIT À L'APPUI. Remonter de la cible du clic au marqueur
+     * ne suffit plus : mesuré dans Chromium, un clic de souris capturé arrive
+     * sur le SVG lui-même, et `closest` n'y trouve aucun marqueur. Le toucher
+     * fonctionnait encore, la souris non, et cela dès la version précédente.
+     * Le marqueur visé est donc noté au `pointerdown`, avant la capture.
      */
     svg.addEventListener('click', (e) => {
+      const g = vise ?? (e.target as Element | null)?.closest<SVGGElement>('[data-marqueur]');
+      vise = null;
       // Un glissé de carte ne doit pas sélectionner la salle qu'il a
       // effleurée : au-delà de quelques pixels, c'était un déplacement.
       if (bouge > 6) return;
-      const cible = e.target as Element | null;
-      const g = cible?.closest<SVGGElement>('[data-marqueur]');
       if (g && !g.hasAttribute('hidden')) selectionner(g);
     });
 
