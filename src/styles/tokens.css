@@ -687,7 +687,15 @@ textarea {
   color: var(--muted);
 }
 
+/* Le DERNIER chapeau seulement : écrite pour tous, la règle collait à 0 px
+   deux paragraphes d'en-tête, sur /simulateur/ et /classement/, et le
+   chapeau à l'encadré de /exterieur/ (audit du 27 octobre 2026). Entre deux
+   blocs de l'en-tête, l'écart d'un paragraphe. */
 .entete-page .chapeau {
+  margin-bottom: var(--space-4);
+}
+
+.entete-page .chapeau:last-child {
   margin-bottom: 0;
 }
 
