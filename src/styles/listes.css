@@ -150,9 +150,14 @@
  * Certaines cellules écrivent leur intitulé en dur plutôt que de le laisser au
  * pseudo-élément qui recopie `data-libelle` : c'est le seul moyen d'y glisser
  * une icône, `content` ne sachant pas porter de SVG. En mode tableau il ne
- * sert à rien, la colonne ayant son en-tête, donc il disparaît. */
+ * sert à rien, la colonne ayant son en-tête, donc il disparaît.
+ *
+ * SEULEMENT DANS UNE CELLULE À `data-libelle`, celle qu'un en-tête de colonne
+ * double. Écrite `.liste .intitule`, la règle masquait aussi SQ, DC et SDT
+ * dans les résultats d'une compétition, où aucun en-tête ne les remplace :
+ * 1 238 barres sans leur nom, relevé le 27 octobre 2026. */
 
-.liste .intitule {
+.liste td[data-libelle] .intitule {
   display: none;
 }
 

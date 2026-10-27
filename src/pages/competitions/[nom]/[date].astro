@@ -486,26 +486,63 @@ const description =
     font-variant-numeric: tabular-nums;
   }
 
-  /* Les trois barres du jour, alignées comme un mini-tableau : l intitulé à
-     gauche, la charge à droite, pour que les nombres se superposent d une
-     ligne à l autre. */
+  /*
+   * Les trois barres du jour, alignées comme un mini-tableau : l intitulé, la
+   * charge, l unité, puis la coupe d un record. QUATRE COLONNES PARTAGÉES par
+   * les trois lignes grâce à `subgrid` : les charges s alignent à droite et
+   * les unités tombent les unes sous les autres.
+   *
+   * Sur deux colonnes, l unité et la coupe passaient à la ligne. Une carte
+   * mesurait 211 px à 375 px de large, 190 px sur quatre colonnes (relevé de
+   * l audit du 27 octobre 2026). Sans `subgrid`, chaque ligne garde sa propre
+   * grille de quatre colonnes : seul l alignement des charges se perd.
+   *
+   * 2rem pour l intitulé, « SDT » en demandant 30 : à 2,5rem, une charge
+   * suivie de sa coupe dépassait de 9 px sa colonne à 320 px de large.
+   */
   .barres {
     display: grid;
-    gap: 0.1rem;
+    grid-template-columns: 2rem auto auto 1fr;
+    gap: 0.1rem var(--space-1);
     font-size: var(--step--1);
     color: var(--muted);
   }
 
   .barres > span {
     display: grid;
-    grid-template-columns: 2.5rem auto;
-    gap: var(--space-2);
+    grid-column: 1 / -1;
+    grid-template-columns: 2rem auto auto 1fr;
+    grid-template-columns: subgrid;
     align-items: baseline;
   }
 
   .barres b {
+    justify-self: end;
     color: var(--text);
     font-weight: 700;
+  }
+
+  /* La coupe d'un record ne s'efface jamais. La règle commune
+     `svg { max-width: 100% }` la laissait rétrécir avec sa colonne, jusqu'à
+     0 px sur une carte de 320 px. */
+  .barres :global(.coupe svg) {
+    max-width: none;
+  }
+
+  /*
+   * SOUS 22,5rem, LES TROIS BARRES PRENNENT LA LARGEUR DE LA CARTE, et les
+   * Dots remontent sous le total, à côté des pastilles. Dans une demi-carte
+   * de 320 px, leurs quatre colonnes manquaient de 9 px. La carte garde sa
+   * hauteur, mesuré : les pastilles y occupent déjà deux rangées.
+   */
+  @media (max-width: 22.5rem) {
+    .liste-perfs tbody tr {
+      grid-template-areas:
+        'rang nom nom'
+        'rang contexte total'
+        'rang contexte dots'
+        'rang detail detail';
+    }
   }
 
   .intitule {
