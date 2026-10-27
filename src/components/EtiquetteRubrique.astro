@@ -1,0 +1,44 @@
+---
+/**
+ * Le mot posé à côté d'une rubrique qui n'est pas encore ouverte : « Bientôt ».
+ *
+ * UNE ÉTIQUETTE VISIBLE, demande de l'auteur du 27 octobre 2026, et EN
+ * TEXTE. Une couleur ou une opacité seules ne diraient rien à qui ne les
+ * distingue pas, ni à un lecteur d'écran : le mot est lu dans le nom du lien.
+ *
+ * UNE SEULE DÉFINITION pour le menu et le pied de page, qui l'affichent tous
+ * deux. Le mot vient de lib/navigation, champ `etiquette`.
+ *
+ * LA FORME DU BADGE DE VERSION du pied de page : un aplat du fond de page,
+ * un filet, un angle net, aucune ombre. Son propre fond lui garde le même
+ * contraste quel que soit l'état de la ligne qui le porte : posé en gris sur
+ * la teinte d'accent d'une rubrique active, le texte serait tombé sous 4,5:1
+ * en thème clair.
+ *
+ * `inline-block` lui évite aussi le soulignement du lien qui le contient : un
+ * soulignement ne se propage pas dans une boîte atomique.
+ */
+interface Props {
+  texte: string;
+}
+
+const { texte } = Astro.props;
+---
+
+<span class="etiquette-rubrique">{texte}</span>
+
+<style>
+  .etiquette-rubrique {
+    display: inline-block;
+    margin-left: var(--space-1);
+    padding: 0 var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--muted);
+    font-size: var(--step--1);
+    font-weight: 700;
+    line-height: 1.6;
+    white-space: nowrap;
+  }
+</style>

@@ -60,8 +60,11 @@ const exterieur = statsExterieur();
 const classes = meilleurTotalParAthlete(fullPowerResults, false).length;
 const unMouvement = results.filter((r) => r.event !== 'SBD').length;
 
-/* Le libellé du menu, pour que l'infographie suive un changement de nom. */
-const libelleExterieur = RUBRIQUES.find((r) => r.href === '/exterieur/')?.label ?? 'Extérieur';
+/* Le libellé du menu, pour que l'infographie suive un changement de nom. Il
+   est cité entre guillemets : « Page Hors de l'île » se lirait comme une
+   page située hors de l'île, et non comme le nom d'une rubrique. */
+const libelleExterieur =
+  RUBRIQUES.find((r) => r.href === '/exterieur/')?.label ?? "Hors de l'île";
 
 /* Espace insécable : « Réunion » et « La Réunion » ne se coupent jamais. */
 const NBSP = '\u00a0';
@@ -122,7 +125,7 @@ const destinations: Destination[] = [
     resultats: exterieur.resultats,
     precision: `${nombre(exterieur.athletes)} ${pluriel(exterieur.athletes, 'athlète')}, ${nombre(exterieur.pays)} pays`,
     cibles: [
-      { compte: true, texte: `Page ${libelleExterieur}` },
+      { compte: true, texte: `Page «${NBSP}${libelleExterieur}${NBSP}»` },
       { compte: true, texte: "Fiches d'athlètes" },
       { compte: false, texte: 'Écartés du classement et des records' },
     ],

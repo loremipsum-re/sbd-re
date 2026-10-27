@@ -4,12 +4,13 @@
  */
 import BanniereConsentement from '../components/BanniereConsentement.astro';
 import BoutonSuggestion from '../components/BoutonSuggestion.astro';
+import EtiquetteRubrique from '../components/EtiquetteRubrique.astro';
 import Icone from '../components/Icone.astro';
 import Logo from '../components/Logo.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
 import { ID_ANNONCE_SORTIE, TEXTE_ANNONCE_SORTIE } from '../lib/liens-sortants';
-import { rubriquesPrincipales, rubriquesSecondaires } from '../lib/navigation';
+import { groupesMenu, rubriquesBarre } from '../lib/navigation';
 import { version } from '../../package.json';
 // Les déclarations de polices d'abord : tokens.css s'en sert immédiatement.
 import '../styles/fonts.css';
@@ -56,20 +57,17 @@ const imageAbsolue = imagePartage ? new URL(imagePartage, Astro.site).href : nul
 const CLARITY_ID = 'xtvqmm4cxo';
 
 /**
- * L'en-tête ne porte que les TROIS entrées principales.
+ * La barre ne porte que TROIS entrées : Classement, Records, Catégories.
  *
- * Le reste vit dans le menu du téléphone et dans le pied de page. Une
- * navigation qui montre tout ne met rien en avant : huit rubriques alignées
- * laissaient le visiteur choisir sans indice, et débordaient de l'écran sur
- * téléphone.
+ * Le menu les reprend en tête, puis range le reste du site en trois familles
+ * titrées. Une navigation qui montre tout ne met rien en avant : huit
+ * rubriques alignées laissaient le visiteur choisir sans indice, et
+ * débordaient de l'écran sur téléphone.
  *
- * Le partage entre principales et secondaires est déclaré dans
- * lib/navigation, avec les libellés, les adresses et les icônes. Ajouter une
- * rubrique au site se fait là-bas, et nulle part ailleurs.
+ * Le partage est déclaré dans lib/navigation, avec les libellés, les adresses,
+ * les familles et les icônes. Ajouter une rubrique au site se fait là-bas, et
+ * nulle part ailleurs.
  */
-const liensPrincipaux = rubriquesPrincipales;
-const liensSecondaires = rubriquesSecondaires;
-
 const estActif = (href: string) => chemin === href || chemin.startsWith(href);
 ---
 
@@ -236,7 +234,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
         <nav class="nav-large" aria-label="Navigation principale">
           <ul>
             {
-              liensPrincipaux.map((lien) => (
+              rubriquesBarre.map((lien) => (
                 <li>
                   <a
                     class="lien-nu"
@@ -260,12 +258,17 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
           menu fonctionne même si le JavaScript échoue. Il se referme tout seul
           au changement de page, puisque la page est rechargée.
 
-          IL EXISTE À TOUTES LES LARGEURS, et non plus sur téléphone seulement.
-          Les trois rubriques de la barre restent le chemin rapide ; les neuf
-          autres n'étaient atteignables, sur grand écran, que par le pied de
-          page. Chacune porte désormais une phrase qui dit ce qu'on y trouve :
-          un intitulé seul demande de deviner, ce qui est précisément ce qu'on
-          ne veut pas d'un menu.
+          IL EXISTE À TOUTES LES LARGEURS. Les trois rubriques de la barre
+          restent le chemin rapide, le menu ouvre tout le reste.
+
+          TROIS FAMILLES TITRÉES ET DES LIBELLÉS COURTS, demande de l'auteur du
+          27 octobre 2026. Chaque rubrique portait une phrase de résumé. Le
+          titre de la famille dit désormais ce que la phrase disait, une fois
+          pour plusieurs rubriques.
+
+          Mesuré sur un écran de 375 × 812 : le panneau passe de 1 417 px à
+          797 px. Il montrait 6 rubriques sur 14 sans défiler, il en montre 12
+          sur 13. Les mises à jour et les pages légales vivent au pied de page.
         */}
         <details class="menu">
           <summary aria-label="Ouvrir le menu">
@@ -302,28 +305,49 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
               <ThemeToggle />
             </div>
 
+            {/*
+              UNE SEULE NAVIGATION, TROIS LISTES NOMMÉES. Chaque liste porte le
+              titre de sa famille par `aria-labelledby` : un lecteur d'écran
+              le donne en entrant dans la liste. Les titres sont des
+              paragraphes et non des <h2> : ils précéderaient le <h1> de chaque
+              page dans l'ordre du document, et dérangeraient la descente des
+              titres que l'audit d'accessibilité vérifie.
+            */}
             <nav class="wrap" aria-label="Navigation">
-              <ul>
+              <div class="familles">
                 {
-                  [...liensPrincipaux, ...liensSecondaires].map((lien) => (
-                    <li>
-                      <a
-                        class="lien-nu"
-                        href={lien.href}
-                        aria-current={estActif(lien.href) ? 'page' : undefined}
-                      >
-                        <Icone nom={lien.icone} taille={22} />
-                        <span class="texte">
-                          <span class="intitule">{lien.labelLong ?? lien.label}</span>
-                          <span class="resume">{lien.resume}</span>
-                        </span>
-                      </a>
-                    </li>
+                  groupesMenu.map((groupe) => (
+                    <div class="famille">
+                      <p class="titre-famille" id={`menu-${groupe.id}`}>
+                        {groupe.titre}
+                      </p>
+                      <ul aria-labelledby={`menu-${groupe.id}`}>
+                        {groupe.rubriques.map((lien) => (
+                          <li>
+                            <a
+                              class="lien-nu"
+                              href={lien.href}
+                              aria-current={estActif(lien.href) ? 'page' : undefined}
+                            >
+                              <Icone nom={lien.icone} />
+                              <span class="intitule">
+                                {lien.label}
+                                {lien.etiquette && (
+                                  <>
+                                    {' '}
+                                    <EtiquetteRubrique texte={lien.etiquette} />
+                                  </>
+                                )}
+                              </span>
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ))
                 }
-              </ul>
+              </div>
             </nav>
-
           </div>
         </details>
       </div>
@@ -468,13 +492,11 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
 
   .menu {
     /*
-     * Pousse le menu ET le bouton de thème contre le bord droit.
+     * Pousse le bouton de menu contre le bord droit.
      *
      * Sur grand écran c'est la navigation, en `flex: 1`, qui occupe l'espace
      * disponible. Elle disparaît sur téléphone, et sans cette marge
-     * automatique tout se tasserait à gauche contre le logo. Le bouton de
-     * thème, dernier élément de la barre, se retrouve ainsi tout à droite et
-     * le menu juste à sa gauche.
+     * automatique le bouton se tasserait à gauche contre le logo.
      *
      * VOLONTAIREMENT SANS `position: relative` : le panneau se cale alors sur
      * l'en-tête, qui est collante et fait donc bloc de référence, et peut
@@ -528,8 +550,8 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
    *
    * Il était un menu déroulant de 14rem accroché au bord droit : douze
    * intitulés en colonne, sans rien dire de ce qu'ils contiennent. En pleine
-   * largeur, les rubriques tiennent en deux ou trois colonnes, chacune avec sa
-   * phrase, et l'ensemble se lit d'un coup d'œil.
+   * largeur, les trois familles se placent côte à côte dès qu'elles tiennent,
+   * et l'ensemble se lit d'un coup d'œil.
    *
    * AUCUNE OMBRE PORTÉE. Il en avait une, héritée d'avant le système
    * Modernist, qui n'en emploie nulle part : c'est le filet de 2 px et
@@ -581,14 +603,14 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     border-top: 2px solid var(--accent);
     border-bottom: 2px solid var(--border);
     padding: var(--space-4) 0 var(--space-6);
-    /* Sur un téléphone, douze rubriques dépassent la hauteur de l'écran : le
-       panneau défile au lieu de pousser le contenu hors de vue. */
+    /* Sur un petit téléphone, le panneau peut dépasser la hauteur de l'écran :
+       il défile alors au lieu de pousser le contenu hors de vue. */
     max-height: calc(100vh - 100%);
     overflow-y: auto;
   }
 
   /*
-   * La rangée de réglage ferme le panneau, séparée des rubriques par un filet.
+   * La rangée de réglage ouvre le panneau, séparée des rubriques par un filet.
    * Elle n'est pas un lien : on y agit sans quitter la page, d'où une forme
    * différente de celle des entrées du menu.
    */
@@ -602,71 +624,108 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     border-bottom: 1px solid var(--border);
   }
 
+  /* Sur l'axe des icônes et des titres de famille, qui portent le même
+     retrait de 12 px. */
   .intitule-reglage {
+    padding-left: var(--space-3);
     font-family: var(--font-display);
     font-weight: 700;
     font-size: var(--step-0);
   }
 
-  .menu nav ul {
+  /*
+   * LES TROIS FAMILLES, empilées sur téléphone, côte à côte dès qu'elles
+   * tiennent.
+   *
+   * La rubrique la plus large est « Communauté » suivie de son étiquette :
+   * 240 px avec l'icône et les retraits, mesuré à 768 px. Plus étroite, sa
+   * ligne se replie, l'étiquette passe dessous et l'icône flotte entre les
+   * deux lignes. D'où 15,5rem par famille tant que la grille choisit seule
+   * ses colonnes, puis trois colonnes dès 48rem, la famille « Le site » un
+   * quart plus large que les deux autres : 258 px à 768 px de large.
+   */
+  .familles {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
-    gap: var(--space-2);
-    overflow: visible;
+    grid-template-columns: repeat(auto-fit, minmax(min(15.5rem, 100%), 1fr));
+    gap: var(--space-4) var(--space-8);
+  }
+
+  @media (min-width: 48rem) {
+    .familles {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr);
+    }
+  }
+
+  .famille {
+    min-width: 0;
   }
 
   /*
-   * Le rayon imbriqué n'a plus lieu d'être : le panneau occupe toute la
-   * largeur et ne porte donc pas d'angles arrondis dans lesquels ces liens
-   * seraient emboîtés. Ils reprennent le rayon ordinaire du site.
+   * Le titre de famille, en capitales espacées et en petit corps, comme les
+   * surtitres de l'accueil. En gris et non en accent : l'accent de texte ne
+   * donne que 4,3:1 sur l'aplat relevé du panneau en thème clair, sous le
+   * seuil d'un texte de cette taille.
    */
-  .menu nav a {
-    /*
-     * `flex` et non `block` depuis l'arrivée des icônes : l'icône doit rester
-     * sur l'axe gauche et le libellé se replier à côté d'elle, pas dessous.
-     * `align-items: start` plutôt que `center` : sur un libellé qui passe à
-     * la ligne, une icône centrée verticalement flotterait entre les deux
-     * lignes au lieu de marquer le début de la rubrique.
-     */
+  .titre-famille {
+    margin: 0 0 var(--space-1);
+    padding-inline: var(--space-3);
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Des lignes jointives, comme une liste : chaque rubrique fait déjà 44 px. */
+  .famille ul {
+    display: grid;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /*
+   * Une rubrique tient sur une ligne : l'icône et le libellé se centrent
+   * l'un sur l'autre. Le rayon ordinaire du site, le panneau n'ayant pas
+   * d'angles arrondis dans lesquels ces liens seraient emboîtés.
+   */
+  .famille a {
     display: flex;
-    align-items: start;
+    align-items: center;
     gap: var(--space-3);
-    padding: var(--space-3);
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-3);
     border: 1px solid transparent;
     border-radius: var(--radius);
-    white-space: normal;
+    color: var(--muted);
+    font-size: var(--step-0);
   }
 
   /* La bordure existe déjà, transparente : sans elle, le survol décalerait le
      texte d'un pixel en faisant apparaître un filet. */
-  .menu nav a:hover {
+  .famille a:hover {
     border-color: var(--accent);
+    background: var(--surface);
+    color: var(--text);
   }
 
-  .menu nav a[aria-current='page'] {
+  .famille a[aria-current='page'] {
     border-color: var(--border);
     background: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--accent);
   }
 
-  .menu .texte {
-    display: grid;
-    gap: 0.1rem;
+  /* L'étiquette « Bientôt » passe à la ligne sous le libellé quand la
+     colonne manque de place, au lieu de déborder de la rubrique. */
+  .famille .intitule {
     min-width: 0;
-  }
-
-  .menu .intitule {
     font-weight: 700;
     color: var(--text);
   }
 
-  .menu .resume {
-    font-size: var(--step--1);
-    color: var(--muted);
-  }
-
   /* Sous 52rem, les onglets cèdent la place au seul bouton de menu. Au-dessus,
-     les deux cohabitent : les trois rubriques principales en accès direct, et
-     le menu pour les neuf autres. */
+     les deux cohabitent : les trois rubriques de la barre en accès direct, et
+     le menu pour l'ensemble. */
   @media (max-width: 51.99rem) {
     .nav-large {
       display: none;
@@ -722,12 +781,12 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     flex-shrink: 0;
   }
 
-  nav {
+  .nav-large {
     flex: 1;
     min-width: 0;
   }
 
-  nav ul {
+  .nav-large ul {
     display: flex;
     gap: var(--space-1);
     list-style: none;
@@ -739,7 +798,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     overflow-x: auto;
     scrollbar-width: none;
   }
-  nav ul::-webkit-scrollbar {
+  .nav-large ul::-webkit-scrollbar {
     display: none;
   }
 
@@ -751,7 +810,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
    * Le passage en `flex` sert uniquement à recentrer le libellé une fois la
    * hauteur imposée ; sans lui il collerait en haut de l'onglet.
    */
-  nav a {
+  .nav-large a {
     display: flex;
     align-items: center;
     /* L'icône colle au libellé qu'elle accompagne : 8 px les lient sans les
@@ -769,12 +828,12 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     font-weight: 600;
   }
 
-  nav a:hover {
+  .nav-large a:hover {
     color: var(--text);
     background: var(--surface);
   }
 
-  nav a[aria-current='page'] {
+  .nav-large a[aria-current='page'] {
     color: var(--accent);
     background: color-mix(in srgb, var(--accent) 12%, transparent);
   }

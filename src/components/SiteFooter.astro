@@ -28,8 +28,9 @@ import { version } from '../../package.json';
 const versionAffichee = version.replace(/\.0$/, '');
 import { periode, nombreAthletes, results } from '../lib/data';
 import { dateLongue } from '../lib/format';
+import EtiquetteRubrique from './EtiquetteRubrique.astro';
 import Logo from './Logo.astro';
-import { rubriquesClassements, rubriquesProjet } from '../lib/navigation';
+import { groupesPied } from '../lib/navigation';
 
 const { debut, fin } = periode();
 ---
@@ -53,42 +54,49 @@ const { debut, fin } = periode();
       </div>
 
       {/*
-        DEUX COLONNES DE NAVIGATION PLUTÔT QU'UNE.
-        Quatorze entrées sous un seul titre « Le site » ne disaient rien de leur
-        nature. Elles se séparent maintenant selon ce qu'elles montrent : la
-        donnée d'un côté, le site lui-même de l'autre. Le partage vit dans
-        lib/navigation, avec les adresses et les icônes, et non ici.
-      */}
-      <nav aria-label="Classements et records">
-        <p class="titre">Classements</p>
-        <ul>
-          {
-            rubriquesClassements.map((r) => (
-              <li>
-                <a href={r.href}>
-                  <Icone nom={r.icone} taille={18} />
-                  {r.labelLong ?? r.label}
-                </a>
-              </li>
-            ))
-          }
-        </ul>
-      </nav>
+        LES TROIS FAMILLES DU MENU, dans le même ordre et sous les mêmes
+        titres : Classements, Outils, Le site. Quatorze entrées sous un seul
+        titre ne disaient rien de leur nature, et un pied de page rangé
+        autrement que le menu obligerait à apprendre deux plans du même site.
+        Le partage vit dans lib/navigation, avec les adresses et les icônes,
+        et non ici.
 
-      <nav aria-label="Le projet">
-        <p class="titre">Le projet</p>
-        <ul>
-          {
-            rubriquesProjet.map((r) => (
-              <li>
-                <a href={r.href}>
-                  <Icone nom={r.icone} taille={18} />
-                  {r.labelLong ?? r.label}
-                </a>
-              </li>
-            ))
-          }
-        </ul>
+        Le pied de page reste le plan complet. Il garde les libellés
+        développés, et les rubriques sorties du menu : les mises à jour ici,
+        les pages légales plus bas.
+
+        UNE SEULE NAVIGATION, TROIS LISTES NOMMÉES par `aria-labelledby`. Un
+        repère de navigation par famille aurait allongé d'autant la liste des
+        repères qu'un lecteur d'écran propose pour sauter dans la page.
+      */}
+      <nav class="plan" aria-label="Plan du site">
+        {
+          groupesPied.map((groupe) => (
+            <div class="famille">
+              <p class="titre" id={`pied-${groupe.id}`}>
+                {groupe.titre}
+              </p>
+              <ul aria-labelledby={`pied-${groupe.id}`}>
+                {groupe.rubriques.map((r) => (
+                  <li>
+                    <a href={r.href}>
+                      <Icone nom={r.icone} taille={18} />
+                      <span>
+                        <span class="libelle">{r.labelLong ?? r.label}</span>
+                        {r.etiquette && (
+                          <>
+                            {' '}
+                            <EtiquetteRubrique texte={r.etiquette} />
+                          </>
+                        )}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        }
       </nav>
     </div>
 
@@ -194,14 +202,36 @@ const { debut, fin } = periode();
   .grille {
     display: grid;
     gap: var(--space-8);
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /*
+   * L'IDENTITÉ AU-DESSUS DU PLAN jusqu'à 64rem, à côté au-delà. Mesuré à
+   * 768 px : côte à côte, chaque famille n'aurait que 142 px, et cinq
+   * libellés passeraient sur deux lignes. Au-dessus du plan, elle lui laisse
+   * 224 px par famille, et chaque libellé tient sur une ligne.
+   */
+  @media (min-width: 64rem) {
+    .grille {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2.5fr);
+      gap: var(--space-12);
+    }
+  }
+
+  /* Les trois familles empilées sur téléphone, côte à côte dès 48rem. */
+  .plan {
+    display: grid;
+    gap: var(--space-8);
   }
 
   @media (min-width: 48rem) {
-    .grille {
-      grid-template-columns: 2fr 1fr 1.5fr;
-      gap: var(--space-12);
+    .plan {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
+  }
+
+  .famille {
+    min-width: 0;
   }
 
   /* Le logo remplace le mot-symbole écrit à la main : mêmes lettres, plus les
@@ -269,6 +299,24 @@ const { debut, fin } = periode();
   ul a:hover {
     color: var(--accent);
     background: var(--bg);
+  }
+
+  /*
+   * LE SOULIGNEMENT PORTE SUR LE LIBELLÉ SEUL. Posé sur le lien, il courait
+   * aussi sous l'espace qui précède l'étiquette « Bientôt ». Cette espace
+   * reste dans le texte, et c'est voulu : elle sépare les deux mots dans le
+   * nom du lien, « Communauté Bientôt ». Le décalage du trait suit la règle
+   * des liens de tokens.css, dont il hérite.
+   */
+  ul a {
+    text-decoration: none;
+  }
+  .libelle {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+  }
+  ul a:hover .libelle {
+    text-decoration-thickness: 2px;
   }
 
   .soutien {

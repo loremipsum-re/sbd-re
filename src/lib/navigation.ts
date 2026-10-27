@@ -37,6 +37,32 @@ export type NomIcone =
   | 'valide'
   | 'manque';
 
+/**
+ * LES TROIS FAMILLES DU SITE, dans l'ordre où le menu et le pied de page les
+ * montrent. Structure choisie par l'auteur le 27 octobre 2026, qui voulait un
+ * menu plus court et plus clair.
+ *
+ * `classements` : ce qui montre la donnée, athlètes, marques et compétitions.
+ * `outils` : ce qui calcule à partir d'elle, pour un total ou des athlètes
+ * que le visiteur choisit.
+ * `site` : ce qui parle du site, de ses sources et de ses coulisses.
+ *
+ * Le titre de chaque famille remplace la phrase de résumé que portait chaque
+ * rubrique du menu. Un intitulé court se comprend dès qu'on sait dans quelle
+ * famille il range sa page : « Comparer », sous « Outils », n'a pas besoin
+ * d'une phrase de plus.
+ *
+ * Le menu et le pied de page lisent cette même liste. Un titre changé ici
+ * change aux deux endroits.
+ */
+export const FAMILLES = [
+  { id: 'classements', titre: 'Classements' },
+  { id: 'outils', titre: 'Outils' },
+  { id: 'site', titre: 'Le site' },
+] as const;
+
+export type Famille = (typeof FAMILLES)[number]['id'];
+
 export interface Rubrique {
   href: string;
   /** Libellé court, pour la barre de navigation et le menu. */
@@ -46,143 +72,144 @@ export interface Rubrique {
    * la place d'être explicite. Absent quand le libellé court suffit.
    */
   labelLong?: string;
-  /**
-   * Une phrase qui dit ce qu'on trouve dans la rubrique, affichée dans le
-   * grand menu. Tirée de la description de la page elle-même, pour que les
-   * deux ne divergent pas.
-   */
-  resume: string;
   icone: NomIcone;
+  famille: Famille;
   /**
-   * Les deux familles du pied de page.
+   * Les trois rubriques de la barre d'en-tête, sur grand écran : Classement,
+   * Records, Catégories. Une navigation qui montre tout ne met rien en avant.
    *
-   * `classements` : ce qui montre des athlètes, des marques et des
-   * compétitions, c'est-à-dire la donnée elle-même.
-   * `projet` : ce qui parle du site, de ses sources et de ses coulisses.
-   *
-   * Un pied de page qui alignait quatorze entrées sous un seul titre « Le
-   * site » ne disait rien de leur nature : deux colonnes distinguent ce qu'on
-   * vient chercher de ce qu'on consulte une fois.
+   * Sur téléphone, la barre ne garde que le logo et le bouton Menu. Mesuré à
+   * 375 px, les trois libellés seuls font 233 px et le logo 112 px, pour
+   * 343 px de largeur utile : la place manque avant même d'y loger le bouton
+   * et des cibles de 44 px. Avec eux, la barre demanderait 646 px. Les trois
+   * rubriques restent en tête du menu, famille Classements.
    */
-  famille: 'classements' | 'projet';
+  barre?: true;
   /**
-   * Les rubriques principales occupent la barre de navigation sur grand écran.
-   * Les autres vivent dans le menu du téléphone et au pied de page.
-   *
-   * Trois entrées, pas huit : une navigation qui montre tout ne met rien en
-   * avant, et huit rubriques alignées débordaient de l'écran sur téléphone.
+   * Hors du menu, au pied de page seulement. Le menu montre ce qu'on vient
+   * chercher. Les pages qu'on consulte une fois restent à un geste, en bas de
+   * chaque page.
    */
-  principale?: true;
+  piedSeulement?: true;
+  /**
+   * Un mot posé à côté du libellé, en texte : « Bientôt » pour une rubrique
+   * qui n'est pas encore ouverte. Une couleur seule ne dirait rien à qui ne
+   * la distingue pas, ni à un lecteur d'écran.
+   */
+  etiquette?: string;
 }
 
 export const RUBRIQUES: readonly Rubrique[] = [
   {
     href: '/classement/',
-    label: 'Classement officiel',
-    resume: 'Le meilleur total de chaque athlète, en compétition',
+    label: 'Classement',
+    /* « officiel » le distingue, au pied de page, du classement de la
+       communauté. Dans la barre, le mot seul suffit. */
+    labelLong: 'Classement officiel',
     icone: 'classement',
     famille: 'classements',
-    principale: true,
-  },
-  {
-    href: '/communaute/',
-    label: 'Communauté',
-    resume: 'Le classement ouvert aux performances de salle',
-    icone: 'communaute',
-    famille: 'classements',
-    principale: true,
-  },
-  {
-    href: '/comparer/',
-    label: 'Comparer',
-    labelLong: 'Comparer des athlètes',
-    resume: "Jusqu'à quatre athlètes, barre par barre",
-    icone: 'comparer',
-    famille: 'classements',
-    principale: true,
-  },
-  {
-    href: '/simulateur/',
-    label: 'Me situer',
-    labelLong: 'Me situer dans le classement',
-    resume: 'Où se placerait votre total dans le classement',
-    icone: 'simulateur',
-    famille: 'classements',
+    barre: true,
   },
   {
     href: '/records/',
     label: 'Records',
-    resume: "Les meilleures marques de l'île, par mouvement",
     icone: 'records',
     famille: 'classements',
+    barre: true,
   },
   {
     href: '/categories/',
     label: 'Catégories',
-    resume: 'Les catégories de poids, leurs records et leur histoire',
     icone: 'categories',
     famille: 'classements',
+    barre: true,
   },
   {
     href: '/competitions/',
     label: 'Compétitions',
-    resume: 'Toutes les compétitions organisées depuis 2017',
     icone: 'competitions',
     famille: 'classements',
   },
   {
     href: '/exterieur/',
-    label: 'Extérieur',
-    resume: 'Les résultats obtenus hors de La Réunion',
+    /* Libellé choisi par l'auteur le 27 octobre 2026. L'infographie des
+       données le reprend : elle suit tout changement de nom. */
+    label: "Hors de l'île",
     icone: 'exterieur',
     famille: 'classements',
   },
   {
+    href: '/simulateur/',
+    label: 'Me situer',
+    labelLong: 'Me situer dans le classement',
+    icone: 'simulateur',
+    famille: 'outils',
+  },
+  {
+    href: '/comparer/',
+    label: 'Comparer',
+    labelLong: 'Comparer des athlètes',
+    icone: 'comparer',
+    famille: 'outils',
+  },
+  {
     href: '/actualites/',
     label: 'Actualités',
-    resume: 'Les compétitions racontées, résultats et records',
     icone: 'actualites',
-    famille: 'projet',
+    famille: 'site',
   },
   {
     href: '/salles/',
     label: 'Salles',
-    resume: "Les salles de l'île sur une carte, par commune",
     icone: 'salles',
-    famille: 'projet',
+    famille: 'site',
   },
   {
     href: '/partenariats/',
     label: 'Partenariats',
-    resume: 'Proposer un partenariat au site',
     icone: 'partenariats',
-    famille: 'projet',
+    famille: 'site',
   },
   {
     href: '/suggestions/',
-    label: 'Proposer',
+    label: 'Proposer une idée',
     labelLong: 'Proposer une amélioration',
-    resume: 'Signaler une erreur ou souffler une idée, sans compte',
     icone: 'suggestions',
-    famille: 'projet',
+    famille: 'site',
   },
   {
     href: '/mises-a-jour/',
     label: 'Mises à jour',
-    resume: 'Ce qui change sur le site, et quand',
     icone: 'journal',
-    famille: 'projet',
+    famille: 'site',
+    piedSeulement: true,
   },
   {
     href: '/a-propos/',
     label: 'À propos',
-    resume: 'Sources, méthode et fonctionnement du site',
     icone: 'apropos',
-    famille: 'projet',
+    famille: 'site',
+  },
+  {
+    href: '/communaute/',
+    label: 'Communauté',
+    icone: 'communaute',
+    famille: 'site',
+    etiquette: 'Bientôt',
   },
 ];
 
-export const rubriquesPrincipales = RUBRIQUES.filter((r) => r.principale);
-export const rubriquesClassements = RUBRIQUES.filter((r) => r.famille === 'classements');
-export const rubriquesProjet = RUBRIQUES.filter((r) => r.famille === 'projet');
-export const rubriquesSecondaires = RUBRIQUES.filter((r) => !r.principale);
+/** Les trois rubriques de la barre d'en-tête. */
+export const rubriquesBarre = RUBRIQUES.filter((r) => r.barre);
+
+/** Les familles et leurs rubriques, telles que le menu les montre. */
+export const groupesMenu = FAMILLES.map((f) => ({
+  ...f,
+  rubriques: RUBRIQUES.filter((r) => r.famille === f.id && !r.piedSeulement),
+}));
+
+/** Les mêmes familles au pied de page, rubriques hors menu comprises. */
+export const groupesPied = FAMILLES.map((f) => ({
+  ...f,
+  rubriques: RUBRIQUES.filter((r) => r.famille === f.id),
+}));
