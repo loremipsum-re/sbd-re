@@ -107,7 +107,7 @@ function periodeDe(c: (typeof communes)[number]): string {
  * La teinte va de 45 % à 100 % de l'aplat d'accent, à proportion des
  * compétitions. Sous 45 %, le trait sombre qui sépare deux communes teintées
  * tomberait sous 3:1 en thème sombre. Mesuré sur la teinte la plus claire
- * des données d'octobre 2026 : 3,76:1.
+ * des données d'octobre 2026 : 3,7:1.
  */
 const MARGE_CARTE = 12;
 const vue = {
@@ -309,8 +309,8 @@ const pourcent = (v: number, debut: number, taille: number) =>
 
   /* Une commune sans compétition garde le fond de l'île et un trait gris,
      8,34:1 en sombre et 5,83:1 en clair. Une commune teintée prend un trait
-     sombre, --on-accent, qui la sépare de sa voisine teintée : 3,07:1 au
-     moins en sombre, sur la teinte la plus claire. */
+     sombre, --on-accent, qui la sépare de sa voisine teintée : 3,7:1 au
+     moins en sombre, sur la teinte la plus claire, et 10,66:1 en clair. */
   .carte path {
     fill: var(--bg);
     stroke: var(--muted);
