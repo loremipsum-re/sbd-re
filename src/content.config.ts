@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
@@ -171,7 +171,45 @@ function ecartAuFormat(chemin: string, image: IdImage): string | null {
       `${pixels(attendu.largeur)} px de large au moins pour rester nette.`
     );
   }
+  if (/\.svg$/i.test(chemin)) {
+    const actif = contenuActifSvg(readFileSync(fichier, 'utf8'));
+    if (actif) {
+      return (
+        `${attendu.libelle} : le fichier SVG contient ${actif}. ` +
+        `Le réexporter sans script ni ressource extérieure.`
+      );
+    }
+  }
   return null;
+}
+
+/**
+ * Ce qui rend un SVG actif, ou `null` s'il est inerte.
+ *
+ * Affiché par <img>, un SVG n'exécute rien et ne charge rien d'extérieur. Ouvert
+ * à sa propre adresse, /images/logo.svg, il redevient un document : un script
+ * y tournerait au nom de sbd.re, avec accès à tout ce que le site garde, et le
+ * jour venu à la session des membres de la communauté. Un partenaire direct est
+ * une image et un lien, jamais un script ni un pistage : la génération refuse
+ * donc ces motifs, plutôt que de compter sur la vigilance de qui dépose le
+ * fichier.
+ *
+ * Les motifs sont larges à dessein. Un logo exporté pour le web n'en contient
+ * aucun, et un faux refus se corrige en réexportant le fichier. Les adresses
+ * d'espace de noms, `xmlns="http://www.w3.org/2000/svg"`, ne sont pas des
+ * ressources et passent.
+ */
+function contenuActifSvg(texte: string): string | null {
+  const motifs: [RegExp, string][] = [
+    [/<script[\s/>]/i, 'un élément <script>'],
+    [/\son[a-z]+\s*=/i, "un attribut d'événement, comme onload"],
+    [/javascript\s*:/i, 'une adresse javascript:'],
+    [/<foreignObject[\s/>]/i, 'un élément <foreignObject>'],
+    [/(?:href|src)\s*=\s*["']\s*(?:[a-z][a-z0-9+.-]*:)?\/\//i, 'une ressource extérieure'],
+    [/url\(\s*["']?\s*(?:[a-z][a-z0-9+.-]*:)?\/\//i, 'une ressource extérieure'],
+    [/@import/i, 'une feuille de style importée'],
+  ];
+  return motifs.find(([motif]) => motif.test(texte))?.[1] ?? null;
 }
 
 /** Ce que dit le message quand une pièce exigée par les places manque. */
