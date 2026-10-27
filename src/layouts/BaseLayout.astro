@@ -786,20 +786,19 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     min-width: 0;
   }
 
+  /*
+   * AUCUN `overflow-x` sur cette liste. Il datait du temps où la barre
+   * défilait de côté sur téléphone, et il rognait le contour de focus des
+   * onglets : la liste n'étant pas plus haute qu'eux, seuls les deux bords
+   * verticaux du contour restaient visibles, mesuré à 1 280 px. Les trois
+   * onglets tiennent désormais sans défiler partout où ils s'affichent.
+   */
   .nav-large ul {
     display: flex;
     gap: var(--space-1);
     list-style: none;
     margin: 0;
     padding: 0;
-    /* En mobile la navigation défile horizontalement plutôt que de se replier
-       dans un menu « hamburger » : pas de JavaScript, pas de piège au clavier,
-       et les rubriques restent visibles. */
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .nav-large ul::-webkit-scrollbar {
-    display: none;
   }
 
   /*
