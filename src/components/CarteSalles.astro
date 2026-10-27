@@ -534,6 +534,9 @@ const MARGE = 40;
   .scene {
     position: relative;
     min-width: 0;
+    /* Les boutons de zoom se placent selon la largeur de la carte : voir les
+       commandes de vue, plus bas. */
+    container-type: inline-size;
   }
 
   svg {
@@ -660,13 +663,29 @@ const MARGE = 40;
     opacity: 1;
   }
 
-  /* ---- Commandes de vue ------------------------------------------------- */
+  /* ---- Commandes de vue -------------------------------------------------
+   *
+   * Sous la carte tant qu'elle est étroite, en ligne et calées à droite.
+   * Posés dessus, les trois boutons couvraient une part de la côte est sur
+   * toute carte de moins de 378 px, donc sur tout téléphone. Dès 24rem, soit
+   * 384 px, ils tiennent dans le coin de mer en haut à droite, où ils étaient.
+   * C'est la largeur de la carte qui décide, d'où la requête de conteneur.
+   */
   .commandes {
-    position: absolute;
-    top: var(--space-2);
-    right: var(--space-2);
-    display: grid;
+    display: flex;
+    justify-content: flex-end;
     gap: var(--space-1);
+    margin-top: var(--space-2);
+  }
+
+  @container (min-width: 24rem) {
+    .commandes {
+      position: absolute;
+      top: var(--space-2);
+      right: var(--space-2);
+      display: grid;
+      margin-top: 0;
+    }
   }
 
   .commandes button {
