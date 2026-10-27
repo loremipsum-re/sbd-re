@@ -582,8 +582,12 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
      * allongeait d'autant une page courte, faisant apparaître une barre de
      * défilement pour rien. Un élément en absolu ne prend pas de place dans
      * le flux, mais il compte bien dans la zone défilable.
+     *
+     * `dvh` en second, voir le panneau. La ligne en `vh` sert de repli au
+     * navigateur qui ne connaît pas cette unité.
      */
     height: calc(100vh - 100%);
+    height: calc(100dvh - 100%);
     z-index: 9;
     background: color-mix(in srgb, #000 55%, transparent);
   }
@@ -603,9 +607,18 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     border-top: 2px solid var(--accent);
     border-bottom: 2px solid var(--border);
     padding: var(--space-4) 0 var(--space-6);
-    /* Sur un petit téléphone, le panneau peut dépasser la hauteur de l'écran :
-       il défile alors au lieu de pousser le contenu hors de vue. */
+    /*
+     * Sur un petit téléphone, le panneau peut dépasser la hauteur de l'écran :
+     * il défile alors au lieu de pousser le contenu hors de vue.
+     *
+     * `dvh` suit la hauteur réellement visible. Safari sur iOS donne à
+     * `100vh` la hauteur de la fenêtre barres d'outils repliées : barres
+     * affichées, le bas du panneau se trouve donc dessous, et le défilement
+     * propre au panneau ne les replie pas. La ligne en `vh` sert de repli au
+     * navigateur qui ne connaît pas `dvh`.
+     */
     max-height: calc(100vh - 100%);
+    max-height: calc(100dvh - 100%);
     overflow-y: auto;
   }
 
