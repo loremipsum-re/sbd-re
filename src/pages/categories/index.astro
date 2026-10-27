@@ -20,6 +20,7 @@
  * qu'ils ne rapportaient.
  */
 import InteractiveTable from '../../components/InteractiveTable.astro';
+import Terme from '../../components/Terme.astro';
 import InfographieCategories from '../../components/infographies/InfographieCategories.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { SEXE_LABEL, listeCategories } from '../../lib/categoriesPages';
@@ -51,9 +52,10 @@ const parSexe: { sex: Sex; label: string; liste: typeof categories }[] = [
     <header class="entete-page">
       <h1>Catégories de poids</h1>
       <p class="chapeau">
-        Une compétition de force athlétique se dispute catégorie par catégorie.
-        Chacune a son classement, ses records et son histoire, que vous trouverez
-        sur sa page.
+        Une compétition de force athlétique se dispute{' '}
+        <Terme cle="categorie">catégorie</Terme> par catégorie. Chacune a son
+        classement, ses <Terme cle="record">records</Terme> et son histoire, que
+        vous trouverez sur sa page.
       </p>
     </header>
 
@@ -163,9 +165,10 @@ const parSexe: { sex: Sex; label: string; liste: typeof categories }[] = [
     </InteractiveTable>
 
     <p class="note">
-      Les records affichés ici sont ceux du total en Raw, la marque de référence
-      d'une catégorie. Le détail par mouvement et par équipement figure sur
-      chaque page, ainsi que dans les <a href="/records/">records de La Réunion</a>.
+      Les records affichés ici sont ceux du <Terme cle="total">total</Terme> en{' '}
+      <Terme cle="raw">Raw</Terme>, la marque de référence d'une catégorie. Le
+      détail par mouvement et par équipement figure sur chaque page, ainsi que
+      dans les <a href="/records/">records de La Réunion</a>.
     </p>
 
     <Partenaire emplacement="categories" />

@@ -1,6 +1,7 @@
 ---
 import InteractiveTable from '../components/InteractiveTable.astro';
 import Repli from '../components/Repli.astro';
+import Terme from '../components/Terme.astro';
 import InfographieCommunes from '../components/infographies/InfographieCommunes.astro';
 import InfographieFormats from '../components/infographies/InfographieFormats.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -24,7 +25,7 @@ const annees = [...new Set(meets.map((m) => m.date.slice(0, 4)))].sort().reverse
       <p class="chapeau">
         Les {meets.length} compétitions organisées à La Réunion et présentes dans
         les données officielles. Ouvrez une compétition pour consulter le
-        détail des barres de chaque athlète engagé.
+        détail des <Terme cle="barre">barres</Terme> de chaque athlète engagé.
       </p>
     </header>
 
@@ -119,9 +120,9 @@ const annees = [...new Set(meets.map((m) => m.date.slice(0, 4)))].sort().reverse
 
     <p class="note">
       Les données proviennent du projet OpenPowerlifting, qui recense les
-      résultats homologués. Chaque fiche d'athlète renvoie vers sa page sur ce
-      même projet, où figure l'intégralité de son parcours, y compris hors de
-      La Réunion.
+      résultats <Terme cle="homologue">homologués</Terme>. Chaque fiche
+      d'athlète renvoie vers sa page sur ce même projet, où figure l'intégralité
+      de son parcours, y compris hors de La Réunion.
     </p>
   </div>
 </BaseLayout>

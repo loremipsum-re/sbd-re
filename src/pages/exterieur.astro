@@ -2,6 +2,7 @@
 import BadgeOfficiel from '../components/BadgeOfficiel.astro';
 import InteractiveTable from '../components/InteractiveTable.astro';
 import Repli from '../components/Repli.astro';
+import Terme from '../components/Terme.astro';
 import InfographieDonnees from '../components/infographies/InfographieDonnees.astro';
 import InfographieInternational from '../components/infographies/InfographieInternational.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -39,11 +40,15 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
       </p>
       <div class="avertissement">
         <p>
-          <strong>Ces résultats restent en dehors du classement et des records.</strong>
+          <strong>
+            Ces résultats restent en dehors du classement et des{' '}
+            <Terme cle="record">records</Terme>.
+          </strong>
         </p>
         <p>
-          Les records de La Réunion récompensent des barres soulevées sur un
-          plateau réunionnais, et le classement mesure la scène locale. Une
+          Les records de La Réunion récompensent des{' '}
+          <Terme cle="barre">barres</Terme> soulevées sur un plateau réunionnais,
+          et le classement mesure la scène locale. Une
           performance réalisée à Prague ou à Lyon appartient au parcours de
           l'athlète, et elle figure à ce titre sur sa fiche, mais elle laisse
           intacte la hiérarchie de l'île.

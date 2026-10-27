@@ -4,6 +4,7 @@ import InteractiveTable from '../../../components/InteractiveTable.astro';
 import Glossaire from '../../../components/Glossaire.astro';
 import RankingTable from '../../../components/RankingTable.astro';
 import Repli from '../../../components/Repli.astro';
+import Terme from '../../../components/Terme.astro';
 import InfographieCategories from '../../../components/infographies/InfographieCategories.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { EQUIPMENT_GROUPS, LIFTS, type EquipmentGroup } from '../../../lib/categories';
@@ -63,8 +64,10 @@ const description =
     <header class="entete-page">
       <h1>{titre}</h1>
       <p class="chapeau">
-        {cat.athletes} athlètes classés dans cette catégorie, pour
-        {' '}{cat.resultats} performances en full power lors de compétitions
+        {cat.athletes} athlètes classés dans cette{' '}
+        <Terme cle="categorie">catégorie</Terme>, pour
+        {' '}{cat.resultats} performances en{' '}
+        <Terme cle="full-power">full power</Terme> lors de compétitions
         réunionnaises.
       </p>
     </header>
@@ -117,10 +120,11 @@ const description =
         <section class="bloc">
           <h2>Histoire du record au total</h2>
           <p class="fin">
-            Les {chronologie.length} marques qui se sont succédé en Raw depuis que
-            la catégorie est suivie. Seule une amélioration réelle figure ici : à
-            performance égale, la marque la plus ancienne conserve le record. La
-            durée de règne de chaque marque se lit entre deux dates.
+            Les {chronologie.length} marques qui se sont succédé en{' '}
+            <Terme cle="raw">Raw</Terme> depuis que la catégorie est suivie.
+            Seule une amélioration réelle figure ici : à performance égale, la
+            marque la plus ancienne conserve le <Terme cle="record">record</Terme>.
+            La durée de règne de chaque marque se lit entre deux dates.
           </p>
 
           <ol class="chrono">

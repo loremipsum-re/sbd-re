@@ -1,4 +1,5 @@
 ---
+import Terme from '../components/Terme.astro';
 import InfographieDonnees from '../components/infographies/InfographieDonnees.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { nombreAthletes, periode, results } from '../lib/data';
@@ -20,9 +21,9 @@ const developpeSeul = meets.filter((m) => m.events.length === 1 && m.events[0] =
     <h1>À propos</h1>
 
     <p class="chapeau">
-      SBD.re recense les classements et records de force athlétique de
-      La Réunion à partir des seuls résultats officiels de compétition. Le site
-      est gratuit, indépendant, et son code est public.
+      SBD.re recense les classements et <Terme cle="record">records</Terme> de
+      force athlétique de La Réunion à partir des seuls résultats officiels de
+      compétition. Le site est gratuit, indépendant, et son code est public.
     </p>
 
     <h2>Les données</h2>
@@ -86,8 +87,9 @@ const developpeSeul = meets.filter((m) => m.events.length === 1 && m.events[0] =
         développé couché et soulevé de terre lors de la même compétition).
       </li>
       <li>
-        <strong>Records par mouvement</strong> : toutes les compétitions. Une
-        barre compte dès lors qu'elle a été soulevée devant des juges, y compris
+        <strong>Records par mouvement</strong> : toutes les compétitions. Une{' '}
+        <Terme cle="barre">barre</Terme> compte dès lors qu'elle a été soulevée
+        devant des juges, y compris
         lors d'une compétition ne comportant qu'un seul mouvement. Le développé
         couché seul représente à lui seul {developpeSeul} des {meets.length}{' '}
         compétitions de l'île :
@@ -131,8 +133,8 @@ const developpeSeul = meets.filter((m) => m.events.length === 1 && m.events[0] =
 
     <h2>Officiel et communauté</h2>
     <p>
-      Le classement officiel présenté ici ne contient que des résultats
-      homologués. Le
+      Le classement officiel présenté ici ne contient que des résultats{' '}
+      <Terme cle="homologue">homologués</Terme>. Le
       <a href="/communaute/">classement communauté</a> accueille les
       performances déclarées en salle et les compétitions non homologuées. Les
       deux ne se mélangent jamais : une performance déclarée ne peut pas
