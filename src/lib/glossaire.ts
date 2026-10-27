@@ -261,13 +261,15 @@ export const GLOSSAIRE: Terme[] = [
       `records?(?!${ESPACE}(?:du${ESPACE}monde|de${ESPACE}France|d${APOSTROPHE}Europe|personnels?))`,
     ),
   }),
-  // Définition du total : « les trois meilleures barres réussies au squat, au
-  // développé couché et au soulevé de terre ».
+  // Infographie du total : « Chaque mouvement se tente trois fois. La meilleure
+  // barre validée compte. » Page 404 : « Barre non validée ». Une barre peut
+  // donc échouer : « charge soulevée » contredisait les « barres réussies » de
+  // la définition du total et les « neuf barres, trois essais » d'un article.
   sansListe({
     cle: 'barre',
     terme: 'Barre',
-    resume: 'Charge soulevée sur un mouvement',
-    phrase: 'Charge soulevée au squat, au développé couché ou au soulevé de terre.',
+    resume: 'Charge tentée sur un mouvement',
+    phrase: 'Charge tentée au squat, au développé couché ou au soulevé de terre.',
     formes: mot('barres?'),
   }),
   // Page À propos : « Le classement officiel présenté ici ne contient que des
