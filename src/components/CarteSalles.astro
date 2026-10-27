@@ -44,7 +44,7 @@
  * retirait presque rien (mesure dans le générateur).
  */
 import ile from '../data/ile-reunion.json';
-import { projeter } from '../lib/carte';
+import { placerEtiquettes, projeter, TAILLE_NOM_COMMUNE, type Point } from '../lib/carte';
 
 interface Salle {
   nom: string;
@@ -67,21 +67,46 @@ const { salles, communes } = Astro.props;
 const points = salles.map((s) => ({ ...s, ...projeter(s.lat, s.lon) }));
 
 /*
- * Les étiquettes de commune se posent au barycentre de leurs salles, et non au
- * centre administratif : c'est là que le nom sert, à côté de l'amas de points
- * qu'il désigne.
+ * La mer autour de l'île, en unités de carte. Plus large au nord : la côte de
+ * Saint-Denis à Sainte-Suzanne aligne quatre communes et leurs salles, et
+ * leurs noms ne trouvent leur place qu'au-dessus, en mer, comme sur toute
+ * carte de côte. Avec 40 unités, le nom de Saint-Denis sortait du cadre.
  */
-const etiquettesCommunes = communes.map((c) => {
-  const dedans = points.filter((p) => p.commune === c);
-  return {
-    nom: c,
-    x: dedans.reduce((t, p) => t + p.x, 0) / dedans.length,
-    y: dedans.reduce((t, p) => t + p.y, 0) / dedans.length,
-    nombre: dedans.length,
-  };
-});
-
 const MARGE = 40;
+const MARGE_NORD = 70;
+const CADRE = { g: -MARGE, d: ile.largeur + MARGE, h: -MARGE_NORD, b: ile.hauteur + MARGE };
+
+/*
+ * LA ZONE DES BOUTONS DE ZOOM. Ils se posent sur la carte dès qu'elle mesure
+ * 24rem, soit 384 px, et passent dessous en deçà (voir le style). À 384 px,
+ * leur coin de 52 × 148 px, décalage de 8 px, trois boutons de 44 px et deux
+ * écarts de 4 px, couvre le plus de carte. Les noms de commune s'en écartent.
+ */
+const PX_PAR_UNITE = 384 / (CADRE.d - CADRE.g);
+const ZONE_BOUTONS = {
+  g: CADRE.d - 52 / PX_PAR_UNITE,
+  d: CADRE.d,
+  h: CADRE.h,
+  b: CADRE.h + 148 / PX_PAR_UNITE,
+};
+
+/*
+ * Les étiquettes de commune se posent À CÔTÉ de leurs salles : c'est là que le
+ * nom sert, près de l'amas de points qu'il désigne, sans les couvrir ni
+ * chevaucher le nom d'une voisine. Les plus grands groupes choisissent en
+ * premier. Détail de la recherche dans lib/carte.ts.
+ */
+const etiquettesCommunes = placerEtiquettes(
+  communes
+    .map((nom) => ({
+      nom,
+      points: points.filter((p) => p.commune === nom).map((p): Point => [p.x, p.y]),
+    }))
+    .sort((a, b) => b.points.length - a.points.length || a.nom.localeCompare(b.nom, 'fr')),
+  points.map((p): Point => [p.x, p.y]),
+  CADRE,
+  [ZONE_BOUTONS],
+);
 ---
 
 <div class="carte-zone" data-carte>
@@ -100,7 +125,7 @@ const MARGE = 40;
     <div class="scene">
       <svg
         data-svg
-        viewBox={`${-MARGE} ${-MARGE} ${ile.largeur + MARGE * 2} ${ile.hauteur + MARGE * 2}`}
+        viewBox={`${CADRE.g} ${CADRE.h} ${CADRE.d - CADRE.g} ${CADRE.b - CADRE.h}`}
         role="group"
         aria-label="Carte des salles de sport de La Réunion. Zoom à la molette ou aux boutons, déplacement au glissé."
         tabindex="0"
@@ -117,8 +142,9 @@ const MARGE = 40;
                 class="etiquette-commune"
                 data-etiquette-commune
                 data-commune={e.nom}
-                x={e.x.toFixed(1)}
-                y={e.y.toFixed(1)}
+                x={e.x}
+                y={e.y}
+                font-size={TAILLE_NOM_COMMUNE}
                 aria-hidden="true"
               >
                 {e.nom}
@@ -214,6 +240,15 @@ const MARGE = 40;
     const ZOOM_MAX = 14;
     /** Au-delà de ce facteur, les noms de salle remplacent ceux des communes. */
     const SEUIL_NOMS = 3;
+    /*
+     * La taille des noms de commune, lue dans le balisage. Elle y est écrite à
+     * la génération, celle sur laquelle leur placement a été calculé, et sert
+     * donc aussi sans JavaScript.
+     */
+    const etiquettesCommunes = [
+      ...svg.querySelectorAll<SVGTextElement>('[data-etiquette-commune]'),
+    ];
+    const TAILLE_COMMUNE = Number(etiquettesCommunes[0]?.getAttribute('font-size') ?? 30);
 
     /**
      * Applique la vue, et redimensionne ce qui ne doit PAS grandir avec elle.
@@ -234,8 +269,8 @@ const MARGE = 40;
         t.setAttribute('font-size', String(22 / k));
         t.setAttribute('y', String(-16 / k));
       }
-      for (const t of svg.querySelectorAll<SVGTextElement>('[data-etiquette-commune]')) {
-        t.setAttribute('font-size', String(30 / k));
+      for (const t of etiquettesCommunes) {
+        t.setAttribute('font-size', String(TAILLE_COMMUNE / k));
       }
 
       // Les noms de salle prennent le relais des communes une fois assez près.
@@ -253,8 +288,8 @@ const MARGE = 40;
      *
      * La règle correcte est plus simple : la fenêtre ne sort jamais du plan.
      * À pleine étendue elle s'y cale exactement, donc ne bouge plus du tout.
-     * Le tracé porte déjà 40 unités de marge autour de l'île, ce qui suffit à
-     * dégager les côtes.
+     * Le tracé porte déjà 40 unités de marge autour de l'île, 70 au nord, ce
+     * qui suffit à dégager les côtes.
      */
     function poser(x: number, y: number, w: number, h: number) {
       const wMin = DEPART.w / ZOOM_MAX;
@@ -670,6 +705,10 @@ const MARGE = 40;
    * toute carte de moins de 378 px, donc sur tout téléphone. Dès 24rem, soit
    * 384 px, ils tiennent dans le coin de mer en haut à droite, où ils étaient.
    * C'est la largeur de la carte qui décide, d'où la requête de conteneur.
+   *
+   * Leur emprise sur la carte, 52 × 148 px depuis le coin, est recopiée dans
+   * ZONE_BOUTONS, que les noms de commune évitent : la changer ici demande de
+   * la changer là.
    */
   .commandes {
     display: flex;
