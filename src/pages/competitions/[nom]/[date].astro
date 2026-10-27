@@ -343,20 +343,23 @@ const description =
     </InteractiveTable>
 
     <p class="note">
-      Les médailles distinguent le podium <strong>de chaque catégorie</strong>,
-      puisqu'une compétition se dispute catégorie par catégorie. La coupe
-      signale une <Terme cle="barre">barre</Terme> qui constitue aujourd'hui un{' '}
+      Les médailles distinguent le podium <strong>de chaque{' '}
+      <Terme cle="categorie">catégorie</Terme></strong>, puisqu'une compétition
+      se dispute catégorie par catégorie. La coupe signale une{' '}
+      <Terme cle="barre">barre</Terme> qui constitue aujourd'hui un{' '}
       <Terme cle="record">record</Terme> à La Réunion.
       {
         aDuFullPower ? (
           <>
-            {' '}Le total et les points <Terme cle="dots">Dots</Terme> concernent
-            le <Terme cle="full-power">full power</Terme>.
+            {' '}Le <Terme cle="total">total</Terme> et les points{' '}
+            <Terme cle="dots">Dots</Terme> concernent le{' '}
+            <Terme cle="full-power">full power</Terme>.
           </>
         ) : (
           <>
-            {' '}Cette compétition portait sur un seul mouvement, le total et les
-            points <Terme cle="dots">Dots</Terme> ne s’y appliquent pas.
+            {' '}Cette compétition portait sur un seul mouvement, le{' '}
+            <Terme cle="total">total</Terme> et les points{' '}
+            <Terme cle="dots">Dots</Terme> ne s’y appliquent pas.
           </>
         )
       }
