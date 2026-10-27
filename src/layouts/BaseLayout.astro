@@ -67,8 +67,15 @@ const CLARITY_ID = 'xtvqmm4cxo';
  * Le partage est déclaré dans lib/navigation, avec les libellés, les adresses,
  * les familles et les icônes. Ajouter une rubrique au site se fait là-bas, et
  * nulle part ailleurs.
+ *
+ * LA RUBRIQUE EN COURS, pour `aria-current` : « page » sur la page de la
+ * rubrique, « true » sur une page intérieure. Sur /categories/hommes/93/, le
+ * lien « Catégories » s'annonçait « page en cours » et menait pourtant
+ * ailleurs. « true » le désigne comme l'entrée en cours de la liste. Le
+ * style des deux valeurs est le même.
  */
-const estActif = (href: string) => chemin === href || chemin.startsWith(href);
+const courant = (href: string) =>
+  chemin === href ? 'page' : chemin.startsWith(href) ? 'true' : undefined;
 ---
 
 <!doctype html>
@@ -239,7 +246,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
                   <a
                     class="lien-nu"
                     href={lien.href}
-                    aria-current={estActif(lien.href) ? 'page' : undefined}
+                    aria-current={courant(lien.href)}
                   >
                     <Icone nom={lien.icone} />
                     {lien.label}
@@ -328,7 +335,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
                             <a
                               class="lien-nu"
                               href={lien.href}
-                              aria-current={estActif(lien.href) ? 'page' : undefined}
+                              aria-current={courant(lien.href)}
                             >
                               <Icone nom={lien.icone} />
                               <span class="intitule">
@@ -814,7 +821,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     color: var(--text);
   }
 
-  .famille a[aria-current='page'] {
+  .famille a[aria-current] {
     border-color: var(--border);
     background: color-mix(in srgb, var(--accent) 10%, transparent);
     color: var(--accent);
@@ -953,7 +960,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(href);
     background: var(--surface);
   }
 
-  .nav-large a[aria-current='page'] {
+  .nav-large a[aria-current] {
     color: var(--accent);
     background: color-mix(in srgb, var(--accent) 12%, transparent);
   }
