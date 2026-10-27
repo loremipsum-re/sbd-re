@@ -107,6 +107,11 @@ const communes = [...new Set(salles.map((s) => s.commune))].sort((a, b) =>
         Un lien sortant et sa ponctuation tiennent ensemble. La flèche ↗ est
         une boîte, et le navigateur peut couper la ligne juste après elle :
         mesuré à 1 280 px, une ligne commençait par « . Une salle manque ».
+
+        Le signalement va à la boîte à suggestions, qui reprend /salles/
+        comme page concernée par l'adresse de provenance. Il menait au
+        formulaire des partenariats, seul formulaire du site quand la page
+        est née, en août 2026.
       */}
       Coordonnées des salles issues d'<span class="insecable"
         ><a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a
@@ -116,7 +121,7 @@ const communes = [...new Set(salles.map((s) => s.commune))].sort((a, b) =>
         ><a href="https://www.etalab.gouv.fr/licence-ouverte-open-licence/">Licence Ouverte</a
         >.</span
       > Une salle manque ou une information est fausse ?{' '}
-      <a href="/partenariats/">Signalez-le</a>.
+      <a href="/suggestions/">Signalez-le</a>.
     </p>
 
     <Partenaire emplacement="salles" />
