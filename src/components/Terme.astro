@@ -1,0 +1,56 @@
+---
+/**
+ * Un terme technique dans une phrase, souligné en pointillé, avec sa
+ * définition d'une phrase en bulle.
+ *
+ *   <Terme cle="dots">Dots</Terme>
+ *
+ * Le texte entre les balises reste celui de la page, accord et majuscule
+ * compris. La définition vient de lib/glossaire.ts, seule source des textes.
+ *
+ * CHOIX DE L'AUTEUR DU 27 OCTOBRE 2026. Seule la PREMIÈRE apparition d'un terme
+ * est soulignée dans une page : c'est à la page de la poser au premier emploi,
+ * et à lui seul. Les articles en Markdown sont soulignés tout seuls, à la
+ * génération : voir lib/lexique-markdown.ts, qui produit ce même balisage.
+ *
+ * TROIS FAÇONS DE L'OUVRIR, comme le glossaire repliable : le survol, le focus
+ * clavier, le toucher. `aria-describedby` relie le mot à sa bulle, que les
+ * lecteurs d'écran lisent même masquée. `aria-hidden` la retire du fil de la
+ * lecture : ouverte, elle serait lue une seconde fois, au milieu de la phrase.
+ *
+ * UN `<span role="button">`, ET NON UN `<button>`, et c'est mesuré. Le
+ * navigateur traite un vrai bouton comme un bloc posé dans la ligne, et la
+ * ligne peut se couper juste après lui : la virgule qui suit le terme passait
+ * seule en tête de la ligne suivante, trois fois sur vingt-sept pages à 320,
+ * 375 et 1 280 px. Un `<span>` reste du texte, la virgule reste collée au mot.
+ * `role="button"` et `tabindex="0"` lui rendent ce que le bouton donnait :
+ * l'annonce d'une commande et l'arrêt à la tabulation. Entrée et Espace
+ * passent par lib/bulles-lexique.ts.
+ *
+ * LA BULLE AVANT LE MOT, mesuré aussi. Placée après lui, elle changeait la
+ * coupure de la ligne en s'ouvrant : à 320 px, « Raw, » passait à la ligne
+ * suivante dès le survol, quittait le pointeur, et la bulle se refermait
+ * aussitôt. Une fois sur 963 termes mesurés à neuf largeurs, et zéro fois
+ * avec la bulle placée avant.
+ *
+ * UNE CIBLE DANS UNE PHRASE, donc sans les 44 px du reste du site : voir
+ * l'exception écrite dans tokens.css, à côté des autres. Le style vit là
+ * aussi, le comportement dans lib/bulles-lexique.ts, chargé sur chaque page.
+ *
+ * TOUT TIENT SUR UNE LIGNE, et c'est voulu : une espace glissée entre la bulle
+ * et le mot s'afficherait dans la phrase, en plus de celle qui précède le
+ * terme.
+ */
+import { idBulle, lexique, type CleTerme } from '../lib/glossaire';
+
+interface Props {
+  /** Le terme, par sa clé dans le glossaire : `dots`, `full-power`… */
+  cle: CleTerme;
+}
+
+const { cle } = Astro.props;
+const { phrase } = lexique(cle);
+const id = idBulle(cle);
+---
+
+<span class="lexique" data-terme={cle}><span class="lexique-bulle" id={id} role="tooltip" aria-hidden="true" hidden>{phrase}</span><span class="lexique-mot" role="button" tabindex="0" aria-describedby={id}><slot /></span></span>

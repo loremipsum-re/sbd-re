@@ -548,6 +548,23 @@ input:not([type='checkbox']):not([type='radio']) {
   min-height: 24px;
 }
 
+/*
+ * LE TERME SOULIGNÉ DU LEXIQUE : aucune hauteur minimale.
+ *
+ * C'est une cible DANS UNE PHRASE, que le critère 2.5.8 des WCAG 2.2 exempte
+ * de toute taille minimale (exception « en ligne ») : sa hauteur est celle du
+ * texte qui la porte. `role="button"` le ferait entrer dans la règle
+ * ci-dessus, d'où cette ligne, qui le dit en clair.
+ *
+ * Mesuré le 27 octobre 2026 à 375 px. Une boîte de 44 px au milieu d'un
+ * paragraphe écartait sa ligne des voisines de 22,6 px dans une note, 18,2
+ * dans un article et 12,9 dans un chapeau, pour des interlignes de 21,4, 25,8
+ * et 31,1 px : le double de l'interligne dans une note.
+ */
+.lexique-mot {
+  min-height: 0;
+}
+
 /* Visible uniquement pour les lecteurs d'écran. */
 .sr-only {
   position: absolute;
@@ -722,6 +739,151 @@ input:not([type='checkbox']):not([type='radio']) {
 .rangee-replis > details.repli[open] {
   flex-basis: 100%;
   margin-bottom: var(--space-3);
+}
+
+/* ---------------------------------------------------------------------------
+ * LE TERME SOULIGNÉ DU LEXIQUE
+ *
+ * Un terme technique, à sa première apparition dans une page ou un article,
+ * souligné en pointillé, avec sa définition d'une phrase dans une bulle. Il
+ * vit ici parce que deux sources le produisent, Terme.astro dans les pages et
+ * lib/lexique-markdown.ts dans les articles : écrit dans l'un, il aurait
+ * manqué à l'autre.
+ *
+ * LE MOT GARDE LA COULEUR DE SA PHRASE. Un lien est en accent et souligné d'un
+ * trait plein, le terme est souligné en pointillé dans la couleur du texte qui
+ * l'entoure : les deux ne se confondent pas, et le pointillé a le contraste du
+ * texte lui-même, quel que soit le paragraphe, chapeau gris compris.
+ *
+ * LA BULLE N'EXISTE PAS FERMÉE. `display: none`, et non `visibility` comme dans
+ * Infobulle.astro : une boîte masquée compte encore dans la zone défilable, et
+ * une bulle en fin de ligne ferait déborder la page sans que rien ne se voie.
+ * Les lecteurs d'écran la lisent quand même, par `aria-describedby`. Elle porte
+ * en plus l'attribut `hidden` : sans feuille de style, dans le mode lecture
+ * d'un navigateur ou pour un moteur de recherche, la définition ne vient pas
+ * se coller au mot au milieu de la phrase. Les règles d'ouverture ci-dessous
+ * l'emportent sur lui, le navigateur ne lui donnant que sa règle par défaut.
+ *
+ * Les états `data-ouvert`, `data-ferme` et `data-mesure` sont posés par
+ * lib/bulles-lexique.ts, qui garde aussi la bulle dans la fenêtre.
+ * ------------------------------------------------------------------------ */
+
+/*
+ * DU TEXTE DANS LA LIGNE, ET NON UNE BOÎTE. Un `inline-block`, ou un vrai
+ * `<button>`, ouvre une coupure de ligne juste après lui : la virgule qui suit
+ * le terme partait seule en tête de la ligne suivante, mesuré à 320 et 375 px.
+ * En ligne, le mot coupe comme le texte qui l'entoure, et l'interligne ne
+ * peut pas bouger.
+ *
+ * INSÉCABLE, bulle comprise. Un à trois mots ne se coupent pas d'une ligne à
+ * l'autre, et la bulle, posée avant le mot, ne s'en sépare jamais.
+ *
+ * Le remplissage du bas prolonge la boîte du mot sous le soulignement : la
+ * bulle part de là, sans masquer les pointillés, et le pointeur passe du mot
+ * à la bulle sans quitter le terme. Sur un élément en ligne, il ne pousse pas
+ * les lignes voisines.
+ */
+.lexique {
+  position: relative;
+  white-space: nowrap;
+  padding-bottom: 0.25em;
+}
+
+/* Le mot garde la police, la graisse et la couleur de sa phrase. Sa hauteur
+   minimale est levée plus haut, avec les exceptions à la règle des 44 px. */
+.lexique-mot {
+  cursor: help;
+  text-decoration: underline dotted;
+  text-decoration-thickness: max(1px, 0.09em);
+  text-underline-offset: 0.22em;
+}
+
+.lexique-mot:focus-visible,
+.lexique[data-ouvert] > .lexique-mot {
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: max(2px, 0.12em);
+}
+
+.lexique-bulle {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  /* Sous l'en-tête collante (6), au-dessus des boutons flottants (4). À
+     320 px, une bulle ouverte au niveau de ces boutons les croise forcément,
+     dessus comme dessous le mot : mesuré, elle passait sous eux et perdait
+     le bout de ses lignes. lib/bulles-lexique.ts l'en écarte quand la place
+     le permet. */
+  z-index: 5;
+  width: max-content;
+  max-width: min(20rem, calc(100vw - 2 * var(--space-4)));
+  /* Collée au bas du terme. Mesuré dans une note de 13 px : un écart de 4 px
+     laissait voir le haut des capitales de la ligne suivante entre le mot et
+     sa bulle, et le pointeur y perdait le survol. */
+  margin-top: 0;
+  padding: var(--space-3);
+  /* Le cadre d'Infobulle.astro, pour que les deux bulles du site se
+     ressemblent. Aucune ombre : c'est le filet de 2 px qui la détache. */
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  /* La bulle vit dans la phrase : elle en hériterait la graisse, l'italique
+     ou la taille d'un chapeau. */
+  font-family: var(--font-body);
+  font-size: var(--step--1);
+  font-weight: 400;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.45;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+  text-indent: 0;
+  white-space: normal;
+  overflow-wrap: break-word;
+  cursor: auto;
+}
+
+/* Placée au-dessus du mot, quand la place manque dessous, et collée au haut
+   du terme pour la même raison : les jambages de la ligne précédente. */
+.lexique-bulle[data-dessus] {
+  top: auto;
+  bottom: 100%;
+}
+
+/* Le survol seulement là où il existe vraiment. Sur un écran tactile, le
+   navigateur simule un survol au toucher et le garde jusqu'au toucher suivant,
+   ce qui empêcherait la bulle de se refermer. Le toucher passe par le script. */
+@media (hover: hover) {
+  .lexique-mot:hover {
+    text-decoration-color: var(--accent);
+    text-decoration-thickness: max(2px, 0.12em);
+  }
+
+  .lexique:hover > .lexique-bulle {
+    display: block;
+  }
+}
+
+/* La bulle précède le mot, d'où `:has()` plutôt que le combinateur `+`.
+   `:where()` ramène sa spécificité à celle des règles voisines : sans lui,
+   le focus l'emporterait sur Échap, plus bas. */
+.lexique:where(:has(> .lexique-mot:focus-visible)) > .lexique-bulle,
+.lexique[data-ouvert] > .lexique-bulle {
+  display: block;
+}
+
+/* Échap l'emporte sur le survol et sur le focus. */
+.lexique[data-ferme] > .lexique-bulle {
+  display: none;
+}
+
+/* En dernier, la mesure l'emporte sur tout : le script lit la taille d'une
+   boîte affichée, même refermée, sans qu'elle se voie. */
+.lexique[data-mesure] > .lexique-bulle {
+  display: block;
+  visibility: hidden;
 }
 
 /* ===========================================================================

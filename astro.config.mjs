@@ -91,6 +91,28 @@ function ancienesAdressesCompetitions() {
 
 const REDIRECTIONS = ancienesAdressesCompetitions();
 
+/**
+ * Le lexique souligné : les termes techniques, à leur première apparition, avec
+ * leur définition en bulle.
+ *
+ * LE SCRIPT DES BULLES, sur chaque page. Il ne fait rien là où aucun terme
+ * n'est souligné. Posé par Terme.astro, il aurait atterri au milieu d'une
+ * phrase : Astro rend le script d'un composant là où celui-ci apparaît pour la
+ * première fois.
+ *
+ * Le script : src/lib/bulles-lexique.ts. Le style : src/styles/tokens.css.
+ * Les définitions : src/lib/glossaire.ts.
+ */
+/** @type {import('astro').AstroIntegration} */
+const lexique = {
+  name: 'sbd-lexique',
+  hooks: {
+    'astro:config:setup': ({ injectScript }) => {
+      injectScript('page', "import '/src/lib/bulles-lexique.ts';");
+    },
+  },
+};
+
 // https://astro.build/config
 export default defineConfig({
   // Sert à générer les URL absolues : balises canoniques, plan de site, partages.
@@ -114,6 +136,8 @@ export default defineConfig({
   redirects: REDIRECTIONS,
 
   integrations: [
+    lexique,
+
     sitemap({
       // Les pages de redirection ne doivent pas figurer au plan de site : elles
       // n'ont pas de contenu propre et diluent le référencement.
