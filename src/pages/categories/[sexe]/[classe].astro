@@ -334,9 +334,22 @@ const description =
      régler ici : `.chrono-meta` est déjà une rangée flex, le marqueur y est
      donc un élément parmi les autres et tient sa ligne. */
 
+  /*
+   * LE TEXTE DE LA LIGNE EN COURS, LISIBLE SUR SA TEINTE. Le doré à 8 % fonce
+   * le fond de la carte, et le thème clair y passait sous le seuil, mesuré le
+   * 27 octobre 2026 : 4,10:1 pour « record actuel » en doré, 4,47:1 pour la
+   * date en accent. La mention passe au texte courant, 11,5:1, et le lien au
+   * survol de l'accent, 7,4:1. Seul le grand chiffre garde le doré, à
+   * 3,8:1 : en graisse 800 et à 19 px au moins, il relève du seuil des
+   * grands textes, 3:1.
+   */
   .encours {
     font-weight: 600;
-    color: var(--or);
+    color: var(--text);
+  }
+
+  .chrono li[data-actuel] .chrono-meta a {
+    color: var(--accent-hover);
   }
 
 </style>
