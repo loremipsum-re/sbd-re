@@ -15,6 +15,7 @@ import InfographieSalles from '../components/infographies/InfographieSalles.astr
 import ile from '../data/ile-reunion.json';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
+import Partenaire from '../components/Partenaire.astro';
 
 const toutes = await getCollection('salles');
 const salles = toutes
@@ -117,6 +118,8 @@ const communes = [...new Set(salles.map((s) => s.commune))].sort((a, b) =>
       > Une salle manque ou une information est fausse ?{' '}
       <a href="/partenariats/">Signalez-le</a>.
     </p>
+
+    <Partenaire emplacement="salles" />
   </div>
 </BaseLayout>
 

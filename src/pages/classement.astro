@@ -16,6 +16,7 @@ import { fullPowerResults } from '../lib/data';
 import { equipementsPresents } from '../lib/records';
 import { meilleurTotalParAthlete } from '../lib/rankings';
 import type { Sex } from '../lib/types';
+import Partenaire from '../components/Partenaire.astro';
 
 const classement = meilleurTotalParAthlete();
 
@@ -158,6 +159,8 @@ const tranchesAge = [...new Set(classement.map((e) => e.ageClass).filter(Boolean
       celle-ci. Les athlètes invités figurent au classement : leur performance
       a été réalisée en compétition, devant les mêmes juges.
     </p>
+
+    <Partenaire emplacement="classement" />
   </div>
 </BaseLayout>
 

@@ -14,14 +14,22 @@
  * Partenaire.astro et de BandeauPartenaires.astro. La fiche d'athlète est
  * écartée pour la raison donnée au commit qui a créé les emplacements.
  *
- * « UN SEUL PARTENAIRE À CET EMPLACEMENT », écrit ainsi à dessein.
- * `partenaireDeLaPage` rend un partenaire au plus pour l'emplacement de
- * contenu, et le bandeau du pied de page s'y ajoute sur toutes les pages.
- * « Un seul partenaire par page » contredirait le bandeau.
+ * « UN SEUL EMPLACEMENT PAR PAGE » porte sur le CONTENU, et le bandeau du pied
+ * de page est dit À PART, dans sa propre rangée. C'est la règle de
+ * lib/sponsors.ts : `partenaireDeLaPage` refuse une seconde place sur la même
+ * page, et le bandeau s'ajoute après tout le reste, sauf sur les fiches
+ * d'athlète, où `partenairesDuPied` ne rend rien.
  *
  * LES EFFECTIFS SONT COMPTÉS à la génération, avec les fonctions qui
  * produisent les pages : listeMeets() pour les compétitions, articles() pour
- * les actualités, un athlète par nom pour les fiches.
+ * les actualités, listeCategories() pour les pages de catégorie, un athlète
+ * par nom pour les fiches. Les pages uniques, classement, records, liste des
+ * catégories et page des salles, comptent pour une.
+ *
+ * LES PAGES SE GROUPENT PAR FORMAT, lu dans lib/formats-partenaires.ts. Sept
+ * places de contenu en sept colonnes ne tiendraient pas sur un téléphone :
+ * regroupées, elles tiennent en trois, la bannière, la carte et la fiche
+ * écartée. Une page qui change de format change de colonne d'elle-même.
  *
  * COMPACTE, parce qu'elle est dépliée au-dessus d'un formulaire. Les pages
  * tiennent en trois colonnes même sur téléphone, et les deux marques
@@ -30,10 +38,18 @@
 import Icone from '../Icone.astro';
 import Infographie from './Infographie.astro';
 import { articles } from '../../lib/actualites';
+import { listeCategories } from '../../lib/categoriesPages';
 import { nombreAthletes } from '../../lib/data';
 import { nombre, pluriel } from '../../lib/format';
+import {
+  EMPLACEMENTS,
+  FORMATS,
+  emplacementsDuFormat,
+  enumeration,
+  type FormatDeContenu,
+  type IdEmplacement,
+} from '../../lib/formats-partenaires';
 import { listeMeets } from '../../lib/meets';
-import type { Emplacement } from '../../lib/sponsors';
 
 interface Props {
   // Aucune propriété : la page des partenariats l'appelle directement.
@@ -60,40 +76,61 @@ const ZONES: Zone[] = [
     dessin: 'apres',
     ou: 'Après le contenu',
     possible: true,
-    detail: 'Un seul partenaire à cet emplacement.',
+    detail: 'Un seul emplacement par page.',
   },
   {
     dessin: 'pied',
     ou: 'Bandeau du pied de page',
     possible: true,
-    detail: 'Le même sur toutes les pages.',
+    detail: "À part, sur toutes les pages sauf les fiches d'athlète.",
   },
 ];
 
 /*
- * Les pages qui portent un emplacement de contenu, une par valeur
- * d'`Emplacement` hors pied de page. `satisfies` fait échouer le contrôle des
- * types si un emplacement s'ajoute sans que l'infographie le montre.
+ * Le nombre de pages de chaque place de contenu. `satisfies` fait échouer le
+ * contrôle des types si une place s'ajoute à la table sans être comptée ici.
  */
-const competitions = listeMeets().length;
-const nombreArticles = (await articles()).length;
 const athletes = nombreAthletes();
+const PAGES_PAR_PLACE = {
+  article: (await articles()).length,
+  competition: listeMeets().length,
+  categorie: listeCategories().length,
+  categories: 1,
+  records: 1,
+  classement: 1,
+  salles: 1,
+} satisfies Record<IdEmplacement, number>;
 
-const PAGES_OUVERTES = {
-  competition: {
-    compte: competitions,
-    type: pluriel(competitions, 'page de compétition', 'pages de compétition'),
-    ou: 'Sous les résultats',
-  },
-  article: {
-    compte: nombreArticles,
-    type: pluriel(nombreArticles, 'article'),
-    ou: "En fin d'article",
-  },
-} satisfies Record<Exclude<Emplacement, 'pied'>, { compte: number; type: string; ou: string }>;
+const FORMATS_DE_CONTENU: FormatDeContenu[] = ['banniere', 'carte'];
+
+const NOM_DU_FORMAT: Record<FormatDeContenu, [string, string]> = {
+  banniere: ['page en bannière', 'pages en bannière'],
+  carte: ['page en carte', 'pages en carte'],
+};
+
+/*
+ * LA LISTE DES PAGES DE CHAQUE FORMAT SOUS LA GRILLE, sur toute la largeur.
+ * Dans une colonne de 76 px, à 320 px de fenêtre, « compétitions » et
+ * « Catégories » ne tenaient pas à côté de leur icône et mordaient sur la
+ * colonne voisine. Les colonnes gardent un statut court.
+ */
+const repartition = FORMATS_DE_CONTENU.map(
+  (format) =>
+    `${FORMATS[format].libelle} : ${enumeration(
+      emplacementsDuFormat(format).map((id) => EMPLACEMENTS[id].court),
+    )}.`,
+).join(' ');
 
 const pages = [
-  ...Object.values(PAGES_OUVERTES).map((p) => ({ ...p, possible: true })),
+  ...FORMATS_DE_CONTENU.map((format) => {
+    const compte = emplacementsDuFormat(format).reduce((n, id) => n + PAGES_PAR_PLACE[id], 0);
+    return {
+      compte,
+      type: pluriel(compte, ...NOM_DU_FORMAT[format]),
+      ou: 'Possible',
+      possible: true,
+    };
+  }),
   {
     compte: athletes,
     type: pluriel(athletes, "fiche d'athlète", "fiches d'athlètes"),
@@ -153,9 +190,9 @@ const pages = [
     }
   </ol>
 
-  {/* « Après le contenu » rattache les pages à la tranche du même nom : la
-      fiche d'athlète est écartée de cet emplacement, et le bandeau du pied
-      de page y figure comme partout. */}
+  {/* « Après le contenu » rattache les pages à la tranche du même nom. La
+      fiche d'athlète est écartée de cet emplacement comme du bandeau du pied
+      de page, et la phrase qui suit la liste le dit. */}
   <p class="intitule" id="partenaires-pages">Après le contenu, selon la page</p>
   <ul class="pages" aria-labelledby="partenaires-pages">
     {
@@ -171,9 +208,10 @@ const pages = [
       ))
     }
   </ul>
+  <p class="detail repartition">{repartition}</p>
   <p class="detail raison">
-    Sur une fiche d'athlète, une marque prêterait à l'athlète une caution qu'il
-    n'a pas donnée.
+    Une fiche d'athlète n'a ni emplacement ni bandeau. Une marque y prêterait à
+    l'athlète une caution qu'il n'a pas donnée.
   </p>
 
   <p class="intitule" id="partenaires-marques">Sur chaque emplacement</p>
@@ -384,8 +422,12 @@ const pages = [
     margin-top: 0.05em;
   }
 
-  .raison {
+  .repartition {
     margin-top: var(--space-3);
+  }
+
+  .raison {
+    margin-top: var(--space-1);
   }
 
   /* LES DEUX MARQUES OBLIGATOIRES. La mention garde son style d'affichage,

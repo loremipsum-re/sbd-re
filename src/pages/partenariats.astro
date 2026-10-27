@@ -2,9 +2,63 @@
 import InfographiePartenaires from '../components/infographies/InfographiePartenaires.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { nombreAthletes, results } from '../lib/data';
+import {
+  ACCROCHE_MAX,
+  BANNIERE_SUR_TELEPHONE,
+  EMPLACEMENTS,
+  FORMATS,
+  IMAGES,
+  PLUS_PETIT_ECRAN,
+  TEXTE_BANNIERE_MIN,
+  emplacementsDuFormat,
+  enPixels,
+  enumeration,
+  type IdFormat,
+} from '../lib/formats-partenaires';
 import { listeMeets } from '../lib/meets';
 
 const meets = listeMeets();
+
+/*
+ * LES TROIS FORMATS, LUS DANS LA TABLE. Dimensions et pages viennent de
+ * lib/formats-partenaires.ts, comme le schéma et le CMS : une page qui change
+ * de format change ici de paragraphe, sans qu'on y touche. `enPixels` garde
+ * chaque dimension d'un seul tenant, unité comprise.
+ */
+const surLesPages = (format: 'banniere' | 'carte') =>
+  `Sur ${enumeration(emplacementsDuFormat(format).map((id) => EMPLACEMENTS[id].pages))}.`;
+
+const formats: { id: IdFormat; phrases: string[]; pages: string }[] = [
+  {
+    id: 'banniere',
+    phrases: [
+      `Votre image de ${enPixels(IMAGES.banniere)}.`,
+      `Elle s'affiche sur ${enPixels(FORMATS.banniere.affichage.largeur)} de large au plus, et sur toute la largeur d'un téléphone.`,
+    ],
+    pages: surLesPages('banniere'),
+  },
+  {
+    id: 'carte',
+    phrases: [
+      `Votre logo de ${enPixels(IMAGES.logo)}, votre nom et une phrase de ${ACCROCHE_MAX} caractères au plus.`,
+      `Le logo s'affiche sur ${enPixels(FORMATS.carte.affichage)}.`,
+    ],
+    pages: surLesPages('carte'),
+  },
+  {
+    id: 'logo',
+    phrases: [
+      'Le logo de la carte, dans le bandeau du pied de page.',
+      `Il s'affiche sur ${enPixels(FORMATS.logo.affichage)}.`,
+    ],
+    pages: "Sur toutes les pages, sauf les fiches d'athlète.",
+  },
+];
+
+/** Ce que mesure à l'écran le plus petit texte permis dans une bannière. */
+const texteSurTelephone = Math.floor(
+  (TEXTE_BANNIERE_MIN * BANNIERE_SUR_TELEPHONE) / IMAGES.banniere.largeur,
+);
 ---
 
 <BaseLayout
@@ -46,15 +100,60 @@ const meets = listeMeets();
         Une image et un lien, hébergés sur le site. Aucun script extérieur,
         aucun pistage, aucune donnée de visiteur transmise à qui que ce soit.
       </p>
-      <ul>
-        <li>Sous les résultats d'une compétition</li>
-        <li>En fin d'article</li>
-        <li>Dans le bandeau du pied de page, sur toutes les pages</li>
+      <p>Trois formats existent, chacun à une place fixe après le contenu.</p>
+
+      {/*
+        LE GABARIT DE CHAQUE FORMAT, À SON RAPPORT : 4:1 pour la bannière, 2:1
+        pour le logo. Il montre la forme de l'image à fournir, que les
+        dimensions disent en chiffres juste à côté. Décoratif pour un lecteur
+        d'écran, qui a les chiffres.
+      */}
+      <ul class="formats">
+        {
+          formats.map((f) => (
+            <li>
+              <span class="gabarit" data-format={f.id} aria-hidden="true">
+                {f.id === 'carte' && (
+                  <>
+                    <span class="gabarit-logo" />
+                    <span class="gabarit-lignes">
+                      <span />
+                      <span />
+                    </span>
+                  </>
+                )}
+              </span>
+              <h3>{FORMATS[f.id].libelle}</h3>
+              <div class="texte-format">
+                {f.phrases.map((p) => (
+                  <p>{p}</p>
+                ))}
+                <p class="pages">{f.pages}</p>
+              </div>
+            </li>
+          ))
+        }
       </ul>
+
       <p class="fin">
-        Un seul emplacement par page, jamais au milieu d'un classement, jamais
-        au-dessus du contenu. Les emplacements portent la mention
-        « Partenaire », comme la loi l'exige.
+        Les images arrivent en PNG, JPEG, WebP ou SVG. Un logo sur fond plein
+        reste lisible dans les deux thèmes du site. Sur un téléphone de
+        {' '}{enPixels(PLUS_PETIT_ECRAN)}, la bannière mesure
+        {' '}{enPixels(BANNIERE_SUR_TELEPHONE)} de large. Écrivez le texte de
+        l'image en {enPixels(TEXTE_BANNIERE_MIN)} de haut au moins. Il mesure
+        alors {enPixels(texteSurTelephone)} à l'écran.
+      </p>
+      {/*
+        LA RÈGLE D'UNE PLACE PAR PAGE porte sur le CONTENU. Le bandeau du pied
+        de page est à part, et le texte le dit : sans cette phrase, une page de
+        compétition qui montre une bannière puis le bandeau contredirait la
+        règle annoncée. Voir lib/sponsors.ts.
+      */}
+      <p class="fin">
+        Une page porte un seul emplacement de contenu, placé après ses
+        classements et ses tableaux. Le bandeau du pied de page est compté à
+        part. Chaque emplacement porte la mention « Partenaire », comme la loi
+        l'exige.
       </p>
 
       {/*
@@ -240,12 +339,119 @@ const meets = listeMeets();
     line-height: 1;
   }
 
-  .regles ul {
+  /*
+   * LES TROIS FORMATS, en fiches. Le gabarit a la largeur fixe des maquettes
+   * de l'infographie, 88 px.
+   *
+   * SUR TÉLÉPHONE, LE GABARIT ACCOMPAGNE LE TITRE et le texte prend toute la
+   * largeur de la fiche. Placé à gauche de tout le texte, il ne lui laissait
+   * que 205 px à 375 px de large : mesurées, les trois fiches y prenaient
+   * 758 px de haut. Dès 40rem, il reprend sa colonne, à gauche du titre et
+   * du texte.
+   */
+  .formats {
+    display: grid;
+    gap: var(--space-3);
     margin: 0 0 var(--space-4);
-    padding-left: var(--space-6);
+    padding: 0;
+    list-style: none;
   }
-  .regles li {
-    margin-bottom: var(--space-1);
+
+  .formats > li {
+    display: grid;
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+    grid-template-areas:
+      'gabarit titre'
+      'texte texte';
+    gap: var(--space-2) var(--space-4);
+    align-items: center;
+    min-width: 0;
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+  @media (min-width: 40rem) {
+    .formats > li {
+      grid-template-areas:
+        'gabarit titre'
+        'gabarit texte';
+      align-items: start;
+    }
+    .gabarit {
+      margin-top: 0.3rem;
+    }
+  }
+
+  .formats h3 {
+    grid-area: titre;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .texte-format {
+    grid-area: texte;
+    min-width: 0;
+  }
+
+  .texte-format p {
+    margin: 0 0 var(--space-1);
+  }
+
+  .texte-format .pages {
+    margin: var(--space-2) 0 0;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /* LE GABARIT. L'aplat d'accent marque la place du partenaire, comme dans
+     l'infographie qui suit. Le rapport est celui de l'image à fournir. */
+  .gabarit {
+    grid-area: gabarit;
+    display: block;
+  }
+
+  .gabarit[data-format='banniere'] {
+    aspect-ratio: 4 / 1;
+    background: var(--accent-fill);
+  }
+
+  .gabarit[data-format='logo'] {
+    width: 50%;
+    aspect-ratio: 2 / 1;
+    background: var(--accent-fill);
+  }
+
+  /* La carte : un cadre, le logo à son rapport 2:1, et deux lignes de texte. */
+  .gabarit[data-format='carte'] {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    border: 2px solid var(--border);
+    background: var(--bg);
+  }
+
+  .gabarit-logo {
+    flex-shrink: 0;
+    width: 40%;
+    aspect-ratio: 2 / 1;
+    background: var(--accent-fill);
+  }
+
+  .gabarit-lignes {
+    flex: 1;
+    display: grid;
+    gap: 4px;
+  }
+
+  .gabarit-lignes span {
+    height: 0.25rem;
+    background: color-mix(in srgb, var(--muted) 40%, var(--bg));
+  }
+
+  .gabarit-lignes span + span {
+    width: 70%;
   }
 
   .fin {

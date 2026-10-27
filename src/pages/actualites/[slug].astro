@@ -12,7 +12,6 @@ import {
 } from '../../lib/actualites';
 import { dateLongue } from '../../lib/format';
 import { libelleEvent } from '../../lib/meets';
-import { partenaireDeLaPage } from '../../lib/sponsors';
 import { render } from 'astro:content';
 
 export async function getStaticPaths() {
@@ -27,7 +26,6 @@ const { Content } = await render(article);
 const meet = competitionDe(article);
 const lies = await articlesLies(article);
 const jour = article.data.date.toISOString().slice(0, 10);
-const partenaire = await partenaireDeLaPage('article', article.id);
 ---
 
 <BaseLayout titre={article.data.titre} description={article.data.description}>
@@ -97,7 +95,7 @@ const partenaire = await partenaireDeLaPage('article', article.id);
       )
     }
 
-    {partenaire && <Partenaire sponsor={partenaire} />}
+    <Partenaire emplacement="article" />
 
     {
       lies.length > 0 && (

@@ -18,6 +18,7 @@ import { SEXE_SLUG, classeSlug, listeCategories } from '../lib/categoriesPages';
 import { equipementsPresents, recordsPour, type RecordEntry } from '../lib/records';
 import { meetPath } from '../lib/slug';
 import type { LiftKey, Sex } from '../lib/types';
+import Partenaire from '../components/Partenaire.astro';
 
 /**
  * Une grille par couple sexe et équipement, avec les catégories de poids en
@@ -349,6 +350,8 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
       <a href="/categories/">catégorie de poids</a> a aussi sa page, avec son
       classement et l'histoire de ses records.
     </p>
+
+    <Partenaire emplacement="records" />
   </div>
 </BaseLayout>
 

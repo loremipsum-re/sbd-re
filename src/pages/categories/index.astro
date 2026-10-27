@@ -26,6 +26,7 @@ import { SEXE_LABEL, listeCategories } from '../../lib/categoriesPages';
 import { kg } from '../../lib/format';
 import { recordsPour } from '../../lib/records';
 import type { Sex } from '../../lib/types';
+import Partenaire from '../../components/Partenaire.astro';
 
 const categories = listeCategories();
 const totalRecords = recordsPour('total');
@@ -166,6 +167,8 @@ const parSexe: { sex: Sex; label: string; liste: typeof categories }[] = [
       d'une catégorie. Le détail par mouvement et par équipement figure sur
       chaque page, ainsi que dans les <a href="/records/">records de La Réunion</a>.
     </p>
+
+    <Partenaire emplacement="categories" />
   </div>
 </BaseLayout>
 

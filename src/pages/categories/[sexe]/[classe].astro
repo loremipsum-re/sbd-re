@@ -16,6 +16,7 @@ import { dateLongue, kg, nombre } from '../../../lib/format';
 import { progressionRecord, recordsPour } from '../../../lib/records';
 import { meetPath } from '../../../lib/slug';
 import type { LiftKey } from '../../../lib/types';
+import Partenaire from '../../../components/Partenaire.astro';
 
 export async function getStaticPaths() {
   return listeCategories().map((cat) => ({
@@ -193,6 +194,8 @@ const description =
         </a>.
       </p>
     </section>
+
+    <Partenaire emplacement="categorie" />
   </div>
 </BaseLayout>
 
