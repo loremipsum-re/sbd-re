@@ -600,8 +600,13 @@ const aDeuxSeries = locaux.length > 0 && exterieurs.length > 0;
     color: var(--accent);
   }
 
+  /* LE FILET DU BOUTON PRESSÉ EST D'ACCENT, comme l'état choisi de la barre
+     de filtres. En thème clair, l'aplat seul ne se détache de son voisin qu'à
+     1,29:1, sous les 3:1 du critère 1.4.11 ; le filet d'accent tient 4,93:1
+     contre le voisin et 5,34:1 contre le fond, mesuré le 28 octobre 2026. En
+     sombre, les deux jetons ont la même couleur. */
   .controles button[aria-pressed='true'] {
-    border-color: var(--accent-fill);
+    border-color: var(--accent);
     background: var(--accent-fill);
     color: var(--on-accent);
   }
