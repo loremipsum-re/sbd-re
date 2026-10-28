@@ -953,3 +953,29 @@ deux fois. Un garde-fou arrête la génération si le découpage manque.
 Piège rencontré : ajouter un import à une page, même vide, peut faire
 regrouper autrement par Vite les blocs `<style>` des composants. Sans effet
 quand les portées sont disjointes, mais le diff du HTML le montre.
+
+### Me situer : une population cohérente avec le record
+
+La page dessine désormais les totaux de la catégorie et de l'équipement
+choisis, un bloc par athlète, avec le visiteur et le record, et donne l'écart
+au record. Le dessin a révélé un défaut de fond : la page comparait le visiteur
+au classement général filtré, où chaque athlète compte pour son meilleur total
+toutes catégories confondues. Elle annonçait ainsi « 1er » en −66 kg raw avec
+492,5 kg, pour un record de catégorie à 562,5 kg. Chaque athlète compte
+maintenant pour son meilleur total DANS la catégorie et l'équipement, comme
+sur les pages de catégorie : en −93 kg raw, l'effectif passe de 48 à 59.
+
+### Les textes et la typographie
+
+Une douzaine de pages réécrites selon l'audit, le vouvoiement partout, et
+quatre défauts mesurés corrigés : « —0 » sur 45 fiches, un `{valeur && …}` qui
+affiche 0 quand la valeur vaut 0 ; « 427,5kg » collé sur `/exterieur/` ; cinq
+mots collés sur `/a-propos/` ; la ponctuation haute en début de ligne.
+
+Les espaces insécables sont posées par le middleware qui réécrit déjà les
+liens sortants. Il convertit l'espace déjà écrite, sans en ajouter : adresses,
+heures et rapports de contraste restent intacts sans avoir à les reconnaître.
+U+00A0 plutôt que l'espace fine U+202F : même largeur que l'espace remplacée,
+aucune ligne ne se resserre, seule la coupure change. Mesuré : 2 305 espaces
+converties sur 514 pages, aucun attribut ni script modifié, et plus aucune
+ponctuation en tête de ligne sur 1 542 mesures, contre 26 avant.

@@ -220,6 +220,12 @@ infographies, parce qu'ils sont la donnée elle-même et restent dépliés :
 - `AnneesRecords.astro`, l'année de chaque record en cours, sur `/records/`.
 - `RankingTable` accepte `dominante="dots"`, que seul l'accueil emploie : son
   top 10 est trié aux Dots, le chiffre dominant doit l'être aussi.
+- La répartition des totaux de `/simulateur/`, un bloc par athlète de la
+  catégorie et de l'équipement choisis, avec le visiteur et le record. Chaque
+  athlète y compte pour son meilleur total DANS la catégorie et l'équipement :
+  avec le classement général filtré, la page annonçait « 1er » sous le record
+  de la catégorie. Tout se calcule dans le navigateur, et le formulaire comme
+  le résultat portent `data-clarity-mask`.
 
 ## Partage sur les réseaux sociaux
 
@@ -316,6 +322,15 @@ régie publicitaire », ce qui reste vrai avec des partenaires directs.
 de `tokens.css` sur `a[href^="http"]`. Ne pas l'ajouter à la main dans le
 balisage : un nouveau lien externe l'obtient sans rien demander. Les adresses
 `mailto:` en sont exclues, un courriel n'étant pas un site externe.
+
+**Les espaces insécables de la ponctuation sont posées à la génération.**
+`src/middleware.ts` appelle `poserEspacesInsecables()` de
+`lib/espaces-insecables.ts` : l'espace déjà écrite avant « : ; ! ? » et à
+l'intérieur des guillemets devient U+00A0, dans les nœuds de texte seulement,
+jamais dans un attribut, un script, un style ou du code. Elle n'en ajoute
+aucune, ce qui protège adresses, heures et rapports comme « 4,5:1 ». Ne pas en
+écrire à la main. Seul le texte fabriqué en JavaScript y échappe, comme le
+« Total : » de `/simulateur/`. `dateLongue()` écrit « 1er » le premier du mois.
 
 **Tout lien sortant s'ouvre dans un nouvel onglet et s'annonce**, demande de
 l'auteur du 24 octobre 2026. `src/middleware.ts` réécrit le HTML de chaque page
