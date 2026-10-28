@@ -2,7 +2,7 @@
  * Le comportement des termes soulignés du lexique, côté navigateur.
  *
  * UN SEUL SCRIPT POUR TOUT LE SITE, injecté par astro.config.mjs sur chaque
- * page, une fois, quel que soit le nombre de termes : 2,5 ko, moins d'un ko
+ * page, une fois, quel que soit le nombre de termes : 2,7 ko, un ko
  * compressé, mis en cache d'une page à l'autre. Il ne fait rien sur une page
  * qui n'en a aucun. Il n'est posé ni par Terme.astro ni par la page
  * d'article : Astro rend le script d'un composant là où le composant apparaît
@@ -26,9 +26,9 @@
  *      pas ces deux touches d'office, comme il le ferait pour un bouton.
  *   4. LA FERMER PAR ÉCHAP, sans déplacer le pointeur ni le focus, comme le
  *      demande le critère 1.4.13 des WCAG 2.2 pour tout contenu qui apparaît
- *      au survol ou au focus. Elle revient quand le pointeur ou le focus
- *      quitte le mot puis y revient, ou quand le pointeur, parti avant Échap,
- *      revient sur le mot.
+ *      au survol ou au focus. Elle reste close tant que le pointeur ou le
+ *      focus reste sur le mot, et revient avec un nouveau survol ou un
+ *      nouveau focus, arrivé de l'extérieur du terme.
  *
  * Trois états, en attributs sur le terme, lus par tokens.css :
  *   data-ouvert  épinglée par un toucher, un clic, Entrée ou Espace,
@@ -172,21 +172,35 @@ if (document.querySelector('.lexique')) {
     if (!terme.hasAttribute('data-ouvert')) placer(terme);
   });
 
+  /*
+   * LA FERMETURE PAR ÉCHAP TIENT TANT QUE L'UN DES DEUX RESTE, le pointeur ou
+   * le focus. Le départ de l'un ne la lève que si l'autre est parti aussi.
+   * Mesuré le 28 octobre 2026 à 1 280 px : un mot cliqué, puis Échap, puis le
+   * pointeur qui s'en va, et la bulle revenait aussitôt pour rester ouverte,
+   * le clavier ayant rendu le focus visible. Et Échap pendant le survol, puis
+   * Tab, la rouvrait sous le pointeur resté sur le mot.
+   */
   document.addEventListener('pointerout', (e) => {
     const terme = termeDe(e.target);
-    if (terme && hors(terme, e.relatedTarget)) terme.removeAttribute('data-ferme');
+    if (terme && hors(terme, e.relatedTarget) && !terme.contains(document.activeElement)) {
+      terme.removeAttribute('data-ferme');
+    }
   });
 
+  // Un focus arrivé de l'extérieur est un nouveau focus : comme un nouveau
+  // survol, il lève la fermeture par Échap.
   document.addEventListener('focusin', (e) => {
     const terme = termeDe(e.target);
-    if (terme) placer(terme);
+    if (!terme) return;
+    if (hors(terme, e.relatedTarget)) terme.removeAttribute('data-ferme');
+    placer(terme);
   });
 
   document.addEventListener('focusout', (e) => {
     const terme = termeDe(e.target);
     if (terme && hors(terme, e.relatedTarget)) {
       terme.removeAttribute('data-ouvert');
-      terme.removeAttribute('data-ferme');
+      if (!terme.matches(':hover')) terme.removeAttribute('data-ferme');
     }
   });
 
