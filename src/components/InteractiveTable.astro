@@ -60,9 +60,14 @@ interface Props {
    * page. Une ou deux commandes tiennent sur une rangée et restent ouvertes.
    */
   replier?: 'toujours' | 'telephone';
+  /**
+   * Le nom au singulier est féminin : l'état vide dit alors « Aucune
+   * catégorie ne correspond », et non « Aucun catégorie ».
+   */
+  feminin?: boolean;
 }
 
-const { recherche, singulier = 'résultat', pluriel, total, barreDeTri, replier } = Astro.props;
+const { recherche, singulier = 'résultat', pluriel, total, barreDeTri, replier, feminin } = Astro.props;
 const plurielFinal = pluriel ?? `${singulier}s`;
 const aFiltres = Astro.slots.has('filtres');
 const interactif = recherche !== undefined || aFiltres;
@@ -178,7 +183,7 @@ const repliable = aFiltres && replier !== undefined;
      */
     interactif && (
       <div data-etat-vide hidden>
-        <EtatVide titre={`Aucun ${singulier} ne correspond`}>
+        <EtatVide titre={`${feminin ? 'Aucune' : 'Aucun'} ${singulier} ne correspond`}>
           Les critères actifs ne laissent rien passer. Élargissez-en un, ou
           repartez de la liste entière.
           <button type="button" data-tout-afficher slot="action">
