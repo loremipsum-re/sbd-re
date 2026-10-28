@@ -133,10 +133,24 @@ const jour = article.data.date.toISOString().slice(0, 10);
    */
   const tableaux = [...document.querySelectorAll<HTMLTableElement>('.corps table')];
 
+  /*
+   * Le texte de l'élément qui précède le tableau, SANS LES BULLES DU LEXIQUE.
+   * Un terme souligné porte sa définition dans la page, masquée : lue telle
+   * quelle, elle s'insérait dans l'étiquette, collée au mot. Mesuré le
+   * 28 octobre 2026 sur un article d'essai, « les points Dots » devenait
+   * « les points Score qui ramène un total […] différents.Dots ».
+   */
+  function texteSansBulles(element: Element | null) {
+    if (!element) return '';
+    const copie = element.cloneNode(true) as Element;
+    for (const bulle of copie.querySelectorAll('.lexique-bulle')) bulle.remove();
+    return copie.textContent?.trim() ?? '';
+  }
+
   function marquerLesTableauxLarges() {
     for (const tableau of tableaux) {
       if (tableau.scrollWidth > tableau.clientWidth + 1) {
-        const titre = tableau.previousElementSibling?.textContent?.trim();
+        const titre = texteSansBulles(tableau.previousElementSibling);
         tableau.tabIndex = 0;
         tableau.setAttribute(
           'aria-label',
