@@ -49,7 +49,9 @@ const { debut, fin } = periode();
         <p class="fin">Classements et records de force athlétique de La Réunion.</p>
         <p class="donnees">
           {results.length.toLocaleString('fr-FR')} résultats, {nombreAthletes()} athlètes.{' '}
-          {debut && <>De {dateLongue(debut)} à {dateLongue(fin)}.</>}
+          {/* « Du … au … » : « de » et « à » se contractent devant « le ». La
+              première date peut tomber un 1er, dateLongue l'écrit ainsi. */}
+          {debut && <>Du {dateLongue(debut)} au {dateLongue(fin)}.</>}
         </p>
       </div>
 
