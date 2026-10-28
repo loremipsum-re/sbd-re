@@ -731,8 +731,20 @@ const description =
     margin-bottom: var(--space-6);
   }
 
+  /*
+   * UN NOM PLUS LARGE QUE LA COLONNE PASSE À LA LIGNE, au besoin au milieu
+   * d'un mot. Mesuré à 320 px : « Randrianantenaina » occupe 306 px dans une
+   * colonne de 288, et deux fiches débordaient de 2 px. Le bloc du titre est
+   * un élément de flex, qui vaut `min-width: auto` et refuserait sinon de
+   * rétrécir sous la largeur de ce mot. Aucun autre nom n'est concerné.
+   */
+  .entete-athlete > div {
+    min-width: 0;
+  }
+
   h1 {
     margin-bottom: var(--space-3);
+    overflow-wrap: break-word;
   }
 
   .badges {
