@@ -71,25 +71,42 @@ function couvert(x: number, y: number): boolean {
 }
 
 /**
- * Pose la bulle dans la fenêtre. Elle est mesurée telle que le CSS la place,
- * sous le mot et calée à sa gauche, puis décalée du strict nécessaire.
- * Tout se passe avant que le navigateur ne dessine : rien ne saute à l'œil.
+ * Pose la bulle dans la fenêtre. Le CSS la place sous le mot, calée à sa
+ * gauche : le script la décale du strict nécessaire. Tout se passe avant que
+ * le navigateur ne dessine : rien ne saute à l'œil.
+ *
+ * LA BULLE NE DÉBORDE JAMAIS DE L'ÉCRAN, PAS MÊME LE TEMPS D'UNE MESURE. Sous
+ * un mot en fin de ligne, à sa place naturelle ou à celle d'une mesure
+ * précédente, elle dépasserait à droite. Sur un téléphone, ce débordement d'un
+ * instant élargit la page, et près du bas de celle-ci le navigateur la fait
+ * remonter. Mesuré le 28 octobre 2026 : 42 px de saut à 375 px, 70 px à
+ * 768 px, et le doigt touchait alors la phrase au lieu du mot, si bien que la
+ * bulle restait close. D'où deux lectures : la place du terme, bulle retirée,
+ * puis la taille de la bulle, posée au bord gauche de l'écran. Sa place se
+ * déduit ensuite de celle du terme, dont elle part.
  */
 function placer(terme: HTMLElement) {
   const bulle = bulleDe(terme);
   if (!bulle) return;
 
-  terme.setAttribute('data-mesure', '');
-  bulle.style.removeProperty('left');
-  bulle.removeAttribute('data-dessus');
-
+  // Retirée avant toute lecture : chacune fait calculer la page.
+  bulle.style.display = 'none';
   const racine = document.documentElement;
   const { clientWidth: largeur, clientHeight: hauteur } = racine;
+  const mot = terme.getBoundingClientRect();
+  bulle.style.removeProperty('display');
+
+  terme.setAttribute('data-mesure', '');
+  bulle.removeAttribute('data-dessus');
+  bulle.style.left = `${MARGE - mot.left}px`;
   const cadre = bulle.getBoundingClientRect();
+
+  // Sans décalage, la bulle part du bord gauche du terme : `left: 0`.
   let decalage = 0;
-  if (cadre.right > largeur - MARGE) decalage = largeur - MARGE - cadre.right;
-  if (cadre.left + decalage < MARGE) decalage = MARGE - cadre.left;
+  if (mot.left + cadre.width > largeur - MARGE) decalage = largeur - MARGE - mot.left - cadre.width;
+  if (mot.left + decalage < MARGE) decalage = MARGE - mot.left;
   if (decalage !== 0) bulle.style.left = `${Math.round(decalage)}px`;
+  else bulle.style.removeProperty('left');
 
   /*
    * Au-dessus du mot si, dessous, la bulle sort de l'écran ou croise un
@@ -100,8 +117,8 @@ function placer(terme: HTMLElement) {
    * coin : les quatre sont sondés, et le milieu du bas. Quand les deux places
    * le croisent, la bulle passe devant lui, voir tokens.css.
    */
-  const gauche = cadre.left + decalage + 4;
-  const droite = cadre.right + decalage - 4;
+  const gauche = mot.left + decalage + 4;
+  const droite = mot.left + decalage + cadre.width - 4;
   const haut = cadre.top + 4;
   const bas = cadre.bottom - 4;
   const masquee =
@@ -112,7 +129,6 @@ function placer(terme: HTMLElement) {
     couvert(droite, bas) ||
     couvert((gauche + droite) / 2, bas);
   const plafond = Number.parseFloat(getComputedStyle(racine).scrollPaddingTop) || 0;
-  const mot = terme.getBoundingClientRect();
   if (masquee && mot.top - cadre.height >= plafond) {
     bulle.setAttribute('data-dessus', '');
   }
