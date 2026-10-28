@@ -19,6 +19,12 @@
  * alors qu'elle se calcule sans lui. Il peut ensuite comparer dans une autre
  * catégorie, une fois son résultat sous les yeux.
  *
+ * UNE IMAGE DE LA CATÉGORIE, ET L'OBJECTIF CHIFFRÉ. Sous le bilan, la
+ * répartition des totaux de la catégorie, un bloc par athlète, et le
+ * visiteur parmi eux. Puis l'écart au record de la catégorie, ou la mention
+ * du record battu. Le rang dit « 12e sur 60 », l'image dit si ces douze
+ * places se jouent à 5 kg ou à 100.
+ *
  * TOUT SE CALCULE DANS LE NAVIGATEUR. Aucune saisie ne part sur le réseau, ni
  * vers le serveur, ni ailleurs : le classement est déposé dans la page, et le
  * script le lit sur place. Le site n'a donc rien à recueillir, rien à
@@ -38,7 +44,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import '../styles/filtres.css';
 import { EQUIPMENT_GROUPS, equipmentGroup, weightClassesFor } from '../lib/categories';
 import { fullPowerResults } from '../lib/data';
-import { equipementsPresents } from '../lib/records';
+import { equipementsPresents, recordsPour } from '../lib/records';
 import { meilleurTotalParAthlete } from '../lib/rankings';
 import type { Result } from '../lib/types';
 
@@ -86,6 +92,17 @@ const populations = Object.fromEntries(
   [...lignesParCle].map(([cle, lignes]) => [
     cle,
     meilleurTotalParAthlete(lignes, false).map((a) => [a.name, a.slug, a.totalKg]),
+  ]),
+);
+
+/*
+ * LE RECORD AU TOTAL de chaque catégorie et équipement, celui que montrent
+ * /records/ et la page de la catégorie : la valeur, le détenteur, sa fiche.
+ */
+const records = Object.fromEntries(
+  recordsPour('total').map((r) => [
+    `${r.sex}|${r.weightClass.id}|${r.equipment}`,
+    [r.valueKg, r.holder, r.slug],
   ]),
 );
 
@@ -251,7 +268,7 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     type="application/json"
     id="donnees-classement"
     is:inline
-    set:html={JSON.stringify({ general, populations, classes: classesParSexe })}
+    set:html={JSON.stringify({ general, populations, records, classes: classesParSexe })}
   />
 </BaseLayout>
 
@@ -266,6 +283,8 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     type Sexe = 'M' | 'F';
     /** Un athlète d'une catégorie : nom, adresse de sa fiche, meilleur total. */
     type Membre = [string, string, number];
+    /** Le record d'une catégorie : valeur, détenteur, adresse de sa fiche. */
+    type RecordCategorie = [number, string, string];
     interface Classe {
       id: string;
       label: string;
@@ -273,9 +292,10 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
       o: boolean;
     }
 
-    const { general, populations, classes } = JSON.parse(brut.textContent ?? '{}') as {
+    const { general, populations, records, classes } = JSON.parse(brut.textContent ?? '{}') as {
       general: { t: number[]; d: number[] };
       populations: { [cle: string]: Membre[] };
+      records: { [cle: string]: RecordCategorie };
       classes: { [sexe in Sexe]: Classe[] };
     };
 
@@ -284,6 +304,12 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
 
     const nombre = (v: number, decimales = 1) =>
       Number(v.toFixed(decimales)).toLocaleString('fr-FR');
+
+    /* Un nombre et son unité ne se séparent pas d'une ligne à l'autre : le
+       titre coupait « −93 | kg raw » à 375 px, mesuré au premier rendu. */
+    const INSECABLE = '\u00a0';
+    const kg = (v: number) => `${nombre(v)}${INSECABLE}kg`;
+    const insecable = (texte: string) => texte.replace(/ /g, INSECABLE);
 
     /* Une valeur négative ou illisible compte pour zéro : une barre s'ajoute
        au total, elle ne s'en retranche pas. */
@@ -297,6 +323,14 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     const echapper = (texte: string) =>
       texte.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 
+    /* « 1er » ou « 1re », puis « 2e » : l'accord suit le sexe choisi. */
+    const ordinal = (n: number, sexe: Sexe) =>
+      `${n}<sup>${n === 1 ? (sexe === 'F' ? 're' : 'er') : 'e'}</sup>`;
+
+    /* L'équipement dans une phrase, en minuscules : « en −93 kg raw ». */
+    const enToutesLettres = (equipement: string) =>
+      equipement === 'equipped' ? 'équipé' : equipement === 'wraps' ? 'en bandes' : 'raw';
+
     /*
      * LA RANGÉE D'ÉTAT, comme celle des listes : le total des trois barres à
      * gauche, « Réinitialiser » à droite, dès qu'une valeur est saisie. Le
@@ -308,7 +342,7 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     const totalSaisi = form.querySelector<HTMLElement>('[data-total]');
     const afficherEtat = (total: number, poids: number) => {
       if (etat) etat.hidden = total <= 0 && poids <= 0;
-      if (totalSaisi) totalSaisi.textContent = `Total : ${nombre(total)} kg`;
+      if (totalSaisi) totalSaisi.textContent = `Total${INSECABLE}: ${kg(total)}`;
     };
 
     /*
@@ -350,12 +384,160 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
         <span class="place-total"><b class="num-tab">${nombre(m[2])}</b> <span class="unite">kg</span></span>
         <span class="place-ecart">${
           ecart > 0
-            ? `<span class="manque">+${nombre(ecart)} kg pour passer devant</span>`
+            ? `<span class="manque">+${kg(ecart)} pour passer devant</span>`
             : ecart === 0
               ? '<span class="egalite">à égalité</span>'
-              : `<span class="avance">${nombre(-ecart)} kg d\'avance</span>`
+              : `<span class="avance">${kg(-ecart)} d\'avance</span>`
         }</span>
       </li>`;
+
+    /*
+     * L'ÉCART AU RECORD DE LA CATÉGORIE, l'objectif chiffré.
+     *
+     * À égalité, le record reste à celui qui l'a établi le premier : la page
+     * dit donc « vous égaleriez », jamais « vous battriez ». Le détenteur est
+     * nommé, et sa fiche est à un geste.
+     *
+     * Une catégorie sans athlète dans cet équipement n'a pas de record : le
+     * total du visiteur y serait le premier, et la phrase le dit.
+     */
+    const phraseRecord = (record: RecordCategorie | undefined, total: number, groupe: string) => {
+      if (!record) {
+        return `Votre total ouvrirait le classement en ${groupe}, et en serait le record.`;
+      }
+      const [valeur, detenteur, fiche] = record;
+      const qui = `détenu par <a href="/athlete/${fiche}/">${echapper(detenteur)}</a> avec ${kg(valeur)}`;
+      const ecart = Math.round((valeur - total) * 100) / 100;
+      if (ecart > 0) return `<b>${kg(ecart)}</b> jusqu'au record de la catégorie, ${qui}.`;
+      if (ecart === 0) return `Vous égaleriez le record de la catégorie, ${qui}.`;
+      return `Vous battriez de <b>${kg(-ecart)}</b> le record de la catégorie, ${qui}.`;
+    };
+
+    /*
+     * LA RÉPARTITION DES TOTAUX DE LA CATÉGORIE, UN BLOC PAR ATHLÈTE.
+     *
+     * Chaque colonne couvre une tranche de 25 kg de total, et chaque athlète y
+     * pose un bloc : le compte se lit sans axe vertical, et l'effectif annoncé
+     * par le bilan se voit. Le bloc du record est évidé et doré, celui du
+     * visiteur est l'aplat d'accent, posé en haut de sa colonne sous l'étiquette
+     * « Vous ». Trois marques distinctes par la forme autant que par la
+     * couleur, et une légende qui les nomme.
+     *
+     * UNE COLONNE VIDE DE CHAQUE CÔTÉ : le record ne touche pas le bord du
+     * cadre, et un total qui le bat de peu trouve sa place à droite. Un total
+     * hors de la catégorie élargit l'échelle de six colonnes au plus. Au-delà,
+     * l'échelle reste celle des athlètes, et le bloc du visiteur se range au
+     * bord, sous une flèche : une saisie de 9 999 kg ne doit pas écraser la
+     * catégorie dans une seule colonne.
+     *
+     * L'échelle ne dépend que des athlètes tant que le visiteur y tient : les
+     * colonnes restent en place pendant la saisie, seul le bloc « Vous » bouge.
+     *
+     * En HTML et en CSS, sans bibliothèque, comme les infographies. Le dessin
+     * est `aria-hidden` : le bilan dit déjà le rang, l'effectif et l'écart au
+     * record en toutes lettres, dans la zone qui s'annonce.
+     */
+    const PAS = 25;
+    const COLONNES_MAX = 24;
+    const EXTENSION = 6;
+    type Brique = 'athlete' | 'record' | 'vous';
+
+    const repartition = (
+      membres: Membre[],
+      total: number,
+      record: RecordCategorie | undefined,
+      sexe: Sexe,
+      groupe: string,
+    ) => {
+      const max = membres[0][2];
+      const min = membres[membres.length - 1][2];
+
+      // Le pas double si la catégorie s'étale au-delà de 24 colonnes.
+      let pas = PAS;
+      while (Math.floor(max / pas) - Math.floor(min / pas) + 3 > COLONNES_MAX) pas *= 2;
+
+      let debut = (Math.floor(min / pas) - 1) * pas;
+      let fin = (Math.floor(max / pas) + 2) * pas;
+      const colonneVous = Math.floor(total / pas) * pas;
+      let fleche: 'gauche' | 'droite' | null = null;
+      if (colonneVous < debut) {
+        if (colonneVous >= debut - EXTENSION * pas) debut = colonneVous;
+        else fleche = 'gauche';
+      } else if (colonneVous >= fin) {
+        if (colonneVous < fin + EXTENSION * pas) fin = colonneVous + pas;
+        else fleche = 'droite';
+      }
+
+      const n = Math.round((fin - debut) / pas);
+      const indice = (t: number) => Math.min(n - 1, Math.max(0, Math.floor((t - debut) / pas)));
+      const colonnes: Brique[][] = Array.from({ length: n }, () => []);
+
+      // Du plus faible au plus fort : le record, s'il est dans la colonne, en
+      // occupe le haut.
+      for (const [nom, , t] of [...membres].reverse()) {
+        const estRecord = record !== undefined && nom === record[1] && t === record[0];
+        colonnes[indice(t)].push(estRecord ? 'record' : 'athlete');
+      }
+      const iVous = fleche === 'gauche' ? 0 : fleche === 'droite' ? n - 1 : indice(total);
+      colonnes[iVous].push('vous');
+
+      // La plus haute colonne vise 120 px, écarts compris : des blocs de 16
+      // px au plus pour une catégorie de quelques athlètes, qui serait sinon
+      // un mince ruban, et plus fins pour une catégorie très fournie, qui
+      // prendrait sinon un écran entier. Dix blocs empilés font 10 px chacun.
+      const pile = Math.max(...colonnes.map((c) => c.length));
+      const hauteurBrique = Math.max(3, Math.min(16, Math.floor(120 / pile) - 2));
+
+      // L'étiquette « Vous » se centre sur sa colonne, et se cale au bord du
+      // dessin quand la colonne en est trop proche pour la centrer.
+      const position = (iVous + 0.5) / n;
+      const cote = position < 0.12 ? 'debut' : position > 0.88 ? 'fin' : 'centre';
+      const etiquette =
+        fleche === 'gauche' ? '◂ Vous' : fleche === 'droite' ? 'Vous ▸' : 'Vous';
+
+      // Une graduation tous les 100 kg, tous les 50 sur un dessin de douze
+      // colonnes au plus. Aucune à moins de 7 % d'un bord : son nombre,
+      // centré sur elle, déborderait du dessin à 320 px.
+      const graduations: string[] = [];
+      const ecartGraduation = pas * (n > 12 ? 4 : 2);
+      for (let t = Math.ceil(debut / ecartGraduation) * ecartGraduation; t < fin; t += ecartGraduation) {
+        const k = Math.round((t - debut) / pas);
+        if (k / n < 0.07 || k / n > 0.93) continue;
+        graduations.push(`<span class="graduation" style="--k:${k}">${nombre(t, 0)}</span>`);
+      }
+
+      const effectif = membres.length;
+      const classe = `classé${sexe === 'F' ? 'e' : ''}${effectif > 1 ? 's' : ''}`;
+      const titre =
+        effectif > 1
+          ? `Les totaux des ${effectif} athlètes ${classe} en ${groupe}`
+          : `Le total de l'athlète ${classe} en ${groupe}`;
+
+      const dessin = colonnes
+        .map(
+          (blocs, i) =>
+            `<span class="colonne"${i === iVous ? ' data-vous' : ''}>${blocs
+              .map((b) => `<span class="brique" data-brique="${b}"></span>`)
+              .join('')}${i === iVous ? '<span class="trait-vous"></span>' : ''}</span>`,
+        )
+        .join('');
+
+      return `
+        <div class="repartition" aria-hidden="true">
+          <p class="repartition-titre">${titre}</p>
+          <div class="dessin" style="--colonnes:${n};--brique:${hauteurBrique}px;--i:${iVous}">
+            <span class="etiquette-vous" data-cote="${cote}">${etiquette}</span>
+            <div class="colonnes">${dessin}</div>
+            <div class="axe">${graduations.join('')}</div>
+          </div>
+          <ul class="legende">
+            <li><span class="echantillon" data-brique="athlete"></span>Un athlète</li>
+            <li><span class="echantillon" data-brique="vous"></span>Vous, ${kg(total)}</li>
+            ${record ? `<li><span class="echantillon" data-brique="record"></span>Record, ${kg(record[0])}</li>` : ''}
+            <li>Total en kg, par tranches de ${kg(pas)}</li>
+          </ul>
+        </div>`;
+    };
 
     const calculer = () => {
       const sexe = select('sexe') as Sexe;
@@ -373,19 +555,22 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
 
       const deduite = categorieDuPoids(poids, sexe);
       const active = categorieForcee ?? deduite?.id ?? null;
-      const libelle = classes[sexe].find((c) => c.id === active)?.label ?? '';
+      const libelle = insecable(classes[sexe].find((c) => c.id === active)?.label ?? '');
+      const groupe = `${libelle} ${enToutesLettres(equipement)}`;
 
       const pairs = population(sexe, active, equipement);
       const devant = pairs.filter((m) => m[2] > total);
       const derriere = pairs.filter((m) => m[2] <= total);
       const rang = devant.length + 1;
+      // « sur 60 » compte le visiteur, et disparaît quand il serait seul.
+      const surEffectif = pairs.length ? `${INSECABLE}sur${INSECABLE}${pairs.length + 1}` : '';
 
       const voisins = [
         ...devant.slice(-3).map((m) => ligne(m, m[2] - total)),
         `<li class="candidat moi">
            <span class="place-nom"><b>Votre total</b></span>
            <span class="place-total"><b class="num-tab">${nombre(total)}</b> <span class="unite">kg</span></span>
-           <span class="place-ecart"><span class="vous">${rang}<sup>e</sup> sur ${pairs.length + 1}</span></span>
+           <span class="place-ecart"><span class="vous">${ordinal(rang, sexe)}${surEffectif}</span></span>
          </li>`,
         ...derriere.slice(0, 3).map((m) => ligne(m, m[2] - total)),
       ].join('');
@@ -394,31 +579,41 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
       const score = poids > 0 ? dots(total, poids, sexe) : 0;
       const rangDots = score > 0 ? general.d.filter((d) => d > score).length + 1 : null;
 
+      const ou = active
+        ? `en ${groupe}`
+        : `chez les ${sexe === 'F' ? 'femmes' : 'hommes'} en ${enToutesLettres(equipement)}`;
+
       /* La catégorie est ANNONCÉE, et le bouton n'ouvre les autres qu'ensuite :
          le visiteur voit d'abord sa situation, puis compare s'il le souhaite. */
       const annonce = deduite
         ? categorieForcee && categorieForcee !== deduite.id
-          ? `Comparaison en <b>${libelle}</b>, alors que ${nombre(poids)} kg vous placent en <b>${deduite.label}</b>.`
-          : `Avec ${nombre(poids)} kg de poids de corps, vous concourez en <b>${deduite.label}</b>.`
-        : 'Renseignez votre poids de corps pour connaître votre catégorie.';
+          ? `Comparaison en <b>${libelle}</b>, alors que ${kg(poids)} vous placent en <b>${insecable(deduite.label)}</b>.`
+          : `Avec ${kg(poids)} de poids de corps, vous concourez en <b>${insecable(deduite.label)}</b>.`
+        : active
+          ? `Comparaison en <b>${libelle}</b>. Renseignez votre poids de corps pour connaître votre catégorie.`
+          : 'Renseignez votre poids de corps pour connaître votre catégorie et son record.';
+
+      const cle = `${sexe}|${active}|${equipement}`;
+      const record = active ? records[cle] : undefined;
 
       const choix = classes[sexe]
         .map(
           (c) =>
-            `<button type="button" class="categorie${c.id === active ? ' active' : ''}" data-categorie="${c.id}" aria-pressed="${c.id === active}">${c.label}</button>`,
+            `<button type="button" class="categorie${c.id === active ? ' active' : ''}" data-categorie="${c.id}" aria-pressed="${c.id === active}">${insecable(c.label)}</button>`,
         )
         .join('');
 
       sortie.innerHTML = `
         <div class="bilan">
           <p class="titre">
-            Avec <b>${nombre(total)} kg</b>${score > 0 ? ` et <b>${nombre(score)} Dots</b>` : ''},
-            vous seriez <b>${rang}<sup>e</sup></b>${libelle ? ` en ${libelle}` : ''}.
+            Avec <b>${kg(total)}</b>${score > 0 ? ` et <b>${nombre(score)}${INSECABLE}Dots</b>` : ''},
+            vous seriez <b>${ordinal(rang, sexe)}${surEffectif}</b> ${ou}.
           </p>
           <p class="sous-titre">${annonce}</p>
+          ${active ? `<p class="sous-titre ligne-record">${phraseRecord(record, total, groupe)}</p>` : ''}
           <p class="sous-titre">
-            ${rangGeneral}<sup>e</sup> au total sur l'ensemble des ${general.t.length} athlètes classés${
-              rangDots ? `, et ${rangDots}<sup>e</sup> aux points Dots` : ''
+            ${ordinal(rangGeneral, sexe)} au total sur l'ensemble des ${general.t.length} athlètes classés${
+              rangDots ? `, et ${ordinal(rangDots, sexe)} aux points Dots` : ''
             }.
           </p>
         </div>
@@ -427,6 +622,8 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
           <summary>Comparer dans une autre catégorie</summary>
           <div class="categories">${choix}</div>
         </details>
+
+        ${active && pairs.length ? repartition(pairs, total, record, sexe, groupe) : ''}
 
         <ol class="voisins">${voisins}</ol>`;
     };
@@ -484,8 +681,6 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
 </script>
 
 <style>
-
-
   .petit {
     font-size: var(--step--1);
   }
@@ -625,6 +820,11 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     color: var(--muted);
   }
 
+  /* L'écart au record se détache de sa phrase : c'est l'objectif chiffré. */
+  .resultat :global(.ligne-record b) {
+    color: var(--text);
+  }
+
   .resultat :global(.voisins) {
     list-style: none;
     margin: 0;
@@ -700,9 +900,22 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     font-weight: 700;
   }
 
+  /*
+   * LE RANG DU VISITEUR, EN APLAT D'ACCENT, celui de son bloc dans la
+   * répartition : la même couleur dit « vous » aux deux endroits.
+   *
+   * Il était écrit en accent sur la teinte de la ligne : 4,22:1 mesuré en
+   * thème clair, sous le seuil de 4,5, comme les états choisis des listes
+   * avant leur correction. Le texte basalte sur l'aplat jaune tient 10,66:1.
+   */
   .resultat :global(.vous) {
-    color: var(--accent);
+    display: inline-block;
+    padding: 0 var(--space-2);
+    border-radius: var(--radius);
+    background: var(--accent-fill);
+    color: var(--on-accent);
     font-weight: 700;
+    white-space: nowrap;
   }
 
   /* Un total identique n'est ni une avance ni un retard : « 0 kg d'avance »
@@ -780,6 +993,190 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     background: var(--accent-fill-hover);
   }
 
+  /*
+   * LA RÉPARTITION, dans le cadre des infographies : aplat de surface, filet
+   * de 2 px, aucune ombre.
+   *
+   * LE GRIS DES BLOCS EST MÊLÉ AU FOND, comme les barres secondaires de
+   * l'infographie des Dots : en thème sombre, le gris de texte seul pesait
+   * autant que l'accent. Le mélange change avec le thème pour tenir 3:1
+   * contre le fond du cadre, le seuil d'un tracé qui porte une information :
+   * 55 % de gris en sombre, 80 % en clair, où 55 % ne donnait que 2,3:1.
+   */
+  .resultat :global(.repartition) {
+    --gris-brique: color-mix(in srgb, var(--muted) 55%, var(--surface));
+    --ecart-brique: 2px;
+    margin-bottom: var(--space-4);
+    padding: var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  :global(:root[data-theme='light']) .resultat :global(.repartition) {
+    --gris-brique: color-mix(in srgb, var(--muted) 80%, var(--surface));
+  }
+
+  .resultat :global(.repartition-titre) {
+    margin: 0 0 var(--space-3);
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  /*
+   * LE DESSIN. Une rangée réservée à l'étiquette « Vous » au-dessus des
+   * colonnes, qui partagent la largeur à parts égales.
+   *
+   * La position d'une colonne se calcule en CSS à partir de son rang `--i` :
+   * la largeur moins les écarts, divisée par le nombre de colonnes, plus les
+   * écarts déjà franchis. Le dessin suit ainsi la largeur du cadre sans
+   * script, de 320 à 1 280 px.
+   *
+   * 3,5rem par colonne au plus : une catégorie de trois athlètes garde des
+   * blocs de 56 px sur grand écran, et non des dalles de 174 px.
+   */
+  .resultat :global(.dessin) {
+    --rangee-etiquette: 1.75rem;
+    position: relative;
+    max-width: calc(var(--colonnes) * 3.5rem);
+    padding-top: var(--rangee-etiquette);
+  }
+
+  .resultat :global(.colonnes) {
+    display: grid;
+    grid-template-columns: repeat(var(--colonnes), minmax(0, 1fr));
+    align-items: end;
+    column-gap: var(--ecart-brique);
+    padding-bottom: var(--ecart-brique);
+    border-bottom: 2px solid var(--border);
+  }
+
+  /* Les blocs s'empilent depuis le bas : le premier écrit est le plus bas. */
+  .resultat :global(.colonne) {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: var(--ecart-brique);
+    min-width: 0;
+  }
+
+  /* La colonne du visiteur monte jusqu'à l'étiquette : le trait qui la
+     coiffe remplit l'espace au-dessus de son bloc. */
+  .resultat :global(.colonne[data-vous]) {
+    align-self: stretch;
+  }
+
+  /* `brique` et non `bloc` : `.bloc` est une classe globale de tokens.css,
+     qui pose 48 px de marge sous chaque section de page. Elle écartait les
+     blocs d'une même colonne de 48 px, mesuré au premier rendu. */
+  .resultat :global(.brique) {
+    height: var(--brique);
+  }
+
+  /* Sur grand écran, les colonnes s'élargissent jusqu'à 56 px : des blocs
+     plus hauts gardent au dessin une proportion lisible. */
+  @media (min-width: 40rem) {
+    .resultat :global(.brique) {
+      height: calc(var(--brique) * 1.4);
+    }
+  }
+
+  /* Les trois marques valent pour les blocs comme pour leurs échantillons
+     dans la légende : la couleur ne dépend que de `data-brique`. */
+  .resultat :global([data-brique='athlete']) {
+    background: var(--gris-brique);
+  }
+
+  /* Le visiteur : l'aplat d'accent sous un filet d'accent, comme le segment
+     choisi d'une bascule. En thème clair, l'aplat seul ne se détache du fond
+     qu'à 1,29:1, le filet tient 4,93:1. */
+  .resultat :global([data-brique='vous']) {
+    border: 2px solid var(--accent);
+    background: var(--accent-fill);
+  }
+
+  /* Le record : un bloc évidé, au filet doré des coupes de record. Il se
+     distingue du gris par la forme, pas seulement par la teinte. */
+  .resultat :global([data-brique='record']) {
+    border: 2px solid var(--or);
+    background: transparent;
+  }
+
+  .resultat :global(.trait-vous) {
+    flex: 1 1 auto;
+    width: 2px;
+    align-self: center;
+    background: var(--accent);
+  }
+
+  .resultat :global(.etiquette-vous) {
+    position: absolute;
+    top: 0;
+    left: calc(
+      (100% - (var(--colonnes) - 1) * var(--ecart-brique)) * (var(--i) + 0.5) / var(--colonnes) +
+        var(--i) * var(--ecart-brique)
+    );
+    transform: translateX(-50%);
+    font-size: var(--step--1);
+    font-weight: 700;
+    line-height: var(--rangee-etiquette);
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .resultat :global(.etiquette-vous[data-cote='debut']) {
+    left: 0;
+    transform: none;
+  }
+
+  .resultat :global(.etiquette-vous[data-cote='fin']) {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+
+  /* Les graduations tombent entre deux colonnes, au milieu de leur écart. */
+  .resultat :global(.axe) {
+    position: relative;
+    height: 1.6em;
+    margin-top: var(--space-1);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .resultat :global(.graduation) {
+    position: absolute;
+    top: 0;
+    left: calc(
+      (100% - (var(--colonnes) - 1) * var(--ecart-brique)) * var(--k) / var(--colonnes) +
+        (var(--k) - 0.5) * var(--ecart-brique)
+    );
+    transform: translateX(-50%);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .resultat :global(.legende) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    margin: var(--space-3) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .resultat :global(.legende li) {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .resultat :global(.echantillon) {
+    flex-shrink: 0;
+    width: 0.75rem;
+    height: 0.75rem;
+  }
 
   @media (min-width: 40rem) {
     .resultat :global(.candidat) {
