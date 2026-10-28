@@ -80,29 +80,33 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
 
 <BaseLayout
   titre="Me situer dans le classement"
-  description="Saisissez vos trois mouvements et découvrez la place que votre total occuperait au classement réunionnais, et les kilos qui vous séparent des athlètes devant vous."
+  description="Saisissez votre poids de corps et vos trois barres. La page calcule votre place au classement de La Réunion, et l'écart avec les athlètes devant vous."
 >
   <div class="wrap">
     <header class="entete-page">
       <h1>Me situer</h1>
       <p class="chapeau">
-        Renseignez vos trois <Terme cle="barre">barres</Terme>, votre équipement
-        et votre <Terme cle="poids-corps">poids de corps</Terme> : la page vous
-        rend la place que ce <Terme cle="total">total</Terme> occuperait au
-        classement de La Réunion, et surtout les kilos qui vous séparent des
-        athlètes situés juste devant.
+        Saisissez votre <Terme cle="poids-corps">poids de corps</Terme> et vos
+        trois <Terme cle="barre">barres</Terme>. La page calcule la place de
+        votre <Terme cle="total">total</Terme> au classement de La Réunion, et
+        l'écart avec les athlètes juste devant.
       </p>
       <p class="chapeau petit">
-        Tout se calcule dans votre navigateur. Aucune valeur saisie ne part sur
-        le réseau, et le site n'en conserve aucune. Cette simulation ne vous
-        inscrit pas au classement officiel, qui ne recense que des performances
-        réalisées en compétition <Terme cle="homologue">homologuée</Terme>.
+        Le calcul se fait dans votre navigateur. Vos valeurs restent sur votre
+        appareil. Seules les performances réalisées en compétition
+        {' '}<Terme cle="homologue">homologuée</Terme> entrent au classement
+        officiel.
       </p>
     </header>
 
+    {/* La pastille nomme ce que l'infographie explique, et non sa forme.
+        « Calcul des Dots » tient sur la rangée du glossaire à 375 px, comme
+        « Dots en images » : mesuré, 138 px pour 150 disponibles. « Comment
+        se calculent les Dots » en demandait 231 et passait dessous. À 320
+        px, la seconde pastille passe déjà dessous, quel que soit le libellé. */}
     <div class="rangee-replis">
       <Glossaire />
-      <Repli titre="Dots en images">
+      <Repli titre="Calcul des Dots">
         <InfographieDots lienArticle="dots" />
       </Repli>
     </div>
@@ -195,13 +199,12 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     </section>
 
     <p class="note">
-      Le classement retient le meilleur total réalisé en{' '}
-      <Terme cle="full-power">full power</Terme> sur un plateau réunionnais. Les
-      athlètes affichés ici sont ceux de votre{' '}
-      <Terme cle="categorie">catégorie</Terme> et de votre équipement : un
-      total <Terme cle="equipped">équipé</Terme> ne se compare
-      pas à un total <Terme cle="raw">raw</Terme>, les textiles restituant une
-      partie de l'effort.
+      La comparaison porte sur votre <Terme cle="categorie">catégorie</Terme> et
+      votre équipement, <Terme cle="raw">raw</Terme> ou{' '}
+      <Terme cle="equipped">équipé</Terme>. Chaque athlète y compte pour son
+      meilleur total en <Terme cle="full-power">full power</Terme>, réalisé en
+      compétition à La Réunion. Les textiles de l'équipé restituent une partie
+      de l'effort, d'où deux classements séparés.
     </p>
   </div>
 
