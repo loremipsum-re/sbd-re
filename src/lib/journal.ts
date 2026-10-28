@@ -82,6 +82,22 @@ export const JOURNAL: readonly EntreeJournal[] = [
   },
   {
     date: '2026-10-28',
+    nature: 'fonction',
+    version: '1.9',
+    titre: 'Me situer montre où tombe votre total',
+    texte:
+      "La page dessine les totaux de tous les athlètes de votre catégorie et de votre équipement, avec le vôtre et le record. Elle donne aussi les kilos qui vous séparent du record. Le calcul reste dans votre navigateur.",
+  },
+  {
+    date: '2026-10-28',
+    nature: 'visuel',
+    version: '1.9',
+    titre: 'Des textes plus courts et plus nets',
+    texte:
+      "Une douzaine de pages sont réécrites, une information par phrase. La ponctuation ne tombe plus seule en début de ligne, les fiches n'affichent plus de zéro pour un mouvement absent, et le premier du mois s'écrit « 1er ».",
+  },
+  {
+    date: '2026-10-28',
     nature: 'visuel',
     version: '1.9',
     titre: 'Les catégories les plus fournies ressortent',
