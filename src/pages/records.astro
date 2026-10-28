@@ -1,4 +1,5 @@
 ---
+import AnneesRecords from '../components/AnneesRecords.astro';
 import IconeMouvement from '../components/IconeMouvement.astro';
 import SpriteMouvements from '../components/SpriteMouvements.astro';
 import InteractiveTable from '../components/InteractiveTable.astro';
@@ -127,7 +128,16 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
 >
   <SpriteMouvements />
     <div class="wrap">
-    <header class="entete-page">
+    {/*
+      L'EN-TÊTE PORTE L'ÂGE DES RECORDS, à droite du chapeau sur ordinateur,
+      dessous sur téléphone. Il dit d'un regard lesquels tiennent depuis
+      longtemps, ce que les cases des grilles ne disent qu'une à une.
+
+      COÛT MESURÉ le 28 octobre 2026 : la première grille descend de 78 px à
+      1 280 px, où les colonnes partagent la hauteur du chapeau, et de 140 px
+      à 375 px, les pastilles y regagnant une ligne.
+    */}
+    <header class="entete-page entete-records">
       <h1>Records de La Réunion</h1>
       {/*
         UN SEUL CHAPEAU, COURT. Les deux paragraphes d'avant occupaient 560 px
@@ -147,6 +157,7 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
         séparent hommes et femmes, <Terme cle="raw">raw</Terme> et{' '}
         <Terme cle="equipped">équipé</Terme>.
       </p>
+      <AnneesRecords />
     </header>
 
     {/*
@@ -407,6 +418,29 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
    * menus voisins, dont le segment choisi prend l'aplat d'accent. Un
    * `<fieldset>` par critère, sa `<legend>` tenant lieu d'étiquette.
    */
+
+  /*
+   * L'EN-TÊTE SUR DEUX COLONNES dès 60rem : le chapeau à gauche, l'âge des
+   * records à droite, calés sur leur haut, le chapeau restant collé au titre.
+   * Dessous, les colonnes suivent le chapeau à l'écart d'un paragraphe, la
+   * marge que tokens.css lui donne quand un bloc le suit.
+   */
+  @media (min-width: 60rem) {
+    .entete-records {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(18rem, 26rem);
+      column-gap: var(--space-12);
+      align-items: start;
+    }
+
+    .entete-records h1 {
+      grid-column: 1 / -1;
+    }
+
+    .entete-records .chapeau {
+      margin-bottom: 0;
+    }
+  }
 
   .section {
     margin-bottom: var(--space-12);
