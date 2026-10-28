@@ -1,0 +1,489 @@
+---
+/**
+ * Des records en cours, en grille : un athlète par ligne, un mouvement par
+ * colonne.
+ *
+ *                                  SQUAT        SDT          TOTAL
+ *   Gabriel Begue H · −93 kg · Raw  302,5 kg                  807,5 kg
+ *                                   ▲ 15 kg                   ▲ 25 kg
+ *
+ * LA FORME DE LA PAGE DES RECORDS, qui range ses catégories en lignes et ses
+ * mouvements en colonnes. Un athlète qui bat trois records remplit trois
+ * cases de sa ligne : le motif se lit avant les chiffres.
+ *
+ * DEUX EMPLOIS. L'accueil y montre des records de l'année, groupés par
+ * compétition. La page d'une compétition y montre les siens, sans répéter son
+ * nom. Seules les colonnes d'un mouvement qui porte au moins un record sont
+ * posées : une compétition de développé couché n'a qu'une colonne.
+ *
+ * SUR TÉLÉPHONE, LE NOM PREND SA LIGNE et les charges se partagent la
+ * suivante. Laissé dans sa colonne, il ne laissait que 50 px à chacune des
+ * quatre charges du 18 juillet 2026, et la colonne du total sortait du cadre,
+ * mesuré à 375 px. La ligne devient une grille, comme les cartes des listes
+ * de listes.css.
+ *
+ * L'ÉCART SOUS LA CHARGE, avec le marqueur commun de tokens.css,
+ * `.evolution` : un triangle et un signe doublent la couleur. Il se mesure au
+ * record de la veille, voir `recordsEnCours`. Une première marque n'a rien
+ * battu : elle le dit en toutes lettres.
+ *
+ * AU-DELÀ DE `visibles` ATHLÈTES, LA SUITE SE REPLIE derrière la pastille des
+ * explications. Le 18 juillet 2026, douze athlètes ont établi 29 records
+ * encore en cours : déplié, le bandeau repoussait les résultats de plus d'un
+ * écran de téléphone. Les premiers, ceux des records de l'île puis des records
+ * les plus nombreux, restent visibles, et le tableau garde ses coupes. Mesuré
+ * à 375 px avec cinq athlètes visibles : 708 px pour ce bandeau, et 652 pour
+ * celui du 19 juillet 2025. D'où trois.
+ *
+ * LA PAGE POSE `SpriteMouvements`, une fois : les icônes de colonne le
+ * référencent. Le composant ne le pose pas lui-même, une page qui en aurait
+ * déjà un en aurait sinon deux, aux identifiants en double.
+ */
+import { LIFTS, SEXES, equipmentLabel } from '../lib/categories';
+import { dateLongue, nombre } from '../lib/format';
+import type { RecordEnCours, RecordsAthlete } from '../lib/records';
+import { meetPath } from '../lib/slug';
+import type { LiftKey } from '../lib/types';
+import IconeMouvement from './IconeMouvement.astro';
+
+interface Props {
+  groupes: RecordsAthlete[];
+  /** Une rangée d'en-tête par compétition, avec son lien et sa date. */
+  parCompetition?: boolean;
+  /**
+   * Distingue les records de l'île par un aplat. Inutile quand la grille ne
+   * contient que des records de l'île, comme sur l'accueil.
+   */
+  marquerIle?: boolean;
+  /** Ce que dit la grille, pour qui la parcourt au lecteur d'écran. */
+  legende: string;
+  /** Athlètes visibles avant le repli. Sans valeur, tout reste déplié. */
+  visibles?: number;
+}
+
+const { groupes, parCompetition = false, marquerIle = false, legende, visibles } = Astro.props;
+
+const COURT: Record<LiftKey, string> = {
+  squat: 'Squat',
+  bench: 'DC',
+  deadlift: 'SDT',
+  total: 'Total',
+};
+
+const colonnes = LIFTS.filter((l) => groupes.some((g) => g.records.some((r) => r.lift === l.id)));
+
+/*
+ * Replier une seule ligne ne ferait rien gagner : la pastille prend sa
+ * hauteur. Le repli commence donc à deux athlètes de plus que `visibles`.
+ */
+const coupe = visibles !== undefined && groupes.length > visibles + 1 ? visibles : groupes.length;
+const tete = groupes.slice(0, coupe);
+const suite = groupes.slice(coupe);
+const recordsSuite = suite.reduce((n, g) => n + g.records.length, 0);
+
+/** Les compétitions, de la plus récente à la plus ancienne. */
+const blocs = (liste: RecordsAthlete[]) =>
+  parCompetition
+    ? [...new Set(liste.map((g) => `${g.date}|${g.meetName}`))]
+        .sort((a, b) => b.localeCompare(a))
+        .map((cle) => liste.filter((g) => `${g.date}|${g.meetName}` === cle))
+    : [liste];
+
+const sexeCourt = (id: string) => (id === 'F' ? 'F' : 'H');
+const sexeLong = (id: string) => SEXES.find((s) => s.id === id)?.plural ?? id;
+const recordDe = (g: RecordsAthlete, lift: LiftKey): RecordEnCours | undefined =>
+  g.records.find((r) => r.lift === lift);
+
+/** « 18 juillet 2026 », le jour soudé à son mois par une espace insécable. */
+const date = (iso: string) => dateLongue(iso).replace(' ', '\u00a0');
+---
+
+{/* Le tableau, écrit une fois pour la tête et une fois pour la suite. */}
+{
+  [tete, suite]
+    .filter((liste) => liste.length > 0)
+    .map((liste, i) => {
+      const grille = (
+        <div
+          class="grille-records"
+          style={`--colonnes:${colonnes.length};--colonnes-etroit:${colonnes.length === 4 ? 2 : colonnes.length}`}
+        >
+          <table>
+            <caption class="sr-only">
+              {i === 0 ? legende : `${legende}, suite`}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col" class="col-athlete">
+                  Athlète
+                </th>
+                {colonnes.map((l) => (
+                  <th scope="col" class="nombre">
+                    <span class="intitule">
+                      <IconeMouvement mouvement={l.id} taille={16} />
+                      <span aria-hidden="true">{COURT[l.id]}</span>
+                      <span class="sr-only">{l.label}</span>
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            {blocs(liste).map((bloc) => (
+              <tbody>
+                {parCompetition && (
+                  <tr class="competition">
+                    <th scope="colgroup" colspan={colonnes.length + 1}>
+                      <a href={`/competitions/${meetPath(bloc[0].date, bloc[0].meetName)}/`}>
+                        {bloc[0].meetName}
+                      </a>
+                      <span aria-hidden="true"> · </span>
+                      <span class="sr-only">, </span>
+                      <span class="insecable">{date(bloc[0].date)}</span>
+                    </th>
+                  </tr>
+                )}
+                {bloc.map((g) => (
+                  <tr class="athlete">
+                    <th scope="row" class="qui">
+                      <a href={`/athlete/${g.slug}/`}>{g.holder}</a>{' '}
+                      <span class="categorie">
+                        <span aria-hidden="true">{sexeCourt(g.sex)}</span>
+                        <span class="sr-only">{sexeLong(g.sex)}, </span>
+                        <span aria-hidden="true"> · </span>
+                        <span class="insecable">{g.weightClass.label}</span>
+                        <span aria-hidden="true"> · </span>
+                        <span class="sr-only">, </span>
+                        {equipmentLabel(g.equipment)}
+                      </span>
+                    </th>
+                    {colonnes.map((l) => {
+                      const r = recordDe(g, l.id);
+                      return r ? (
+                        <td class="marque" data-ile={marquerIle && r.recordIle ? '' : undefined}>
+                          <span class="boite">
+                            <span class="charge">
+                              <span class="num-tab">{nombre(r.valueKg)}</span>
+                              <span class="unite">kg</span>
+                            </span>
+                            {r.gainKg !== null ? (
+                              <span class="evolution" data-sens="hausse">
+                                <span aria-hidden="true">▲</span>
+                                {nombre(r.gainKg)}
+                                <span class="unite-ecart">&nbsp;kg</span>
+                                <span class="sr-only">de plus que le record précédent</span>
+                              </span>
+                            ) : (
+                              <span class="premiere">Première marque</span>
+                            )}
+                            {marquerIle && r.recordIle && (
+                              <span class="sr-only">Record de l'île.</span>
+                            )}
+                          </span>
+                        </td>
+                      ) : (
+                        <td class="vide">
+                          <span class="sr-only">Aucun record</span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            ))}
+          </table>
+        </div>
+      );
+      return i === 0 ? (
+        grille
+      ) : (
+        <details class="repli suite-records">
+          {/* Au moins deux athlètes, donc au moins deux records : le pluriel
+              est sûr. */}
+          <summary>
+            <span class="chevron" aria-hidden="true" />
+            Voir les {recordsSuite} autres records
+          </summary>
+          {grille}
+        </details>
+      );
+    })
+}
+
+<style>
+  .grille-records {
+    width: fit-content;
+    max-width: 100%;
+    min-width: 0;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  table {
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    padding: var(--space-2) var(--space-4);
+    text-align: left;
+    vertical-align: top;
+    font-weight: 400;
+  }
+
+  thead th {
+    border-bottom: 2px solid var(--border);
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .intitule {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .nombre,
+  .marque,
+  .vide {
+    text-align: right;
+  }
+
+  .marque,
+  .vide {
+    padding-inline: var(--space-2);
+  }
+
+  /* L'intitulé tombe au-dessus des chiffres : le rembourrage de la cellule,
+     plus celui de la boîte et son filet. */
+  thead .nombre {
+    padding-right: calc(2 * var(--space-2) + 2px);
+  }
+
+  tbody tr + tr > * {
+    border-top: 1px solid var(--border);
+  }
+
+  .competition th {
+    padding-top: var(--space-3);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /* Les liens de la grille : 24 px de haut au moins, le plancher des WCAG
+     pour une cible hors d'une phrase, comme les détenteurs de l'infographie
+     des records. Mesurés à 15 et 17 px avant. */
+  .competition a,
+  .qui a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.5rem;
+  }
+
+  .insecable {
+    white-space: nowrap;
+  }
+
+  /* Le nom est un lien vers la fiche. Il passe à la ligne, jamais tronqué,
+     et sa catégorie le suit. */
+  .qui {
+    min-width: 0;
+    max-width: 18rem;
+    overflow-wrap: break-word;
+  }
+  .qui a {
+    font-family: var(--font-display);
+    font-size: var(--step-0);
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--text);
+  }
+  .qui a:hover {
+    color: var(--accent);
+  }
+
+  .categorie {
+    font-size: var(--step--1);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .marque {
+    white-space: nowrap;
+  }
+
+  .charge {
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 0.2em;
+    font-size: var(--step-0);
+    line-height: 1.3;
+    color: var(--text);
+  }
+
+  .unite {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .marque .evolution {
+    justify-content: flex-end;
+  }
+
+  /* Deux mots qui passent à la ligne plutôt que d'élargir la colonne. */
+  .premiere {
+    display: block;
+    font-size: var(--step--1);
+    font-weight: 700;
+    line-height: 1.3;
+    white-space: normal;
+    color: var(--muted);
+  }
+
+  /*
+   * La charge et son écart, empilés et calés à droite, dans une boîte au
+   * filet transparent. Toutes les charges ont la même boîte : celle d'un
+   * record de l'île se colore sans décaler ses chiffres de ceux de la ligne
+   * voisine.
+   */
+  .boite {
+    display: inline-grid;
+    justify-items: end;
+    padding: var(--space-1) var(--space-2);
+    border: 2px solid transparent;
+    border-radius: var(--radius);
+  }
+
+  /*
+   * LE RECORD DE L'ÎLE EN APLAT. Plein contre vide : la forme double la
+   * couleur, comme pour la saison en cours de l'infographie des records. Le
+   * filet d'accent tient les 3:1 qu'un repère doit à son fond, que l'aplat
+   * seul ne donne pas en thème clair (1,29:1). Tout le texte de la case passe
+   * à `--on-accent` : le vert de l'écart tomberait sous les 4,5:1 sur le
+   * jaune.
+   *
+   * L'APLAT SUR LA BOÎTE, ET NON SUR LA CELLULE. Posé sur la cellule, il
+   * soudait deux records voisins en un seul bloc jaune, mesuré à 1 280 px.
+   */
+  .marque[data-ile] .boite {
+    border-color: var(--accent);
+    background: var(--accent-fill);
+  }
+  .marque[data-ile] .charge,
+  .marque[data-ile] .unite,
+  .marque[data-ile] .evolution {
+    color: var(--on-accent);
+  }
+
+  /* La suite repliée se pose sous la tête, à l'écart d'une ligne. */
+  .suite-records {
+    margin-top: var(--space-3);
+  }
+  .suite-records[open] > .grille-records {
+    margin-top: var(--space-3);
+  }
+
+  /*
+   * SOUS 40rem, UNE GRILLE PAR LIGNE. Le nom et sa catégorie prennent toute
+   * la largeur, les charges se partagent la ligne suivante à parts égales,
+   * sous l'intitulé de leur colonne. L'intitulé « Athlète » sort de la vue
+   * et reste lu.
+   */
+  @media (max-width: 39.999rem) {
+    .grille-records {
+      width: auto;
+    }
+
+    table {
+      width: 100%;
+    }
+
+    tr {
+      display: grid;
+      grid-template-columns: repeat(var(--colonnes), minmax(0, 1fr));
+      column-gap: var(--space-2);
+      padding: var(--space-2);
+    }
+
+    th,
+    td,
+    .marque,
+    .vide {
+      padding: 0;
+    }
+
+    thead th.col-athlete {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    thead tr {
+      border-bottom: 2px solid var(--border);
+    }
+    thead th {
+      border-bottom: 0;
+    }
+
+    .competition th,
+    .qui {
+      grid-column: 1 / -1;
+      max-width: none;
+    }
+
+    .qui {
+      margin-bottom: var(--space-1);
+    }
+
+    tbody tr + tr > * {
+      border-top: 0;
+    }
+    tbody tr + tr {
+      border-top: 1px solid var(--border);
+    }
+
+    /*
+     * QUATRE CHARGES DANS 343 PX. Mesuré le 28 octobre 2026 à 375 px : les
+     * cases du 18 juillet 2026 dépassaient leur colonne de 2 à 10 px, l'écart
+     * « ▲ 77,5 kg » étant la plus large. L'unité de l'écart sort de la vue et
+     * reste lue : celle de la charge, juste au-dessus, la donne déjà.
+     */
+    .boite {
+      padding: 2px 3px;
+    }
+
+    .unite-ecart {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    thead .nombre {
+      padding-right: 5px;
+    }
+  }
+
+  /*
+   * SOUS 22,5rem, QUATRE MOUVEMENTS SE RANGENT DEUX PAR DEUX. À 320 px,
+   * quatre charges et leur écart demandaient 72 px chacune pour 59
+   * disponibles, et les cases du 18 juillet 2026 se chevauchaient. Squat et
+   * développé couché, puis soulevé de terre et total : les intitulés suivent
+   * la même grille que les charges. Trois colonnes y tiennent encore.
+   */
+  @media (max-width: 22.499rem) {
+    tr {
+      grid-template-columns: repeat(var(--colonnes-etroit), minmax(0, 1fr));
+    }
+  }
+</style>
