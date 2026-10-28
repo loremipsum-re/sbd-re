@@ -2,7 +2,7 @@
  * Le comportement des termes soulignés du lexique, côté navigateur.
  *
  * UN SEUL SCRIPT POUR TOUT LE SITE, injecté par astro.config.mjs sur chaque
- * page, une fois, quel que soit le nombre de termes : 2,5 ko, moins d'un ko
+ * page, une fois, quel que soit le nombre de termes : 2,7 ko, un ko
  * compressé, mis en cache d'une page à l'autre. Il ne fait rien sur une page
  * qui n'en a aucun. Il n'est posé ni par Terme.astro ni par la page
  * d'article : Astro rend le script d'un composant là où le composant apparaît
@@ -26,9 +26,9 @@
  *      pas ces deux touches d'office, comme il le ferait pour un bouton.
  *   4. LA FERMER PAR ÉCHAP, sans déplacer le pointeur ni le focus, comme le
  *      demande le critère 1.4.13 des WCAG 2.2 pour tout contenu qui apparaît
- *      au survol ou au focus. Elle revient quand le pointeur ou le focus
- *      quitte le mot puis y revient, ou quand le pointeur, parti avant Échap,
- *      revient sur le mot.
+ *      au survol ou au focus. Elle reste close tant que le pointeur ou le
+ *      focus reste sur le mot, et revient avec un nouveau survol ou un
+ *      nouveau focus, arrivé de l'extérieur du terme.
  *
  * Trois états, en attributs sur le terme, lus par tokens.css :
  *   data-ouvert  épinglée par un toucher, un clic, Entrée ou Espace,
@@ -71,25 +71,42 @@ function couvert(x: number, y: number): boolean {
 }
 
 /**
- * Pose la bulle dans la fenêtre. Elle est mesurée telle que le CSS la place,
- * sous le mot et calée à sa gauche, puis décalée du strict nécessaire.
- * Tout se passe avant que le navigateur ne dessine : rien ne saute à l'œil.
+ * Pose la bulle dans la fenêtre. Le CSS la place sous le mot, calée à sa
+ * gauche : le script la décale du strict nécessaire. Tout se passe avant que
+ * le navigateur ne dessine : rien ne saute à l'œil.
+ *
+ * LA BULLE NE DÉBORDE JAMAIS DE L'ÉCRAN, PAS MÊME LE TEMPS D'UNE MESURE. Sous
+ * un mot en fin de ligne, à sa place naturelle ou à celle d'une mesure
+ * précédente, elle dépasserait à droite. Sur un téléphone, ce débordement d'un
+ * instant élargit la page, et près du bas de celle-ci le navigateur la fait
+ * remonter. Mesuré le 28 octobre 2026 : 42 px de saut à 375 px, 70 px à
+ * 768 px, et le doigt touchait alors la phrase au lieu du mot, si bien que la
+ * bulle restait close. D'où deux lectures : la place du terme, bulle retirée,
+ * puis la taille de la bulle, posée au bord gauche de l'écran. Sa place se
+ * déduit ensuite de celle du terme, dont elle part.
  */
 function placer(terme: HTMLElement) {
   const bulle = bulleDe(terme);
   if (!bulle) return;
 
-  terme.setAttribute('data-mesure', '');
-  bulle.style.removeProperty('left');
-  bulle.removeAttribute('data-dessus');
-
+  // Retirée avant toute lecture : chacune fait calculer la page.
+  bulle.style.display = 'none';
   const racine = document.documentElement;
   const { clientWidth: largeur, clientHeight: hauteur } = racine;
+  const mot = terme.getBoundingClientRect();
+  bulle.style.removeProperty('display');
+
+  terme.setAttribute('data-mesure', '');
+  bulle.removeAttribute('data-dessus');
+  bulle.style.left = `${MARGE - mot.left}px`;
   const cadre = bulle.getBoundingClientRect();
+
+  // Sans décalage, la bulle part du bord gauche du terme : `left: 0`.
   let decalage = 0;
-  if (cadre.right > largeur - MARGE) decalage = largeur - MARGE - cadre.right;
-  if (cadre.left + decalage < MARGE) decalage = MARGE - cadre.left;
+  if (mot.left + cadre.width > largeur - MARGE) decalage = largeur - MARGE - mot.left - cadre.width;
+  if (mot.left + decalage < MARGE) decalage = MARGE - mot.left;
   if (decalage !== 0) bulle.style.left = `${Math.round(decalage)}px`;
+  else bulle.style.removeProperty('left');
 
   /*
    * Au-dessus du mot si, dessous, la bulle sort de l'écran ou croise un
@@ -100,8 +117,8 @@ function placer(terme: HTMLElement) {
    * coin : les quatre sont sondés, et le milieu du bas. Quand les deux places
    * le croisent, la bulle passe devant lui, voir tokens.css.
    */
-  const gauche = cadre.left + decalage + 4;
-  const droite = cadre.right + decalage - 4;
+  const gauche = mot.left + decalage + 4;
+  const droite = mot.left + decalage + cadre.width - 4;
   const haut = cadre.top + 4;
   const bas = cadre.bottom - 4;
   const masquee =
@@ -112,7 +129,6 @@ function placer(terme: HTMLElement) {
     couvert(droite, bas) ||
     couvert((gauche + droite) / 2, bas);
   const plafond = Number.parseFloat(getComputedStyle(racine).scrollPaddingTop) || 0;
-  const mot = terme.getBoundingClientRect();
   if (masquee && mot.top - cadre.height >= plafond) {
     bulle.setAttribute('data-dessus', '');
   }
@@ -156,21 +172,35 @@ if (document.querySelector('.lexique')) {
     if (!terme.hasAttribute('data-ouvert')) placer(terme);
   });
 
+  /*
+   * LA FERMETURE PAR ÉCHAP TIENT TANT QUE L'UN DES DEUX RESTE, le pointeur ou
+   * le focus. Le départ de l'un ne la lève que si l'autre est parti aussi.
+   * Mesuré le 28 octobre 2026 à 1 280 px : un mot cliqué, puis Échap, puis le
+   * pointeur qui s'en va, et la bulle revenait aussitôt pour rester ouverte,
+   * le clavier ayant rendu le focus visible. Et Échap pendant le survol, puis
+   * Tab, la rouvrait sous le pointeur resté sur le mot.
+   */
   document.addEventListener('pointerout', (e) => {
     const terme = termeDe(e.target);
-    if (terme && hors(terme, e.relatedTarget)) terme.removeAttribute('data-ferme');
+    if (terme && hors(terme, e.relatedTarget) && !terme.contains(document.activeElement)) {
+      terme.removeAttribute('data-ferme');
+    }
   });
 
+  // Un focus arrivé de l'extérieur est un nouveau focus : comme un nouveau
+  // survol, il lève la fermeture par Échap.
   document.addEventListener('focusin', (e) => {
     const terme = termeDe(e.target);
-    if (terme) placer(terme);
+    if (!terme) return;
+    if (hors(terme, e.relatedTarget)) terme.removeAttribute('data-ferme');
+    placer(terme);
   });
 
   document.addEventListener('focusout', (e) => {
     const terme = termeDe(e.target);
     if (terme && hors(terme, e.relatedTarget)) {
       terme.removeAttribute('data-ouvert');
-      terme.removeAttribute('data-ferme');
+      if (!terme.matches(':hover')) terme.removeAttribute('data-ferme');
     }
   });
 
