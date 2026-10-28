@@ -28,6 +28,10 @@
  * explique l'ordre : la recherche, le panneau des filtres et du tri, puis la
  * rangée d'état. La carte des salles, la comparaison et le simulateur en
  * reprennent la forme.
+ *
+ * LE TRI S'ÉCRIT DANS L'ADRESSE, `?tri=nom`, et `&sens=croissant` quand il
+ * va à rebours de son premier clic : une liste triée se partage par un lien,
+ * et le retour arrière la retrouve triée. Voir `ecrireAdresse` dans le script.
  */
 
 import EtatVide from './EtatVide.astro';
@@ -257,6 +261,11 @@ const repliable = aFiltres && replier !== undefined;
     const entetes = groupes.flatMap((g) =>
       Array.from(g.table.querySelectorAll<HTMLTableCellElement>('th[data-tri]')),
     );
+    // Un en-tête par colonne : les grilles de /records/ répètent les mêmes.
+    const colonnes = new Map<number, HTMLTableCellElement>();
+    for (const entete of entetes) {
+      if (!colonnes.has(entete.cellIndex)) colonnes.set(entete.cellIndex, entete);
+    }
     // Type de chaque colonne triable, résolu une fois : nombre ou texte.
     const colonnesNumeriques = new Set(
       entetes.filter((e) => e.dataset.type === 'nombre').map((e) => e.cellIndex),
@@ -348,12 +357,58 @@ const repliable = aFiltres && replier !== undefined;
       if (q !== null && champ) champ.value = q;
     }
 
+    /*
+     * LE TRI S'ÉCRIT AUSSI DANS L'ADRESSE, sous le nom de sa colonne :
+     * `?tri=poids-de-corps`. Le nom vient de l'en-tête, comme celui de la
+     * barre de tri, et non de l'index de la colonne, qui changerait sans
+     * prévenir le jour où une colonne s'ajoute. Le sens ne s'écrit que s'il
+     * va à rebours du premier clic : `&sens=croissant` pour un nombre,
+     * `&sens=decroissant` pour un texte. Un lien vers « /classement/?tri=dots »
+     * donne donc le classement aux Dots, du plus haut au plus bas.
+     *
+     * L'adresse ne porte un tri que s'il en a été choisi un. Ses deux
+     * paramètres côtoient ceux des filtres : aucun filtre ne s'appelle `tri`
+     * ni `sens`, pour la même raison qu'un attribut de tri et un attribut de
+     * filtre ne partagent jamais leur nom.
+     */
+    function cleTri(entete: HTMLTableCellElement): string {
+      return normaliser(entete.textContent ?? '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
+    /** Le sens du premier clic : décroissant pour un nombre, croissant pour un texte. */
+    function sensPremierClic(entete: HTMLTableCellElement): boolean {
+      return entete.dataset.type !== 'nombre';
+    }
+
+    function lireTriAdresse() {
+      const params = new URLSearchParams(location.search);
+      const cle = params.get('tri');
+      if (!cle) return;
+      // Une colonne inconnue est ignorée, comme un filtre inconnu.
+      const entete = [...colonnes.values()].find((e) => cleTri(e) === cle);
+      if (!entete) return;
+      const sens = params.get('sens');
+      colonneTri = entete.cellIndex;
+      sensAscendant =
+        sens === 'croissant' ? true : sens === 'decroissant' ? false : sensPremierClic(entete);
+      marquerTri();
+    }
+
     function ecrireAdresse() {
       const params = new URLSearchParams();
       for (const select of selects) {
         if (select.value) params.set(select.dataset.filtre!, select.value);
       }
       if (champ?.value) params.set('q', champ.value);
+      const enteteTri = colonneTri === null ? undefined : colonnes.get(colonneTri);
+      if (enteteTri) {
+        params.set('tri', cleTri(enteteTri));
+        if (sensAscendant !== sensPremierClic(enteteTri)) {
+          params.set('sens', sensAscendant ? 'croissant' : 'decroissant');
+        }
+      }
       const requete = params.toString();
       // `replaceState` et non `pushState` : chaque frappe dans la recherche
       // ajouterait sinon une entrée dans l'historique, et le bouton Retour
@@ -555,30 +610,39 @@ const repliable = aFiltres && replier !== undefined;
       (restantes[position] ?? restantes[position - 1] ?? cibleDuFocus())?.focus();
     }
 
-    /** Applique un tri et met à jour l'état annoncé aux lecteurs d'écran. */
+    /**
+     * Pose l'état du tri sur les en-têtes et sur la barre « Trier par ».
+     *
+     * Quand le bloc contient plusieurs grilles de même structure, elles sont
+     * triées ensemble : leurs en-têtes de même rang doivent afficher le même
+     * état, sans quoi un lecteur d'écran annoncerait un tri partiel.
+     */
+    function marquerTri() {
+      for (const autre of entetes) {
+        autre.setAttribute(
+          'aria-sort',
+          autre.cellIndex === colonneTri ? (sensAscendant ? 'ascending' : 'descending') : 'none',
+        );
+      }
+      for (const b of barre?.querySelectorAll<HTMLButtonElement>('[data-index]') ?? []) {
+        const actif = Number(b.dataset.index) === colonneTri;
+        b.setAttribute('aria-pressed', String(actif));
+        b.dataset.sens = actif ? (sensAscendant ? 'asc' : 'desc') : '';
+      }
+    }
+
+    /** Applique un tri, l'annonce, et l'écrit dans l'adresse. */
     function trierPar(index: number, entete: HTMLTableCellElement) {
       if (colonneTri === index) sensAscendant = !sensAscendant;
       else {
         colonneTri = index;
         // Les colonnes numériques partent en décroissant : sur un classement,
         // c'est le plus gros total qu'on veut voir en premier.
-        sensAscendant = entete.dataset.type !== 'nombre';
+        sensAscendant = sensPremierClic(entete);
       }
-      // Quand le bloc contient plusieurs grilles de même structure, elles sont
-      // triées ensemble : leurs en-têtes de même rang doivent afficher le même
-      // état, sans quoi un lecteur d'écran annoncerait un tri partiel.
-      for (const autre of entetes) {
-        autre.setAttribute(
-          'aria-sort',
-          autre.cellIndex === index ? (sensAscendant ? 'ascending' : 'descending') : 'none',
-        );
-      }
-      for (const b of barre?.querySelectorAll<HTMLButtonElement>('[data-index]') ?? []) {
-        const actif = Number(b.dataset.index) === index;
-        b.setAttribute('aria-pressed', String(actif));
-        b.dataset.sens = actif ? (sensAscendant ? 'asc' : 'desc') : '';
-      }
+      marquerTri();
       appliquer();
+      ecrireAdresse();
     }
 
     // ----- Tri par clic sur l'en-tête -----
@@ -689,15 +753,18 @@ const repliable = aFiltres && replier !== undefined;
     });
 
     if (interactif) lireAdresse();
+    // Le tri se lit sur toute liste triable, barre ou non : /categories/ n'a
+    // pas de barre, mais ses en-têtes trient et l'adresse garde leur choix.
+    lireTriAdresse();
     ajusterOptions();
     /*
      * Un état venu de l'adresse doit être appliqué immédiatement, sans quoi la
      * page s'afficherait complète alors que les filtres annoncent autre chose.
      * Même chose pour un menu que le navigateur a rempli de lui-même au retour
-     * sur la page. Sinon, seul l'état de la barre est posé.
+     * sur la page, et pour un tri. Sinon, seul l'état de la barre est posé.
      */
     const dejaFiltre = selects.some((s) => s.value !== '') || Boolean(champ?.value);
-    if (interactif && (location.search || dejaFiltre)) appliquer();
+    if ((interactif && (location.search || dejaFiltre)) || colonneTri !== null) appliquer();
     else afficherEtat();
 
     // Rend visible la barre, qui reste masquée sans JavaScript pour ne pas
