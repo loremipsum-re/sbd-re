@@ -260,6 +260,13 @@ const formats =
  * contre 7 px pour le cercle visible. Le panneau de détail nomme la
  * compétition choisie : une erreur de touche se voit et se corrige d'un
  * second appui.
+ *
+ * Le critère 2.5.8 des WCAG 2.2 demande 24 px, que le halo n'atteint pas
+ * (22 px à 375 px de large, relevé à l'audit du 27 octobre 2026). Il est tenu
+ * par l'exception d'équivalence du critère : sous la courbe, l'historique de
+ * la fiche et sa section « Hors de La Réunion » donnent les mêmes compétitions
+ * et les mêmes valeurs. Agrandir le halo ferait empiéter chaque point sur ses
+ * voisins, et la touche choisirait plus souvent le mauvais.
  */
 const HALO = 11;
 
