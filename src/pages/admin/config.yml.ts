@@ -11,6 +11,17 @@
  */
 import type { APIRoute } from 'astro';
 import { results } from '../../lib/data';
+import {
+  ACCROCHE_MAX,
+  BANNIERE_SUR_TELEPHONE,
+  EMPLACEMENTS,
+  FORMATS,
+  IMAGES,
+  TEXTE_BANNIERE_MIN,
+  dimensions,
+  emplacementsDuFormat,
+  type IdEmplacement,
+} from '../../lib/formats-partenaires';
 import { INFOGRAPHIES } from '../../lib/infographies';
 import { listeMeets } from '../../lib/meets';
 import { athleteSlug } from '../../lib/slug';
@@ -46,6 +57,52 @@ export const GET: APIRoute = async () => {
   const optionsInfographies = Object.entries(INFOGRAPHIES)
     .map(([id, fiche]) => `          - { label: ${y(fiche.libelle)}, value: ${y(id)} }`)
     .join('\n');
+
+  /*
+   * LES PLACES DES PARTENAIRES, lues dans lib/formats-partenaires.ts. Chaque
+   * option dit la page, l'endroit et le format, pour que le choix d'une place
+   * dise aussi quelle image fournir. Une place ajoutée à la table apparaît ici
+   * d'elle-même.
+   */
+  const optionsEmplacements = [
+    ...(Object.keys(EMPLACEMENTS) as IdEmplacement[]).map((id) => {
+      const e = EMPLACEMENTS[id];
+      const format = FORMATS[e.format].libelle.toLowerCase();
+      return `          - { label: ${y(`${e.libelle}, ${e.ou} (${format})`)}, value: ${y(id)} }`;
+    }),
+    `          - { label: ${y("Bandeau du pied de page, sur toutes les pages sauf les fiches d'athlète (logo)")}, value: "pied" }`,
+  ].join('\n');
+
+  /** « articles, pages de compétition… », pour les aides des champs d'image. */
+  const pagesDu = (format: 'banniere' | 'carte') =>
+    emplacementsDuFormat(format)
+      .map((id) => EMPLACEMENTS[id].libelle.toLowerCase())
+      .join(', ');
+
+  /*
+   * La règle des SVG, dite dans le CMS avant que la génération ne la fasse
+   * respecter : voir `contenuActifSvg` dans src/content.config.ts.
+   */
+  const regleSvg = "Un SVG est refusé s'il porte un script ou une ressource extérieure.";
+
+  const aideBanniere =
+    `Exigée par une place en bannière : ${pagesDu('banniere')}. ` +
+    `Exactement ${dimensions(IMAGES.banniere)} px, ou un multiple. Elle s'affiche sur ` +
+    `${FORMATS.banniere.affichage.largeur} px de large au plus, et sur ${BANNIERE_SUR_TELEPHONE} px ` +
+    `sur le plus petit téléphone : écrire le texte de l'image en ${TEXTE_BANNIERE_MIN} px de haut au moins. ` +
+    regleSvg;
+
+  /*
+   * « ou un multiple », comme pour la bannière : le schéma accepte toute image
+   * au bon rapport et assez large. L'aide disait « exactement », et un logo de
+   * 800 × 400 px aurait semblé refusé.
+   */
+  const aideLogo =
+    `Exigé par une carte (${pagesDu('carte')}) et par le pied de page. ` +
+    `Exactement ${dimensions(IMAGES.logo)} px, ou un multiple, ou un SVG au même rapport. Il s'affiche sur ` +
+    `${dimensions(FORMATS.carte.affichage)} px dans la carte, ` +
+    `${dimensions(FORMATS.logo.affichage)} px au pied de page. Un fond plein le garde lisible dans les deux thèmes. ` +
+    regleSvg;
 
   const yaml = `# ---------------------------------------------------------------------------
 # CONFIGURATION GÉNÉRÉE — ne pas modifier ce fichier à la main.
@@ -157,10 +214,16 @@ ${optionsAthletes || '          []'}
   # Partenaires.
   #
   # Des sponsors DIRECTS, jamais une régie : une image et un lien hébergés ici,
-  # donc aucun script tiers et aucun pistage. Trois règles s'appliquent, et
+  # donc aucun script tiers et aucun pistage. Quatre règles s'appliquent, et
   # lib/sponsors.ts les fait respecter plutôt que de compter sur la vigilance :
-  # un seul emplacement par page, jamais dans une donnée, jamais au-dessus du
-  # contenu.
+  # un seul emplacement de contenu par page, jamais dans une donnée, jamais
+  # au-dessus du contenu, jamais sur une fiche d'athlète. Le bandeau du pied
+  # de page est à part, et absent des fiches d'athlète lui aussi.
+  #
+  # FORMATS FIXES : chaque place impose le sien, bannière, carte ou logo. Le
+  # schéma de src/content.config.ts refuse un partenaire actif à qui manque une
+  # pièce, et une image hors format. Les images se déposent ici, jamais par
+  # une adresse extérieure : « choose_url » est coupé pour cette raison.
   - name: sponsors
     label: Partenaires
     label_singular: Partenaire
@@ -172,19 +235,36 @@ ${optionsAthletes || '          []'}
     slug: "{{nom}}"
     summary: "{{nom}}"
     fields:
-      - { name: nom, label: Nom, widget: string }
-      - { name: logo, label: Logo, widget: image, hint: "Format paysage, lisible en petit. Il s'affiche sur 96 × 48 px en page, 32 px de haut au pied." }
-      - { name: url, label: Adresse du site, widget: string }
+      - { name: nom, label: Nom, widget: string, hint: "Écrit sous la bannière ou dans la carte, il nomme le lien." }
+      - { name: url, label: Adresse du site, widget: string, type: url, pattern: ["^https?://", "L'adresse commence par https://"] }
       - name: emplacements
         label: Emplacements
         widget: select
         multiple: true
         default: [pied]
-        hint: Sans emplacement, le partenaire ne s'affiche nulle part. C'est la façon simple de le mettre en pause.
+        hint: Le format suit la place, entre parenthèses. Sans emplacement, le partenaire ne s'affiche nulle part. C'est la façon simple de le mettre en pause.
         options:
-          - { label: "Page de compétition, sous les résultats", value: "competition" }
-          - { label: "Fin d'article", value: "article" }
-          - { label: "Bandeau du pied de page", value: "pied" }
+${optionsEmplacements}
+      - name: banniere
+        label: ${y(`Bannière, ${dimensions(IMAGES.banniere)} px`)}
+        widget: image
+        required: false
+        choose_url: false
+        accept: "image/png,image/jpeg,image/webp,image/svg+xml"
+        hint: ${y(aideBanniere)}
+      - name: logo
+        label: ${y(`Logo, ${dimensions(IMAGES.logo)} px`)}
+        widget: image
+        required: false
+        choose_url: false
+        accept: "image/png,image/jpeg,image/webp,image/svg+xml"
+        hint: ${y(aideLogo)}
+      - name: accroche
+        label: Accroche de la carte
+        widget: string
+        required: false
+        maxlength: ${ACCROCHE_MAX}
+        hint: ${y(`Exigée par une carte. Une phrase de ${ACCROCHE_MAX} caractères au plus, écrite sous le nom.`)}
       - { name: actif, label: Actif, widget: boolean, default: true }
       - { name: ordre, label: Ordre dans le bandeau, widget: number, default: 0, value_type: int, hint: "Petit nombre en premier." }
 

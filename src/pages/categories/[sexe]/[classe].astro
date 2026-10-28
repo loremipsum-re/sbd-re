@@ -1,9 +1,12 @@
 ---
+import ChronologieRecord from '../../../components/ChronologieRecord.astro';
 import Coupe from '../../../components/Coupe.astro';
+import CourbeRecord from '../../../components/CourbeRecord.astro';
 import InteractiveTable from '../../../components/InteractiveTable.astro';
 import Glossaire from '../../../components/Glossaire.astro';
 import RankingTable from '../../../components/RankingTable.astro';
 import Repli from '../../../components/Repli.astro';
+import Terme from '../../../components/Terme.astro';
 import InfographieCategories from '../../../components/infographies/InfographieCategories.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { EQUIPMENT_GROUPS, LIFTS, type EquipmentGroup } from '../../../lib/categories';
@@ -12,10 +15,16 @@ import {
   equipementsDeCategorie,
   listeCategories,
 } from '../../../lib/categoriesPages';
-import { dateLongue, kg, nombre } from '../../../lib/format';
-import { progressionRecord, recordsPour } from '../../../lib/records';
+import { dateLongue, kg } from '../../../lib/format';
+import {
+  derniereMiseEnJeu,
+  escalierLisible,
+  progressionRecord,
+  recordsPour,
+} from '../../../lib/records';
 import { meetPath } from '../../../lib/slug';
 import type { LiftKey } from '../../../lib/types';
+import Partenaire from '../../../components/Partenaire.astro';
 
 export async function getStaticPaths() {
   return listeCategories().map((cat) => ({
@@ -42,8 +51,26 @@ const recordActuel = (lift: LiftKey, equipement: EquipmentGroup) =>
  * les quatre mouvements pour chaque équipement donnerait huit chronologies sur
  * une même page, et l'histoire se perdrait dans le tableau. Le total en Raw est
  * la marque de référence, celle que tout le monde cite.
+ *
+ * LA COURBE RESTE EN RAW, MÊME QUAND LA PAGE MONTRE AUSSI L'ÉQUIPÉ. Compté le
+ * 28 octobre 2026 : 830 des 849 performances en full power de l'île sont en
+ * raw, et l'équipé compte au plus deux records successifs au total par
+ * catégorie, soit une seule marche. Une seconde courbe n'aurait rien à
+ * raconter.
+ *
+ * TROIS CAS, SELON L'HISTOIRE.
+ *  - Un seul record : la section s'efface, comme avant la courbe. Le bloc des
+ *    records le donne déjà, avec son détenteur et sa date. En −47 kg femmes,
+ *    le record du 18 janvier 2020 n'a jamais été battu.
+ *  - Moins de trois dates de record : la liste seule, dépliée. Une courbe
+ *    d'une seule marche prendrait deux fois sa place pour en dire autant.
+ *  - Au-delà : la courbe, puis la liste repliée, qui en est la version texte.
+ * Le 28 octobre 2026, les 16 autres catégories comptent 4 à 13 dates.
  */
 const chronologie = progressionRecord('total', cat.sex, cat.classe.id, 'raw');
+const finChronologie = derniereMiseEnJeu('total', cat.sex, cat.classe.id, 'raw');
+const courbe =
+  finChronologie && escalierLisible(chronologie) ? { fin: finChronologie } : null;
 
 const libelleEquipement = (id: EquipmentGroup) =>
   EQUIPMENT_GROUPS.find((e) => e.id === id)?.label ?? id;
@@ -62,8 +89,10 @@ const description =
     <header class="entete-page">
       <h1>{titre}</h1>
       <p class="chapeau">
-        {cat.athletes} athlètes classés dans cette catégorie, pour
-        {' '}{cat.resultats} performances en full power lors de compétitions
+        {cat.athletes} athlètes classés dans cette{' '}
+        <Terme cle="categorie">catégorie</Terme>, pour
+        {' '}{cat.resultats} performances en{' '}
+        <Terme cle="full-power">full power</Terme> lors de compétitions
         réunionnaises.
       </p>
     </header>
@@ -99,7 +128,10 @@ const description =
                           </a>
                         </>
                       ) : (
-                        <span class="absent">Place libre</span>
+                        <span class="absent">
+                          <span aria-hidden="true">—</span>
+                          <span class="sr-only">Aucun record</span>
+                        </span>
                       )}
                     </dd>
                   </div>
@@ -116,37 +148,31 @@ const description =
         <section class="bloc">
           <h2>Histoire du record au total</h2>
           <p class="fin">
-            Les {chronologie.length} marques qui se sont succédé en Raw depuis que
-            la catégorie est suivie. Seule une amélioration réelle figure ici : à
-            performance égale, la marque la plus ancienne conserve le record. La
-            durée de règne de chaque marque se lit entre deux dates.
+            Les {chronologie.length}{' '}<Terme cle="record">records</Terme> successifs
+            du{' '}<Terme cle="total">total</Terme> en{' '}<Terme cle="raw">raw</Terme>. À
+            égalité, le record le plus ancien est conservé.
           </p>
 
-          <ol class="chrono">
-            {chronologie.map((etape, i) => (
-              <li data-actuel={i === chronologie.length - 1 ? '' : undefined}>
-                <span class="chrono-valeur num">{kg(etape.valueKg)}</span>
-                <span class="chrono-corps">
-                  <a class="chrono-nom" href={`/athlete/${etape.slug}/`}>
-                    {etape.holder}
-                  </a>
-                  <span class="chrono-meta">
-                    <a href={`/competitions/${meetPath(etape.date, etape.meetName)}/`}>
-                      {dateLongue(etape.date)}
-                    </a>
-                    {etape.gainKg > 0 && (
-                      <span class="evolution" data-sens="hausse">
-                        <span aria-hidden="true">▲</span>
-                        {`${nombre(etape.gainKg)} kg`}
-                        <span class="sr-only">de plus que la marque précédente</span>
-                      </span>
-                    )}
-                    {i === chronologie.length - 1 && <span class="encours">record actuel</span>}
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ol>
+          {/*
+            LA LISTE, VERSION TEXTE DE LA COURBE, REPLIÉE DESSOUS. Elle donne
+            ce que le dessin ne porte pas : le détenteur de chaque record, sa
+            date exacte, l'écart avec le précédent, et les liens vers l'athlète
+            et la compétition. Dépliée, elle mesurait 879 px à 375 px en
+            −93 kg, et repoussait le classement d'autant. Sans courbe, elle
+            reste dépliée.
+          */}
+          {
+            courbe ? (
+              <>
+                <CourbeRecord etapes={chronologie} fin={courbe.fin} equipement="raw" />
+                <Repli titre={`Les ${chronologie.length} records en détail`}>
+                  <ChronologieRecord etapes={chronologie} />
+                </Repli>
+              </>
+            ) : (
+              <ChronologieRecord etapes={chronologie} />
+            )
+          }
         </section>
       )
     }
@@ -164,10 +190,17 @@ const description =
         la liste descend de 52 px, comme sur /classement/ et /simulateur/. Une
         catégorie qui n'est plus disputée y trouve la tranche qu'elle couvrait,
         sous la règle actuelle.
+
+        LE LIBELLÉ NOMME LA QUESTION, et non la forme de la réponse. L'image
+        répond « Pesé à 88 kg, un homme concourt en 93 kg ». Mesuré le
+        28 octobre 2026 à 375 px : 150 px restent à côté du glossaire,
+        « Qui concourt ici » en prend 138, l'ancien « Poids en images » 143.
+        « Quel poids de corps » (164) ou « Qui concourt en −93 kg » (184)
+        passaient dessous.
       */}
       <div class="rangee-replis">
         <Glossaire />
-        <Repli titre="Poids en images">
+        <Repli titre="Qui concourt ici">
           <InfographieCategories
             sexe={cat.sex}
             classe={cat.classe.id}
@@ -193,6 +226,8 @@ const description =
         </a>.
       </p>
     </section>
+
+    <Partenaire emplacement="categorie" />
   </div>
 </BaseLayout>
 
@@ -266,74 +301,18 @@ const description =
     color: var(--accent);
   }
 
+  /* Une valeur absente s'écrit d'un tiret, comme sur /records/, à la taille
+     des valeurs voisines. Elle apparaît quand un équipement de la catégorie
+     n'a pas ce mouvement : le 28 octobre 2026, l'équipé du −105 kg hommes
+     n'avait que du développé couché, sous l'ancien libellé « Place libre ».
+     Le tiret est masqué aux lecteurs d'écran, qui entendent « Aucun record ». */
   .absent {
-    color: var(--muted);
-  }
-
-  /* ---------- Chronologie ---------- */
-  .chrono {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    background: var(--surface);
-    overflow: hidden;
-  }
-
-  .chrono li {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-4);
-    padding: var(--space-3) var(--space-6);
-    border-bottom: 1px solid var(--border);
-  }
-  .chrono li:last-child {
-    border-bottom: 0;
-  }
-
-  /* La marque en cours se distingue : c'est celle qu'on vient chercher. */
-  .chrono li[data-actuel] {
-    background: color-mix(in srgb, var(--or) 8%, transparent);
-  }
-
-  .chrono-valeur {
-    min-width: 6rem;
+    display: block;
     font-size: var(--step-1);
-    color: var(--muted);
-  }
-  .chrono li[data-actuel] .chrono-valeur {
-    color: var(--or);
-  }
-
-  .chrono-corps {
-    display: grid;
-    gap: var(--space-1);
-  }
-
-  .chrono-nom {
-    font-weight: 600;
-    color: var(--text);
-  }
-  .chrono-nom:hover {
-    color: var(--accent);
-  }
-
-  .chrono-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1) var(--space-3);
-    font-size: var(--step--1);
+    line-height: 1.1;
     color: var(--muted);
   }
 
-  /* Le marqueur d'écart est commun au site et vit dans tokens.css. Rien à
-     régler ici : `.chrono-meta` est déjà une rangée flex, le marqueur y est
-     donc un élément parmi les autres et tient sa ligne. */
-
-  .encours {
-    font-weight: 600;
-    color: var(--or);
-  }
-
+  /* La liste des records successifs a ses styles dans ChronologieRecord.astro,
+     la courbe dans CourbeRecord.astro. */
 </style>

@@ -1,6 +1,9 @@
 ---
+import GrilleRecords from '../components/GrilleRecords.astro';
 import RankingTable from '../components/RankingTable.astro';
 import Repli from '../components/Repli.astro';
+import SpriteMouvements from '../components/SpriteMouvements.astro';
+import Terme from '../components/Terme.astro';
 import InfographieSaisons from '../components/infographies/InfographieSaisons.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import nextMeet from '../data/next-meet.json';
@@ -8,11 +11,49 @@ import { nombreAthletes, periode, results } from '../lib/data';
 import { annee, dateLongue, dateCourte } from '../lib/format';
 import { libelleEvent, listeMeets, meetsRecents } from '../lib/meets';
 import { topDots } from '../lib/rankings';
+import { parAthlete, recordsBattusEn, recordsEnCours } from '../lib/records';
 
 const top = topDots(10);
 const meets = listeMeets();
 const recentes = meetsRecents(5);
 const { debut, fin } = periode();
+
+/*
+ * LES RECORDS BATTUS DANS L'ANNÉE DE LA DERNIÈRE COMPÉTITION, jamais dans
+ * celle de l'horloge : en janvier, avant toute compétition, le bloc garde la
+ * saison écoulée au lieu de disparaître. Il disparaît si cette saison n'a
+ * battu aucun record.
+ *
+ * LES RECORDS DE L'ÎLE EN VITRINE, ceux que les comptes rendus de la saison
+ * citent : la barre la plus lourde de chaque mouvement, chez les hommes et
+ * chez les femmes. Les montrer tous, 33 en octobre 2026, ferait du bloc une
+ * seconde page de records. Une saison sans record de l'île montre ses
+ * records les plus récents, trois athlètes au plus.
+ *
+ * LA GRILLE PLUTÔT QUE DES CARTES. Une carte par athlète mesurait 895 px à
+ * 375 px de large, la compétition répétée sur chacune. La grille, un athlète
+ * par ligne et un mouvement par colonne, en mesure 617, bloc entier compris.
+ */
+const anRecords = annee(fin);
+const battus = recordsBattusEn(anRecords);
+const ile = battus.filter((r) => r.recordIle);
+const plusRecente = battus.reduce((max, r) => (r.date > max ? r.date : max), '');
+const vedettes =
+  ile.length > 0
+    ? parAthlete(ile)
+    : parAthlete(battus.filter((r) => r.date === plusRecente)).slice(0, 3);
+const enLettres = ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit'];
+const phraseVitrine =
+  ile.length === 0
+    ? `Les plus récents datent du ${dateLongue(plusRecente)}.`
+    : ile.length === battus.length
+      ? battus.length === 1
+        ? "C'est aussi un record de l'île, toutes catégories confondues."
+        : "Ce sont aussi des records de l'île, toutes catégories confondues."
+      : ile.length === 1
+        ? "L'un d'eux est aussi un record de l'île, toutes catégories confondues."
+        : `${enLettres[ile.length].replace(/^./, (c) => c.toUpperCase())} d'entre eux sont aussi des records de l'île, toutes catégories confondues.`;
+const totalRecords = recordsEnCours().length;
 
 /**
  * L'annonce disparaît d'elle-même une fois la date passée.
@@ -30,7 +71,9 @@ const stats = [
   { valeur: nombreAthletes().toString(), libelle: 'athlètes' },
   { valeur: meets.length.toString(), libelle: 'compétitions' },
   { valeur: results.length.toLocaleString('fr-FR'), libelle: 'résultats' },
-  { valeur: `${annee(debut)}–${annee(fin)}`, libelle: 'de données' },
+  /* « 2017 à 2026 », et non un tiret. À 320 px, la période passe sur deux
+     lignes : l'insécable fait tomber la coupure avant « à », jamais après. */
+  { valeur: `${annee(debut)} à\u00a0${annee(fin)}`, libelle: 'de données' },
 ];
 ---
 
@@ -91,17 +134,59 @@ const stats = [
   <section class="wrap bloc">
     <header class="titre-bloc">
       <div>
-        <h2>Top 10 toutes catégories</h2>
+        <h2>Top 10 aux points Dots</h2>
         <p class="fin">
-          Classement aux points Dots : le total ramené au poids de corps. Full
-          power uniquement.
+          Les points <Terme cle="dots">Dots</Terme> ramènent le{' '}
+          <Terme cle="total">total</Terme> au{' '}
+          <Terme cle="poids-corps">poids de corps</Terme>. Seules les
+          compétitions sur les trois mouvements comptent.
         </p>
       </div>
       <a class="lien-plus lien-nu" href="/classement/">Classement complet →</a>
     </header>
 
-    <RankingTable entries={top} />
+    {/* Les Dots dominent chaque ligne : c'est l'ordre de la liste. Avec le
+        total en grand, on lisait 807,5, puis 660, puis 790, et l'ordre
+        paraissait faux. */}
+    <RankingTable entries={top} dominante="dots" />
   </section>
+
+  {/*
+    LES RECORDS DE L'ANNÉE, JUSTE APRÈS LE TOP 10. Le titre de la page promet
+    des records, et l'accueil n'en montrait aucun. Le Top 10 dit qui domine,
+    ce bloc dit ce qui a changé dans la saison, les compétitions récentes
+    disent où.
+  */}
+  {
+    vedettes.length > 0 && (
+      <section class="wrap bloc">
+        <SpriteMouvements />
+        <header class="titre-bloc">
+          <div>
+            <h2>Records battus en {anRecords}</h2>
+            <p class="fin">
+              {battus.length === 1 ? 'Un' : battus.length} des {totalRecords}{' '}
+              <Terme cle="record">records</Terme> de{' '}
+              <Terme cle="categorie">catégorie</Terme>{' '}
+              {battus.length === 1 ? 'a été battu' : 'ont été battus'} en {anRecords}.{' '}
+              {phraseVitrine}
+            </p>
+          </div>
+          <a class="lien-plus lien-nu" href="/records/">Tous les records →</a>
+        </header>
+
+        <GrilleRecords
+          groupes={vedettes}
+          parCompetition
+          legende={
+            ile.length > 0
+              ? `Records de l'île battus en ${anRecords}, par athlète et par mouvement`
+              : `Records les plus récents de ${anRecords}, par athlète et par mouvement`
+          }
+        />
+      </section>
+    )
+  }
 
   <section class="wrap bloc">
     <header class="titre-bloc">
@@ -159,7 +244,8 @@ const stats = [
         <h2>Performances hors compétition</h2>
         <p class="fin">
           Le top des performances réunionnaises réalisées en salle et en
-          compétition non homologuée. Bientôt disponible.
+          compétition non <Terme cle="homologue">homologuée</Terme>. Bientôt
+          disponible.
         </p>
       </div>
       <a class="bouton lien-nu" href="/communaute/">Voir le classement communauté</a>

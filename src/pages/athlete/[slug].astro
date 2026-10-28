@@ -150,8 +150,12 @@ const phraseExterieur =
   (paysVisites.length > 0 ? `, en ${paysVisites.map(paysFr).join(', ')}` : '') +
   '.';
 
-/** « 1er » puis « 2e », « 3e »… La première place fait exception en français. */
-const ordinal = (n: number) => (n === 1 ? '1er' : `${n}e`);
+/**
+ * « 1er » puis « 2e », « 3e »… La première place fait exception en français,
+ * et elle s'accorde : « 1re de La Réunion » pour une athlète. « 1er chez les
+ * femmes » s'affichait sur la fiche de la première d'entre elles.
+ */
+const ordinal = (n: number) => (n === 1 ? (dernier?.sex === 'F' ? '1re' : '1er') : `${n}e`);
 
 const metalDe = (n: number): Metal | undefined =>
   n === 1 ? 'or' : n === 2 ? 'argent' : n === 3 ? 'bronze' : undefined;
@@ -170,6 +174,26 @@ const metalDuRang = rangs
   : undefined;
 
 const libelleSexe = dernier?.sex === 'F' ? 'chez les femmes' : 'chez les hommes';
+
+/*
+ * LE CENTILE À PARTIR DU DEUXIÈME RANG SEULEMENT. Sous « 1er de La Réunion »,
+ * « parmi les 1 % meilleurs des 320 athlètes » répétait le rang sans rien
+ * apprendre. Chaque classement, général et par sexe, garde sa part de la
+ * phrase tant que l'athlète n'y est pas premier. Les insécables, devant
+ * « % » et entre un effectif et son nom, empêchent un signe ou un nombre de
+ * passer seul à la ligne.
+ */
+const partsCentile = rangs
+  ? [
+      rangs.global.rang > 1
+        ? `les ${rangs.global.centile} % meilleurs des ${rangs.global.total} athlètes classés`
+        : null,
+      rangs.sexe.rang > 1
+        ? `les ${rangs.sexe.centile} % meilleurs des ${rangs.sexe.total} ${dernier?.sex === 'F' ? 'femmes' : 'hommes'}`
+        : null,
+    ].filter((p): p is string => p !== null)
+  : [];
+const phraseCentile = partsCentile.length ? `Parmi ${partsCentile.join(', et ')}.` : '';
 
 /**
  * Points de la courbe : les totaux full power, sur l'île et ailleurs.
@@ -357,10 +381,8 @@ const description =
               {ordinal(rangs.sexe.rang)} {libelleSexe}
             </p>
             <p class="rang-detail">
-              Classement aux points Dots, avec {points(rangs.dots)} points. Parmi les
-              {' '}{rangs.global.centile} % meilleurs des {rangs.global.total} athlètes
-              classés, et les {rangs.sexe.centile} % meilleurs des {rangs.sexe.total}{' '}
-              {dernier.sex === 'F' ? 'femmes' : 'hommes'}.
+              Classement aux points Dots, avec {points(rangs.dots)} points.
+              {phraseCentile && <>{' '}{phraseCentile}</>}
             </p>
           </div>
         </div>
@@ -381,9 +403,14 @@ const description =
           <IconeMouvement mouvement="squat" taille={24} />
           Squat
         </dt>
+        {/*
+          UNE CONDITION TERNAIRE, et non `&&`. Sans squat, la meilleure barre
+          vaut 0, et `{0 && …}` affiche ce 0 : la case lisait « —0 » sur 45
+          fiches. L'historique plus bas écrit déjà la condition ainsi.
+        */}
         <dd class="num">
           {meilleures.squat ? nombre(meilleures.squat) : '—'}
-          {meilleures.squat && <span class="unite">kg</span>}
+          {meilleures.squat ? <span class="unite">kg</span> : null}
         </dd>
       </div>
       <div>
@@ -393,7 +420,7 @@ const description =
         </dt>
         <dd class="num">
           {meilleures.bench ? nombre(meilleures.bench) : '—'}
-          {meilleures.bench && <span class="unite">kg</span>}
+          {meilleures.bench ? <span class="unite">kg</span> : null}
         </dd>
       </div>
       <div>
@@ -403,7 +430,7 @@ const description =
         </dt>
         <dd class="num">
           {meilleures.deadlift ? nombre(meilleures.deadlift) : '—'}
-          {meilleures.deadlift && <span class="unite">kg</span>}
+          {meilleures.deadlift ? <span class="unite">kg</span> : null}
         </dd>
       </div>
       <div class="cumul">
@@ -471,6 +498,7 @@ const description =
         recherche="Nom d'une compétition"
         singulier="compétition"
         pluriel="compétitions"
+        feminin
         total={historique.length}
       >
         <div class="liste liste-barres">
@@ -571,14 +599,18 @@ const description =
         </div>
       </InteractiveTable>
 
+      {/*
+        UNE INFORMATION PAR PHRASE. La note en portait deux par phrase, liées
+        par des deux-points, et sa dernière phrase comptait 36 mots.
+      */}
       <p class="note">
         La coupe signale une barre qui constitue aujourd'hui le record de sa
         catégorie à La Réunion. Le total et les points Dots concernent le full
-        power : sur une compétition à un seul mouvement, ils reprendraient
+        power. Sur une compétition d'un seul mouvement, ils reprendraient
         simplement la barre disputée. La flèche sous les points Dots donne
-        l'écart avec la compétition en full power précédente : les Dots ramènent
-        toutes les barres à une même échelle, si bien qu'un changement de
-        catégorie ne fausse pas la comparaison.
+        l'écart avec la compétition précédente en full power. Les Dots tiennent
+        compte du poids de corps, ce qui garde l'écart comparable d'une
+        catégorie à l'autre.
       </p>
     </section>
 
@@ -588,8 +620,7 @@ const description =
           <h2>Hors de La Réunion</h2>
           <p class="intro-ext">
             {phraseExterieur} Ces résultats complètent le parcours de l'athlète.
-            Le classement et les records restent réservés aux plateaux
-            réunionnais.
+            Le classement et les records retiennent les compétitions de l'île.
           </p>
 
           <div class="liste liste-barres">
@@ -700,8 +731,20 @@ const description =
     margin-bottom: var(--space-6);
   }
 
+  /*
+   * UN NOM PLUS LARGE QUE LA COLONNE PASSE À LA LIGNE, au besoin au milieu
+   * d'un mot. Mesuré à 320 px : « Randrianantenaina » occupe 306 px dans une
+   * colonne de 288, et deux fiches débordaient de 2 px. Le bloc du titre est
+   * un élément de flex, qui vaut `min-width: auto` et refuserait sinon de
+   * rétrécir sous la largeur de ce mot. Aucun autre nom n'est concerné.
+   */
+  .entete-athlete > div {
+    min-width: 0;
+  }
+
   h1 {
     margin-bottom: var(--space-3);
+    overflow-wrap: break-word;
   }
 
   .badges {
@@ -951,6 +994,21 @@ const description =
   @media (max-width: 59.999rem) {
     .liste .nombre .evolution {
       justify-content: flex-start;
+    }
+  }
+
+  /* Une date longue tient dans sa demi-carte. Sous 375 px, « 20 septembre
+     2023 » dépassait de sa cellule, de 23 px à 320 : la date descend d'un
+     cran, et reste sur une ligne. La coupe d'un record passe sous sa charge
+     quand les deux ne tiennent pas côte à côte : à 320 px, elle mordait de
+     4 px sur la colonne voisine. */
+  @media (max-width: 23.4rem) {
+    .liste.liste-barres tbody .date {
+      font-size: var(--step--1);
+    }
+
+    .liste.liste-barres tbody .v {
+      white-space: normal;
     }
   }
 

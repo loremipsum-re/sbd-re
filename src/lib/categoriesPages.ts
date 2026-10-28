@@ -87,6 +87,28 @@ export function listeCategories(source: Result[] = fullPowerResults): CategorieP
   );
 }
 
+/**
+ * Les catégories à mettre en avant : les `n` plus fournies de la liste, par
+ * leur chemin.
+ *
+ * L'EFFECTIF EN ATTENDANT LES VISITES. L'auteur veut faire ressortir les
+ * catégories les plus consultées. Les visites par page vivent dans les relevés
+ * Clarity, sur sa machine seulement, le dossier clarity/ étant ignoré par git.
+ * En attendant qu'il les fournisse, l'effectif sert de critère, décision du
+ * 27 octobre 2026. Changer de critère revient à changer le tri ci-dessous.
+ *
+ * À effectif égal, la catégorie la plus légère passe devant : le choix reste
+ * le même d'une génération à l'autre.
+ */
+export function plusFournies(liste: CategoriePage[], n = 3): Set<string> {
+  return new Set(
+    [...liste]
+      .sort((a, b) => b.athletes - a.athletes || compareWeightClass(a.classe, b.classe))
+      .slice(0, n)
+      .map((c) => c.chemin),
+  );
+}
+
 /** Classement d'une catégorie, du meilleur total au plus faible. */
 export function athletesDeCategorie(sex: Sex, classeId: string): AthleteRanking[] {
   return meilleurTotalParAthlete(

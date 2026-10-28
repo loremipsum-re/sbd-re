@@ -205,6 +205,9 @@ const id = (nom: string) => `${prefixe}-${nom}`;
     background: var(--bg);
     color: var(--text);
     font: inherit;
+    /* `font: inherit` reprend la taille du parent : le jeton la tient à
+       16 px au moins, seuil sous lequel Safari zoome au toucher. */
+    font-size: var(--police-champ);
   }
 
   textarea {

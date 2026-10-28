@@ -1,0 +1,591 @@
+/* =============================================================================
+ * LA BARRE DE FILTRES, COMMUNE À TOUTES LES LISTES
+ *
+ * Une seule forme pour chaque endroit où l'on choisit ce qu'une page montre :
+ * les listes pilotées par InteractiveTable, la carte des salles, la
+ * sélection de /comparer/ et le formulaire de /simulateur/. Elle est
+ * importée par ces composants, et ne s'applique qu'à l'intérieur de
+ * `.barre-filtres`.
+ *
+ * ELLE VIVAIT EN QUATRE COPIES QUI DIVERGEAIENT, relevé le 27 octobre 2026.
+ * Sur téléphone, la recherche partageait sa colonne avec le menu Sexe et
+ * débordait de 52 px. Les bascules de /records/ étaient des pastilles rondes
+ * à côté de menus carrés. La carte des salles posait son menu hors de tout
+ * cadre. Et aucune page n'offrait de remise à zéro hors de l'état vide.
+ *
+ * TROIS RANGÉES, TOUJOURS DANS CET ORDRE :
+ *
+ *   1. La recherche, sur toute la largeur. Le bouton « Filtres » se range au
+ *      bout, à la hauteur du champ, quand le panneau se replie.
+ *   2. Le panneau : les filtres sur une grille régulière, puis le tri.
+ *   3. La rangée d'état : le compteur à gauche, « Réinitialiser » à droite,
+ *      dessous le tri quand ce n'est pas celui de la liste, puis les filtres
+ *      actifs, en étiquettes qu'un geste retire.
+ *
+ * Le compteur et la remise à zéro tombent donc au même endroit sur toutes
+ * les pages, quel que soit le nombre de filtres.
+ *
+ * QUAND LE PANNEAU SE REPLIE. `data-repli="toujours"` le replie à toutes les
+ * largeurs, `data-repli="telephone"` sous 40rem seulement. La règle du site
+ * est écrite dans InteractiveTable.astro, au paramètre `replier`, et chaque
+ * page justifie son choix là où elle appelle le composant.
+ * ========================================================================== */
+
+/*
+ * Deux icônes de Tabler Icons, jeu « outline », <https://tabler.io/icons>.
+ * Copyright (c) 2020-2026 Paweł Kuna, licence MIT : la mention est à garder.
+ * `adjustments-horizontal` pour le bouton « Filtres », `x` pour retirer une
+ * étiquette.
+ *
+ * En masque CSS, comme la flèche des liens sortants de tokens.css : l'icône
+ * prend `currentColor`, donc le thème et le survol, et le bouton garde son
+ * libellé texte pour seul contenu.
+ */
+:root {
+  --icone-filtres: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 6a2 2 0 1 0 4 0a2 2 0 1 0 -4 0'/%3E%3Cpath d='M4 6l8 0'/%3E%3Cpath d='M16 6l4 0'/%3E%3Cpath d='M6 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0'/%3E%3Cpath d='M4 12l2 0'/%3E%3Cpath d='M10 12l10 0'/%3E%3Cpath d='M15 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0'/%3E%3Cpath d='M4 18l11 0'/%3E%3Cpath d='M19 18l1 0'/%3E%3C/svg%3E");
+  --icone-retirer: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6l-12 12'/%3E%3Cpath d='M6 6l12 12'/%3E%3C/svg%3E");
+}
+
+/* ---------- Le cadre ---------- */
+
+/* `hidden` l'emporte sur toutes les règles d'affichage de la barre : sans
+   cela, un `display: flex` posé plus bas rendait visible un bouton que le
+   script venait de masquer. */
+.barre-filtres [hidden] {
+  display: none !important;
+}
+
+.barre-filtres {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+/* Masquée tant que le script n'a pas pris la main : sans lui, ces commandes
+   ne feraient rien. Le script pose `data-pret`. La comparaison et le
+   simulateur l'écrivent d'office : leur barre restait visible sans script. */
+.barre-filtres:not([data-pret]) {
+  display: none;
+}
+
+/* ---------- 1. La recherche ----------
+ * En flex et non en grille : quand le bouton « Filtres » disparaît, sur grand
+ * écran, aucun écart fantôme ne reste au bout du champ.
+ *
+ * LE CHAMP GARDE 9rem AU MOINS, et le bouton passe dessous plutôt que de le
+ * réduire. Mesuré le 27 octobre 2026 à 320 px de large : à côté de
+ * « Filtres 1 », le champ tombait à 108 px et coupait son invite, « Nom d'un
+ * athl ». Le bouton reste calé à droite, sur la rangée suivante, comme
+ * « Réinitialiser » plus bas : les commandes de la barre tiennent le bord
+ * droit, le texte le bord gauche. Dès 375 px, tout tient sur une rangée. */
+
+.barre-filtres .rangee-recherche {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.barre-filtres .rangee-recherche > .champ {
+  flex: 1 1 9rem;
+}
+
+.barre-filtres .rangee-recherche > button {
+  margin-left: auto;
+}
+
+/* ---------- Un champ : le libellé au-dessus, la commande dessous ---------- */
+
+.barre-filtres .champ {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.barre-filtres .champ > label,
+.barre-filtres .champ > legend,
+.barre-filtres .libelle {
+  padding: 0;
+  font-size: var(--step--1);
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/*
+ * UNE LÉGENDE FLOTTANTE, pour qu'elle se range comme une étiquette.
+ *
+ * La légende d'un `<fieldset>` est dessinée à part, dans la bordure : elle
+ * échappe à la grille du champ, donc à son écart. Mesuré à 1 280 px : la
+ * légende « Sexe » tombait 4 px plus bas que l'étiquette « Catégorie », collée
+ * à sa commande. Flottante, elle n'est plus la légende dessinée à part, et
+ * redevient un élément de la grille, où le flottement est sans effet.
+ */
+.barre-filtres .champ > legend {
+  float: left;
+  width: 100%;
+}
+
+/*
+ * MENUS ET CHAMPS DE SAISIE : 44 px, même filet, même rayon, même fond.
+ *
+ * L'interligne est ramené à 1,25 : celui du texte courant, 1,6, portait un
+ * champ de saisie à 46 px sur grand écran, contre 44 aux menus voisins.
+ * La police suit le jeton --police-champ, jamais sous 16 px : en dessous,
+ * Safari zoome sur iPhone dès qu'on touche le champ.
+ *
+ * L'exclusion des cases et des boutons radio passe par `:where()`, qui ne
+ * compte pas dans la spécificité : un champ de page qui règle son propre
+ * rembourrage, comme les champs à unité de /simulateur/, l'emporte ainsi
+ * sans surenchère.
+ */
+.barre-filtres select,
+.barre-filtres input:where(:not([type='radio'], [type='checkbox'])) {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--cible-min);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--police-champ);
+  line-height: 1.25;
+}
+
+.barre-filtres select:hover,
+.barre-filtres input:where(:not([type='radio'], [type='checkbox'])):hover {
+  border-color: var(--accent);
+}
+
+/* Un menu qui filtre se distingue de ceux laissés sur « Tous ». */
+.barre-filtres select[data-actif] {
+  border-color: var(--accent);
+}
+
+/* ---------- 2. Le panneau ---------- */
+
+.barre-filtres .panneau {
+  display: grid;
+  gap: var(--space-3);
+}
+
+/*
+ * UNE GRILLE RÉGULIÈRE. Tous les filtres d'une page ont la même largeur, la
+ * même hauteur, et leurs bords tombent les uns sous les autres d'une rangée à
+ * l'autre. `auto-fit` partage toute la largeur entre les filtres présents :
+ * cinq menus font cinq colonnes égales sur grand écran, trois en font trois.
+ *
+ * 8,5rem de largeur minimale, mesurée : deux colonnes de 146,5 px sur un
+ * téléphone de 375 px, et tous les filtres d'une page sur une rangée dès
+ * 1 024 px, donc symétriques sur grand écran. À 768 px, cinq menus font une
+ * rangée de quatre et une de un. `min()` laisse la colonne rétrécir sous
+ * 8,5rem plutôt que de déborder sur un écran plus étroit encore.
+ *
+ * 13,5rem dès qu'une bascule est dans la grille : ses trois segments y
+ * tiennent, et le menu voisin prend la même largeur qu'elles. Sur un
+ * téléphone, les trois filtres de /records/ passent ainsi en pleine largeur
+ * tous les trois, au lieu de deux bascules pleines au-dessus d'un menu de
+ * 146 px. À 768 px, ils tiennent sur une rangée de trois colonnes égales :
+ * à 15rem, la troisième passait seule dessous.
+ */
+.barre-filtres .grille-champs {
+  --largeur-filtre: 8.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--largeur-filtre), 100%), 1fr));
+  align-items: end;
+  gap: var(--space-3) var(--space-4);
+}
+
+.barre-filtres .grille-champs:has(> .bascule) {
+  --largeur-filtre: 13.5rem;
+}
+
+/* ---------- Les bascules ----------
+ * Trois choix côte à côte, d'un seul geste : Tous, Hommes, Femmes. Une seule
+ * commande de 44 px, au filet et au rayon des menus, dont les segments se
+ * partagent la largeur à parts égales. Leur colonne vaut 13,5rem au moins :
+ * voir la grille plus haut.
+ *
+ * Les boutons radio restent dans la page, invisibles mais focalisables : le
+ * clavier les parcourt aux flèches, et le contour de focus se pose sur le
+ * segment. Le segment choisi prend l'aplat d'accent, comme la catégorie
+ * active du simulateur : texte sur aplat, 10,66:1 en clair et 11,05:1 en
+ * sombre. L'ancienne teinte à 12 % ne donnait que 4,22:1 en thème clair.
+ *
+ * SON FILET EST D'ACCENT, ET NON D'APLAT. En thème clair, l'aplat ne se
+ * détache du segment voisin qu'à 1,39:1, et de la barre qu'à 1,29:1, mesuré
+ * le 28 octobre 2026 : sous les 3:1 que le critère 1.4.11 demande à ce qui
+ * signale un état, et le texte du segment choisi a la couleur des autres.
+ * Le filet d'accent tient 5,34:1 contre le voisin et 4,93:1 contre la barre,
+ * comme celui d'un menu actif. En thème sombre, les deux jetons ont la même
+ * couleur : le rendu ne change pas. */
+
+.barre-filtres .segments {
+  display: flex;
+}
+
+.barre-filtres .segments label {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  cursor: pointer;
+}
+
+/* Les filets de deux segments voisins se superposent : un seul trait. */
+.barre-filtres .segments label + label {
+  margin-left: -1px;
+}
+
+.barre-filtres .segments input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.barre-filtres .segments span {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: var(--step--1);
+  font-weight: 600;
+  text-align: center;
+}
+
+.barre-filtres .segments label:first-child span {
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.barre-filtres .segments label:last-child span {
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+/* Le segment survolé ou choisi passe devant ses voisins : son filet entier
+   reste visible au lieu d'être recouvert à moitié. */
+.barre-filtres .segments label:hover span,
+.barre-filtres .segments input:checked + span {
+  position: relative;
+  z-index: 1;
+}
+
+.barre-filtres .segments label:hover span {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.barre-filtres .segments input:checked + span {
+  border-color: var(--accent);
+  background: var(--accent-fill);
+  color: var(--on-accent);
+}
+
+.barre-filtres .segments label:hover input:checked + span {
+  border-color: var(--accent-hover);
+  background: var(--accent-fill-hover);
+  color: var(--on-accent);
+}
+
+.barre-filtres .segments input:focus-visible + span {
+  z-index: 2;
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Le tri ----------
+ * Sous les filtres, dans le panneau : il change l'ordre de la liste, pas ce
+ * qu'elle contient. Ses pastilles reprennent l'état choisi des bascules,
+ * l'aplat sous un filet d'accent, pour les mêmes raisons de contraste.
+ *
+ * « Trier par » se lit en tête de la file de pastilles, sur la même ligne :
+ * posé au-dessus comme l'étiquette d'un menu, il coûtait 27 px de plus pour
+ * une rangée de boutons qui se nomme déjà elle-même. */
+
+.barre-filtres .tri {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.barre-filtres .tri .libelle {
+  margin-right: var(--space-1);
+}
+
+/* Les pastilles suivent l'intitulé dans la même file, et passent à la ligne
+   avec lui. */
+.barre-filtres .barre-tri {
+  display: contents;
+}
+
+.barre-filtres .barre-tri button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--step--1);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.barre-filtres .barre-tri button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.barre-filtres .barre-tri button[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-fill);
+  color: var(--on-accent);
+}
+
+.barre-filtres .barre-tri button[aria-pressed='true']:hover {
+  border-color: var(--accent-hover);
+  background: var(--accent-fill-hover);
+}
+
+/* La flèche n'apparaît que sur le critère actif, et indique le sens. */
+.barre-filtres .barre-tri button .fleche::after {
+  content: '';
+}
+.barre-filtres .barre-tri button[data-sens='asc'] .fleche::after {
+  content: '↑';
+}
+.barre-filtres .barre-tri button[data-sens='desc'] .fleche::after {
+  content: '↓';
+}
+
+/* ---------- Le repli derrière « Filtres » ---------- */
+
+.barre-filtres[data-repli] .panneau {
+  display: none;
+}
+
+.barre-filtres[data-repli][data-ouvert] .panneau {
+  display: grid;
+}
+
+/* En mode téléphone, le panneau reste ouvert dès 40rem, et le bouton n'a
+   plus rien à ouvrir. */
+@media (min-width: 40rem) {
+  .barre-filtres[data-repli='telephone'] .panneau {
+    display: grid;
+  }
+
+  .barre-filtres[data-repli='telephone'] .bouton-filtres {
+    display: none;
+  }
+}
+
+/* ---------- Les boutons de la barre ----------
+ * « Filtres » et « Réinitialiser » : 44 px, au filet et au rayon des menus.
+ * Ce sont des commandes de la barre, pas des actions principales, d'où
+ * l'absence d'aplat. */
+
+.barre-filtres .bouton-outil {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--cible-min);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--step--1);
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.barre-filtres .bouton-outil:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.barre-filtres .bouton-filtres::before {
+  content: '';
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  background-color: currentColor;
+  -webkit-mask: var(--icone-filtres) center / contain no-repeat;
+  mask: var(--icone-filtres) center / contain no-repeat;
+}
+
+.barre-filtres .bouton-filtres[aria-expanded='true'] {
+  border-color: var(--accent);
+}
+
+/* Le nombre de filtres actifs, visible même panneau fermé. */
+.barre-filtres .pastille-compte {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 var(--space-1);
+  border-radius: 999px;
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 3. La rangée d'état ----------
+ * Le compteur à gauche, « Réinitialiser » à droite, le tri et les étiquettes
+ * dessous.
+ *
+ * Aucune hauteur n'est réservée au bouton. Il n'apparaît qu'avec le premier
+ * filtre, et la rangée des étiquettes avec lui : la liste se recompose à cet
+ * instant de toute façon, et 18 px gardés vides en permanence n'auraient
+ * épargné aucun saut. */
+
+.barre-filtres .rangee-etat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.barre-filtres .compteur {
+  grid-column: 1;
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+/* Une classe et non un attribut : la carte des salles nomme déjà
+   `data-reinitialiser` le bouton « Tout » de sa vue. */
+.barre-filtres .bouton-reinitialiser {
+  grid-column: 2;
+}
+
+/*
+ * LE TRI, QUAND CE N'EST PAS CELUI DE LA LISTE. Sous le compteur, sur toute
+ * la largeur : « Trié par Nom » à gauche, le bouton qui ramène le tri par
+ * défaut à droite, comme « Réinitialiser » au-dessus. Le tri vit dans le
+ * panneau, et le panneau du classement reste fermé : sans cette rangée, un
+ * tri par nom renumérotait la liste sans que rien ne le dise.
+ *
+ * Le bouton passe sous l'étiquette quand les deux ne tiennent pas sur une
+ * ligne, calé à droite comme le bouton « Filtres » à 320 px. Il passe à la
+ * ligne lui-même plutôt que de déborder : son libellé vient d'un en-tête,
+ * dont la longueur n'est pas connue ici.
+ */
+.barre-filtres .tri-actif {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  min-width: 0;
+}
+
+.barre-filtres .etiquette-tri {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+/* Le critère, au texte courant et en gras : c'est lui qu'on cherche. Un nom
+   de colonne tient en trois mots au plus, « Poids de corps », qui restent
+   sur la même ligne. */
+.barre-filtres .etiquette-tri strong {
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* Le sens passe à la ligne d'un bloc, « du plus grand au plus petit ».
+   Mesuré à 320 px sans cette règle : « plus petit » restait seul sur la
+   seconde ligne. En bloc dans la ligne, il se coupe encore s'il dépasse à
+   lui seul la largeur, texte agrandi compris. */
+.barre-filtres .etiquette-tri .sens {
+  display: inline-block;
+}
+
+.barre-filtres .bouton-tri-defaut {
+  flex-shrink: 1;
+  margin-left: auto;
+  white-space: normal;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.barre-filtres .etiquettes-actives {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Une étiquette par filtre actif. Toute l'étiquette est le bouton qui la
+   retire : une croix seule ferait une cible de 18 px. */
+.barre-filtres .etiquette-active {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--cible-min);
+  padding: 0 var(--space-3) 0 var(--space-4);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--step--1);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.barre-filtres .etiquette-active::after {
+  content: '';
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  background-color: currentColor;
+  -webkit-mask: var(--icone-retirer) center / contain no-repeat;
+  mask: var(--icone-retirer) center / contain no-repeat;
+}
+
+.barre-filtres .etiquette-active:hover {
+  color: var(--accent);
+}

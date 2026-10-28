@@ -1,9 +1,12 @@
 ---
 import BadgeOfficiel from '../../../components/BadgeOfficiel.astro';
 import Coupe from '../../../components/Coupe.astro';
+import GrilleRecords from '../../../components/GrilleRecords.astro';
 import InteractiveTable from '../../../components/InteractiveTable.astro';
 import Medaille from '../../../components/Medaille.astro';
 import Repli from '../../../components/Repli.astro';
+import SpriteMouvements from '../../../components/SpriteMouvements.astro';
+import Terme from '../../../components/Terme.astro';
 import InfographieCompetition from '../../../components/infographies/InfographieCompetition.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import {
@@ -16,10 +19,15 @@ import {
 } from '../../../lib/categories';
 import Partenaire from '../../../components/Partenaire.astro';
 import { articlesDeLaCompetition } from '../../../lib/actualites';
-import { partenaireDeLaPage } from '../../../lib/sponsors';
 import { dateLongue, nombre, place, points } from '../../../lib/format';
 import { editionsDe, libelleEvent, listeMeets, resultatsDuMeet } from '../../../lib/meets';
-import { cleRecord, clesRecords } from '../../../lib/records';
+import {
+  cleRecord,
+  clesRecords,
+  nombreRecordsBattusLe,
+  parAthlete,
+  recordsDeLaCompetition,
+} from '../../../lib/records';
 import { athleteSlug } from '../../../lib/slug';
 import type { LiftKey, Metal, Result } from '../../../lib/types';
 
@@ -32,8 +40,6 @@ export async function getStaticPaths() {
 
 const { meet } = Astro.props;
 const articlesDuMeet = await articlesDeLaCompetition(meet.chemin);
-// Un seul partenaire, et seulement s'il y en a un : voir lib/sponsors.
-const partenaire = await partenaireDeLaPage('competition', meet.chemin);
 const resultats = resultatsDuMeet(meet.key);
 const records = clesRecords();
 const autresEditions = editionsDe(meet.nomSlug).filter((e) => e.date !== meet.date);
@@ -44,6 +50,27 @@ const femmes = resultats.filter((r) => r.sex === 'F').length;
 
 const estRecord = (r: Result, lift: LiftKey) =>
   records.has(cleRecord(lift, r.name, r.date, r.meetName));
+
+/*
+ * LE BANDEAU DES RECORDS : les coupes du tableau, rassemblées en tête. Ce sont
+ * les records établis ce jour-là qui tiennent toujours, et la phrase dit
+ * combien sont tombés depuis, pour que la liste ne passe pas pour complète.
+ *
+ * « BATTUS » SEULEMENT S'ILS ONT TOUS BATTU QUELQUE CHOSE. Une première marque
+ * ouvre une catégorie restée vide jusque-là, souvent celle d'un athlète seul
+ * en équipé : elle est établie, pas battue. Huit compétitions en comptent
+ * parmi leurs records en cours, relevé le 28 octobre 2026, et leur titre dit
+ * alors « établis ».
+ */
+const recordsDuJour = recordsDeLaCompetition(meet.date, meet.meetName);
+const athletesRecords = parAthlete(recordsDuJour);
+const avecBandeau = recordsDuJour.length > 0;
+const battusCeJour = nombreRecordsBattusLe(meet.date, meet.meetName);
+const battusEnCours = recordsDuJour.filter((r) => r.gainKg !== null).length;
+const premieresMarques = recordsDuJour.length - battusEnCours;
+const recordsIle = recordsDuJour.filter((r) => r.recordIle).length;
+const titreRecords =
+  premieresMarques === 0 ? 'Records battus ce jour-là' : 'Records établis ce jour-là';
 
 /**
  * Médaille du podium, décernée par CATÉGORIE et non sur l'ensemble du plateau.
@@ -146,21 +173,115 @@ const description =
       pixels. La pastille prend une partie de la marge qui séparait les
       chiffres clés du titre « Résultats ». Mesuré : les résultats descendent
       de 44 px, à 375 comme à 1 280 px.
+
+      LA PASTILLE NOMME LA QUESTION de l'image, la répartition des athlètes
+      entre les catégories. Elle tient sur une ligne jusqu'à 320 px : 278 px
+      pour 288, mesuré le 28 octobre 2026.
     */}
     <div class="rangee-replis repli-competition">
-      <Repli titre="La compétition en images">
+      <Repli titre={'Comment se répartissent les athlètes\u00a0?'}>
         <InfographieCompetition chemin={meet.chemin} />
       </Repli>
     </div>
 
+    {/*
+      LE BANDEAU DES RECORDS, EN TÊTE DES RÉSULTATS, absent quand la
+      compétition ne détient aucun record en cours. Ce que le compte rendu
+      raconte se lit avant le tableau, où il fallait repérer les coupes une à
+      une. Mesuré le 28 octobre 2026 à 375 px : 221 px pour un record, 514
+      au plus, la suite repliée au-delà de trois athlètes.
+    */}
+    {
+      avecBandeau && (
+        <section class="bandeau-records" aria-labelledby="records-du-jour">
+          <SpriteMouvements />
+          <h2 id="records-du-jour">
+            <span class="coupe-titre" aria-hidden="true">
+              <Coupe metal="or" detail="Record en cours" taille={24} />
+            </span>
+            {titreRecords}
+          </h2>
+          <p class="resume">
+            {battusCeJour === 0 ? (
+              <>
+                Les <Terme cle="record">records</Terme> de{' '}
+                <Terme cle="categorie">catégorie</Terme> de ce jour-là sont des
+                premières marques.
+              </>
+            ) : battusEnCours === battusCeJour ? (
+              battusCeJour === 1 ? (
+                <>
+                  Le <Terme cle="record">record</Terme> de{' '}
+                  <Terme cle="categorie">catégorie</Terme> battu ce jour-là tient
+                  toujours.
+                </>
+              ) : (
+                <>
+                  Les {battusCeJour} <Terme cle="record">records</Terme> de{' '}
+                  <Terme cle="categorie">catégorie</Terme> battus ce jour-là
+                  tiennent toujours.
+                </>
+              )
+            ) : battusEnCours === 0 ? (
+              <>
+                {battusCeJour === 1 ? 'Le' : `Les ${battusCeJour}`}{' '}
+                <Terme cle="record">{battusCeJour === 1 ? 'record' : 'records'}</Terme> de{' '}
+                <Terme cle="categorie">catégorie</Terme>{' '}
+                {battusCeJour === 1 ? 'battu ce jour-là est tombé' : 'battus ce jour-là sont tombés'}{' '}
+                depuis.
+              </>
+            ) : (
+              <>
+                {battusEnCours === 1 ? 'Un' : battusEnCours} des {battusCeJour}{' '}
+                <Terme cle="record">records</Terme> de{' '}
+                <Terme cle="categorie">catégorie</Terme> battus ce jour-là{' '}
+                {battusEnCours === 1 ? 'tient' : 'tiennent'} toujours.
+              </>
+            )}
+            {premieresMarques > 0 && (
+              <>
+                {' '}
+                {premieresMarques === 1
+                  ? `Une première marque, la première performance recensée de sa catégorie, tient ${battusEnCours > 0 ? 'aussi' : 'toujours'}.`
+                  : `${premieresMarques} premières marques, les premières performances recensées de leur catégorie, tiennent ${battusEnCours > 0 ? 'aussi' : 'toujours'}.`}
+              </>
+            )}
+            {recordsIle > 0 && (
+              <>
+                {' '}
+                {recordsIle === 1
+                  ? "La case sur fond jaune est aussi un record de l'île, toutes catégories confondues."
+                  : `Les ${recordsIle} cases sur fond jaune sont aussi des records de l'île, toutes catégories confondues.`}
+              </>
+            )}
+          </p>
+          <GrilleRecords
+            groupes={athletesRecords}
+            marquerIle
+            visibles={3}
+            legende={`${titreRecords} et qui tiennent toujours, par athlète et par mouvement`}
+          />
+        </section>
+      )
+    }
+
     <h2>Résultats</h2>
 
+    {/*
+      LES FILTRES REPLIÉS SUR TÉLÉPHONE SEULEMENT. Ouvert, le panneau y
+      mesure de 363 à 444 px selon la compétition, soit 45 à 55 % d'un écran
+      de 812 : quatre ou cinq menus et neuf critères de tri. Le bouton
+      « Filtres » les range sous 40rem, comme sur le classement, dont cette
+      liste partage la forme. Au-delà, ils tiennent sur une rangée et restent
+      ouverts.
+    */}
     <InteractiveTable
       recherche="Nom d'un athlète"
       singulier="résultat"
       pluriel="résultats"
       total={resultats.length}
       barreDeTri
+      replier="telephone"
     >
       <Fragment slot="filtres">
         <div class="champ">
@@ -286,9 +407,9 @@ const description =
                       <span class="etiquette secondaire">{sexLabel(r.sex)}</span>
                       <span class="etiquette">{equipmentLabel(equipmentGroup(r.equipment))}</span>
                       <span class="etiquette">
-                        {r.weightClassKg ? `${r.weightClassKg} kg` : 'cat. inconnue'}
+                        {r.weightClassKg ? `${r.weightClassKg} kg` : 'cat. inconnue'}
                       </span>
-                      <span class="etiquette">{nombre(r.bodyweightKg)} kg de corps</span>
+                      <span class="etiquette">{`${nombre(r.bodyweightKg)} kg de corps`}</span>
                       {r.division && <span class="etiquette secondaire">{r.division}</span>}
                       {r.ageClass && <span class="etiquette secondaire">{r.ageClass} ans</span>}
                     </td>
@@ -344,18 +465,30 @@ const description =
       </div>
     </InteractiveTable>
 
+    {/* « Catégorie » et « record » ne sont soulignés ici qu'en l'absence du
+        bandeau, qui les emploie en premier. */}
     <p class="note">
-      Les médailles distinguent le podium <strong>de chaque catégorie</strong>,
-      puisqu'une compétition se dispute catégorie par catégorie. La coupe
-      signale une barre qui constitue aujourd'hui un record à La Réunion.
+      Les médailles distinguent le podium <strong>de chaque{' '}{avecBandeau ? 'catégorie' : <Terme cle="categorie">catégorie</Terme>}</strong>, puisqu'une compétition
+      se dispute catégorie par catégorie. La coupe signale une{' '}
+      <Terme cle="barre">barre</Terme> qui constitue aujourd'hui un{' '}{avecBandeau ? 'record' : <Terme cle="record">record</Terme>} à La Réunion.
       {
-        aDuFullPower
-          ? ' Le total et les points Dots concernent le full power.'
-          : ' Cette compétition portait sur un seul mouvement, le total et les points Dots ne s’y appliquent pas.'
+        aDuFullPower ? (
+          <>
+            {' '}Le <Terme cle="total">total</Terme> et les points{' '}
+            <Terme cle="dots">Dots</Terme> concernent le{' '}
+            <Terme cle="full-power">full power</Terme>.
+          </>
+        ) : (
+          <>
+            {' '}Cette compétition portait sur un seul mouvement, le{' '}
+            <Terme cle="total">total</Terme> et les points{' '}
+            <Terme cle="dots">Dots</Terme> ne s’y appliquent pas.
+          </>
+        )
       }
     </p>
 
-    {partenaire && <Partenaire sponsor={partenaire} />}
+    <Partenaire emplacement="competition" />
 
     {
       /*
@@ -365,7 +498,7 @@ const description =
       */
       articlesDuMeet.length > 0 && (
         <section class="actus">
-          <h2>Sur cette compétition</h2>
+          <h2>Articles sur cette compétition</h2>
           <ul>
             {articlesDuMeet.map((a) => (
               <li>
@@ -443,6 +576,35 @@ const description =
     margin-bottom: var(--space-8);
   }
 
+  /* Le bandeau garde le même écart avant « Résultats » que la pastille. */
+  .bandeau-records {
+    margin-bottom: var(--space-8);
+  }
+
+  .bandeau-records h2 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  /* La coupe du tableau, pour dire d'un coup d'œil ce que le bandeau
+     rassemble. Décorative : le titre le dit en toutes lettres. */
+  .coupe-titre {
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+  .coupe-titre :global(.coupe) {
+    margin-left: 0;
+    vertical-align: 0;
+  }
+
+  .resume {
+    max-width: 68ch;
+    margin-bottom: var(--space-4);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
   .stats dt {
     font-size: var(--step--1);
     text-transform: uppercase;
@@ -480,26 +642,63 @@ const description =
     font-variant-numeric: tabular-nums;
   }
 
-  /* Les trois barres du jour, alignées comme un mini-tableau : l intitulé à
-     gauche, la charge à droite, pour que les nombres se superposent d une
-     ligne à l autre. */
+  /*
+   * Les trois barres du jour, alignées comme un mini-tableau : l intitulé, la
+   * charge, l unité, puis la coupe d un record. QUATRE COLONNES PARTAGÉES par
+   * les trois lignes grâce à `subgrid` : les charges s alignent à droite et
+   * les unités tombent les unes sous les autres.
+   *
+   * Sur deux colonnes, l unité et la coupe passaient à la ligne. Une carte
+   * mesurait 211 px à 375 px de large, 190 px sur quatre colonnes (relevé de
+   * l audit du 27 octobre 2026). Sans `subgrid`, chaque ligne garde sa propre
+   * grille de quatre colonnes : seul l alignement des charges se perd.
+   *
+   * 2rem pour l intitulé, « SDT » en demandant 30 : à 2,5rem, une charge
+   * suivie de sa coupe dépassait de 9 px sa colonne à 320 px de large.
+   */
   .barres {
     display: grid;
-    gap: 0.1rem;
+    grid-template-columns: 2rem auto auto 1fr;
+    gap: 0.1rem var(--space-1);
     font-size: var(--step--1);
     color: var(--muted);
   }
 
   .barres > span {
     display: grid;
-    grid-template-columns: 2.5rem auto;
-    gap: var(--space-2);
+    grid-column: 1 / -1;
+    grid-template-columns: 2rem auto auto 1fr;
+    grid-template-columns: subgrid;
     align-items: baseline;
   }
 
   .barres b {
+    justify-self: end;
     color: var(--text);
     font-weight: 700;
+  }
+
+  /* La coupe d'un record ne s'efface jamais. La règle commune
+     `svg { max-width: 100% }` la laissait rétrécir avec sa colonne, jusqu'à
+     0 px sur une carte de 320 px. */
+  .barres :global(.coupe svg) {
+    max-width: none;
+  }
+
+  /*
+   * SOUS 22,5rem, LES TROIS BARRES PRENNENT LA LARGEUR DE LA CARTE, et les
+   * Dots remontent sous le total, à côté des pastilles. Dans une demi-carte
+   * de 320 px, leurs quatre colonnes manquaient de 9 px. La carte garde sa
+   * hauteur, mesuré : les pastilles y occupent déjà deux rangées.
+   */
+  @media (max-width: 22.5rem) {
+    .liste-perfs tbody tr {
+      grid-template-areas:
+        'rang nom nom'
+        'rang contexte total'
+        'rang contexte dots'
+        'rang detail detail';
+    }
   }
 
   .intitule {
@@ -523,6 +722,14 @@ const description =
     }
   }
 
+  /* Une pastille plus large que sa colonne passe sur deux lignes plutôt que
+     de déborder : à 320 px, « 101,8 kg de corps » dépassait de 38 px. Des
+     espaces insécables tiennent le nombre avec son unité et « de corps »
+     ensemble : la coupure tombe entre les deux. */
+  .contexte .etiquette {
+    white-space: normal;
+  }
+
   .sans-total {
     font-size: var(--step-0);
     color: var(--muted);
@@ -536,10 +743,8 @@ const description =
     border-top: 1px solid var(--border);
   }
 
-  .actus h2 {
-    font-size: var(--step-1);
-    margin-bottom: var(--space-3);
-  }
+  /* L'intertitre garde la taille et la marge des autres h2 de la page : il
+     valait 22,7 px contre 28,8, relevé à l'audit du 27 octobre 2026. */
 
   .actus ul {
     list-style: none;

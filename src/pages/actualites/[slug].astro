@@ -1,6 +1,7 @@
 ---
 import Icone from '../../components/Icone.astro';
 import Partenaire from '../../components/Partenaire.astro';
+import Terme from '../../components/Terme.astro';
 import InfographieArticle from '../../components/infographies/InfographieArticle.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import {
@@ -11,8 +12,8 @@ import {
   verifierCompetitions,
 } from '../../lib/actualites';
 import { dateLongue } from '../../lib/format';
+import { chapeauDecoupe } from '../../lib/lexique-markdown';
 import { libelleEvent } from '../../lib/meets';
-import { partenaireDeLaPage } from '../../lib/sponsors';
 import { render } from 'astro:content';
 
 export async function getStaticPaths() {
@@ -22,12 +23,22 @@ export async function getStaticPaths() {
 }
 
 const { article } = Astro.props;
-const { Content } = await render(article);
+const { Content, remarkPluginFrontmatter } = await render(article);
+
+/*
+ * LE CHAPEAU SOULIGNÉ, découpé par le greffon des articles dans le même
+ * passage que le corps : un terme du chapeau y est souligné, une seule fois
+ * pour tout l'article. La page pose un <Terme> là où le découpage le dit.
+ * Voir lib/lexique-markdown.ts.
+ *
+ * La description reste du texte brut partout ailleurs : balise description,
+ * partage, liste des actualités, flux RSS.
+ */
+const chapeau = chapeauDecoupe(remarkPluginFrontmatter, article.data.description, article.id);
 
 const meet = competitionDe(article);
 const lies = await articlesLies(article);
 const jour = article.data.date.toISOString().slice(0, 10);
-const partenaire = await partenaireDeLaPage('article', article.id);
 ---
 
 <BaseLayout titre={article.data.titre} description={article.data.description}>
@@ -43,7 +54,7 @@ const partenaire = await partenaireDeLaPage('article', article.id);
           {article.data.brouillon && <span class="brouillon">Brouillon</span>}
         </p>
         <h1>{article.data.titre}</h1>
-        <p class="chapeau">{article.data.description}</p>
+        <p class="chapeau">{chapeau.map((m) => (typeof m === 'string' ? m : <Terme cle={m.cle}>{m.mot}</Terme>))}</p>
       </header>
 
       {
@@ -97,7 +108,7 @@ const partenaire = await partenaireDeLaPage('article', article.id);
       )
     }
 
-    {partenaire && <Partenaire sponsor={partenaire} />}
+    <Partenaire emplacement="article" />
 
     {
       lies.length > 0 && (
@@ -135,10 +146,24 @@ const partenaire = await partenaireDeLaPage('article', article.id);
    */
   const tableaux = [...document.querySelectorAll<HTMLTableElement>('.corps table')];
 
+  /*
+   * Le texte de l'élément qui précède le tableau, SANS LES BULLES DU LEXIQUE.
+   * Un terme souligné porte sa définition dans la page, masquée : lue telle
+   * quelle, elle s'insérait dans l'étiquette, collée au mot. Mesuré le
+   * 28 octobre 2026 sur un article d'essai, « les points Dots » devenait
+   * « les points Score qui ramène un total […] différents.Dots ».
+   */
+  function texteSansBulles(element: Element | null) {
+    if (!element) return '';
+    const copie = element.cloneNode(true) as Element;
+    for (const bulle of copie.querySelectorAll('.lexique-bulle')) bulle.remove();
+    return copie.textContent?.trim() ?? '';
+  }
+
   function marquerLesTableauxLarges() {
     for (const tableau of tableaux) {
       if (tableau.scrollWidth > tableau.clientWidth + 1) {
-        const titre = tableau.previousElementSibling?.textContent?.trim();
+        const titre = texteSansBulles(tableau.previousElementSibling);
         tableau.tabIndex = 0;
         tableau.setAttribute(
           'aria-label',

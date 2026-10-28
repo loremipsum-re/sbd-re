@@ -71,14 +71,10 @@ import FormulaireSuggestion from './FormulaireSuggestion.astro';
   if (bouton && fenetre) {
     /*
      * Le bouton n'apparaît qu'une fois la page défilée, comme le retour en
-     * haut : sur le premier écran, rien ne gêne encore personne.
+     * haut : sur le premier écran, rien ne gêne encore personne. Les deux
+     * boutons forment une paire, et c'est BaseLayout.astro qui les montre et
+     * les masque ensemble.
      */
-    const basculer = () => {
-      bouton.hidden = window.scrollY < 600;
-    };
-    addEventListener('scroll', basculer, { passive: true });
-    basculer();
-
     bouton.addEventListener('click', () => fenetre.showModal());
 
     for (const fermer of fenetre.querySelectorAll('[data-fermer-suggestion]')) {

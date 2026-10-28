@@ -41,6 +41,16 @@ export interface AthleteRanking {
   dotsDate: string;
   dotsMeetName: string;
   dotsMeetTown: string;
+  /**
+   * Le contexte de ce meilleur Dots : poids de corps, catégorie et équipement
+   * du jour. Ils diffèrent de ceux du meilleur total pour qui a changé de
+   * catégorie. Mesuré : Nicolas Tabere fait son meilleur total en −93 kg à
+   * 91 kg de corps, et ses meilleurs Dots en −83 kg à 82,2 kg. Une liste où
+   * les Dots dominent affiche ce contexte-là, voir RankingTable.
+   */
+  dotsBodyweightKg: number | null;
+  dotsWeightClassKg: string;
+  dotsEquipmentGroup: EquipmentGroup;
 
   bodyweightKg: number | null;
   weightClassKg: string;
@@ -133,6 +143,9 @@ export function meilleurTotalParAthlete(
       dotsDate: meilleurDots.date,
       dotsMeetName: meilleurDots.meetName,
       dotsMeetTown: meilleurDots.meetTown,
+      dotsBodyweightKg: meilleurDots.bodyweightKg,
+      dotsWeightClassKg: meilleurDots.weightClassKg,
+      dotsEquipmentGroup: equipmentGroup(meilleurDots.equipment),
 
       bodyweightKg: meilleurTotal.bodyweightKg,
       weightClassKg: meilleurTotal.weightClassKg,

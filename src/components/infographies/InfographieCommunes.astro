@@ -2,16 +2,17 @@
 /**
  * Les communes organisatrices, en une image.
  *
- * UN CLASSEMENT EN BARRES, ET NON UNE CARTE. ile-reunion.json ne porte que le
- * tracé de la côte et sa projection, sans aucune commune. Les seules positions
- * du dépôt sont celles des salles, et quatre des sept communes organisatrices
- * n'en ont aucune : L'Étang-Salé, Saint-Joseph, Saint-Leu et La
- * Plaine-des-Palmistes. Une carte aurait demandé d'inventer leurs coordonnées.
+ * UNE CARTE À CÔTÉ DU CLASSEMENT. ile-reunion.json porte depuis octobre 2026
+ * les contours des 24 communes, tirés de l'IGN. La carte montre ce que le
+ * classement tait : OÙ se disputent les compétitions. Chaque commune
+ * organisatrice est teintée d'autant plus fort qu'elle en accueille, et porte
+ * leur nombre. Le classement chiffré reste, c'est lui que lit un lecteur
+ * d'écran : la carte en double le contenu, elle est donc masquée à l'oreille.
  *
- * DEUX LECTURES, DEUX VOLETS. La barre compte les compétitions de chaque
- * commune, la grille des saisons dit quand elle a organisé. Chaque volet a ses
- * propres rangées : une barre posée au-dessus des années se lirait comme une
- * période, de 2017 jusqu'au bout de la barre.
+ * TROIS LECTURES, DEUX VOLETS. La carte dit où, la barre combien, la grille
+ * des saisons quand. Chaque volet a ses propres rangées : une barre posée
+ * au-dessus des années se lirait comme une période, de 2017 jusqu'au bout de
+ * la barre.
  *
  * LA GRILLE PORTE UN CHIFFRE DANS CHAQUE CASE PLEINE. L'aplat seul dirait
  * « il y a eu compétition », le chiffre dit combien, et une case vide se
@@ -23,6 +24,7 @@
  * retombe sur une formule neutre en cas d'égalité.
  */
 import Infographie from './Infographie.astro';
+import ile from '../../data/ile-reunion.json';
 import { periode, results } from '../../lib/data';
 import { annee, dateLongue, nombre, pluriel } from '../../lib/format';
 import type { IdInfographie } from '../../lib/infographies';
@@ -95,6 +97,36 @@ function periodeDe(c: (typeof communes)[number]): string {
   if (c.debut === c.fin) return `en ${c.debut}`;
   return `de ${c.debut} à ${c.fin}`;
 }
+
+/*
+ * LA CARTE. Les communes de la carte et celles des compétitions portent la
+ * même orthographe officielle, celle de scripts/lib/opl.mjs. Une commune de
+ * compétition sans contour, un lieu-dit par exemple, reste au classement et
+ * la légende le signale.
+ *
+ * La teinte va de 45 % à 100 % de l'aplat d'accent, à proportion des
+ * compétitions. Sous 45 %, le trait sombre qui sépare deux communes teintées
+ * tomberait sous 3:1 en thème sombre. Mesuré sur la teinte la plus claire
+ * des données d'octobre 2026 : 3,7:1.
+ */
+const MARGE_CARTE = 12;
+const vue = {
+  x: -MARGE_CARTE,
+  y: -MARGE_CARTE,
+  w: ile.largeur + 2 * MARGE_CARTE,
+  h: ile.hauteur + 2 * MARGE_CARTE,
+};
+const parNom = new Map(communes.map((c) => [c.nom, c]));
+const formes = ile.communes
+  .map((f) => {
+    const c = parNom.get(f.nom);
+    return { ...f, part: c ? c.competitions / plusHaut : null, competitions: c?.competitions };
+  })
+  // Les communes teintées en dernier : leur trait passe par-dessus.
+  .sort((a, b) => Number(a.part !== null) - Number(b.part !== null));
+const sansContour = communes.filter((c) => !ile.communes.some((f) => f.nom === c.nom));
+const pourcent = (v: number, debut: number, taille: number) =>
+  `${(((v - debut) / taille) * 100).toFixed(2)}%`;
 ---
 
 <Infographie
@@ -103,37 +135,68 @@ function periodeDe(c: (typeof communes)[number]): string {
     sansCommune > 0
       ? ` ${sansCommune} ${pluriel(sansCommune, 'compétition')} sans commune renseignée ${sansCommune > 1 ? 'sont écartées' : 'est écartée'}.`
       : ''
-  }`}
+  }${
+    sansContour.length > 0
+      ? ` Sans contour sur la carte : ${sansContour.map((c) => c.nom).join(', ')}.`
+      : ''
+  } Contours des communes : ${ile.source}, Licence Ouverte.`}
   lienArticle={lienArticle}
 >
-  <div class="volet">
+  <div class="volet volet-carte">
     <p class="intitule" id="communes-classement">
       {totalCompetitions} {pluriel(totalCompetitions, 'compétition')} dans {communes.length}{' '}
       {pluriel(communes.length, 'commune')}
     </p>
-    <ol class="classement" aria-labelledby="communes-classement">
-      {
-        communes.map((c) => (
-          <li class="commune">
-            <p class="nom">{c.nom}</p>
-            <p class="piste">
+    <div class="carte-classement">
+      <div class="carte" aria-hidden="true">
+        <svg viewBox={`${vue.x} ${vue.y} ${vue.w} ${vue.h}`} focusable="false">
+          {
+            formes.map((f) =>
+              f.part === null ? (
+                <path d={f.chemin} />
+              ) : (
+                <path class="teintee" d={f.chemin} style={`--part:${f.part.toFixed(3)}`} />
+              ),
+            )
+          }
+        </svg>
+        {
+          formes
+            .filter((f) => f.part !== null)
+            .map((f) => (
               <span
-                class="barre"
-                style={`--part:${c.competitions / plusHaut}`}
-                aria-hidden="true"
-              />
-              <strong class="num-tab">{c.competitions}</strong>
-              <span class="sr-only"> {pluriel(c.competitions, 'compétition')}</span>
-            </p>
-            <p class="detail">
-              <span class="num-tab">{nombre(c.resultats)}</span>{' '}
-              {pluriel(c.resultats, 'résultat')},{' '}
-              <span class="num-tab">{nombre(c.athletes)}</span> {pluriel(c.athletes, 'athlète')}
-            </p>
-          </li>
-        ))
-      }
-    </ol>
+                class="compte"
+                style={`left:${pourcent(f.centre[0], vue.x, vue.w)};top:${pourcent(f.centre[1], vue.y, vue.h)}`}
+              >
+                {f.competitions}
+              </span>
+            ))
+        }
+      </div>
+      <ol class="classement" aria-labelledby="communes-classement">
+        {
+          communes.map((c) => (
+            <li class="commune">
+              <p class="nom">{c.nom}</p>
+              <p class="piste">
+                <span
+                  class="barre"
+                  style={`--part:${c.competitions / plusHaut}`}
+                  aria-hidden="true"
+                />
+                <strong class="num-tab">{c.competitions}</strong>
+                <span class="sr-only"> {pluriel(c.competitions, 'compétition')}</span>
+              </p>
+              <p class="detail">
+                <span class="num-tab">{nombre(c.resultats)}</span>{' '}
+                {pluriel(c.resultats, 'résultat')},{' '}
+                <span class="num-tab">{nombre(c.athletes)}</span> {pluriel(c.athletes, 'athlète')}
+              </p>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
   </div>
 
   <div class="volet">
@@ -204,6 +267,82 @@ function periodeDe(c: (typeof communes)[number]): string {
     margin-bottom: var(--space-4);
     font-size: var(--step--1);
     font-weight: 700;
+  }
+
+  /* LA CARTE ET LE CLASSEMENT. L'une sur l'autre tant que la place manque,
+     la carte d'abord. Côte à côte dès 46 rem de volet, le classement à
+     gauche : sa colonne de noms reste alors alignée sur celle de la grille
+     des saisons, en dessous. C'est la largeur du volet qui décide, pas celle
+     de l'écran : dans un article, le volet reste étroit même à 1 280 px. */
+  .volet-carte {
+    container-type: inline-size;
+  }
+
+  .carte-classement {
+    display: grid;
+    gap: var(--space-6);
+    min-width: 0;
+  }
+
+  @container (min-width: 46rem) {
+    .carte-classement {
+      grid-template-columns: minmax(0, 1fr) 20rem;
+      align-items: start;
+    }
+    .carte {
+      grid-column: 2;
+      grid-row: 1;
+    }
+  }
+
+  .carte {
+    position: relative;
+    width: min(100%, 22rem);
+    min-width: 0;
+  }
+
+  .carte svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /* Une commune sans compétition garde le fond de l'île et un trait gris,
+     8,34:1 en sombre et 5,83:1 en clair. Une commune teintée prend un trait
+     sombre, --on-accent, qui la sépare de sa voisine teintée : 3,7:1 au
+     moins en sombre, sur la teinte la plus claire, et 10,66:1 en clair. */
+  .carte path {
+    fill: var(--bg);
+    stroke: var(--muted);
+    stroke-width: 1;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* L'aplat plein d'abord : un navigateur qui ne sait pas calculer le
+     mélange garde des communes teintées, toutes au même degré. */
+  .carte path.teintee {
+    fill: var(--accent-fill);
+    fill: color-mix(in srgb, var(--accent-fill) calc(45% + 55% * var(--part)), var(--bg));
+    stroke: var(--on-accent);
+  }
+
+  /* Le nombre de compétitions, posé au centre de la commune : le point le
+     plus éloigné de ses limites, calculé par le générateur. Du texte HTML,
+     pour garder sa taille sur téléphone. */
+  .compte {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    min-width: 1.75rem;
+    padding: 0 var(--space-1);
+    border: 2px solid var(--text);
+    background: var(--surface);
+    color: var(--text);
+    font-size: var(--step--1);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.5;
+    text-align: center;
   }
 
   /* LE CLASSEMENT. Le nom à gauche de sa barre, le chiffre au bout de la

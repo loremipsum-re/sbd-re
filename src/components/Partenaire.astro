@@ -1,6 +1,28 @@
 ---
 /**
- * Un partenaire, en fin de page de compétition ou d'article.
+ * LA place de partenaire d'une page, en fin de contenu.
+ *
+ * UNE LIGNE SUFFIT, posée après le dernier tableau, la dernière liste ou la
+ * note qui les suit :
+ *
+ *   <Partenaire emplacement="classement" />
+ *
+ * Le composant cherche lui-même le partenaire de la page, et ne rend RIEN s'il
+ * n'y en a aucun : ni cadre vide, ni encart maison. Choix de l'auteur du
+ * 27 octobre 2026.
+ *
+ * LE FORMAT EST CELUI DE LA PLACE, fixé dans lib/formats-partenaires.ts. Une
+ * bannière clôt un article ou une compétition. Une carte, plus discrète, clôt
+ * une page de données : catégories, records, classement, salles de sport.
+ *
+ * UNE SEULE PLACE PAR PAGE, et jamais sur une fiche d'athlète : poser ce
+ * composant deux fois, ou sur une fiche, arrête la génération. Voir
+ * lib/sponsors.ts. Le bandeau du pied de page est à part.
+ *
+ * LA PLACE EST RÉSERVÉE. L'image porte ses dimensions d'affichage en attributs
+ * et le CSS fixe son rapport : le navigateur dessine le cadre avant d'avoir
+ * reçu l'image, et rien ne bouge à son arrivée. Le chargement est différé, la
+ * place étant en bas de page.
  *
  * DEUX OBLIGATIONS, et ce ne sont pas des options.
  *
@@ -12,32 +34,84 @@
  * rémunéré, et l'omettre expose le site à une pénalité de référencement, ce
  * qui coûterait bien plus cher que le partenariat ne rapporte.
  *
- * La flèche des liens sortants vient en plus, posée par tokens.css.
+ * La flèche des liens sortants vient en plus, posée par tokens.css, comme le
+ * nouvel onglet et son annonce, posés par src/middleware.ts.
+ *
+ * LES IMAGES SONT MUETTES, `alt=""`. Le nom du partenaire est écrit dans le
+ * même lien, sous la bannière ou à côté du logo : c'est lui qui nomme le lien,
+ * et le lecteur d'écran ne le lit qu'une fois.
  */
-import type { Sponsor } from '../lib/sponsors';
+import { FORMATS, IMAGES, type IdEmplacement } from '../lib/formats-partenaires';
+import { partenaireDeLaPage } from '../lib/sponsors';
 
 interface Props {
-  sponsor: Sponsor;
+  emplacement: IdEmplacement;
 }
 
-const { sponsor } = Astro.props;
+const { emplacement } = Astro.props;
+const partenaire = await partenaireDeLaPage(emplacement, Astro);
+
+const { banniere, carte } = FORMATS;
+
+/*
+ * Les dimensions passent au CSS par des propriétés, lues dans la table des
+ * formats : écrites une seconde fois dans la feuille, elles finiraient par
+ * diverger. Les deux formats occupent la même largeur maximale, celle de la
+ * bannière, pour qu'une page change de format sans que sa fin bouge.
+ */
+const reglages =
+  `--largeur-place:${banniere.affichage.largeur}px;` +
+  `--rapport-banniere:${IMAGES.banniere.largeur} / ${IMAGES.banniere.hauteur};` +
+  `--largeur-logo:${carte.affichage.largeur}px;` +
+  `--hauteur-logo:${carte.affichage.hauteur}px`;
 ---
 
-<aside class="partenaire">
-  <p class="mention">Partenaire</p>
-  <a
-    class="bloc lien-nu"
-    href={sponsor.data.url}
-    rel="sponsored nofollow noopener"
-  >
-    <img src={sponsor.data.logo} alt={sponsor.data.nom} loading="lazy" />
-    <span class="nom">{sponsor.data.nom}</span>
-  </a>
-</aside>
+{
+  partenaire && (
+    <aside
+      class="partenaire"
+      data-format={partenaire.format}
+      aria-labelledby="mention-partenaire"
+      style={reglages}
+    >
+      <p class="mention" id="mention-partenaire">
+        Partenaire
+      </p>
+      {partenaire.format === 'banniere' ? (
+        <a class="banniere" href={partenaire.url} rel="sponsored nofollow noopener">
+          <img
+            src={partenaire.image}
+            alt=""
+            width={banniere.affichage.largeur}
+            height={banniere.affichage.hauteur}
+            loading="lazy"
+            decoding="async"
+          />
+          <span class="legende">{partenaire.nom}</span>
+        </a>
+      ) : (
+        <a class="carte lien-nu" href={partenaire.url} rel="sponsored nofollow noopener">
+          <img
+            src={partenaire.logo}
+            alt=""
+            width={carte.affichage.largeur}
+            height={carte.affichage.hauteur}
+            loading="lazy"
+            decoding="async"
+          />
+          <span class="texte">
+            <span class="nom">{partenaire.nom}</span>
+            <span class="accroche">{partenaire.accroche}</span>
+          </span>
+        </a>
+      )}
+    </aside>
+  )
+}
 
 <style>
   .partenaire {
-    max-width: 68ch;
+    max-width: var(--largeur-place);
     margin-top: var(--space-12);
     padding-top: var(--space-6);
     border-top: 1px solid var(--border);
@@ -45,8 +119,8 @@ const { sponsor } = Astro.props;
 
   /*
    * Discret mais lisible. Un intitulé qu'on ne voit pas ne remplit pas
-   * l'obligation légale : c'est pour ça qu'il garde la taille du texte
-   * courant et le contraste du texte secondaire, mesuré à 5.38 en clair.
+   * l'obligation légale : c'est pour ça qu'il garde la taille des notes et le
+   * contraste du texte secondaire.
    */
   .mention {
     margin: 0 0 var(--space-2);
@@ -57,32 +131,109 @@ const { sponsor } = Astro.props;
     color: var(--muted);
   }
 
-  .bloc {
+  /*
+   * LE FOND DES IMAGES RESTE CLAIR, DANS LES DEUX THÈMES. Un logo détouré se
+   * dessine presque toujours en sombre, pour un fond blanc : posé tel quel sur
+   * le basalte du thème sombre, il disparaîtrait. Le gris papier du thème
+   * clair est donc pris dans la PALETTE, et non dans un rôle qui changerait
+   * avec le thème. Une image à fond plein le recouvre entièrement.
+   */
+  img {
+    display: block;
+    background: var(--p-light-bg);
+  }
+
+  /* ---------- La bannière ---------- */
+
+  /* Un lien de texte ordinaire, souligné, qui porte en plus l'image : le nom
+     dit où mène le lien, et la flèche des liens sortants le suit. */
+  .banniere {
+    display: block;
+    font-size: var(--step--1);
+    font-weight: 700;
+  }
+
+  .banniere img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: var(--rapport-banniere);
+    object-fit: cover;
+    margin-bottom: var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .banniere:hover img {
+    border-color: var(--accent);
+  }
+
+  /* ---------- La carte ---------- */
+
+  .carte {
+    position: relative;
     display: flex;
     align-items: center;
     gap: var(--space-4);
     min-height: var(--cible-min);
-    padding: var(--space-4);
+    padding: var(--space-4) var(--space-8) var(--space-4) var(--space-4);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     background: var(--surface);
     color: var(--text);
   }
-  .bloc:hover {
+  .carte:hover {
     border-color: var(--accent);
   }
 
-  .bloc img {
-    width: 96px;
-    height: 48px;
-    object-fit: contain;
-    flex-shrink: 0;
+  /*
+   * LA FLÈCHE DES LIENS SORTANTS DANS LE COIN, et non en bout de rangée. Posée
+   * par tokens.css, elle devenait un élément de la rangée flexible, et
+   * prenait avec son écart 31 px à la colonne de texte. Mesuré à 320 px : le
+   * texte n'avait plus que 111 px, et un mot de 115 px débordait. Dans le
+   * coin, elle loge dans la marge droite, et le texte gagne ces 31 px.
+   */
+  /* Deux classes, pour passer devant la règle de tokens.css et sa marge. */
+  .partenaire .carte::after {
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    margin: 0;
   }
 
-  .nom {
-    font-weight: 700;
-    /* Un nom de marque un peu long passe à la ligne au lieu de déborder. */
+  .carte img {
+    flex-shrink: 0;
+    width: var(--largeur-logo);
+    height: var(--hauteur-logo);
+    object-fit: contain;
+    border-radius: var(--radius);
+  }
+
+  /* Le texte prend la place restante, et pousse la flèche des liens sortants
+     contre le bord droit. */
+  .texte {
+    flex: 1;
+    display: grid;
+    gap: var(--space-1);
     min-width: 0;
+  }
+
+  /*
+   * Un nom ou une accroche un peu longs passent à la ligne, jamais tronqués.
+   * `min-width: 0` laisse la colonne descendre sous la largeur du plus long
+   * mot : sans lui, `overflow-wrap` ne coupe jamais, la colonne s'élargit et
+   * déborde de la carte.
+   */
+  .nom {
+    min-width: 0;
+    font-weight: 700;
+    line-height: 1.3;
+    overflow-wrap: break-word;
+  }
+
+  .accroche {
+    min-width: 0;
+    font-size: var(--step--1);
+    line-height: 1.4;
+    color: var(--muted);
     overflow-wrap: break-word;
   }
 </style>

@@ -49,6 +49,94 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 
 export const JOURNAL: readonly EntreeJournal[] = [
   {
+    date: '2026-10-28',
+    nature: 'visuel',
+    version: '1.9',
+    titre: 'Un menu plus court, rangé en trois familles',
+    texte:
+      "Sur grand écran, la barre garde le classement, les records et les catégories. Le menu range toutes les rubriques en trois familles : classements, outils et le site. Sur téléphone, il tient sur un écran sans défiler, et le pied de page suit le même plan.",
+  },
+  {
+    date: '2026-10-28',
+    nature: 'fonction',
+    version: '1.9',
+    titre: 'Le classement s’ouvre sur la liste',
+    texte:
+      "Une phrase d'introduction, puis la liste. Les filtres et le tri passent derrière un bouton qui dit combien de filtres sont actifs, et un tri choisi s'affiche sous le compteur. Toutes les listes partagent la même barre, et toucher un champ ne fait plus zoomer l'iPhone.",
+  },
+  {
+    date: '2026-10-28',
+    nature: 'fonction',
+    version: '1.9',
+    titre: 'Les termes techniques s’expliquent en un geste',
+    texte:
+      "Dots, total, raw, full power : la première apparition de chaque terme est soulignée en pointillé, dans les pages comme dans les articles. Sa définition s'affiche au survol, au clavier ou au toucher.",
+  },
+  {
+    date: '2026-10-28',
+    nature: 'fonction',
+    version: '1.9',
+    titre: 'Les records racontés dans le temps',
+    texte:
+      "Chaque catégorie montre la courbe de son record au total, marche par marche. L'accueil présente les records battus dans l'année, la page des records l'année de chacun, et chaque compétition les records battus ce jour-là. Sur l'accueil, le top 10 met en avant les points Dots qui le classent.",
+  },
+  {
+    date: '2026-10-28',
+    nature: 'fonction',
+    version: '1.9',
+    titre: 'Me situer montre où tombe votre total',
+    texte:
+      "La page dessine les totaux de tous les athlètes de votre catégorie et de votre équipement, avec le vôtre et le record. Elle donne aussi les kilos qui vous séparent du record. Le calcul reste dans votre navigateur.",
+  },
+  {
+    date: '2026-10-28',
+    nature: 'visuel',
+    version: '1.9',
+    titre: 'Des textes plus courts et plus nets',
+    texte:
+      "Une douzaine de pages sont réécrites, une information par phrase. La ponctuation ne tombe plus seule en début de ligne, les fiches n'affichent plus de zéro pour un mouvement absent, et le premier du mois s'écrit « 1er ».",
+  },
+  {
+    date: '2026-10-28',
+    nature: 'visuel',
+    version: '1.9',
+    titre: 'Les catégories les plus fournies ressortent',
+    texte:
+      "Chaque pastille de la page des catégories donne son nombre d'athlètes, et les trois catégories les plus fournies de chaque sexe passent en jaune.",
+  },
+  {
+    date: '2026-10-28',
+    nature: 'visuel',
+    version: '1.9',
+    titre: 'Une carte de l’île plus précise',
+    texte:
+      "La carte des salles suit maintenant le tracé de l'IGN : une côte deux fois plus détaillée et les limites des 24 communes. Les boutons de zoom passent sous la carte sur téléphone, et l'image des communes organisatrices les situe sur la même carte.",
+  },
+  {
+    date: '2026-10-28',
+    nature: 'visuel',
+    version: '1.9',
+    titre: 'La page Communauté dit où en est le classement',
+    texte:
+      "La page dit d'emblée que ce classement est en préparation. Trois boutons mènent au classement officiel, à la page Me situer et à la boîte à suggestions, et le fonctionnement prévu tient en six lignes.",
+  },
+  {
+    date: '2026-10-28',
+    nature: 'fonction',
+    version: '1.9',
+    titre: 'Trois formats pour les partenaires',
+    texte:
+      "La page Partenariats décrit trois formats fixes et les pages où ils peuvent paraître, toujours après le contenu. Tant qu'aucun partenaire n'est actif, rien ne s'affiche.",
+  },
+  {
+    date: '2026-10-28',
+    nature: 'correction',
+    version: '1.9',
+    titre: 'Les résultats de compétition retrouvent leurs intitulés',
+    texte:
+      "Les charges des résultats de compétition portent de nouveau les mots squat, développé couché et soulevé de terre. Plusieurs éléments choisis, comme les bascules des records, se distinguent mieux en thème clair.",
+  },
+  {
     date: '2026-10-25',
     nature: 'fonction',
     version: '1.8',

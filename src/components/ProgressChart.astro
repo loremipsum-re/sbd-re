@@ -260,6 +260,13 @@ const formats =
  * contre 7 px pour le cercle visible. Le panneau de détail nomme la
  * compétition choisie : une erreur de touche se voit et se corrige d'un
  * second appui.
+ *
+ * Le critère 2.5.8 des WCAG 2.2 demande 24 px, que le halo n'atteint pas
+ * (22 px à 375 px de large, relevé à l'audit du 27 octobre 2026). Il est tenu
+ * par l'exception d'équivalence du critère : sous la courbe, l'historique de
+ * la fiche et sa section « Hors de La Réunion » donnent les mêmes compétitions
+ * et les mêmes valeurs. Agrandir le halo ferait empiéter chaque point sur ses
+ * voisins, et la touche choisirait plus souvent le mauvais.
  */
 const HALO = 11;
 
@@ -407,10 +414,11 @@ const aDeuxSeries = locaux.length > 0 && exterieurs.length > 0;
       {/*
         Détail du point choisi. `aria-live` : il change sans rechargement, il
         doit donc s'annoncer. Le texte de départ dit quoi faire, plutôt que de
-        laisser une zone vide dont on ignore l'usage.
+        laisser une zone vide dont on ignore l'usage. « Choisissez » et non
+        « Touchez » : la phrase s'affiche aussi à la souris et au clavier.
       */}
       <p class="detail" data-detail-point aria-live="polite">
-        Touchez un point de la courbe pour voir le détail de la compétition.
+        Choisissez un point de la courbe pour voir le détail de la compétition.
       </p>
 
       <figcaption>
@@ -600,8 +608,13 @@ const aDeuxSeries = locaux.length > 0 && exterieurs.length > 0;
     color: var(--accent);
   }
 
+  /* LE FILET DU BOUTON PRESSÉ EST D'ACCENT, comme l'état choisi de la barre
+     de filtres. En thème clair, l'aplat seul ne se détache de son voisin qu'à
+     1,29:1, sous les 3:1 du critère 1.4.11 ; le filet d'accent tient 4,93:1
+     contre le voisin et 5,34:1 contre le fond, mesuré le 28 octobre 2026. En
+     sombre, les deux jetons ont la même couleur. */
   .controles button[aria-pressed='true'] {
-    border-color: var(--accent-fill);
+    border-color: var(--accent);
     background: var(--accent-fill);
     color: var(--on-accent);
   }

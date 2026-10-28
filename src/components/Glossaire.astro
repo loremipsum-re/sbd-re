@@ -21,9 +21,16 @@
  * affiche au survol sans qu'on ait à le dessiner. Il ne serait pas suffisant
  * seul, un `title` étant inatteignable au clavier comme au doigt, mais il
  * complète bien le glossaire.
+ *
+ * SEULS LES TERMES DES LISTES Y FIGURENT, ceux que portent les étiquettes des
+ * lignes. Les autres termes du glossaire, division ou barre, s'expliquent au
+ * fil du texte, par un mot souligné : voir Terme.astro. Les deux mécanismes
+ * lisent la même source, lib/glossaire.ts.
  */
 import { GLOSSAIRE } from '../lib/glossaire';
 import Infobulle from './Infobulle.astro';
+
+const termes = GLOSSAIRE.filter((t) => t.liste);
 ---
 
 <details class="glossaire repli">
@@ -32,7 +39,7 @@ import Infobulle from './Infobulle.astro';
     Comprendre les termes
   </summary>
   <div class="termes">
-    {GLOSSAIRE.map((t) => <Infobulle terme={t} />)}
+    {termes.map((t) => <Infobulle terme={t} />)}
   </div>
 </details>
 

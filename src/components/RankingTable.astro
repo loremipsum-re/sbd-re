@@ -41,6 +41,25 @@
  *
  *    La coupe garde donc un seul sens sur le site, le record en cours, et la
  *    médaille garde le sien, une place obtenue en compétition.
+ *
+ * LES DOTS PEUVENT DOMINER À LA PLACE DU TOTAL, option `dominante="dots"`,
+ * pour une liste classée aux points comme le Top 10 de l'accueil. Le total y
+ * dominait alors qu'il ne décidait pas de l'ordre : on lisait 807,5, puis
+ * 660, puis 790, et le classement paraissait faux.
+ *
+ * Les deux chiffres échangent tout : la taille, la place, et le parti pris
+ * n° 3. La compétition affichée devient celle des Dots, avec le poids de
+ * corps, la catégorie et l'équipement de ce jour-là, et c'est le total qui
+ * devient un lien pointillé quand il vient d'une autre compétition. Le
+ * chiffre qui domine reste ainsi toujours celui de la compétition affichée.
+ * Mesuré : Nicolas Tabere fait ses meilleurs Dots en −83 kg à 82,2 kg de
+ * corps, et son meilleur total en −93 kg à 91 kg.
+ *
+ * Les attributs de tri et de filtre de la ligne gardent le contexte du
+ * meilleur total : l'option sert une liste sans filtres ni tri.
+ *
+ * Sans l'option, rien ne change : le classement et les pages de catégorie
+ * gardent le total en tête, au balisage près.
  */
 import { equipmentLabel, parseWeightClass } from '../lib/categories';
 import { dateCourte, nombre, points } from '../lib/format';
@@ -53,9 +72,12 @@ import EtatVide from './EtatVide.astro';
 interface Props {
   entries: AthleteRanking[];
   id?: string;
+  /** Le chiffre qui domine chaque ligne. Le total par défaut, voir plus haut. */
+  dominante?: 'total' | 'dots';
 }
 
-const { entries, id } = Astro.props;
+const { entries, id, dominante = 'total' } = Astro.props;
+const dotsDominants = dominante === 'dots';
 
 /*
  * Résumés du glossaire posés en `title` sur les étiquettes : le navigateur les
@@ -66,7 +88,7 @@ const RESUME_CATEGORIE = terme('glossaire-categorie')?.resume;
 const RESUME_DOTS = terme('glossaire-dots')?.resume;
 ---
 
-<div class="liste liste-perfs">
+<div class:list={['liste', 'liste-perfs', { 'dots-dominants': dotsDominants }]}>
   <table id={id} data-tableau>
     <thead class="sr-only">
       <tr>
@@ -85,6 +107,16 @@ const RESUME_DOTS = terme('glossaire-dots')?.resume;
           const classe = parseWeightClass(e.weightClassKg);
           const comps = e.competitions + e.competitionsExterieur;
           const memeCompetition = e.date === e.dotsDate && e.meetName === e.dotsMeetName;
+          /*
+           * La compétition du chiffre qui domine, et son contexte : poids de
+           * corps, catégorie et équipement du jour. Voir l'option `dominante`.
+           */
+          const lieu = dotsDominants
+            ? { date: e.dotsDate, meetName: e.dotsMeetName, meetTown: e.dotsMeetTown }
+            : { date: e.date, meetName: e.meetName, meetTown: e.meetTown };
+          const contexte = dotsDominants
+            ? { poids: e.dotsBodyweightKg, categorie: e.dotsWeightClassKg, equipement: e.dotsEquipmentGroup }
+            : { poids: e.bodyweightKg, categorie: e.weightClassKg, equipement: e.equipmentGroup };
           return (
             <tr
               data-recherche={e.name}
@@ -128,36 +160,58 @@ const RESUME_DOTS = terme('glossaire-dots')?.resume;
               </th>
 
               <td class="contexte">
-                <span class="etiquette" title={resumeEquipement(e.equipmentGroup)}>
-                  {equipmentLabel(e.equipmentGroup)}
+                <span class="etiquette" title={resumeEquipement(contexte.equipement)}>
+                  {equipmentLabel(contexte.equipement)}
                 </span>
                 <span class="etiquette" title={RESUME_CATEGORIE}>
-                  {e.weightClassKg ? `${e.weightClassKg} kg` : 'cat. inconnue'}
+                  {contexte.categorie ? `${contexte.categorie} kg` : 'cat. inconnue'}
                 </span>
                 <span class="etiquette" title="Poids de corps pesé le jour de la compétition">
-                  {nombre(e.bodyweightKg)} kg de corps
+                  {nombre(contexte.poids)} kg de corps
                 </span>
               </td>
 
               {/* Le lieu et la date appartiennent à la compétition : un seul lien. */}
               <td class="detail competition">
-                <a href={`/competitions/${meetPath(e.date, e.meetName)}/`}>
-                  <span class="meet">{e.meetName}</span>
+                <a href={`/competitions/${meetPath(lieu.date, lieu.meetName)}/`}>
+                  <span class="meet">{lieu.meetName}</span>
                   <span class="ou">
-                    {e.meetTown}
+                    {lieu.meetTown}
                     {' · '}
-                    {dateCourte(e.date)}
+                    {dateCourte(lieu.date)}
                   </span>
                 </a>
               </td>
 
-              <td class="chiffres">
-                <span class="total">
-                  <span class="valeur num-tab">{nombre(e.totalKg)}</span>
-                  <span class="unite">kg</span>
-                </span>
-                {
-                  memeCompetition ? (
+              {dotsDominants ? (
+                <td class="chiffres">
+                  <span class="dots" title={RESUME_DOTS}>
+                    <span class="num-tab">{points(e.dots)}</span>
+                    <span class="unite">Dots</span>
+                  </span>
+                  {memeCompetition ? (
+                    <span class="total">
+                      <span class="valeur num-tab">{nombre(e.totalKg)}</span>
+                      <span class="unite">kg</span>
+                    </span>
+                  ) : (
+                    <a
+                      class="total ailleurs"
+                      href={`/competitions/${meetPath(e.date, e.meetName)}/`}
+                      title={`Meilleur total : ${e.meetName}, ${e.meetTown}, le ${dateCourte(e.date)}`}
+                    >
+                      <span class="valeur num-tab">{nombre(e.totalKg)}</span>
+                      <span class="unite">kg</span>
+                    </a>
+                  )}
+                </td>
+              ) : (
+                <td class="chiffres">
+                  <span class="total">
+                    <span class="valeur num-tab">{nombre(e.totalKg)}</span>
+                    <span class="unite">kg</span>
+                  </span>
+                  {memeCompetition ? (
                     <span class="dots" title={RESUME_DOTS}>
                       <span class="num-tab">{points(e.dots)}</span>
                       <span class="unite">Dots</span>
@@ -171,9 +225,9 @@ const RESUME_DOTS = terme('glossaire-dots')?.resume;
                       <span class="num-tab">{points(e.dots)}</span>
                       <span class="unite">Dots</span>
                     </a>
-                  )
-                }
-              </td>
+                  )}
+                </td>
+              )}
             </tr>
           );
         })
@@ -230,6 +284,56 @@ const RESUME_DOTS = terme('glossaire-dots')?.resume;
    * dire l'écart de points d'une compétition à la suivante, et deux copies
    * finiraient par diverger.
    */
+
+  /*
+   * LES DOTS EN TÊTE, option `dominante="dots"`. Les deux chiffres échangent
+   * leur zone et leur taille, aux valeurs mêmes de la feuille commune. Sur
+   * ordinateur, l'ordre des deux balises suffit à mettre les Dots en haut de
+   * leur pile.
+   *
+   * Mesuré le 28 octobre 2026 sur le Top 10 de l'accueil : à 1 280 px, rien
+   * ne bouge. À 375 px, les dix lignes gagnent 84 px : « 519,0 Dots » est
+   * plus large que « 807,5 kg », et la commune passe à la ligne avant sa date.
+   */
+  .dots-dominants .dots {
+    grid-area: total;
+    font-size: var(--step-2);
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .dots-dominants .total {
+    grid-area: dots;
+    font-size: var(--step-0);
+    line-height: inherit;
+    color: var(--muted);
+  }
+
+  /* Le total d'une autre compétition prend le pointillé que portent les Dots
+     dans le classement, pour la même raison. */
+  .dots-dominants .total.ailleurs {
+    text-decoration: underline dotted;
+    text-underline-offset: 0.2em;
+  }
+
+  .dots-dominants .total.ailleurs:hover {
+    color: var(--accent);
+  }
+
+  @media (min-width: 60rem) {
+    .dots-dominants .dots,
+    .dots-dominants .total {
+      grid-area: auto;
+    }
+
+    .dots-dominants .dots {
+      font-size: var(--step-3);
+    }
+
+    .dots-dominants .total {
+      font-size: var(--step-1);
+    }
+  }
 
   .nouveau {
     font-family: var(--font-body);

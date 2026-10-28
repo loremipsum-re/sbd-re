@@ -23,7 +23,7 @@ Sept communes sur les 24 de l'île ont organisé au moins une compétition.
 | Saint-Leu | 3 | 56 | 49 | 2018-2019 |
 | Le Tampon | 2 | 13 | 13 | 2026 |
 
-Le total donne 63 compétitions et 1 238 résultats.
+Les sept communes rassemblent 63 compétitions et 1 238 résultats.
 
 ## Saint-Joseph réunit les plus gros plateaux
 

@@ -31,9 +31,21 @@
  * -----------------------------------------------------------------------------
  * Les salles et la côte doivent employer EXACTEMENT la même règle, sinon les
  * points flottent à côté de l'île. Les bornes sont lues depuis le fichier qui a
- * produit le tracé, jamais recalculées.
+ * produit le tracé, jamais recalculées : voir `projeter` dans lib/carte.ts.
+ *
+ * -----------------------------------------------------------------------------
+ * LE TRACÉ VIENT DE L'IGN
+ * -----------------------------------------------------------------------------
+ * Côte et limites des 24 communes, IGN Admin Express, générées par
+ * scripts/generer-carte-ile.mjs. À la génération d'octobre 2026, la côte
+ * compte 769 points, contre 387 pour l'ancien tracé d'OpenStreetMap, et les
+ * limites communales sont nouvelles. Le générateur garde tous les points de
+ * la source : le fichier de l'IGN est déjà allégé, et le simplifier encore ne
+ * retirait presque rien (mesure dans le générateur).
  */
 import ile from '../data/ile-reunion.json';
+import { placerEtiquettes, projeter, TAILLE_NOM_COMMUNE, type Point } from '../lib/carte';
+import '../styles/filtres.css';
 
 interface Salle {
   nom: string;
@@ -52,56 +64,91 @@ interface Props {
 }
 
 const { salles, communes } = Astro.props;
-const { x0, x1, y0, y1, kx } = ile.bornes;
 
-/** Même projection que celle qui a produit le tracé de la côte. */
-const enSvg = (lat: number, lon: number) => ({
-  x: ((lon * kx - x0) / (x1 - x0)) * ile.largeur,
-  y: ((-lat - y0) / (y1 - y0)) * ile.hauteur,
-});
-
-const points = salles.map((s) => ({ ...s, ...enSvg(s.lat, s.lon) }));
+const points = salles.map((s) => ({ ...s, ...projeter(s.lat, s.lon) }));
 
 /*
- * Les étiquettes de commune se posent au barycentre de leurs salles, et non au
- * centre administratif : c'est là que le nom sert, à côté de l'amas de points
- * qu'il désigne.
+ * La mer autour de l'île, en unités de carte. Plus large au nord : la côte de
+ * Saint-Denis à Sainte-Suzanne aligne quatre communes et leurs salles, et
+ * leurs noms ne trouvent leur place qu'au-dessus, en mer, comme sur toute
+ * carte de côte. Avec 40 unités, le nom de Saint-Denis sortait du cadre.
  */
-const etiquettesCommunes = communes.map((c) => {
-  const dedans = points.filter((p) => p.commune === c);
-  return {
-    nom: c,
-    x: dedans.reduce((t, p) => t + p.x, 0) / dedans.length,
-    y: dedans.reduce((t, p) => t + p.y, 0) / dedans.length,
-    nombre: dedans.length,
-  };
-});
-
 const MARGE = 40;
+const MARGE_NORD = 70;
+const CADRE = { g: -MARGE, d: ile.largeur + MARGE, h: -MARGE_NORD, b: ile.hauteur + MARGE };
+
+/*
+ * LA ZONE DES BOUTONS DE ZOOM. Ils se posent sur la carte dès qu'elle mesure
+ * 24rem, soit 384 px, et passent dessous en deçà (voir le style). À 384 px,
+ * leur coin de 52 × 148 px, décalage de 8 px, trois boutons de 44 px et deux
+ * écarts de 4 px, couvre le plus de carte. Les noms de commune s'en écartent.
+ */
+const PX_PAR_UNITE = 384 / (CADRE.d - CADRE.g);
+const ZONE_BOUTONS = {
+  g: CADRE.d - 52 / PX_PAR_UNITE,
+  d: CADRE.d,
+  h: CADRE.h,
+  b: CADRE.h + 148 / PX_PAR_UNITE,
+};
+
+/*
+ * Les étiquettes de commune se posent À CÔTÉ de leurs salles : c'est là que le
+ * nom sert, près de l'amas de points qu'il désigne, sans les couvrir ni
+ * chevaucher le nom d'une voisine. Les plus grands groupes choisissent en
+ * premier. Détail de la recherche dans lib/carte.ts.
+ */
+const etiquettesCommunes = placerEtiquettes(
+  communes
+    .map((nom) => ({
+      nom,
+      points: points.filter((p) => p.commune === nom).map((p): Point => [p.x, p.y]),
+    }))
+    .sort((a, b) => b.points.length - a.points.length || a.nom.localeCompare(b.nom, 'fr')),
+  points.map((p): Point => [p.x, p.y]),
+  CADRE,
+  [ZONE_BOUTONS],
+);
 ---
 
 <div class="carte-zone" data-carte>
-  <div class="outils">
-    <div class="champ">
-      <label for="c-commune">Commune</label>
-      <select id="c-commune" data-filtre-commune>
-        <option value="">Toutes les communes</option>
-        {communes.map((c) => <option value={c}>{c}</option>)}
-      </select>
+  {/*
+    LA BARRE DE FILTRES COMMUNE, celle des listes : le menu dans la grille,
+    puis la rangée d'état, le compteur à gauche et « Réinitialiser » à
+    droite. La forme vit dans src/styles/filtres.css. Le menu unique tient
+    la place de la recherche des autres pages, sur toute la largeur.
+  */}
+  <div class="barre-filtres" data-barre-carte>
+    <div class="grille-champs">
+      <div class="champ">
+        <label for="c-commune">Commune</label>
+        <select id="c-commune" data-filtre-commune>
+          <option value="">Toutes les communes</option>
+          {communes.map((c) => <option value={c}>{c}</option>)}
+        </select>
+      </div>
     </div>
-    <p class="compteur" aria-live="polite" data-compteur>{salles.length} salles</p>
+    <div class="rangee-etat">
+      <p class="compteur" aria-live="polite" data-compteur tabindex="-1">{salles.length} salles</p>
+      {/* `data-vider-commune` : `data-reinitialiser` nomme déjà le bouton
+          « Tout » de la carte, et le script prend le premier du document. */}
+      <button type="button" class="bouton-outil bouton-reinitialiser" data-vider-commune hidden>
+        Réinitialiser
+      </button>
+    </div>
   </div>
 
   <div class="cadre">
     <div class="scene">
       <svg
         data-svg
-        viewBox={`${-MARGE} ${-MARGE} ${ile.largeur + MARGE * 2} ${ile.hauteur + MARGE * 2}`}
+        viewBox={`${CADRE.g} ${CADRE.h} ${CADRE.d - CADRE.g} ${CADRE.b - CADRE.h}`}
         role="group"
         aria-label="Carte des salles de sport de La Réunion. Zoom à la molette ou aux boutons, déplacement au glissé."
         tabindex="0"
       >
         <path class="ile" d={ile.chemin} />
+        {/* Les limites des communes, en pointillé fin, pour situer chaque salle. */}
+        <path class="limites" d={ile.limites} />
 
         {/* Étiquettes de commune : visibles de loin, effacées de près. */}
         <g data-couche-communes>
@@ -111,8 +158,9 @@ const MARGE = 40;
                 class="etiquette-commune"
                 data-etiquette-commune
                 data-commune={e.nom}
-                x={e.x.toFixed(1)}
-                y={e.y.toFixed(1)}
+                x={e.x}
+                y={e.y}
+                font-size={TAILLE_NOM_COMMUNE}
                 aria-hidden="true"
               >
                 {e.nom}
@@ -165,7 +213,7 @@ const MARGE = 40;
     </div>
 
     <div class="details" data-details role="status" aria-live="polite">
-      <p class="invite">Touchez un point pour voir la salle.</p>
+      <p class="invite">Choisissez un point pour voir la salle.</p>
     </div>
   </div>
 
@@ -208,6 +256,15 @@ const MARGE = 40;
     const ZOOM_MAX = 14;
     /** Au-delà de ce facteur, les noms de salle remplacent ceux des communes. */
     const SEUIL_NOMS = 3;
+    /*
+     * La taille des noms de commune, lue dans le balisage. Elle y est écrite à
+     * la génération, celle sur laquelle leur placement a été calculé, et sert
+     * donc aussi sans JavaScript.
+     */
+    const etiquettesCommunes = [
+      ...svg.querySelectorAll<SVGTextElement>('[data-etiquette-commune]'),
+    ];
+    const TAILLE_COMMUNE = Number(etiquettesCommunes[0]?.getAttribute('font-size') ?? 30);
 
     /**
      * Applique la vue, et redimensionne ce qui ne doit PAS grandir avec elle.
@@ -228,8 +285,8 @@ const MARGE = 40;
         t.setAttribute('font-size', String(22 / k));
         t.setAttribute('y', String(-16 / k));
       }
-      for (const t of svg.querySelectorAll<SVGTextElement>('[data-etiquette-commune]')) {
-        t.setAttribute('font-size', String(30 / k));
+      for (const t of etiquettesCommunes) {
+        t.setAttribute('font-size', String(TAILLE_COMMUNE / k));
       }
 
       // Les noms de salle prennent le relais des communes une fois assez près.
@@ -247,8 +304,8 @@ const MARGE = 40;
      *
      * La règle correcte est plus simple : la fenêtre ne sort jamais du plan.
      * À pleine étendue elle s'y cale exactement, donc ne bouge plus du tout.
-     * Le tracé porte déjà 40 unités de marge autour de l'île, ce qui suffit à
-     * dégager les côtes.
+     * Le tracé porte déjà 40 unités de marge autour de l'île, 70 au nord, ce
+     * qui suffit à dégager les côtes.
      */
     function poser(x: number, y: number, w: number, h: number) {
       const wMin = DEPART.w / ZOOM_MAX;
@@ -291,6 +348,8 @@ const MARGE = 40;
     const doigts = new Map<number, { x: number; y: number }>();
     let depart: { x: number; y: number; vue: typeof vue; ecart: number } | null = null;
     let bouge = 0;
+    /** Le marqueur sous le pointeur à l'appui, lu avant la capture. */
+    let vise: SVGGElement | null = null;
 
     svg.addEventListener('pointerdown', (e) => {
       // L'état AVANT la capture, et la capture protégée. Elle échoue si le
@@ -299,6 +358,7 @@ const MARGE = 40;
       // déplacement. Le glissé doit survivre à l'échec de la capture.
       doigts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       bouge = 0;
+      vise = (e.target as Element | null)?.closest<SVGGElement>('[data-marqueur]') ?? null;
       try {
         svg.setPointerCapture(e.pointerId);
       } catch {
@@ -423,19 +483,27 @@ const MARGE = 40;
      *
      * `setPointerCapture`, nécessaire au glissé, détourne toute la séquence de
      * pointeur vers le SVG : le marqueur ne recevait donc plus le clic, et
-     * cliquer un point ne faisait rien. Écouter en amont puis remonter au
-     * marqueur avec `closest` rend la capture sans effet sur la sélection.
+     * cliquer un point ne faisait rien. Écouter en amont rend la capture sans
+     * effet sur la sélection.
+     *
+     * LE MARQUEUR SE LIT À L'APPUI. Remonter de la cible du clic au marqueur
+     * ne suffit plus : mesuré dans Chromium, un clic de souris capturé arrive
+     * sur le SVG lui-même, et `closest` n'y trouve aucun marqueur. Le toucher
+     * fonctionnait encore, la souris non, et cela dès la version précédente.
+     * Le marqueur visé est donc noté au `pointerdown`, avant la capture.
      */
     svg.addEventListener('click', (e) => {
+      const g = vise ?? (e.target as Element | null)?.closest<SVGGElement>('[data-marqueur]');
+      vise = null;
       // Un glissé de carte ne doit pas sélectionner la salle qu'il a
       // effleurée : au-delà de quelques pixels, c'était un déplacement.
       if (bouge > 6) return;
-      const cible = e.target as Element | null;
-      const g = cible?.closest<SVGGElement>('[data-marqueur]');
       if (g && !g.hasAttribute('hidden')) selectionner(g);
     });
 
     // ---- Filtre par commune ---------------------------------------------
+    const reinitialiser = zone.querySelector<HTMLButtonElement>('[data-vider-commune]');
+
     filtre.addEventListener('change', () => {
       const choix = filtre.value;
       let visibles = 0;
@@ -451,12 +519,26 @@ const MARGE = 40;
       for (const t of svg.querySelectorAll<SVGTextElement>('[data-etiquette-commune]')) {
         t.toggleAttribute('hidden', !!choix && t.dataset.commune !== choix);
       }
-      compteur.textContent = `${visibles} salle${visibles > 1 ? 's' : ''}`;
+      // « sur 33 » dès qu'une commune est choisie, comme le compteur des
+      // listes : on voit ce que le filtre a écarté.
+      const mot = `salle${visibles > 1 ? 's' : ''}`;
+      compteur.textContent =
+        visibles === marqueurs.length ? `${visibles} ${mot}` : `${visibles} ${mot} sur ${marqueurs.length}`;
+      filtre.toggleAttribute('data-actif', choix !== '');
+      if (reinitialiser) reinitialiser.hidden = !choix;
 
       const params = new URLSearchParams(location.search);
       if (choix) params.set('commune', choix);
       else params.delete('commune');
       history.replaceState(null, '', params.toString() ? `?${params}` : location.pathname);
+    });
+
+    // « Réinitialiser » revient à toutes les communes, et pose le focus sur
+    // le compteur : le bouton actionné vient de disparaître.
+    reinitialiser?.addEventListener('click', () => {
+      filtre.value = '';
+      filtre.dispatchEvent(new Event('change'));
+      compteur.focus();
     });
 
     const initial = new URLSearchParams(location.search).get('commune');
@@ -465,49 +547,16 @@ const MARGE = 40;
       filtre.dispatchEvent(new Event('change'));
     }
 
+    // La barre reste masquée sans JavaScript : son menu n'y ferait rien.
+    zone.querySelector('[data-barre-carte]')?.setAttribute('data-pret', '');
+
     appliquer();
   }
 </script>
 
 <style>
-  .outils {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: end;
-    gap: var(--space-4);
-    margin-bottom: var(--space-4);
-  }
-
-  .champ {
-    display: grid;
-    gap: var(--space-1);
-    min-width: 0;
-  }
-
-  label {
-    font-size: var(--step--1);
-    font-weight: 600;
-    color: var(--muted);
-  }
-
-  select {
-    min-height: var(--cible-min);
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--bg);
-    color: var(--text);
-    font: inherit;
-  }
-
-  .compteur {
-    margin: 0;
-    margin-left: auto;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    color: var(--accent);
-    white-space: nowrap;
-  }
+  /* Le menu des communes et son compteur prennent la barre commune : voir
+     src/styles/filtres.css. */
 
   .cadre {
     display: grid;
@@ -528,6 +577,9 @@ const MARGE = 40;
   .scene {
     position: relative;
     min-width: 0;
+    /* Les boutons de zoom se placent selon la largeur de la carte : voir les
+       commandes de vue, plus bas. */
+    container-type: inline-size;
   }
 
   svg {
@@ -558,6 +610,22 @@ const MARGE = 40;
     stroke-width: 2.5;
     stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
+  }
+
+  /*
+   * Les limites communales, discrètes : un pixel en pointillé, contre deux et
+   * demi en trait plein pour la côte. La couleur reste --muted, qui donne
+   * 8,34:1 sur le fond de l'île en sombre et 5,83:1 en clair. La discrétion
+   * vient de l'épaisseur et du pointillé, jamais d'un contraste sous 3:1.
+   */
+  .limites {
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+    pointer-events: none;
   }
 
   .cible {
@@ -638,13 +706,33 @@ const MARGE = 40;
     opacity: 1;
   }
 
-  /* ---- Commandes de vue ------------------------------------------------- */
+  /* ---- Commandes de vue -------------------------------------------------
+   *
+   * Sous la carte tant qu'elle est étroite, en ligne et calées à droite.
+   * Posés dessus, les trois boutons couvraient une part de la côte est sur
+   * toute carte de moins de 378 px, donc sur tout téléphone. Dès 24rem, soit
+   * 384 px, ils tiennent dans le coin de mer en haut à droite, où ils étaient.
+   * C'est la largeur de la carte qui décide, d'où la requête de conteneur.
+   *
+   * Leur emprise sur la carte, 52 × 148 px depuis le coin, est recopiée dans
+   * ZONE_BOUTONS, que les noms de commune évitent : la changer ici demande de
+   * la changer là.
+   */
   .commandes {
-    position: absolute;
-    top: var(--space-2);
-    right: var(--space-2);
-    display: grid;
+    display: flex;
+    justify-content: flex-end;
     gap: var(--space-1);
+    margin-top: var(--space-2);
+  }
+
+  @container (min-width: 24rem) {
+    .commandes {
+      position: absolute;
+      top: var(--space-2);
+      right: var(--space-2);
+      display: grid;
+      margin-top: 0;
+    }
   }
 
   .commandes button {

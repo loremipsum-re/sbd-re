@@ -1,237 +1,220 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icone from '../../components/Icone.astro';
+import Repli from '../../components/Repli.astro';
 import InfographieCommunaute from '../../components/infographies/InfographieCommunaute.astro';
-import {
-  COMMUNITY_AGE_BRACKETS,
-  COMMUNITY_HEIGHT_BRACKETS,
-  COMMUNITY_WEIGHT_BRACKETS,
-} from '../../lib/categories';
+import { COMMUNITY_AGE_BRACKETS, COMMUNITY_WEIGHT_BRACKETS } from '../../lib/categories';
 
 /**
  * Page d'attente du classement communauté.
  *
- * Elle existe dès maintenant plutôt que d'être un lien mort dans la
- * navigation : elle explique la distinction officiel / non-officiel, qui est
- * le point le plus important à faire comprendre au visiteur.
+ * LES VISITEURS S'Y PERDAIENT, constat de l'auteur d'octobre 2026. Ils
+ * trouvaient deux cartes, un paragraphe qui les répétait, vingt-deux tranches
+ * dessinées comme des filtres qui ne filtraient rien, une infographie qui
+ * reprenait les cartes, et une seule action, vers les records.
+ *
+ * LE PREMIER ÉCRAN RÉPOND SEUL. Deux phrases affirmatives disent que le
+ * classement est en préparation, puis ce qu'il accueillera, dans les mots
+ * de la description de la page. Les trois pages utiles dès
+ * aujourd'hui suivent aussitôt : le classement officiel, « Me situer » pour
+ * placer ses barres, et la boîte à suggestions pour donner son avis. Elle
+ * retient d'elle-même la page d'où l'on vient, par l'adresse de provenance.
+ * Mesuré à 375 × 812 : les trois actions tiennent entre 376 et 524 px, à
+ * 44 px de haut. Avant, l'unique action était à 618 px et mesurait 39 px.
+ *
+ * LE FONCTIONNEMENT PRÉVU TIENT EN UNE LISTE COURTE. Chaque ligne vient de
+ * l'ancienne page ou de docs/communaute.md : rien n'est promis au-delà. Les
+ * tranches ne sont plus énumérées, une seule sert d'exemple. L'âge minimum
+ * et l'exemple se lisent dans lib/categories.ts.
+ *
+ * L'INFOGRAPHIE PASSE SOUS UNE PASTILLE, comme sur /suggestions/. Dépliée,
+ * elle mesurait 1 152 px à 375 px de large et reprenait la comparaison des
+ * deux classements. Repliée, elle reste à un geste pour qui veut savoir
+ * pourquoi une tranche suffit. La page passe de 4 800 à 2 704 px à 375 px de
+ * large, et de 3 051 à 1 801 px à 1 280 px.
+ *
+ * LE TITRE S'ALIGNE SUR LE LOGO, comme sur vingt pages du site, dont
+ * /suggestions/ et /simulateur/. L'ancienne colonne centrée le plaçait à
+ * 224 px à 1 280 px de large, contre 96 px pour le logo.
  */
+
+/* L'âge d'entrée est la borne basse de la première tranche. */
+const ageMinimum = COMMUNITY_AGE_BRACKETS[0]?.min ?? null;
+
+/* La tranche du milieu sert d'exemple. Insécable d'un bout à l'autre : mesuré
+   à 1 280 px, « 80 à » finissait une ligne et « 90 kg » ouvrait la suivante. */
+const exemple = COMMUNITY_WEIGHT_BRACKETS[Math.floor(COMMUNITY_WEIGHT_BRACKETS.length / 2) - 1];
+const exempleTranche = exemple?.label.replace(/ /g, '\u00a0');
 ---
 
 <BaseLayout
   titre="Classement communauté"
-  description="Le classement communauté de SBD.re, ouvert à tous les pratiquants de force athlétique à La Réunion : performances réalisées en salle et compétitions locales non homologuées, dans un espace distinct des records officiels."
+  description="Le classement communauté de SBD.re est en préparation. Il accueillera les performances de force athlétique réalisées en salle et en compétition non homologuée."
 >
-  <div class="wrap texte">
-    <p class="etiquette">Bientôt</p>
-    <h1>Classement communauté</h1>
-
-    <p class="chapeau">
-      Un second classement, ouvert à tous : les performances réalisées en salle
-      et les compétitions non homologuées. Il arrive prochainement.
-    </p>
-
-    <div class="comparaison">
-      <div class="carte officiel">
-        <h2>Officiel</h2>
-        <p class="fin">Ce que le site publie aujourd'hui.</p>
-        <ul>
-          <li>Résultats de compétition homologués</li>
-          <li>Issus des données publiques d'OpenPowerlifting</li>
-          <li>Alimenté uniquement par la fédération</li>
-          <li>Fait autorité pour les records de l'île</li>
-        </ul>
-        <a class="bouton lien-nu" href="/records/">Voir les records officiels</a>
-      </div>
-
-      <div class="carte">
-        <h2>Communauté</h2>
-        <p class="fin">En préparation.</p>
-        <ul>
-          <li>Performances déclarées en salle</li>
-          <li>Compétitions locales non homologuées</li>
-          <li>Soumission par les athlètes, avec un compte</li>
-          <li>Chaque performance vérifiée avant publication</li>
-        </ul>
-      </div>
-    </div>
-
-    <h2>Deux classements, deux usages</h2>
-    <p>
-      Une barre chargée à la salle et une barre validée par trois juges en
-      compétition racontent deux histoires différentes, et chacune mérite sa
-      place. Le classement officiel garde sa valeur de référence pour les
-      records de l'île. Le classement communauté ouvre la porte à tous ceux qui
-      s'entraînent sans passer par la compétition.
-    </p>
-
-    <h2>Des tranches plutôt que des chiffres exacts</h2>
-    <p>
-      Le classement communauté raisonnera par tranches d'âge, de poids et de
-      taille. Déclarer « entre 80 et 90 kg » suffit largement à situer une
-      performance, tout en gardant vos mensurations pour vous.
-    </p>
-
-    <div class="tranches">
-      <div>
-        <h3>Âge</h3>
-        <ul class="puces">
-          {COMMUNITY_AGE_BRACKETS.map((b) => <li>{b.label}</li>)}
-        </ul>
-      </div>
-      <div>
-        <h3>Poids de corps</h3>
-        <ul class="puces">
-          {COMMUNITY_WEIGHT_BRACKETS.map((b) => <li>{b.label}</li>)}
-        </ul>
-      </div>
-      <div>
-        <h3>Taille</h3>
-        <ul class="puces">
-          {COMMUNITY_HEIGHT_BRACKETS.map((b) => <li>{b.label}</li>)}
-        </ul>
-      </div>
-    </div>
+  <div class="wrap page">
+    <header class="entete-page">
+      <p class="etiquette">Bientôt</p>
+      <h1>Classement communauté</h1>
+      <p class="chapeau">
+        Ce classement est en préparation. Il accueillera les performances
+        réalisées en salle et en compétition non homologuée.
+      </p>
+    </header>
 
     {/*
-      L'INFOGRAPHIE CLÔT LA SECTION DES TRANCHES, DÉPLIÉE. La page est un
-      texte, et non une liste de données qu'une figure repousserait : seul le
-      pied de page passe dessous. Posée après les listes, elle laisse le
-      paragraphe et ses tranches se suivre, puis met les deux classements côte
-      à côte et range les poids pesés sur l'île dans ces mêmes tranches.
+      LES TROIS ACTIONS, dans le premier écran. Le classement officiel est le
+      bouton plein : c'est la réponse la plus proche de ce que le visiteur
+      venait chercher.
     */}
-    <InfographieCommunaute />
+    <ul class="actions">
+      <li>
+        <a class="primaire" href="/classement/">
+          <Icone nom="classement" />
+          Voir le classement officiel
+        </a>
+      </li>
+      <li>
+        <a href="/simulateur/">
+          <Icone nom="simulateur" />
+          Me situer dans le classement
+        </a>
+      </li>
+      <li>
+        <a href="/suggestions/">
+          <Icone nom="suggestions" />
+          Donner mon avis
+        </a>
+      </li>
+    </ul>
+
+    <section class="prevu" aria-labelledby="fonctionnement-prevu">
+      <h2 id="fonctionnement-prevu">Le fonctionnement prévu</h2>
+      <ul class="principes">
+        <li>
+          {ageMinimum !== null ? `Ouvert à tous dès ${ageMinimum}\u00a0ans, avec un compte.` : 'Ouvert à tous, avec un compte.'}
+        </li>
+        <li>Chaque barre se déclare avec un lien vers sa vidéo.</li>
+        <li>Un modérateur examine la vidéo avant publication.</li>
+        <li>
+          {exempleTranche
+            ? `L'âge, le poids de corps et la taille se déclarent par tranche, par exemple ${exempleTranche}.`
+            : "L'âge, le poids de corps et la taille se déclarent par tranche."}
+        </li>
+        <li>Un classement par mouvement et par sexe, trié à la charge soulevée.</li>
+        <li>Le classement officiel et les records restent réservés aux compétitions homologuées.</li>
+      </ul>
+
+      <div class="rangee-replis">
+        <Repli titre="Pourquoi une tranche suffit">
+          <InfographieCommunaute />
+        </Repli>
+      </div>
+    </section>
   </div>
 </BaseLayout>
 
 <style>
-  .texte {
-    max-width: 52rem;
+  .page {
     padding-bottom: var(--space-8);
   }
 
   .etiquette {
+    margin-bottom: var(--space-2);
     font-size: var(--step--1);
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--accent);
-    margin-bottom: var(--space-2);
   }
 
-
-  .comparaison {
+  /*
+   * LES ACTIONS. Empilées sur téléphone, sur toute la largeur, pour le pouce.
+   * En ligne dès que la place le permet. Bordure de 2 px et angles du système
+   * Modernist, 44 px au moins comme tout contrôle du site.
+   */
+  .actions {
     display: grid;
-    gap: var(--space-4);
-    margin-bottom: var(--space-8);
+    gap: var(--space-2);
+    margin: 0 0 var(--space-12);
+    padding: 0;
+    list-style: none;
   }
 
-  @media (min-width: 48rem) {
-    .comparaison {
-      grid-template-columns: 1fr 1fr;
+  @media (min-width: 40rem) {
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
     }
   }
 
-  .carte {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    background: var(--surface);
-    padding: var(--space-6);
-  }
-
-  .carte.officiel {
-    border-color: var(--accent);
-  }
-
-  .carte h2 {
-    margin: 0 0 var(--space-1);
-    padding: 0;
-    border: 0;
-    font-size: var(--step-1);
-  }
-
-  .fin {
-    color: var(--muted);
-    font-size: var(--step--1);
-  }
-
-  .carte ul {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 var(--space-6);
-  }
-
-  .carte li {
-    position: relative;
-    padding-left: var(--space-6);
-    margin-bottom: var(--space-2);
-    font-size: var(--step--1);
-  }
-
-  .carte li::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0.55em;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
-  }
-
-  .bouton {
-    display: inline-block;
+  .actions a {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--cible-min);
     padding: var(--space-2) var(--space-4);
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     border-radius: var(--radius);
+    background: var(--surface);
     color: var(--text);
-    font-size: var(--step--1);
-    font-weight: 600;
+    font-weight: 700;
+    line-height: 1.3;
     text-decoration: none;
   }
-  .bouton:hover {
+
+  .actions a:hover {
     border-color: var(--accent);
     color: var(--accent);
   }
 
-  h2 {
-    margin-top: var(--space-12);
-    padding-top: var(--space-4);
+  /* L'APLAT, jamais l'accent de texte : --accent en fond sous --on-accent
+     donne 2,78:1 en thème clair. Voir la note de .evitement dans BaseLayout. */
+  .actions .primaire {
+    border-color: var(--accent-fill);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+  }
+
+  .actions .primaire:hover {
+    border-color: var(--accent-fill-hover);
+    background: var(--accent-fill-hover);
+    color: var(--on-accent);
+  }
+
+  /* LE FONCTIONNEMENT PRÉVU. Une ligne par fait, séparées d'un filet, à la
+     mesure du chapeau. */
+  .principes {
+    max-width: 62ch;
+    margin: 0 0 var(--space-6);
+    padding: 0;
+    list-style: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Dépliée, l'infographie reprend la largeur qu'elle avait sur l'ancienne
+     page, 52rem : à la mesure de la liste, elle passait de 888 à 1 039 px de
+     haut à 1 280 px de large. */
+  .prevu .rangee-replis {
+    max-width: 52rem;
+  }
+
+  .principes li {
+    position: relative;
+    padding: var(--space-3) 0 var(--space-3) var(--space-6);
     border-top: 1px solid var(--border);
   }
 
-  .tranches {
-    display: grid;
-    gap: var(--space-6);
-    margin-top: var(--space-6);
-  }
-
-  @media (min-width: 40rem) {
-    .tranches {
-      /* auto-fit plutôt que trois colonnes figées : une quatrième famille de
-         tranches un jour se placerait toute seule, et les listes gardent une
-         largeur lisible sur les écrans intermédiaires. */
-      grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
-    }
-  }
-
-  .tranches h3 {
-    font-size: var(--step-0);
-    margin-bottom: var(--space-2);
-  }
-
-  .puces {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-  }
-
-  .puces li {
-    font-size: var(--step--1);
-    padding: var(--space-1) var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    color: var(--muted);
+  /* Un carré plein, aux angles nets du système, centré sur la première ligne.
+     L'accent de texte et non l'aplat : le jaune de l'aplat disparaît sur le
+     fond clair, et le carré ne porte aucun texte. */
+  .principes li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: calc(var(--space-3) + 0.8em - 3px);
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
   }
 </style>

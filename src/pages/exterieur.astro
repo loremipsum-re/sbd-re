@@ -2,6 +2,7 @@
 import BadgeOfficiel from '../components/BadgeOfficiel.astro';
 import InteractiveTable from '../components/InteractiveTable.astro';
 import Repli from '../components/Repli.astro';
+import Terme from '../components/Terme.astro';
 import InfographieDonnees from '../components/infographies/InfographieDonnees.astro';
 import InfographieInternational from '../components/infographies/InfographieInternational.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -31,22 +32,32 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
   <div class="wrap">
     <header class="entete-page">
       <h1>Hors de La Réunion</h1>
+      {/*
+        UNE PHRASE, COMME LE CHAPEAU DU CLASSEMENT. Les deux phrases d'avant
+        comptaient 41 mots, dont un « plateaux-là » de jargon. Les cinq
+        chiffres sont calculés par lib/exterieur.ts.
+      */}
       <p class="chapeau">
-        Les athlètes de l'île se déplacent, en métropole comme à l'étranger.
-        Cette page rassemble {stats.resultats} résultats obtenus sur ces
-        plateaux-là, par {stats.athletes} athlètes, dans {stats.pays} pays et
-        sous {stats.federations} fédérations, de {annee(stats.debut)} à {annee(stats.fin)}.
+        {stats.resultats}&nbsp;résultats obtenus hors de l'île par{' '}
+        {stats.athletes}&nbsp;athlètes du site, dans {stats.pays}&nbsp;pays et{' '}
+        {stats.federations}&nbsp;fédérations, de {annee(stats.debut)} à{' '}
+        {annee(stats.fin)}.
       </p>
+      {/*
+        DEUX PHRASES COURTES pour la seconde ligne de l'encadré. Elle en
+        comptait deux, dont une de 30 mots coupée par « et » puis « mais ».
+      */}
       <div class="avertissement">
         <p>
-          <strong>Ces résultats restent en dehors du classement et des records.</strong>
+          <strong>
+            Ces résultats restent en dehors du classement et des{' '}
+            <Terme cle="record">records</Terme>.
+          </strong>
         </p>
         <p>
-          Les records de La Réunion récompensent des barres soulevées sur un
-          plateau réunionnais, et le classement mesure la scène locale. Une
-          performance réalisée à Prague ou à Lyon appartient au parcours de
-          l'athlète, et elle figure à ce titre sur sa fiche, mais elle laisse
-          intacte la hiérarchie de l'île.
+          Ils figurent sur la fiche de chaque athlète. Le classement et les
+          records retiennent les <Terme cle="barre">barres</Terme> soulevées à
+          La Réunion.
         </p>
       </div>
     </header>
@@ -61,20 +72,34 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
       vivent ici et sur les fiches, hors du classement et des records : c'est
       la question que pose cette page.
     */}
+    {/*
+      LES PASTILLES DISENT LEUR QUESTION. Mesuré à 320 et 375 px, les deux
+      pastilles occupaient déjà deux rangées, une chacune, et les nouveaux
+      libellés y tiennent : aucune rangée de plus. À 1 280 px, elles restent
+      côte à côte.
+    */}
     <div class="rangee-replis">
-      <Repli titre="Pays et titres en images">
+      <Repli titre="Quels pays, quels titres ?">
         <InfographieInternational lienArticle="international" />
       </Repli>
-      <Repli titre="Sources en images">
+      <Repli titre="D'où viennent les données ?">
         <InfographieDonnees />
       </Repli>
     </div>
 
+    {/*
+      LES FILTRES REPLIÉS SUR TÉLÉPHONE SEULEMENT, comme les résultats d'une
+      compétition : trois menus y prennent deux rangées, 317 px de barre à
+      375 px de large. Repliée, la barre en mesure 154, et le premier
+      résultat remonte. Au-delà de 40rem, les trois menus tiennent sur une
+      rangée et restent ouverts.
+    */}
     <InteractiveTable
       recherche="Nom d'un athlète"
       singulier="résultat"
       pluriel="résultats"
       total={resultats.length}
+      replier="telephone"
     >
       <Fragment slot="filtres">
         <div class="champ">
@@ -148,12 +173,18 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
                     <td data-libelle="Pays" class="cellule-annexe">
                       <span class="etiquette">{paysFr(r.meetCountry)}</span>
                     </td>
+                    {/* La virgule décimale du français : OpenPowerlifting
+                        écrit « 67.5 », 30 résultats anciens portent ces
+                        catégories à demi-kilo. */}
                     <td class="nombre" data-libelle="Catégorie" data-valeur={classe?.kg ?? ''}>
-                      {r.weightClassKg ? `${r.weightClassKg} kg` : '—'}
+                      {r.weightClassKg ? `${r.weightClassKg.replace('.', ',')} kg` : '—'}
                     </td>
+                    {/* L'espace avant l'unité est écrite : Astro supprime
+                        celle qui sépare deux expressions, et la cellule
+                        lisait « 427,5kg » sur toutes les lignes. */}
                     <td class="nombre num-tab" data-libelle="Total" data-valeur={r.event === 'SBD' ? (r.totalKg ?? '') : ''}>
                       {r.event === 'SBD' ? nombre(r.totalKg) : '—'}
-                      {r.event === 'SBD' && r.totalKg ? <span class="unite">kg</span> : null}
+                      {r.event === 'SBD' && r.totalKg ? <>{' '}<span class="unite">kg</span></> : null}
                     </td>
                     <td class="nombre" data-libelle="Dots" data-valeur={r.event === 'SBD' ? (r.dots ?? '') : ''}>
                       {r.event === 'SBD' ? points(r.dots) : '—'}
@@ -170,12 +201,17 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
       </div>
     </InteractiveTable>
 
+    {/*
+      LE VOUVOIEMENT, COMME PARTOUT AILLEURS SUR LE SITE, et un lien vers la
+      boîte à suggestions au lieu d'un « écris-nous » qui ne disait pas où.
+    */}
     <p class="note">
-      Le rattachement d'un résultat à un athlète repose sur son nom tel
-      qu'OpenPowerlifting l'écrit. Le projet distingue les homonymes par un
-      suffixe numéroté, mais il lui arrive de ne pas les avoir repérés. Si tu
-      repères une compétition qui n'est pas la tienne, écris-nous : elle sera
-      retirée, et le doublon signalé à la source.
+      Le rattachement d'un résultat à un athlète repose sur son nom, tel
+      qu'OpenPowerlifting l'écrit. Ce projet distingue les homonymes par un
+      suffixe numéroté, et certains lui échappent encore. Un résultat à votre
+      nom vient d'un homonyme ? Signalez-le depuis la page{' '}
+      <a href="/suggestions/">Proposer une amélioration</a>. Il sera retiré, et
+      le doublon signalé à OpenPowerlifting.
     </p>
   </div>
 </BaseLayout>

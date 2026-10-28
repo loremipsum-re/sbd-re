@@ -12,8 +12,10 @@ import CarteSalles from '../components/CarteSalles.astro';
 import EtatVide from '../components/EtatVide.astro';
 import Repli from '../components/Repli.astro';
 import InfographieSalles from '../components/infographies/InfographieSalles.astro';
+import ile from '../data/ile-reunion.json';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
+import Partenaire from '../components/Partenaire.astro';
 
 const toutes = await getCollection('salles');
 const salles = toutes
@@ -83,7 +85,9 @@ const communes = [...new Set(salles.map((s) => s.commune))].sort((a, b) =>
             signaler une salle absente ou une information fausse.
           */}
           <div class="rangee-replis rangee-salles">
-            <Repli titre="Salles par commune en images">
+            {/* Nommée par sa question : 251 px à 320 px de large, la
+                pastille tient toujours sur sa ligne. */}
+            <Repli titre="Combien de salles par commune ?">
               <InfographieSalles />
             </Repli>
           </div>
@@ -92,21 +96,37 @@ const communes = [...new Set(salles.map((s) => s.commune))].sort((a, b) =>
     }
 
     {/*
-      L'attribution n'est pas une politesse : la licence ODbL d'OpenStreetMap
-      l'impose, pour le tracé de l'île comme pour les positions des salles.
+      L'attribution n'est pas une politesse. La licence ODbL d'OpenStreetMap
+      l'impose pour les positions des salles, la Licence Ouverte de l'IGN pour
+      les contours, avec le producteur et l'édition, lus dans le fichier.
     */}
     <p class="note">
       {/*
         Pas de `{' '}` après l'apostrophe : Astro n'y supprime aucune espace, et
         en ajouter une donnait « issus d' OpenStreetMap ». La règle d'écrire
         l'espace explicitement ne vaut QUE là où Astro l'aurait mangée.
+
+        Un lien sortant et sa ponctuation tiennent ensemble. La flèche ↗ est
+        une boîte, et le navigateur peut couper la ligne juste après elle :
+        mesuré à 1 280 px, une ligne commençait par « . Une salle manque ».
+
+        Le signalement va à la boîte à suggestions, qui reprend /salles/
+        comme page concernée par l'adresse de provenance. Il menait au
+        formulaire des partenariats, seul formulaire du site quand la page
+        est née, en août 2026.
       */}
-      Tracé de l'île et coordonnées des salles issus d'<a
-        href="https://www.openstreetmap.org/copyright"
-        rel="noopener">OpenStreetMap</a
-      >, sous licence ODbL. Une salle manque ou une information est fausse ?{' '}
-      <a href="/partenariats/">Signalez-le</a>.
+      Coordonnées des salles issues d'<span class="insecable"
+        ><a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a
+        >,</span
+      > sous licence ODbL. Contours de l'île et des communes : {ile.source}, sous{' '}
+      <span class="insecable"
+        ><a href="https://www.etalab.gouv.fr/licence-ouverte-open-licence/">Licence Ouverte</a
+        >.</span
+      > Une salle manque ou une information est fausse ?{' '}
+      <a href="/suggestions/">Signalez-le</a>.
     </p>
+
+    <Partenaire emplacement="salles" />
   </div>
 </BaseLayout>
 
@@ -123,6 +143,10 @@ const communes = [...new Set(salles.map((s) => s.commune))].sort((a, b) =>
   /* La pastille des images se cale sous la liste, au même écart que la note. */
   .rangee-salles {
     margin-top: var(--space-4);
+  }
+
+  .insecable {
+    white-space: nowrap;
   }
 
   .repli summary {

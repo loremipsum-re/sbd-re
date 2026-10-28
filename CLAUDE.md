@@ -46,7 +46,7 @@ d'intégration continue.
 - **Pas de tirets longs** dans la prose. Le tiret reste autorisé comme marqueur de valeur absente dans un tableau.
 - **Ne jamais désigner La Réunion par « 974 »**, sauf lorsque c'est le nom propre d'une compétition (*Bench Cup 974*).
 - **Tournures affirmatives.** Éviter d'empiler les négations et les comparaisons.
-- **Interdit : le combo noir et rouge**, qui est l'identité de la marque SBD Apparel. L'accent du site est orange.
+- **Interdit : le combo noir et rouge**, qui est l'identité de la marque SBD Apparel. L'accent du site est le **jaune** du drapeau réunionnais : `#d1d100` en sombre, `#676700` pour un texte en clair, `#d6d600` en aplat. Valeurs et contrastes dans `tokens.css`.
 - Mentions obligatoires en pied de page : source OpenPowerlifting, et non-affiliation à la FFForce comme à SBD Apparel.
 
 ## Vie privée
@@ -73,14 +73,14 @@ la mention « à compléter » tant que l'auteur ne les a pas fournis.
 
 | Adresse | Contenu |
 |---|---|
-| `/` | Accueil : top 10 aux Dots, compétitions récentes |
-| `/classement/` | Les athlètes classés, en cartes, filtrable et triable |
-| `/records/` | Grille par sexe et équipement, catégories en lignes |
-| `/categories/` | Les 17 catégories, puis `/categories/hommes/93/` |
-| `/competitions/` | Liste, puis `/competitions/<nom>/<date>/` |
+| `/` | Accueil : top 10 aux Dots, les Dots en chiffre dominant ; records battus dans l'année ; compétitions récentes |
+| `/classement/` | Les athlètes classés, en cartes, filtres et tri derrière le bouton « Filtres » |
+| `/records/` | Grille par sexe et équipement, catégories en lignes, et l'année de chaque record en cours |
+| `/categories/` | Les catégories en pastilles avec leur effectif, les trois plus fournies de chaque sexe en jaune, puis `/categories/hommes/93/` et sa courbe du record |
+| `/competitions/` | Liste, puis `/competitions/<nom>/<date>/` et ses records battus ce jour-là |
 | `/exterieur/` | Résultats obtenus hors de La Réunion |
 | `/athlete/<slug>/` | Une fiche par athlète |
-| `/communaute/` | Page d'attente du classement non-officiel |
+| `/communaute/` | Page d'attente du classement communauté : son état en une phrase, trois actions, le fonctionnement prévu |
 | `/suggestions/` | Boîte à suggestions anonyme, servie par `public/api/suggestion.php` |
 | `/mises-a-jour/` | Journal des changements : chiffres des données calculés, entrées du site écrites dans `src/lib/journal.ts` |
 | `/accessibilite/` | Audit d'accessibilité mené par la mesure, méthode, résultats et limites |
@@ -94,6 +94,18 @@ le nombre de pages, et la page de classement affiche son effectif.
 Les URL de compétition sont bâties par `meetPath(date, nom)` et regroupent les
 éditions sous le nom de l'événement. Les anciennes adresses `date-nom`
 redirigent, via une table générée dans `astro.config.mjs`.
+
+**La navigation se déclare dans `src/lib/navigation.ts`, source unique**,
+choix de l'auteur du 27 octobre 2026. Dès 48rem, la barre porte Classement,
+Records et Catégories (champ `barre`), puis le bouton Menu. Le panneau range
+les rubriques en trois familles, Classements, Outils et Le site, sur deux
+colonnes dès 22,5rem. `/exterieur/` s'y appelle « Hors de l'île ». Communauté
+porte l'étiquette « Bientôt » (champ `etiquette`). Mises à jour et pages
+légales vivent au pied de page seulement (`piedSeulement`), qui suit le même
+plan. Les identifiants de `FAMILLES` nomment des zones de grille dans
+`BaseLayout.astro` et `SiteFooter.astro` : une famille ajoutée demande sa zone
+dans les trois mises en page. Le menu se referme quand le focus le quitte, et
+`aria-current` vaut `page` sur une rubrique, `true` sur une page intérieure.
 
 ## Contrat des tableaux interactifs
 
@@ -127,6 +139,36 @@ Points à ne pas casser :
 - Les filtres se lisent et s'écrivent dans l'adresse, ce qui rend un état
   partageable et permet aux badges d'une fiche de pointer vers un classement
   déjà filtré.
+- **Une seule barre de filtres pour tout le site**, `src/styles/filtres.css`,
+  partagée par `InteractiveTable`, la carte des salles, `/comparer/` et
+  `/simulateur/`. Dans l'ordre : la recherche sur toute la largeur, le bouton
+  « Filtres » au bout ; le panneau, filtres sur une grille `auto-fit` puis le
+  tri ; la rangée d'état, compteur « N sur M » à gauche, `.bouton-reinitialiser`
+  à droite. Tout changement s'y remesure sur les onze pages à barre.
+- **`replier`** range filtres et tri derrière le bouton « Filtres », qui compte
+  les filtres actifs : `'toujours'` sur `/classement/`, `'telephone'` (sous
+  40rem) sur les compétitions et `/exterieur/`. `/categories/` n'a pas de barre,
+  ses pastilles sont une navigation. **`feminin`** accorde l'état vide :
+  « Aucune catégorie ». L'événement **`sbd:filtres`** prévient les commandes
+  propres à une page, comme les bascules de `/records/`.
+- **Échap** ferme le panneau depuis un menu ou un bouton. Dans une recherche
+  saisie, il garde son sens natif et vide le champ, un second Échap ferme le
+  panneau : déplacer le focus pendant la touche laissait Chromium vider le
+  champ sans émettre `input`.
+- **Après une remise à zéro, le focus ne vise jamais un champ**, qui ferait
+  surgir le clavier : le bouton « Filtres », sinon le compteur.
+- **Le tri s'écrit dans l'adresse** (`?tri=nom&sens=croissant`), et une
+  étiquette « Trié par … » apparaît sous le compteur dès que l'ordre affiché
+  diffère de l'ordre servi, avec un bouton qui y ramène. Décision de l'auteur
+  du 28 octobre 2026 : un tri caché renumérotait la liste sans le dire. Aucune
+  page ne déclare son tri par défaut, le script reconnaît la colonne qui
+  reproduit l'ordre du HTML. Une page qui change l'ordre servi change donc
+  aussi le libellé du bouton, sans rien d'autre à faire.
+- **Un état choisi porte l'aplat `--accent-fill` sous un filet `--accent`**,
+  jamais l'aplat seul. En clair, l'aplat ne se détache de son voisin qu'à
+  1,39:1, sous les 3:1 du critère 1.4.11 ; le filet tient 5,34:1.
+- **`.liste .intitule` n'est masqué que dans `td[data-libelle]`.** Écrit plus
+  large, il a masqué SQ, DC et SDT de tous les résultats de compétition.
 
 ## Infographies
 
@@ -162,6 +204,29 @@ et une entrée dans l'aiguillage. Vérifier comme les autres : débordement par
 coût vertical mesuré contre la version précédente, chiffres recomptés par un
 script indépendant.
 
+**Les visuels de données** suivent le même contrat, hors du cadre des
+infographies, parce qu'ils sont la donnée elle-même et restent dépliés :
+
+- `CourbeRecord.astro`, l'escalier du record au total en raw sur chaque page
+  de catégorie, à partir de trois dates de record (`escalierLisible()`).
+  L'axe s'arrête au dernier jour où le record était en jeu
+  (`derniereMiseEnJeu()`). La liste détaillée, `ChronologieRecord.astro`, se
+  replie dessous et sert de version texte.
+- `GrilleRecords.astro`, les records en cours rangés par athlète et par
+  mouvement, avec l'écart au record de la veille : l'accueil y montre les
+  records battus dans l'année, chaque compétition les siens.
+  `recordsEnCours()` distingue un record battu d'une première marque, qui n'a
+  rien battu.
+- `AnneesRecords.astro`, l'année de chaque record en cours, sur `/records/`.
+- `RankingTable` accepte `dominante="dots"`, que seul l'accueil emploie : son
+  top 10 est trié aux Dots, le chiffre dominant doit l'être aussi.
+- La répartition des totaux de `/simulateur/`, un bloc par athlète de la
+  catégorie et de l'équipement choisis, avec le visiteur et le record. Chaque
+  athlète y compte pour son meilleur total DANS la catégorie et l'équipement :
+  avec le classement général filtré, la page annonçait « 1er » sous le record
+  de la catégorie. Tout se calcule dans le navigateur, et le formulaire comme
+  le résultat portent `data-clarity-mask`.
+
 ## Partage sur les réseaux sociaux
 
 La plomberie OpenGraph existe dans `BaseLayout.astro` mais reste inactive : la
@@ -190,13 +255,30 @@ signaler des candidats à vérifier à la main.
 **Les résultats hors de La Réunion n'entrent ni au classement ni aux records.**
 Ils figurent sur `/exterieur/` et sur les fiches d'athlètes.
 
-**Oswald n'a pas de chiffres à largeur fixe.** Utiliser `.num` pour un chiffre
-isolé et grand, `.num-tab` pour un chiffre dans une colonne.
+**Une seule police, Archivo, depuis juillet 2026.** Elle a des chiffres
+tabulaires, contrairement à Oswald qu'elle remplace. `.num` et `.num-tab` gardent
+des rôles typographiques : `.num` pour un chiffre isolé et grand, `.num-tab`
+pour un chiffre dans une colonne.
 
 **Tout contrôle fait au moins 44 px**, jeton `--cible-min`, règle globale dans
 `tokens.css`. Un nouveau bouton en hérite sans rien demander. Employer
 `min-height` et jamais `height` : le texte doit rester libre de grandir. Les
-trois exclusions sont écrites dans `tokens.css`, ne pas en ajouter sans mesurer.
+quatre exclusions sont écrites dans `tokens.css`, ne pas en ajouter sans
+mesurer. La quatrième est le terme souligné du lexique, une cible dans une
+phrase que le critère 2.5.8 des WCAG 2.2 exempte.
+
+**Aucun champ sous 16 px**, sinon Safari zoome sur iPhone dès qu'on le touche.
+Le jeton `--police-champ` vaut `max(16px, var(--step-0))` et une règle globale
+de `tokens.css` l'applique. Un composant qui redéclare `font` écrit
+`font-size: var(--police-champ)` juste après. Jamais `maximum-scale` ni
+`user-scalable=no`, qui empêcheraient aussi le zoom volontaire.
+
+**Ordre d'empilement** : bannière de consentement et infobulle du glossaire 20,
+lien d'évitement et panneau du menu 10, voile du menu 9, en-tête 6, bulles du
+lexique 5, boutons flottants 4. Les
+deux boutons flottants, retour en haut et « Proposer », sont réglés ensemble
+dans `BaseLayout.astro` : quand ils empiètent sur la colonne du contenu, ils se
+retirent à la descente et reviennent à la remontée.
 
 **L'en-tête est collante, deux conséquences sur les ancres.** Une ancre de
 retour en haut ne doit jamais viser un élément collant : sa boîte étant déjà en
@@ -215,12 +297,22 @@ hébergés sur le site : aucun script tiers, aucun pistage, aucun consentement �
 demander. Une régie type AdSense tomberait derrière la bannière, serait
 invisible pour qui refuse, et contredirait la posture du site. Trois règles,
 appliquées dans `lib/sponsors.ts` et non laissées à la vigilance des gabarits :
-**un seul emplacement par page**, **jamais dans une donnée** (ni entre deux
-lignes de classement, ni dans un tableau de résultats), **jamais au-dessus du
-contenu**. Deux obligations en plus : `rel="sponsored nofollow"` sur le lien,
-qu'exige Google, et un intitulé « Partenaire » visible, qu'exige la loi
-française sur l'identification de la publicité. La fiche d'athlète est écartée :
+**une seule place de contenu par page**, le bandeau du pied de page étant
+compté à part, **jamais dans une donnée** (ni entre deux lignes de classement,
+ni dans un tableau de résultats), **jamais au-dessus du contenu**. Deux
+obligations en plus : `rel="sponsored nofollow"` sur le lien, qu'exige Google,
+et un intitulé « Partenaire » visible, qu'exige la loi française sur
+l'identification de la publicité. La fiche d'athlète n'a ni place ni bandeau :
 y afficher une marque prêterait à l'athlète une caution qu'il n'a pas donnée.
+
+**Les formats des partenaires sont fixes**, choix de l'auteur du 27 octobre
+2026, et se lisent dans `lib/formats-partenaires.ts` : bannière fournie en
+1 200 × 300 et affichée sur 600 px au plus (articles, compétitions), carte logo
+fournie en 400 × 200 et affichée en 96 × 48 avec une accroche de 80 caractères
+(catégories, records, classement, salles), logo du pied de page en 80 × 40.
+Rien ne s'affiche, pas même un cadre vide, sans partenaire actif. Une place
+posée deux fois ou sur une fiche arrête la génération. Une image SVG porteuse
+de script ou de ressource extérieure est refusée par `content.config.ts`.
 
 **Ne jamais écrire que le site est « sans publicité ».** La promesse qui tient
 est l'absence de RÉGIE et de script tiers. Le pied de page dit donc « sans
@@ -230,6 +322,15 @@ régie publicitaire », ce qui reste vrai avec des partenaires directs.
 de `tokens.css` sur `a[href^="http"]`. Ne pas l'ajouter à la main dans le
 balisage : un nouveau lien externe l'obtient sans rien demander. Les adresses
 `mailto:` en sont exclues, un courriel n'étant pas un site externe.
+
+**Les espaces insécables de la ponctuation sont posées à la génération.**
+`src/middleware.ts` appelle `poserEspacesInsecables()` de
+`lib/espaces-insecables.ts` : l'espace déjà écrite avant « : ; ! ? » et à
+l'intérieur des guillemets devient U+00A0, dans les nœuds de texte seulement,
+jamais dans un attribut, un script, un style ou du code. Elle n'en ajoute
+aucune, ce qui protège adresses, heures et rapports comme « 4,5:1 ». Ne pas en
+écrire à la main. Seul le texte fabriqué en JavaScript y échappe, comme le
+« Total : » de `/simulateur/`. `dateLongue()` écrit « 1er » le premier du mois.
 
 **Tout lien sortant s'ouvre dans un nouvel onglet et s'annonce**, demande de
 l'auteur du 24 octobre 2026. `src/middleware.ts` réécrit le HTML de chaque page
@@ -286,6 +387,32 @@ clair.
 **Astro supprime l'espace avant une balise inline.** Écrire `{' '}` explicitement.
 Un script de détection existe, voir docs/parcours.md.
 
+**Le lexique souligné a une source unique, `src/lib/glossaire.ts`**, choix de
+l'auteur du 27 octobre 2026 : `definition` sert au glossaire repliable,
+`phrase` à la bulle, `formes` aux articles. Seul le PREMIER emploi d'un terme
+est souligné, par page et par article. Dans une page, poser
+`<Terme cle="…">mot</Terme>` en prose seulement, jamais dans un titre, un lien,
+un tableau, une étiquette ou un bouton. Les articles sont soulignés seuls par
+le greffon `lib/lexique-markdown.ts`, chapeau compris depuis la décision de
+l'auteur du 28 octobre 2026 ; une empreinte du
+glossaire calculée dans `astro.config.mjs` vide leur cache quand il change. Le
+comportement vit dans `lib/bulles-lexique.ts`. Balisage à ne pas casser :
+`span.lexique` insécable, qui contient la bulle (`span.lexique-bulle`,
+`role="tooltip"`, `hidden`) PUIS le mot (`span.lexique-mot`, `role="button"`,
+`tabindex="0"`). Jamais un `<button>` ni un `inline-block`, qui ouvrent une
+coupure de ligne après eux. Une définition masquée reste dans `textContent` :
+tout script qui lit le texte d'un paragraphe écarte les `.lexique-bulle`. Un
+mot à deux sens peut recevoir la mauvaise définition : relire chaque nouvel
+article généré, les tours connus étant écartés dans `formes`.
+
+**La carte de l'île vient de l'IGN**, Admin Express COG 2018, par
+`scripts/generer-carte-ile.mjs`, qui écrit `src/data/ile-reunion.json`. La
+projection vit dans le générateur, et `projeter` de `src/lib/carte.ts` la
+recopie pour placer les salles. Toute carte de l'île affiche la clé `source` et
+la Licence Ouverte ; l'attribution OpenStreetMap reste pour les positions des
+salles. Le placement des noms de commune est mesuré sur Archivo : à remesurer
+si la police change.
+
 **Le MySQL d'OVH n'est pas en mode strict.** Mesuré : MySQL 8.4.10, `sql_mode`
 réduit au seul `NO_ENGINE_SUBSTITUTION`. Une charge saisie à 1500 kg entrerait
 donc à 999,99 kg, une contrainte `CHECK` étant évaluée **après** ce rabotage.
@@ -302,7 +429,13 @@ npm run data:update   # régénère les données depuis OpenPowerlifting
 npm run data:explore  # diagnostic du dump, ne produit rien
 npm run fonts:update  # retélécharge les polices auto-hébergées
 npm run clarity:relever # relève la veille dans Clarity, à lancer chaque jour
+node scripts/generer-carte-ile.mjs # redessine la carte de l'île depuis l'IGN
 ```
+
+Le générateur de carte se lance seulement pour changer de source ou
+d'édition, jamais chaque mois. `--source <fichier>` lit une copie locale,
+`--mesurer` compare les tolérances sans rien écrire. Il redit aussi si chaque
+salle tombe dans sa commune.
 
 **Clarity ne s'exporte pas, il se relève.** Son API ne rend que les 1 à 3
 derniers jours, agrégés, à 10 appels par jour. `scripts/relever-clarity.mjs`
@@ -337,7 +470,15 @@ $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";"
 - Le logo et le système de design, pour activer les OpenGraph.
 - Google Search Console : la propriété est en cours de validation.
 
-**Trois arbitrages ouverts**, sur lesquels l'auteur ne s'est pas prononcé :
+- **Les visites par catégorie, relevées dans Clarity.** Les catégories mises
+  en avant sur `/categories/` sont aujourd'hui les plus fournies. Dès que
+  l'auteur fournit les visites, changer le critère de `plusFournies()`.
+- **Des définitions pour le lexique** : FA/PL, DC/BP, FFForce, IPF, EPF,
+  fédération, invité, médaille, faute de source dans le dépôt.
+- **Un essai sur un vrai iPhone** : le zoom des champs, le toucher des termes
+  du lexique et la hauteur du menu n'ont été mesurés que dans Chromium.
+
+**Deux arbitrages ouverts**, sur lesquels l'auteur ne s'est pas prononcé :
 
 1. **Médailles de compétition.** Elles sont aujourd'hui décernées par catégorie
    de poids, ce qui donne 41 médailles sur 54 résultats pour une compétition
@@ -346,8 +487,18 @@ $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";"
 2. **Buy Me a Coffee.** Le bouton est fait maison, sans script tiers. L'auteur
    avait fourni le script officiel, écarté pour la même raison que Google Fonts
    en CDN.
-3. **Nom de l'onglet Extérieur.** L'auteur proposait « International » ou
-   « France ».
+
+Le nom de l'onglet Extérieur est tranché : « Hors de l'île » dans le menu,
+choix de l'auteur du 27 octobre 2026.
+
+**Défauts connus, à reprendre**
+
+- Entre 60 et 80rem, la coupe d'un record déborde sur la colonne voisine de
+  l'historique d'une fiche, jusqu'à 18 px. Le tableau de neuf colonnes manque
+  de place : cartes jusqu'à 80rem, colonne Format compacte ou date courte,
+  la solution reste à choisir.
+- La carte de partenaire de `/classement/` tombe en fin de liste, à environ
+  55 écrans sur téléphone. Conforme aux règles, peu vue.
 
 **Audit ergonomique iOS : fait le 2 août 2026**
 
@@ -365,7 +516,7 @@ Ce qui a été corrigé :
 
 - **Cibles tactiles.** Aucun contrôle du site n'atteignait 44 px. La règle vit
   maintenant dans `tokens.css`, jeton `--cible-min`, avec trois exclusions
-  documentées sur place.
+  documentées sur place, quatre depuis le lexique souligné.
 - **Rayons imbriqués.** Un seul écart réel, les liens du menu déroulant.
 - **États vides.** `EtatVide.astro` remplace les trois impasses par un titre,
   une explication, et l'action de sortie quand elle existe.
@@ -380,9 +531,10 @@ démenti le diagnostic :
   désormais documentée telle qu'elle est, en 4 points avec le pas de 8 préféré.
 - **`/comparer/` avait déjà son état vide**, complet, avec action de sortie.
 
-Reste ouvert : les jetons `--succes`, `--alerte` et `--danger` sont posés et
-mesurés mais sans usage, en attente des formulaires de la partie communauté.
-Les niveaux de texte restent à deux, faute d'un besoin réel pour un troisième.
+Les jetons `--succes`, `--alerte` et `--danger`, posés et mesurés pour les
+formulaires de la partie communauté, servent déjà aux pages d'accessibilité,
+des mises à jour, des partenariats et des actualités. Les niveaux de texte
+restent à deux, faute d'un besoin réel pour un troisième.
 
 Hors périmètre : SF Pro, sous licence Apple et inutilisable sur le web, le
 retour haptique sans équivalent, et les conventions d'application que sont les

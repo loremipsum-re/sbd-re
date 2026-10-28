@@ -9,26 +9,49 @@
  * Le bloc n'existe pas s'il n'y a aucun partenaire : voir la condition
  * ci-dessous. Un bandeau vide serait une place perdue qui dit au visiteur que
  * personne ne soutient le site.
+ *
+ * LES MÊMES RÈGLES QUE LES PLACES DE CONTENU, voir Partenaire.astro : intitulé
+ * visible, `rel="sponsored nofollow"`, image hébergée sur le site. Et un
+ * FORMAT FIXE, lu dans lib/formats-partenaires.ts : chaque logo occupe la même
+ * boîte, au rapport 2:1. Aucun partenaire n'y paraît plus grand qu'un autre,
+ * et la rangée garde sa place avant même l'arrivée des images.
+ *
+ * À PART DE LA PLACE DE CONTENU : le bandeau ne compte pas dans la règle d'une
+ * place par page. Et ABSENT DES FICHES D'ATHLÈTE, comme toute place. Le
+ * bandeau passe sa page à `partenairesDuPied`, qui rend une liste vide sur une
+ * fiche : la règle vit dans lib/sponsors.ts avec les autres, et SiteFooter.astro
+ * n'a rien à savoir des partenaires.
  */
+import { FORMATS } from '../lib/formats-partenaires';
 import { partenairesDuPied } from '../lib/sponsors';
 
-const partenaires = await partenairesDuPied();
+// Une liste vide sur une fiche d'athlète, donc aucun bandeau : voir plus haut.
+const partenaires = await partenairesDuPied(Astro);
+const { affichage } = FORMATS.logo;
+const reglages = `--largeur-logo:${affichage.largeur}px;--hauteur-logo:${affichage.hauteur}px`;
 ---
 
 {
   partenaires.length > 0 && (
-    <section class="bandeau" aria-label="Partenaires">
+    <section class="bandeau" aria-label="Partenaires" style={reglages}>
       <p class="mention">Partenaires</p>
       <ul>
         {partenaires.map((p) => (
           <li>
             <a
               class="lien-nu"
-              href={p.data.url}
+              href={p.url}
               rel="sponsored nofollow noopener"
-              title={p.data.nom}
+              title={p.nom}
             >
-              <img src={p.data.logo} alt={p.data.nom} loading="lazy" />
+              <img
+                src={p.logo}
+                alt={p.nom}
+                width={affichage.largeur}
+                height={affichage.hauteur}
+                loading="lazy"
+                decoding="async"
+              />
             </a>
           </li>
         ))}
@@ -76,10 +99,16 @@ const partenaires = await partenairesDuPied();
     background: var(--bg);
   }
 
+  /*
+   * Fond clair dans les deux thèmes, pris dans la palette : la raison est
+   * écrite dans Partenaire.astro. Un logo à fond plein le recouvre.
+   */
   li img {
-    width: auto;
-    height: 32px;
-    max-width: 140px;
+    display: block;
+    width: var(--largeur-logo);
+    height: var(--hauteur-logo);
     object-fit: contain;
+    border-radius: var(--radius);
+    background: var(--p-light-bg);
   }
 </style>
