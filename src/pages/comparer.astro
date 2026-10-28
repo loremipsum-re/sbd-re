@@ -172,14 +172,16 @@ const nombreAthletes = athletes.length;
         comparaison, au-delà le tableau devient illisible.
       </p>
       <div class="rangee-etat" id="etat-selection" hidden>
-        <p class="compteur" id="compte-selection" aria-live="polite" tabindex="-1"></p>
+        <p class="compteur" id="compte-selection" aria-live="polite"></p>
         <button type="button" id="vider" class="bouton-outil bouton-reinitialiser" hidden>Réinitialiser</button>
         <ul id="selection" class="etiquettes-actives" aria-label="Athlètes comparés"></ul>
       </div>
     </div>
 
     <div id="vide" class="vide">
-      <p>Aucun athlète sélectionné pour l'instant.</p>
+      {/* `tabindex="-1"` : le focus s'y pose quand la sélection se vide,
+          voir le script. */}
+      <p id="message-vide" tabindex="-1">Aucun athlète sélectionné pour l'instant.</p>
       <p class="fin">
         Commencez par en ajouter un, ou essayez directement{' '}
         <a href="?a=gabriel-begue,noah-nativel">une comparaison d'exemple</a>.
@@ -229,6 +231,7 @@ const nombreAthletes = athletes.length;
     const zoneTableau = document.getElementById('tableau');
     const indication = document.querySelector('[data-indication-defilement]');
     const zoneVide = document.getElementById('vide');
+    const messageVide = document.getElementById('message-vide');
 
     /**
      * Échappe une valeur avant de l'insérer dans du HTML construit à la main.
@@ -446,8 +449,10 @@ const nombreAthletes = athletes.length;
 
     /*
      * Retirer un athlète redessine les étiquettes : le focus passe à la
-     * suivante, sinon à la précédente, sinon au compte. Le champ, autre
-     * candidat, ferait surgir le clavier d'un téléphone.
+     * suivante, sinon à la précédente. Après la dernière, la rangée d'état
+     * disparaît, et le focus va au message qui dit la sélection vide. Le
+     * champ, autre candidat, ferait surgir le clavier d'un téléphone : c'est
+     * la règle des listes, où une remise à zéro ne vise jamais la recherche.
      */
     zoneSelection.addEventListener('click', (e) => {
       const cible = e.target.closest('[data-retirer]');
@@ -455,14 +460,13 @@ const nombreAthletes = athletes.length;
       const position = [...zoneSelection.querySelectorAll('[data-retirer]')].indexOf(cible);
       ecrire(selection().filter((s) => s !== cible.dataset.retirer));
       const restantes = zoneSelection.querySelectorAll('[data-retirer]');
-      (restantes[position] ?? restantes[position - 1] ?? (rangeeEtat.hidden ? champ : compte)).focus();
+      (restantes[position] ?? restantes[position - 1] ?? messageVide).focus();
     });
 
+    // Même règle après « Réinitialiser » : le focus va au message.
     vider.addEventListener('click', () => {
       ecrire([]);
-      // Le compte disparaît avec la sélection : le focus revient au champ,
-      // seul point de départ qui reste.
-      champ.focus();
+      messageVide.focus();
     });
 
     // Les boutons Précédent et Suivant du navigateur doivent fonctionner :
