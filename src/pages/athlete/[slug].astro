@@ -381,9 +381,14 @@ const description =
           <IconeMouvement mouvement="squat" taille={24} />
           Squat
         </dt>
+        {/*
+          UNE CONDITION TERNAIRE, et non `&&`. Sans squat, la meilleure barre
+          vaut 0, et `{0 && …}` affiche ce 0 : la case lisait « —0 » sur 45
+          fiches. L'historique plus bas écrit déjà la condition ainsi.
+        */}
         <dd class="num">
           {meilleures.squat ? nombre(meilleures.squat) : '—'}
-          {meilleures.squat && <span class="unite">kg</span>}
+          {meilleures.squat ? <span class="unite">kg</span> : null}
         </dd>
       </div>
       <div>
@@ -393,7 +398,7 @@ const description =
         </dt>
         <dd class="num">
           {meilleures.bench ? nombre(meilleures.bench) : '—'}
-          {meilleures.bench && <span class="unite">kg</span>}
+          {meilleures.bench ? <span class="unite">kg</span> : null}
         </dd>
       </div>
       <div>
@@ -403,7 +408,7 @@ const description =
         </dt>
         <dd class="num">
           {meilleures.deadlift ? nombre(meilleures.deadlift) : '—'}
-          {meilleures.deadlift && <span class="unite">kg</span>}
+          {meilleures.deadlift ? <span class="unite">kg</span> : null}
         </dd>
       </div>
       <div class="cumul">
