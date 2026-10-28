@@ -60,9 +60,14 @@ interface Props {
    * page. Une ou deux commandes tiennent sur une rangée et restent ouvertes.
    */
   replier?: 'toujours' | 'telephone';
+  /**
+   * Le nom au singulier est féminin : l'état vide dit alors « Aucune
+   * catégorie ne correspond », et non « Aucun catégorie ».
+   */
+  feminin?: boolean;
 }
 
-const { recherche, singulier = 'résultat', pluriel, total, barreDeTri, replier } = Astro.props;
+const { recherche, singulier = 'résultat', pluriel, total, barreDeTri, replier, feminin } = Astro.props;
 const plurielFinal = pluriel ?? `${singulier}s`;
 const aFiltres = Astro.slots.has('filtres');
 const interactif = recherche !== undefined || aFiltres;
@@ -178,7 +183,7 @@ const repliable = aFiltres && replier !== undefined;
      */
     interactif && (
       <div data-etat-vide hidden>
-        <EtatVide titre={`Aucun ${singulier} ne correspond`}>
+        <EtatVide titre={`${feminin ? 'Aucune' : 'Aucun'} ${singulier} ne correspond`}>
           Les critères actifs ne laissent rien passer. Élargissez-en un, ou
           repartez de la liste entière.
           <button type="button" data-tout-afficher slot="action">
@@ -667,9 +672,16 @@ const repliable = aFiltres && replier !== undefined;
      * et rend le focus au bouton qui l'a ouvert. Sans effet quand le bouton
      * est masqué : sur grand écran, le panneau d'une compétition reste ouvert
      * d'office. Un menu déroulant ouvert garde la touche pour lui-même.
+     *
+     * SAUF DANS UNE RECHERCHE SAISIE, où Échap garde son sens natif : il vide
+     * le champ, et un second Échap referme le panneau. Relevé le 28 octobre
+     * 2026 dans Chromium : le focus déplacé pendant la touche laissait le
+     * navigateur vider le champ sans émettre `input`. Le champ paraissait
+     * vide, la liste restait filtrée et l'adresse gardait `q`.
      */
     barreFiltres?.addEventListener('keydown', (evenement) => {
       if (evenement.key !== 'Escape' || !boutonFiltres) return;
+      if (champ && evenement.target === champ && champ.value !== '') return;
       if (boutonFiltres.getAttribute('aria-expanded') !== 'true') return;
       if (boutonFiltres.offsetParent === null) return;
       basculerPanneau(false);

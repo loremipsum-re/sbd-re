@@ -54,6 +54,7 @@ const annees = [...new Set(meets.map((m) => m.date.slice(0, 4)))].sort().reverse
       recherche="Nom d'une compétition"
       singulier="compétition"
       pluriel="compétitions"
+      feminin
       total={meets.length}
     >
       <Fragment slot="filtres">

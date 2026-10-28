@@ -218,7 +218,15 @@
  * clavier les parcourt aux flèches, et le contour de focus se pose sur le
  * segment. Le segment choisi prend l'aplat d'accent, comme la catégorie
  * active du simulateur : texte sur aplat, 10,66:1 en clair et 11,05:1 en
- * sombre. L'ancienne teinte à 12 % ne donnait que 4,22:1 en thème clair. */
+ * sombre. L'ancienne teinte à 12 % ne donnait que 4,22:1 en thème clair.
+ *
+ * SON FILET EST D'ACCENT, ET NON D'APLAT. En thème clair, l'aplat ne se
+ * détache du segment voisin qu'à 1,39:1, et de la barre qu'à 1,29:1, mesuré
+ * le 28 octobre 2026 : sous les 3:1 que le critère 1.4.11 demande à ce qui
+ * signale un état, et le texte du segment choisi a la couleur des autres.
+ * Le filet d'accent tient 5,34:1 contre le voisin et 4,93:1 contre la barre,
+ * comme celui d'un menu actif. En thème sombre, les deux jetons ont la même
+ * couleur : le rendu ne change pas. */
 
 .barre-filtres .segments {
   display: flex;
@@ -283,13 +291,13 @@
 }
 
 .barre-filtres .segments input:checked + span {
-  border-color: var(--accent-fill);
+  border-color: var(--accent);
   background: var(--accent-fill);
   color: var(--on-accent);
 }
 
 .barre-filtres .segments label:hover input:checked + span {
-  border-color: var(--accent-fill-hover);
+  border-color: var(--accent-hover);
   background: var(--accent-fill-hover);
   color: var(--on-accent);
 }
@@ -303,7 +311,7 @@
 /* ---------- Le tri ----------
  * Sous les filtres, dans le panneau : il change l'ordre de la liste, pas ce
  * qu'elle contient. Ses pastilles reprennent l'état choisi des bascules,
- * l'aplat, pour la même raison de contraste.
+ * l'aplat sous un filet d'accent, pour les mêmes raisons de contraste.
  *
  * « Trier par » se lit en tête de la file de pastilles, sur la même ligne :
  * posé au-dessus comme l'étiquette d'un menu, il coûtait 27 px de plus pour
@@ -348,13 +356,13 @@
 }
 
 .barre-filtres .barre-tri button[aria-pressed='true'] {
-  border-color: var(--accent-fill);
+  border-color: var(--accent);
   background: var(--accent-fill);
   color: var(--on-accent);
 }
 
 .barre-filtres .barre-tri button[aria-pressed='true']:hover {
-  border-color: var(--accent-fill-hover);
+  border-color: var(--accent-hover);
   background: var(--accent-fill-hover);
 }
 
