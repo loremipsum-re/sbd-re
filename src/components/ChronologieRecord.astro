@@ -37,7 +37,7 @@ const { etapes } = Astro.props;
               <span class="evolution" data-sens="hausse">
                 <span aria-hidden="true">▲</span>
                 {`${nombre(etape.gainKg)} kg`}
-                <span class="sr-only">de plus que la marque précédente</span>
+                <span class="sr-only">de plus que le record précédent</span>
               </span>
             )}
             {i === etapes.length - 1 && <span class="encours">record actuel</span>}
@@ -70,7 +70,7 @@ const { etapes } = Astro.props;
     border-bottom: 0;
   }
 
-  /* La marque en cours se distingue : c'est celle qu'on vient chercher. */
+  /* Le record en cours se distingue : c'est celui qu'on vient chercher. */
   .chrono li[data-actuel] {
     background: color-mix(in srgb, var(--or) 8%, transparent);
   }
