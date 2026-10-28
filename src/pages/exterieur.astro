@@ -32,12 +32,20 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
   <div class="wrap">
     <header class="entete-page">
       <h1>Hors de La Réunion</h1>
+      {/*
+        UNE PHRASE, COMME LE CHAPEAU DU CLASSEMENT. Les deux phrases d'avant
+        comptaient 41 mots, dont un « plateaux-là » de jargon. Les cinq
+        chiffres sont calculés par lib/exterieur.ts.
+      */}
       <p class="chapeau">
-        Les athlètes de l'île se déplacent, en métropole comme à l'étranger.
-        Cette page rassemble {stats.resultats} résultats obtenus sur ces
-        plateaux-là, par {stats.athletes} athlètes, dans {stats.pays} pays et
-        sous {stats.federations} fédérations, de {annee(stats.debut)} à {annee(stats.fin)}.
+        {stats.resultats} résultats obtenus hors de l'île par {stats.athletes}{' '}
+        athlètes du site, dans {stats.pays} pays et {stats.federations}{' '}
+        fédérations, de {annee(stats.debut)} à {annee(stats.fin)}.
       </p>
+      {/*
+        DEUX PHRASES COURTES pour la seconde ligne de l'encadré. Elle en
+        comptait deux, dont une de 30 mots coupée par « et » puis « mais ».
+      */}
       <div class="avertissement">
         <p>
           <strong>
@@ -46,12 +54,9 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
           </strong>
         </p>
         <p>
-          Les records de La Réunion récompensent des{' '}
-          <Terme cle="barre">barres</Terme> soulevées sur un plateau réunionnais,
-          et le classement mesure la scène locale. Une
-          performance réalisée à Prague ou à Lyon appartient au parcours de
-          l'athlète, et elle figure à ce titre sur sa fiche, mais elle laisse
-          intacte la hiérarchie de l'île.
+          Ils figurent sur la fiche de chaque athlète. Le classement et les
+          records retiennent les <Terme cle="barre">barres</Terme> soulevées à
+          La Réunion.
         </p>
       </div>
     </header>
@@ -189,12 +194,17 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
       </div>
     </InteractiveTable>
 
+    {/*
+      LE VOUVOIEMENT, COMME PARTOUT AILLEURS SUR LE SITE, et un lien vers la
+      boîte à suggestions au lieu d'un « écris-nous » qui ne disait pas où.
+    */}
     <p class="note">
-      Le rattachement d'un résultat à un athlète repose sur son nom tel
-      qu'OpenPowerlifting l'écrit. Le projet distingue les homonymes par un
-      suffixe numéroté, mais il lui arrive de ne pas les avoir repérés. Si tu
-      repères une compétition qui n'est pas la tienne, écris-nous : elle sera
-      retirée, et le doublon signalé à la source.
+      Le rattachement d'un résultat à un athlète repose sur son nom, tel
+      qu'OpenPowerlifting l'écrit. Ce projet distingue les homonymes par un
+      suffixe numéroté, et certains lui échappent encore. Un résultat à votre
+      nom vient d'un homonyme ? Signalez-le depuis la page{' '}
+      <a href="/suggestions/">Proposer une amélioration</a>. Il sera retiré, et
+      le doublon signalé à OpenPowerlifting.
     </p>
   </div>
 </BaseLayout>
