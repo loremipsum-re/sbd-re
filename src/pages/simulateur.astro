@@ -380,11 +380,25 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
       categorieForcee = choisie === deduite?.id ? null : choisie;
       calculer();
       sortie.querySelector('details')?.setAttribute('open', '');
+      // Le calcul a recréé les boutons : le focus, resté sur l'ancien, serait
+      // tombé sur la page. Il revient au bouton choisi, pour qui navigue au
+      // clavier. Mesuré avant correction : le focus finissait sur <body>.
+      sortie.querySelector<HTMLElement>(`[data-categorie="${choisie}"]`)?.focus();
     });
 
     form.addEventListener('input', calculer);
-    form.addEventListener('change', () => {
-      // Changer de sexe rend une catégorie forcée sans objet.
+
+    /*
+     * Changer de sexe rend une catégorie forcée sans objet, et l'équipement
+     * suit la même règle. Les MENUS seulement : un champ de saisie recalcule
+     * déjà à chaque frappe, et son « change » n'arrive qu'à la sortie du
+     * champ. Mesuré avant correction : un clic sur « Comparer dans une autre
+     * catégorie » juste après une saisie recréait le résultat sous le
+     * pointeur, et le volet ne s'ouvrait pas. Et retoucher une barre en
+     * cours de comparaison ramenait à la catégorie du poids de corps.
+     */
+    form.addEventListener('change', (evenement) => {
+      if (!(evenement.target instanceof HTMLSelectElement)) return;
       categorieForcee = null;
       calculer();
     });
@@ -688,10 +702,18 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     color: var(--accent);
   }
 
+  /* La catégorie choisie : l'aplat sous un filet d'accent, comme le segment
+     choisi d'une bascule dans src/styles/filtres.css. Un filet d'aplat ne se
+     détachait du fond qu'à 1,39:1 en thème clair, sous les 3:1 d'un état. */
   .resultat :global(.categorie.active) {
-    border-color: var(--accent-fill);
+    border-color: var(--accent);
     background: var(--accent-fill);
     color: var(--on-accent);
+  }
+
+  .resultat :global(.categorie.active:hover) {
+    border-color: var(--accent-hover);
+    background: var(--accent-fill-hover);
   }
 
 
