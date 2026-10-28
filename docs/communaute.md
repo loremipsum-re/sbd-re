@@ -563,7 +563,15 @@ Dans cet ordre, chaque étape étant vérifiable avant la suivante.
 8. **La liste des tests de la section 8**, passée en entier.
 
 Le classement communauté n'apparaît dans la navigation qu'une fois l'étape 8
-franchie. D'ici là, `/communaute/` reste la page d'attente actuelle.
+franchie. D'ici là, `/communaute/` reste une page d'attente, refaite le
+27 octobre 2026 : elle dit d'emblée que le classement est en préparation,
+propose trois actions (le classement officiel, Me situer, la boîte à
+suggestions) et décrit le fonctionnement prévu en six lignes. Le menu la range
+dans la famille « Le site », avec l'étiquette « Bientôt ».
+
+Chaque ligne de ce fonctionnement prévu vient de ce document : l'âge minimum,
+la vidéo obligatoire, la modération, les tranches, le classement par mouvement
+et par sexe. **Toute décision qui change ici doit être reportée sur la page.**
 
 ---
 

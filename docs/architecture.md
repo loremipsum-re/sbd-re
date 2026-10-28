@@ -182,6 +182,24 @@ Les documents parlent de 436 pages et de 266 athlètes classés. On en compte
 aujourd'hui 492 et 312. Chaque mise à jour mensuelle les périme. Mieux vaut
 écrire l'ordre de grandeur, ou la commande qui donne le chiffre.
 
+### 4.10 Trois pièces partagées, ajoutées en octobre 2026
+
+Trois ajouts de la série d'octobre touchent beaucoup de pages d'un coup, et se
+remesurent en conséquence.
+
+- **La barre de filtres**, `src/styles/filtres.css`, sert les listes,
+  la carte des salles, `/comparer/` et `/simulateur/`. Tout changement s'y
+  remesure sur les onze pages à barre, dans les deux thèmes.
+- **La carte de l'île** vient d'un générateur qui télécharge la branche
+  `master` de france-geojson, édition 2018 de l'IGN, sans empreinte de la
+  source. La reproductibilité dépend donc de l'amont. Les salles ajoutées par
+  le CMS ne sont contrôlées contre les communes que lorsqu'on relance le
+  générateur à la main.
+- **Les définitions du lexique** restent dans le HTML, masquées, au milieu
+  des phrases. Un outil qui ignore l'attribut `hidden` les lit collées au mot.
+  Le flux RSS n'en prend aucune ; la Search Console dira si un moteur s'y
+  trompe.
+
 ---
 
 ## 5. Charge et croissance

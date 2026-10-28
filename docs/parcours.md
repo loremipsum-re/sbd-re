@@ -778,3 +778,178 @@ Ce que la série a appris :
 - **Premières requêtes de conteneur du site**, dans les infographies des
   communes et des formats : leur mise en page suit la largeur du cadre, article
   de 68 caractères ou page entière, et non celle de la fenêtre.
+
+## 12. Le site revu de bout en bout, fin octobre 2026
+
+Demande de l'auteur du 27 octobre 2026 : revoir le design system et les
+textes, proposer plus de visuels, raccourcir le menu, préparer des places
+précises pour des partenaires, préciser la carte de l'île, mettre en avant les
+catégories les plus consultées, rendre la page Communauté plus claire,
+supprimer le zoom de Safari quand on touche un champ, souligner les termes du
+lexique, ouvrir le classement sur la liste et aligner les filtres de toutes
+les pages.
+
+Chaque chantier a été mené dans une copie isolée du dépôt, puis relu par un
+second agent chargé d'y trouver des défauts et de les corriger. Les décisions
+de l'auteur ont été prises en deux fois, le 27 et le 28 octobre.
+
+### Un audit mesuré avant de toucher au code
+
+25 pages, 100 mesures dans le navigateur et 13 défauts classés, D1 à D13, avec
+une feuille de route de 26 actions. Le plus grave dormait depuis des mois.
+Une règle trop large, `.liste .intitule { display: none }`, masquait les
+intitulés squat, développé couché et soulevé de terre des 63 pages de
+compétition : 1 238 barres sans leur nom. Elle visait les intitulés doublés
+par un en-tête de colonne ; elle ne vise plus que `td[data-libelle]`.
+
+### Le menu en trois familles
+
+Le panneau ouvert mesurait 1 417 px à 375 px de large et défilait sur 679 px :
+6 rubriques sur 14 étaient visibles. Il mesure 492 px, sans défilement, les
+13 rubriques visibles. Deux colonnes dès 22,5rem, réglées sur les mots les
+plus longs. Le pied de page suit le même plan sur deux colonnes, de 1 452 à
+1 144 px. Le logo de l'en-tête devient une cible de 44 px.
+
+Piège : une zone de grille nommée absente du gabarit place l'élément dans des
+pistes implicites. Les zones se déclarent à chaque point de bascule.
+
+### La carte de l'île d'après l'IGN
+
+La côte passe de 387 à 769 points, et les 24 communes ont leurs limites. La
+source est l'Admin Express de l'IGN, édition 2018, servie par france-geojson,
+seul hôte joignable depuis l'environnement de travail. La simplification se
+fait par arcs partagés entre communes : deux voisines gardent exactement la
+même frontière, sans trou ni recouvrement. Le script vérifie les croisements
+et les surfaces avant d'écrire, et son résultat est idempotent, vérifié par
+empreinte. Les 33 salles tombent dans leur commune déclarée.
+
+La côte OpenStreetMap d'avant était plus longue (226,7 km contre 220,5) :
+elle suit les ouvrages portuaires. Une source plus longue n'est pas plus juste.
+
+Le placement des noms de commune se calcule à la génération, sans script, et
+ne décale rien au chargement. Découvert en testant : sous Chromium, le clic de
+souris sur un marqueur arrivait sur le SVG et non sur le marqueur. Les boutons
+de zoom passent sous la carte sur téléphone, où ils cachaient la côte est.
+
+### La page Communauté
+
+Le visiteur s'y perdait. Elle dit maintenant son état en une phrase, propose
+trois actions (le classement officiel, Me situer, une suggestion) et décrit le
+fonctionnement prévu en six lignes, chacune tirée de docs/communaute.md. Toute
+décision qui change dans ce document doit être reportée sur la page.
+
+### Les partenaires : des formats fixes, rien sans partenaire
+
+Trois formats, choisis par l'auteur, lus dans `lib/formats-partenaires.ts`.
+Les règles sont appliquées à la génération : une place posée deux fois ou sur
+une fiche d'athlète arrête la construction, une image SVG porteuse de script
+est refusée. Sans partenaire actif, aucune balise n'est émise, pas même un
+cadre vide. Piège local : le magasin de contenu d'Astro ne relit pas une image
+de partenaire tant que son fichier `.md` ne change pas. Effacer
+`node_modules/.astro/data-store.json` force la relecture ; la CI repart de zéro.
+
+### Les champs à 16 px, et une seule barre de filtres
+
+Safari agrandit la page dès qu'un champ de moins de 16 px reçoit le focus. Le
+site en comptait 754 sur 515 pages, à 13,36 px. Le jeton `--police-champ` et
+une règle globale les portent à 16 px au moins : 0 champ sous ce seuil sur
+3 321 mesurés. Le zoom volontaire reste permis, aucun `maximum-scale`.
+
+La barre de filtres vivait en quatre copies qui divergeaient. Elle tient
+désormais dans `src/styles/filtres.css`. Sur `/classement/`, le résumé tient
+en une phrase et les filtres passent derrière un bouton qui compte les filtres
+actifs : la première carte d'athlète remonte de 1 078 à 570 px à 375 px.
+
+Pièges rencontrés :
+
+- Échap dans un champ de recherche : si le script déplace le focus pendant la
+  touche, Chromium vide le champ sans émettre `input`. La liste restait
+  filtrée sur une recherche effacée.
+- Un état choisi signalé par l'aplat jaune seul ne se détache de son voisin
+  qu'à 1,39:1 en thème clair. Le filet d'accent tient 5,34:1. Un contraste se
+  mesure sur la couleur réellement composée : une teinte à 8 % posée sur
+  `--surface` donne d'autres chiffres que la teinte seule.
+- Après une remise à zéro, le focus dans un champ fait surgir le clavier d'un
+  téléphone.
+
+### Le lexique souligné
+
+Quatorze termes, une source, `src/lib/glossaire.ts`. Le premier emploi de
+chaque terme est souligné en pointillé ; sa définition d'une phrase s'ouvre au
+survol, au clavier et au toucher. Le choix du balisage vient de la mesure :
+
+- Un `<button>` ou un `inline-block` est une boîte atomique. La ligne peut se
+  couper juste après, et une virgule se retrouvait seule en tête de ligne
+  (CSS Text 3, §5.1). Le mot est donc un `span` à `role="button"`.
+- La bulle se place avant le mot. Placée après, son ouverture recoupait la
+  ligne.
+- Un débordement horizontal d'un instant, même en `visibility: hidden`,
+  élargit la fenêtre de mise en page d'un téléphone et rabote le défilement :
+  42 px de saut à 375 px, et le toucher manquait le mot. La bulle est retirée
+  pendant qu'on mesure la place du terme.
+- Astro 7 lit le Markdown avec Sätteri : `markdown.rehypePlugins` ne tourne
+  plus, les greffons passent par `markdown.processor.options.hastPlugins`.
+- Le `<script>` d'un composant est rendu là où le composant apparaît pour la
+  première fois, donc au milieu d'une phrase : `injectScript('page')` le sort
+  du texte.
+- Le cache de contenu ne se vide que si le Markdown change. Une empreinte du
+  glossaire, calculée dans `astro.config.mjs`, le force quand une définition
+  change.
+- Safari sur iOS ne déclenche le clic que sur un élément qui l'écoute
+  lui-même : chaque mot a son écouteur.
+
+### Les catégories les plus fournies
+
+L'auteur voulait voir ressortir les catégories les plus consultées. Les
+visites par page vivent dans les relevés Clarity, sur sa machine : en
+attendant, l'effectif sert de critère. Chaque pastille de `/categories/`
+porte son nombre d'athlètes, et les trois plus fournies de chaque sexe passent
+en aplat jaune. Le critère vit dans `plusFournies()`, seul endroit à changer.
+Le rembourrage des pastilles passe de 16 à 12 px pour garder six rangées à
+375 px.
+
+### Les records racontés dans le temps
+
+Quatre visuels lisent la même fonction, `recordsEnCours()`, qui donne pour
+chaque record en cours le record de la veille et l'écart. Elle distingue un
+record battu d'une première marque : 27 des 101 records en cours ont été
+établis dans une catégorie encore vide, et n'ont rien battu.
+
+- Chaque page de catégorie trace l'escalier de son record au total en raw.
+  La liste des records successifs se replie dessous et sert de version texte.
+  La section passe en moyenne de 828 à 560 px à 375 px, et le classement de
+  la catégorie remonte d'autant. L'axe du temps s'arrête au dernier jour où le
+  record était en jeu : prolongé jusqu'à la fin des données, le record du
+  72 kg femmes aurait tenu des années face à personne.
+- L'accueil montre les records battus dans l'année de la compétition la plus
+  récente, jamais celle du jour de génération.
+- `/records/` donne l'année de chaque record en cours, en colonnes : 33 des
+  101 datent de 2026 au 28 octobre.
+- Chaque compétition ouvre ses résultats sur les records battus ce jour-là.
+
+Sur l'accueil, le top 10 est trié aux points Dots mais affichait le total en
+grand : on lisait 807,5, puis 660, puis 790, et l'ordre paraissait faux. Le
+chiffre dominant y devient les Dots, par une option de `RankingTable` que les
+autres pages n'emploient pas.
+
+### Deux décisions de l'auteur du 28 octobre
+
+**Le tri se voit.** Rangé dans le panneau des filtres, un tri par nom
+renumérotait la liste sans que rien ne le dise. Une étiquette « Trié par … »
+apparaît sous le compteur, avec un bouton qui rend l'ordre de la liste. Aucune
+page ne déclare son tri par défaut : une colonne monotone dans l'ordre servi,
+triée de façon stable, ne déplace aucune ligne, et c'est elle que le script
+reconnaît. Vérifié sur 450 listes. Le classement est servi au total et non aux
+Dots, d'où « Revenir au tri par Total ».
+
+**Le chapeau des articles est souligné.** Dans 10 articles sur 15, le premier
+emploi d'un terme se trouvait dans le chapeau, que le greffon ne lisait pas.
+Le chapeau se découpe désormais dans le greffon lui-même, avant le corps, et
+la page reçoit ce découpage par le frontmatter. Une seule décision, un seul
+cache : découpé par la page, le chapeau aurait suivi le glossaire du jour
+pendant que le corps restait en cache, et un terme aurait pu être souligné
+deux fois. Un garde-fou arrête la génération si le découpage manque.
+
+Piège rencontré : ajouter un import à une page, même vide, peut faire
+regrouper autrement par Vite les blocs `<style>` des composants. Sans effet
+quand les portées sont disjointes, mais le diff du HTML le montre.
