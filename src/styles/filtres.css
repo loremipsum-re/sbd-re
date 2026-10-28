@@ -19,7 +19,8 @@
  *      bout, à la hauteur du champ, quand le panneau se replie.
  *   2. Le panneau : les filtres sur une grille régulière, puis le tri.
  *   3. La rangée d'état : le compteur à gauche, « Réinitialiser » à droite,
- *      et dessous les filtres actifs, en étiquettes qu'un geste retire.
+ *      dessous le tri quand ce n'est pas celui de la liste, puis les filtres
+ *      actifs, en étiquettes qu'un geste retire.
  *
  * Le compteur et la remise à zéro tombent donc au même endroit sur toutes
  * les pages, quel que soit le nombre de filtres.
@@ -458,7 +459,8 @@
 }
 
 /* ---------- 3. La rangée d'état ----------
- * Le compteur à gauche, « Réinitialiser » à droite, les étiquettes dessous.
+ * Le compteur à gauche, « Réinitialiser » à droite, le tri et les étiquettes
+ * dessous.
  *
  * Aucune hauteur n'est réservée au bouton. Il n'apparaît qu'avec le premier
  * filtre, et la rangée des étiquettes avec lui : la liste se recompose à cet
@@ -486,6 +488,62 @@
    `data-reinitialiser` le bouton « Tout » de sa vue. */
 .barre-filtres .bouton-reinitialiser {
   grid-column: 2;
+}
+
+/*
+ * LE TRI, QUAND CE N'EST PAS CELUI DE LA LISTE. Sous le compteur, sur toute
+ * la largeur : « Trié par Nom » à gauche, le bouton qui ramène le tri par
+ * défaut à droite, comme « Réinitialiser » au-dessus. Le tri vit dans le
+ * panneau, et le panneau du classement reste fermé : sans cette rangée, un
+ * tri par nom renumérotait la liste sans que rien ne le dise.
+ *
+ * Le bouton passe sous l'étiquette quand les deux ne tiennent pas sur une
+ * ligne, calé à droite comme le bouton « Filtres » à 320 px. Il passe à la
+ * ligne lui-même plutôt que de déborder : son libellé vient d'un en-tête,
+ * dont la longueur n'est pas connue ici.
+ */
+.barre-filtres .tri-actif {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  min-width: 0;
+}
+
+.barre-filtres .etiquette-tri {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+/* Le critère, au texte courant et en gras : c'est lui qu'on cherche. Un nom
+   de colonne tient en trois mots au plus, « Poids de corps », qui restent
+   sur la même ligne. */
+.barre-filtres .etiquette-tri strong {
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* Le sens passe à la ligne d'un bloc, « du plus grand au plus petit ».
+   Mesuré à 320 px sans cette règle : « plus petit » restait seul sur la
+   seconde ligne. En bloc dans la ligne, il se coupe encore s'il dépasse à
+   lui seul la largeur, texte agrandi compris. */
+.barre-filtres .etiquette-tri .sens {
+  display: inline-block;
+}
+
+.barre-filtres .bouton-tri-defaut {
+  flex-shrink: 1;
+  margin-left: auto;
+  white-space: normal;
+  text-align: center;
+  text-wrap: balance;
 }
 
 .barre-filtres .etiquettes-actives {
