@@ -65,25 +65,31 @@ const tranchesAge = [...new Set(classement.map((e) => e.ageClass).filter(Boolean
   description="Classement des powerlifters de La Réunion par meilleur total en compétition officielle. Triable et filtrable par sexe, catégorie de poids et équipement."
 >
   <div class="wrap">
+    {/*
+      UNE PHRASE, PUIS LA LISTE. Les deux paragraphes d'avant tenaient
+      onze lignes sur un téléphone, et la première carte tombait à 1 078 px,
+      hors du premier écran de 812. Elle tient désormais entre 570 et
+      707 px. Le mode d'emploi est parti, la barre se lit seule. « Sur les
+      trois mouvements » dit le full power sans le jargon, et la précision
+      qui explique une absence suit en petit.
+    */}
     <header class="entete-page">
       <h1>Classement</h1>
       <p class="chapeau">
-        Le meilleur total réalisé en compétition par chaque athlète, sur
-        l'ensemble des compétitions organisées à La Réunion. Cherchez un nom,
-        filtrez, ou changez le critère de tri.
+        Le meilleur total de chaque athlète en compétition à La Réunion, sur
+        les trois mouvements.
       </p>
-      <p class="chapeau">
-        Ce classement porte sur le <strong>full power</strong>, où les trois
-        mouvements sont enchaînés lors de la même compétition. Les compétitions
-        d'un seul mouvement apparaissent dans les <a href="/records/">records</a>,
-        où leurs barres comptent pleinement.
+      <p class="precision">
+        Les compétitions d'un seul mouvement comptent dans les{' '}
+        <a href="/records/">records</a>.
       </p>
     </header>
 
     {/*
       DEUX PASTILLES SUR UNE LIGNE. Le vocabulaire, puis le calcul du
       classement en images. Repliées, elles coûtent une seule ligne avant la
-      liste. Le total et les Dots sont les deux nombres de chaque carte.
+      liste, et la première carte reste dans le premier écran. Le total et
+      les Dots sont les deux nombres de chaque carte.
     */}
     <div class="rangee-replis">
       <Glossaire />
@@ -93,12 +99,20 @@ const tranchesAge = [...new Set(classement.map((e) => e.ageClass).filter(Boolean
       </Repli>
     </div>
 
+    {/*
+      LES FILTRES REPLIÉS DERRIÈRE « FILTRES », À TOUTES LES LARGEURS, à la
+      demande de l'auteur. Ouvert, le panneau mesure 392 px sur un téléphone
+      de 375 px, soit 48 % de l'écran : cinq menus et six critères de tri. La
+      recherche et le compteur restent visibles, le bouton dit combien de
+      filtres sont actifs, et les étiquettes sous le compteur disent lesquels.
+    */}
     <InteractiveTable
       recherche="Nom d'un athlète"
       singulier="athlète"
       pluriel="athlètes"
       total={classement.length}
       barreDeTri
+      replier="toujours"
     >
       <Fragment slot="filtres">
         <div class="champ">
@@ -154,10 +168,10 @@ const tranchesAge = [...new Set(classement.map((e) => e.ageClass).filter(Boolean
 
     <p class="note">
       La coche à côté d'un nom signale un compétiteur officiel. La compétition
-      indiquée est celle du meilleur total ; lorsque le meilleur score Dots
-      vient d'une autre compétition, il est souligné en pointillé et mène à
-      celle-ci. Les athlètes invités figurent au classement : leur performance
-      a été réalisée en compétition, devant les mêmes juges.
+      indiquée est celle du meilleur total. Un score Dots souligné en
+      pointillé vient d'une autre compétition, et son lien y mène. Les
+      athlètes invités figurent au classement : leur performance a été
+      réalisée en compétition, devant les mêmes juges.
     </p>
 
     <Partenaire emplacement="classement" />
@@ -165,6 +179,12 @@ const tranchesAge = [...new Set(classement.map((e) => e.ageClass).filter(Boolean
 </BaseLayout>
 
 <style>
-
-
+  /* La précision du chapeau, en petit : elle explique une absence. L'écart
+     au-dessus est la marge du chapeau, voir tokens.css. */
+  .precision {
+    max-width: 62ch;
+    margin: 0;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
 </style>

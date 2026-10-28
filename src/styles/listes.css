@@ -150,9 +150,14 @@
  * Certaines cellules écrivent leur intitulé en dur plutôt que de le laisser au
  * pseudo-élément qui recopie `data-libelle` : c'est le seul moyen d'y glisser
  * une icône, `content` ne sachant pas porter de SVG. En mode tableau il ne
- * sert à rien, la colonne ayant son en-tête, donc il disparaît. */
+ * sert à rien, la colonne ayant son en-tête, donc il disparaît.
+ *
+ * SEULEMENT DANS UNE CELLULE À `data-libelle`, celle qu'un en-tête de colonne
+ * double. Écrite `.liste .intitule`, la règle masquait aussi SQ, DC et SDT
+ * dans les résultats d'une compétition, où aucun en-tête ne les remplace :
+ * 1 238 barres sans leur nom, relevé le 27 octobre 2026. */
 
-.liste .intitule {
+.liste td[data-libelle] .intitule {
   display: none;
 }
 
@@ -257,6 +262,42 @@
   .liste thead th:last-child,
   .liste:not(.liste-perfs) tbody tr > :last-child {
     padding-right: var(--space-6);
+  }
+}
+
+/*
+ * ENTRE 60 ET 80rem, LE REMBOURRAGE SE RESSERRE ENCORE. Le tableau y apparaît
+ * avec à peine la place de ses colonnes, et le cadre, en `overflow: hidden`,
+ * coupait sans bruit ce qui dépassait. Mesuré le 27 octobre 2026 à 960 px
+ * sur les 514 pages : 366 listes coupées, jusqu'à 126 px de l'historique
+ * d'une fiche, soit la colonne « Place » entière, et 43 px de /exterieur/.
+ * Avec 8 px de chaque côté, et 16 aux deux bords, il en reste 17, coupées de
+ * 4 à 8 px dans le rembourrage de la dernière colonne, sans toucher au
+ * texte. À 1 280 px rien ne change.
+ *
+ * Les icônes d'en-tête se retirent dans cette plage : à 960 px, celle du
+ * soulevé de terre touchait la flèche de tri de la colonne voisine. Le
+ * libellé dit déjà le mouvement, l'icône le doublait.
+ */
+@media (min-width: 60rem) and (max-width: 79.999rem) {
+  .liste thead th,
+  .liste:not(.liste-perfs) tbody td,
+  .liste:not(.liste-perfs) tbody th {
+    padding-inline: var(--space-2);
+  }
+
+  .liste thead th svg {
+    display: none;
+  }
+
+  .liste thead th:first-child,
+  .liste:not(.liste-perfs) tbody tr > :first-child {
+    padding-left: var(--space-4);
+  }
+
+  .liste thead th:last-child,
+  .liste:not(.liste-perfs) tbody tr > :last-child {
+    padding-right: var(--space-4);
   }
 }
 
@@ -580,6 +621,13 @@
     display: flex;
     justify-content: flex-end;
     align-items: start;
+  }
+
+  /* Une pastille plus large que la demi-carte passe sur deux lignes plutôt
+     que de déborder : à 320 px, « Développé couché » dépassait de 17 px. Dès
+     375 px, elle tient sur une ligne. */
+  .liste.liste-barres tbody .cellule-annexe .etiquette {
+    white-space: normal;
   }
 
   /* Le bloc compétition reprend sa forme habituelle, nom puis commune, et

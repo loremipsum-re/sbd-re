@@ -450,21 +450,79 @@ const courant = (href: string) =>
         });
       })();
 
+      /*
+       * LES DEUX BOUTONS FLOTTANTS, retour en haut et suggestion, réglés ici
+       * ensemble : ils forment une paire et doivent paraître ensemble.
+       *
+       * Ils recouvraient les chiffres. Mesuré le 27 octobre 2026 : à 375 px,
+       * le total et les Dots de la carte qui passe dessous ; jusqu'à 1 280 px,
+       * où « Proposer » porte son mot, une colonne de chiffres. Rien à 1 440.
+       * Quand ils empiètent sur la colonne du contenu, ils se retirent donc
+       * pendant la descente, qui est la lecture, et reviennent dès que l'on
+       * remonte, qui est le moment où l'on cherche le haut. Ils restent en bas
+       * de page, et tant que l'un d'eux a le focus.
+       *
+       * Une gouttière de 60 px réservée aux chiffres aurait coûté 44 px de
+       * largeur à chaque carte d'un téléphone, et les deux boutons regroupés
+       * recouvriraient encore un coin de carte.
+       */
       (() => {
-        const bouton = document.querySelector('.haut');
-        if (!bouton) return;
+        const boutons = [...document.querySelectorAll('.haut, [data-ouvrir-suggestion]')];
+        if (!boutons.length) return;
+        const colonne = document.querySelector('main .wrap') ?? document.querySelector('main');
 
         // Un seuil généreux : sous 600 px de défilement, le haut de page est
-        // encore à portée de pouce et le bouton ne servirait qu'à masquer du
-        // contenu.
+        // encore à portée de pouce et les boutons ne serviraient qu'à masquer
+        // du contenu.
+        const SEUIL = 600;
+        // Quelques pixels de marge, pour qu'un rebond de fin de défilement ne
+        // fasse pas clignoter les boutons.
+        const PAS = 8;
+
+        /*
+         * Les boutons empiètent-ils sur la colonne du contenu ? Mesuré sur les
+         * boutons eux-mêmes, affichés le temps de la mesure sans être peints :
+         * leur largeur dépend de la feuille de style, « Proposer » perdant son
+         * mot sous 30rem.
+         */
+        let empietent = true;
+        const mesurer = () => {
+          if (!colonne) return;
+          const r = colonne.getBoundingClientRect();
+          const droite = r.right - parseFloat(getComputedStyle(colonne).paddingRight);
+          empietent = boutons.some((b) => {
+            const cache = b.hidden;
+            b.hidden = false;
+            b.style.visibility = 'hidden';
+            const gauche = b.getBoundingClientRect().left;
+            b.style.visibility = '';
+            b.hidden = cache;
+            return gauche < droite;
+          });
+        };
+
+        let repere = window.scrollY;
+        let visibles = false;
         const basculer = () => {
-          bouton.hidden = window.scrollY < 600;
+          const y = window.scrollY;
+          const enBas = y + innerHeight >= document.documentElement.scrollHeight - 2;
+          const focus = boutons.includes(document.activeElement);
+          if (y < SEUIL) visibles = false;
+          else if (!empietent || enBas || focus || y < repere - PAS) visibles = true;
+          else if (y > repere + PAS) visibles = false;
+          if (y < SEUIL || Math.abs(y - repere) > PAS) repere = y;
+          for (const b of boutons) b.hidden = !visibles;
         };
 
         // `passive` indique au navigateur que l'écouteur ne bloquera jamais le
         // défilement : sans lui, il doit attendre l'exécution du script avant
         // de faire bouger la page, ce qui se sent au doigt sur téléphone.
         addEventListener('scroll', basculer, { passive: true });
+        addEventListener('resize', () => {
+          mesurer();
+          basculer();
+        });
+        mesurer();
         basculer();
       })();
     </script>

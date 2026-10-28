@@ -152,12 +152,21 @@ const description =
 
     <h2>Résultats</h2>
 
+    {/*
+      LES FILTRES REPLIÉS SUR TÉLÉPHONE SEULEMENT. Ouvert, le panneau y
+      mesure de 363 à 444 px selon la compétition, soit 45 à 55 % d'un écran
+      de 812 : quatre ou cinq menus et neuf critères de tri. Le bouton
+      « Filtres » les range sous 40rem, comme sur le classement, dont cette
+      liste partage la forme. Au-delà, ils tiennent sur une rangée et restent
+      ouverts.
+    */}
     <InteractiveTable
       recherche="Nom d'un athlète"
       singulier="résultat"
       pluriel="résultats"
       total={resultats.length}
       barreDeTri
+      replier="telephone"
     >
       <Fragment slot="filtres">
         <div class="champ">
@@ -283,9 +292,9 @@ const description =
                       <span class="etiquette secondaire">{sexLabel(r.sex)}</span>
                       <span class="etiquette">{equipmentLabel(equipmentGroup(r.equipment))}</span>
                       <span class="etiquette">
-                        {r.weightClassKg ? `${r.weightClassKg} kg` : 'cat. inconnue'}
+                        {r.weightClassKg ? `${r.weightClassKg} kg` : 'cat. inconnue'}
                       </span>
-                      <span class="etiquette">{nombre(r.bodyweightKg)} kg de corps</span>
+                      <span class="etiquette">{`${nombre(r.bodyweightKg)} kg de corps`}</span>
                       {r.division && <span class="etiquette secondaire">{r.division}</span>}
                       {r.ageClass && <span class="etiquette secondaire">{r.ageClass} ans</span>}
                     </td>
@@ -477,26 +486,63 @@ const description =
     font-variant-numeric: tabular-nums;
   }
 
-  /* Les trois barres du jour, alignées comme un mini-tableau : l intitulé à
-     gauche, la charge à droite, pour que les nombres se superposent d une
-     ligne à l autre. */
+  /*
+   * Les trois barres du jour, alignées comme un mini-tableau : l intitulé, la
+   * charge, l unité, puis la coupe d un record. QUATRE COLONNES PARTAGÉES par
+   * les trois lignes grâce à `subgrid` : les charges s alignent à droite et
+   * les unités tombent les unes sous les autres.
+   *
+   * Sur deux colonnes, l unité et la coupe passaient à la ligne. Une carte
+   * mesurait 211 px à 375 px de large, 190 px sur quatre colonnes (relevé de
+   * l audit du 27 octobre 2026). Sans `subgrid`, chaque ligne garde sa propre
+   * grille de quatre colonnes : seul l alignement des charges se perd.
+   *
+   * 2rem pour l intitulé, « SDT » en demandant 30 : à 2,5rem, une charge
+   * suivie de sa coupe dépassait de 9 px sa colonne à 320 px de large.
+   */
   .barres {
     display: grid;
-    gap: 0.1rem;
+    grid-template-columns: 2rem auto auto 1fr;
+    gap: 0.1rem var(--space-1);
     font-size: var(--step--1);
     color: var(--muted);
   }
 
   .barres > span {
     display: grid;
-    grid-template-columns: 2.5rem auto;
-    gap: var(--space-2);
+    grid-column: 1 / -1;
+    grid-template-columns: 2rem auto auto 1fr;
+    grid-template-columns: subgrid;
     align-items: baseline;
   }
 
   .barres b {
+    justify-self: end;
     color: var(--text);
     font-weight: 700;
+  }
+
+  /* La coupe d'un record ne s'efface jamais. La règle commune
+     `svg { max-width: 100% }` la laissait rétrécir avec sa colonne, jusqu'à
+     0 px sur une carte de 320 px. */
+  .barres :global(.coupe svg) {
+    max-width: none;
+  }
+
+  /*
+   * SOUS 22,5rem, LES TROIS BARRES PRENNENT LA LARGEUR DE LA CARTE, et les
+   * Dots remontent sous le total, à côté des pastilles. Dans une demi-carte
+   * de 320 px, leurs quatre colonnes manquaient de 9 px. La carte garde sa
+   * hauteur, mesuré : les pastilles y occupent déjà deux rangées.
+   */
+  @media (max-width: 22.5rem) {
+    .liste-perfs tbody tr {
+      grid-template-areas:
+        'rang nom nom'
+        'rang contexte total'
+        'rang contexte dots'
+        'rang detail detail';
+    }
   }
 
   .intitule {
@@ -518,6 +564,14 @@ const description =
     .etiquette.secondaire {
       display: inline-block;
     }
+  }
+
+  /* Une pastille plus large que sa colonne passe sur deux lignes plutôt que
+     de déborder : à 320 px, « 101,8 kg de corps » dépassait de 38 px. Des
+     espaces insécables tiennent le nombre avec son unité et « de corps »
+     ensemble : la coupure tombe entre les deux. */
+  .contexte .etiquette {
+    white-space: normal;
   }
 
   .sans-total {

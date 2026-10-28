@@ -954,6 +954,21 @@ const description =
     }
   }
 
+  /* Une date longue tient dans sa demi-carte. Sous 375 px, « 20 septembre
+     2023 » dépassait de sa cellule, de 23 px à 320 : la date descend d'un
+     cran, et reste sur une ligne. La coupe d'un record passe sous sa charge
+     quand les deux ne tiennent pas côte à côte : à 320 px, elle mordait de
+     4 px sur la colonne voisine. */
+  @media (max-width: 23.4rem) {
+    .liste.liste-barres tbody .date {
+      font-size: var(--step--1);
+    }
+
+    .liste.liste-barres tbody .v {
+      white-space: normal;
+    }
+  }
+
 
   .intro-ext {
     color: var(--muted);

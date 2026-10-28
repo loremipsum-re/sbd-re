@@ -70,11 +70,19 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
       </Repli>
     </div>
 
+    {/*
+      LES FILTRES REPLIÉS SUR TÉLÉPHONE SEULEMENT, comme les résultats d'une
+      compétition : trois menus y prennent deux rangées, 317 px de barre à
+      375 px de large. Repliée, la barre en mesure 154, et le premier
+      résultat remonte. Au-delà de 40rem, les trois menus tiennent sur une
+      rangée et restent ouverts.
+    */}
     <InteractiveTable
       recherche="Nom d'un athlète"
       singulier="résultat"
       pluriel="résultats"
       total={resultats.length}
+      replier="telephone"
     >
       <Fragment slot="filtres">
         <div class="champ">

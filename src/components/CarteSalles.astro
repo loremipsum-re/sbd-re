@@ -45,6 +45,7 @@
  */
 import ile from '../data/ile-reunion.json';
 import { placerEtiquettes, projeter, TAILLE_NOM_COMMUNE, type Point } from '../lib/carte';
+import '../styles/filtres.css';
 
 interface Salle {
   nom: string;
@@ -110,15 +111,30 @@ const etiquettesCommunes = placerEtiquettes(
 ---
 
 <div class="carte-zone" data-carte>
-  <div class="outils">
-    <div class="champ">
-      <label for="c-commune">Commune</label>
-      <select id="c-commune" data-filtre-commune>
-        <option value="">Toutes les communes</option>
-        {communes.map((c) => <option value={c}>{c}</option>)}
-      </select>
+  {/*
+    LA BARRE DE FILTRES COMMUNE, celle des listes : le menu dans la grille,
+    puis la rangée d'état, le compteur à gauche et « Réinitialiser » à
+    droite. La forme vit dans src/styles/filtres.css. Le menu unique tient
+    la place de la recherche des autres pages, sur toute la largeur.
+  */}
+  <div class="barre-filtres" data-barre-carte>
+    <div class="grille-champs">
+      <div class="champ">
+        <label for="c-commune">Commune</label>
+        <select id="c-commune" data-filtre-commune>
+          <option value="">Toutes les communes</option>
+          {communes.map((c) => <option value={c}>{c}</option>)}
+        </select>
+      </div>
     </div>
-    <p class="compteur" aria-live="polite" data-compteur>{salles.length} salles</p>
+    <div class="rangee-etat">
+      <p class="compteur" aria-live="polite" data-compteur tabindex="-1">{salles.length} salles</p>
+      {/* `data-vider-commune` : `data-reinitialiser` nomme déjà le bouton
+          « Tout » de la carte, et le script prend le premier du document. */}
+      <button type="button" class="bouton-outil bouton-reinitialiser" data-vider-commune hidden>
+        Réinitialiser
+      </button>
+    </div>
   </div>
 
   <div class="cadre">
@@ -486,6 +502,8 @@ const etiquettesCommunes = placerEtiquettes(
     });
 
     // ---- Filtre par commune ---------------------------------------------
+    const reinitialiser = zone.querySelector<HTMLButtonElement>('[data-vider-commune]');
+
     filtre.addEventListener('change', () => {
       const choix = filtre.value;
       let visibles = 0;
@@ -501,12 +519,26 @@ const etiquettesCommunes = placerEtiquettes(
       for (const t of svg.querySelectorAll<SVGTextElement>('[data-etiquette-commune]')) {
         t.toggleAttribute('hidden', !!choix && t.dataset.commune !== choix);
       }
-      compteur.textContent = `${visibles} salle${visibles > 1 ? 's' : ''}`;
+      // « sur 33 » dès qu'une commune est choisie, comme le compteur des
+      // listes : on voit ce que le filtre a écarté.
+      const mot = `salle${visibles > 1 ? 's' : ''}`;
+      compteur.textContent =
+        visibles === marqueurs.length ? `${visibles} ${mot}` : `${visibles} ${mot} sur ${marqueurs.length}`;
+      filtre.toggleAttribute('data-actif', choix !== '');
+      if (reinitialiser) reinitialiser.hidden = !choix;
 
       const params = new URLSearchParams(location.search);
       if (choix) params.set('commune', choix);
       else params.delete('commune');
       history.replaceState(null, '', params.toString() ? `?${params}` : location.pathname);
+    });
+
+    // « Réinitialiser » revient à toutes les communes, et pose le focus sur
+    // le compteur : le bouton actionné vient de disparaître.
+    reinitialiser?.addEventListener('click', () => {
+      filtre.value = '';
+      filtre.dispatchEvent(new Event('change'));
+      compteur.focus();
     });
 
     const initial = new URLSearchParams(location.search).get('commune');
@@ -515,49 +547,16 @@ const etiquettesCommunes = placerEtiquettes(
       filtre.dispatchEvent(new Event('change'));
     }
 
+    // La barre reste masquée sans JavaScript : son menu n'y ferait rien.
+    zone.querySelector('[data-barre-carte]')?.setAttribute('data-pret', '');
+
     appliquer();
   }
 </script>
 
 <style>
-  .outils {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: end;
-    gap: var(--space-4);
-    margin-bottom: var(--space-4);
-  }
-
-  .champ {
-    display: grid;
-    gap: var(--space-1);
-    min-width: 0;
-  }
-
-  label {
-    font-size: var(--step--1);
-    font-weight: 600;
-    color: var(--muted);
-  }
-
-  select {
-    min-height: var(--cible-min);
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--bg);
-    color: var(--text);
-    font: inherit;
-  }
-
-  .compteur {
-    margin: 0;
-    margin-left: auto;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    color: var(--accent);
-    white-space: nowrap;
-  }
+  /* Le menu des communes et son compteur prennent la barre commune : voir
+     src/styles/filtres.css. */
 
   .cadre {
     display: grid;
