@@ -73,11 +73,11 @@ la mention « à compléter » tant que l'auteur ne les a pas fournis.
 
 | Adresse | Contenu |
 |---|---|
-| `/` | Accueil : top 10 aux Dots, compétitions récentes |
-| `/classement/` | Les athlètes classés, en cartes, filtrable et triable |
-| `/records/` | Grille par sexe et équipement, catégories en lignes |
-| `/categories/` | Les 17 catégories, puis `/categories/hommes/93/` |
-| `/competitions/` | Liste, puis `/competitions/<nom>/<date>/` |
+| `/` | Accueil : top 10 aux Dots, les Dots en chiffre dominant ; records battus dans l'année ; compétitions récentes |
+| `/classement/` | Les athlètes classés, en cartes, filtres et tri derrière le bouton « Filtres » |
+| `/records/` | Grille par sexe et équipement, catégories en lignes, et l'année de chaque record en cours |
+| `/categories/` | Les catégories en pastilles avec leur effectif, les trois plus fournies de chaque sexe en jaune, puis `/categories/hommes/93/` et sa courbe du record |
+| `/competitions/` | Liste, puis `/competitions/<nom>/<date>/` et ses records battus ce jour-là |
 | `/exterieur/` | Résultats obtenus hors de La Réunion |
 | `/athlete/<slug>/` | Une fiche par athlète |
 | `/communaute/` | Page d'attente du classement communauté : son état en une phrase, trois actions, le fonctionnement prévu |
@@ -157,6 +157,13 @@ Points à ne pas casser :
   champ sans émettre `input`.
 - **Après une remise à zéro, le focus ne vise jamais un champ**, qui ferait
   surgir le clavier : le bouton « Filtres », sinon le compteur.
+- **Le tri s'écrit dans l'adresse** (`?tri=nom&sens=croissant`), et une
+  étiquette « Trié par … » apparaît sous le compteur dès que l'ordre affiché
+  diffère de l'ordre servi, avec un bouton qui y ramène. Décision de l'auteur
+  du 28 octobre 2026 : un tri caché renumérotait la liste sans le dire. Aucune
+  page ne déclare son tri par défaut, le script reconnaît la colonne qui
+  reproduit l'ordre du HTML. Une page qui change l'ordre servi change donc
+  aussi le libellé du bouton, sans rien d'autre à faire.
 - **Un état choisi porte l'aplat `--accent-fill` sous un filet `--accent`**,
   jamais l'aplat seul. En clair, l'aplat ne se détache de son voisin qu'à
   1,39:1, sous les 3:1 du critère 1.4.11 ; le filet tient 5,34:1.
@@ -196,6 +203,23 @@ et une entrée dans l'aiguillage. Vérifier comme les autres : débordement par
 élément, contraste calculé, captures à 375 et 1 280 px dans les deux thèmes,
 coût vertical mesuré contre la version précédente, chiffres recomptés par un
 script indépendant.
+
+**Les visuels de données** suivent le même contrat, hors du cadre des
+infographies, parce qu'ils sont la donnée elle-même et restent dépliés :
+
+- `CourbeRecord.astro`, l'escalier du record au total en raw sur chaque page
+  de catégorie, à partir de trois dates de record (`escalierLisible()`).
+  L'axe s'arrête au dernier jour où le record était en jeu
+  (`derniereMiseEnJeu()`). La liste détaillée, `ChronologieRecord.astro`, se
+  replie dessous et sert de version texte.
+- `GrilleRecords.astro`, les records en cours rangés par athlète et par
+  mouvement, avec l'écart au record de la veille : l'accueil y montre les
+  records battus dans l'année, chaque compétition les siens.
+  `recordsEnCours()` distingue un record battu d'une première marque, qui n'a
+  rien battu.
+- `AnneesRecords.astro`, l'année de chaque record en cours, sur `/records/`.
+- `RankingTable` accepte `dominante="dots"`, que seul l'accueil emploie : son
+  top 10 est trié aux Dots, le chiffre dominant doit l'être aussi.
 
 ## Partage sur les réseaux sociaux
 
@@ -354,7 +378,8 @@ l'auteur du 27 octobre 2026 : `definition` sert au glossaire repliable,
 est souligné, par page et par article. Dans une page, poser
 `<Terme cle="…">mot</Terme>` en prose seulement, jamais dans un titre, un lien,
 un tableau, une étiquette ou un bouton. Les articles sont soulignés seuls par
-le greffon `lib/lexique-markdown.ts` ; une empreinte du
+le greffon `lib/lexique-markdown.ts`, chapeau compris depuis la décision de
+l'auteur du 28 octobre 2026 ; une empreinte du
 glossaire calculée dans `astro.config.mjs` vide leur cache quand il change. Le
 comportement vit dans `lib/bulles-lexique.ts`. Balisage à ne pas casser :
 `span.lexique` insécable, qui contient la bulle (`span.lexique-bulle`,
@@ -430,7 +455,15 @@ $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";"
 - Le logo et le système de design, pour activer les OpenGraph.
 - Google Search Console : la propriété est en cours de validation.
 
-**Trois arbitrages ouverts**, sur lesquels l'auteur ne s'est pas prononcé :
+- **Les visites par catégorie, relevées dans Clarity.** Les catégories mises
+  en avant sur `/categories/` sont aujourd'hui les plus fournies. Dès que
+  l'auteur fournit les visites, changer le critère de `plusFournies()`.
+- **Des définitions pour le lexique** : FA/PL, DC/BP, FFForce, IPF, EPF,
+  fédération, invité, médaille, faute de source dans le dépôt.
+- **Un essai sur un vrai iPhone** : le zoom des champs, le toucher des termes
+  du lexique et la hauteur du menu n'ont été mesurés que dans Chromium.
+
+**Deux arbitrages ouverts**, sur lesquels l'auteur ne s'est pas prononcé :
 
 1. **Médailles de compétition.** Elles sont aujourd'hui décernées par catégorie
    de poids, ce qui donne 41 médailles sur 54 résultats pour une compétition
@@ -439,8 +472,18 @@ $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";"
 2. **Buy Me a Coffee.** Le bouton est fait maison, sans script tiers. L'auteur
    avait fourni le script officiel, écarté pour la même raison que Google Fonts
    en CDN.
-3. **Nom de l'onglet Extérieur.** L'auteur proposait « International » ou
-   « France ».
+
+Le nom de l'onglet Extérieur est tranché : « Hors de l'île » dans le menu,
+choix de l'auteur du 27 octobre 2026.
+
+**Défauts connus, à reprendre**
+
+- Entre 60 et 80rem, la coupe d'un record déborde sur la colonne voisine de
+  l'historique d'une fiche, jusqu'à 18 px. Le tableau de neuf colonnes manque
+  de place : cartes jusqu'à 80rem, colonne Format compacte ou date courte,
+  la solution reste à choisir.
+- La carte de partenaire de `/classement/` tombe en fin de liste, à environ
+  55 écrans sur téléphone. Conforme aux règles, peu vue.
 
 **Audit ergonomique iOS : fait le 2 août 2026**
 
@@ -458,7 +501,7 @@ Ce qui a été corrigé :
 
 - **Cibles tactiles.** Aucun contrôle du site n'atteignait 44 px. La règle vit
   maintenant dans `tokens.css`, jeton `--cible-min`, avec trois exclusions
-  documentées sur place.
+  documentées sur place, quatre depuis le lexique souligné.
 - **Rayons imbriqués.** Un seul écart réel, les liens du menu déroulant.
 - **États vides.** `EtatVide.astro` remplace les trois impasses par un titre,
   une explication, et l'action de sortie quand elle existe.
@@ -473,9 +516,10 @@ démenti le diagnostic :
   désormais documentée telle qu'elle est, en 4 points avec le pas de 8 préféré.
 - **`/comparer/` avait déjà son état vide**, complet, avec action de sortie.
 
-Reste ouvert : les jetons `--succes`, `--alerte` et `--danger` sont posés et
-mesurés mais sans usage, en attente des formulaires de la partie communauté.
-Les niveaux de texte restent à deux, faute d'un besoin réel pour un troisième.
+Les jetons `--succes`, `--alerte` et `--danger`, posés et mesurés pour les
+formulaires de la partie communauté, servent déjà aux pages d'accessibilité,
+des mises à jour, des partenariats et des actualités. Les niveaux de texte
+restent à deux, faute d'un besoin réel pour un troisième.
 
 Hors périmètre : SF Pro, sous licence Apple et inutilisable sur le web, le
 retour haptique sans équivalent, et les conventions d'application que sont les
