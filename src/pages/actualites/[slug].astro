@@ -1,6 +1,7 @@
 ---
 import Icone from '../../components/Icone.astro';
 import Partenaire from '../../components/Partenaire.astro';
+import Terme from '../../components/Terme.astro';
 import InfographieArticle from '../../components/infographies/InfographieArticle.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import {
@@ -11,6 +12,7 @@ import {
   verifierCompetitions,
 } from '../../lib/actualites';
 import { dateLongue } from '../../lib/format';
+import { chapeauDecoupe } from '../../lib/lexique-markdown';
 import { libelleEvent } from '../../lib/meets';
 import { render } from 'astro:content';
 
@@ -21,7 +23,18 @@ export async function getStaticPaths() {
 }
 
 const { article } = Astro.props;
-const { Content } = await render(article);
+const { Content, remarkPluginFrontmatter } = await render(article);
+
+/*
+ * LE CHAPEAU SOULIGNÉ, découpé par le greffon des articles dans le même
+ * passage que le corps : un terme du chapeau y est souligné, une seule fois
+ * pour tout l'article. La page pose un <Terme> là où le découpage le dit.
+ * Voir lib/lexique-markdown.ts.
+ *
+ * La description reste du texte brut partout ailleurs : balise description,
+ * partage, liste des actualités, flux RSS.
+ */
+const chapeau = chapeauDecoupe(remarkPluginFrontmatter, article.data.description, article.id);
 
 const meet = competitionDe(article);
 const lies = await articlesLies(article);
@@ -41,7 +54,7 @@ const jour = article.data.date.toISOString().slice(0, 10);
           {article.data.brouillon && <span class="brouillon">Brouillon</span>}
         </p>
         <h1>{article.data.titre}</h1>
-        <p class="chapeau">{article.data.description}</p>
+        <p class="chapeau">{chapeau.map((m) => (typeof m === 'string' ? m : <Terme cle={m.cle}>{m.mot}</Terme>))}</p>
       </header>
 
       {
