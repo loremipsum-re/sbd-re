@@ -37,9 +37,15 @@ export function points(value: number | null | undefined): string {
   return value.toFixed(1).replace('.', ',');
 }
 
-/** « 2024-12-08 » → « 8 décembre 2024 » */
+/**
+ * « 2024-12-08 » → « 8 décembre 2024 » ; « 2020-02-01 » → « 1er février 2020 ».
+ *
+ * LE PREMIER DU MOIS S'ÉCRIT « 1er » en français, et Intl l'ignore : il
+ * rendait « 1 février 2020 », sur 26 fiches d'athlète et deux pages de
+ * compétition. Le jour est le premier nombre de la chaîne, suivi d'une espace.
+ */
 export function dateLongue(iso: string): string {
-  return DATE_LONGUE.format(new Date(`${iso}T12:00:00Z`));
+  return DATE_LONGUE.format(new Date(`${iso}T12:00:00Z`)).replace(/^1(?=\s)/, '1er');
 }
 
 /** « 2024-12-08 » → « 08/12/2024 » */

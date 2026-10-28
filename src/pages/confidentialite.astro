@@ -25,12 +25,19 @@ import { nombreAthletes } from '../lib/data';
       {' '}<a href="mailto:hello@loremipsum.re">hello@loremipsum.re</a>.
     </p>
 
+    {/*
+      UNE INFORMATION PAR PHRASE, ET LA FORME AFFIRMATIVE dès que le sens le
+      permet. La page empilait jusqu'à trois négations par phrase (« ni
+      publiées, ni cédées, ni utilisées ») et quatre phrases dépassaient 25
+      mots, dont une de 37. Les engagements sont les mêmes, mot pour mot quand
+      c'est possible.
+    */}
     <h2>Ce que le site fait sans votre accord</h2>
     <p>
-      <strong>Rien.</strong> Aucun cookie n'est déposé, aucune requête n'est
-      envoyée à un service tiers tant que vous n'avez pas accepté la mesure
-      d'audience. Les polices de caractères sont hébergées par le site
-      lui-même, précisément pour éviter d'avertir un tiers de votre visite.
+      <strong>Rien.</strong> Le site attend votre accord avant de déposer un
+      cookie ou de contacter un service tiers. Les polices de caractères sont
+      hébergées par le site lui-même, précisément pour éviter d'avertir un
+      tiers de votre visite.
     </p>
     <p>
       Un espace de stockage local conserve deux préférences techniques : le
@@ -68,19 +75,19 @@ import { nombreAthletes } from '../lib/data';
     <h3>Ce qui n'est pas collecté</h3>
     <p>
       Le contenu que vous saisissez dans un champ de formulaire est masqué par
-      défaut par Clarity. Le site ne comporte ni compte, ni paiement : les deux
-      seuls formulaires sont décrits plus bas, et ce que vous y écrivez reste
-      invisible à la mesure d'audience.
+      défaut par Clarity. Le site se consulte sans compte et gratuitement. Ses
+      deux formulaires sont décrits plus bas. Leur contenu reste invisible à la
+      mesure d'audience.
     </p>
 
     <h3>Où vont ces données</h3>
     <p>
       Elles sont traitées par <strong>Microsoft Corporation</strong>, qui peut
-      les transférer hors de l'Union européenne. Le détail de leurs pratiques et
-      de leur durée de conservation figure dans la
+      les transférer hors de l'Union européenne. Leurs pratiques et leurs
+      durées de conservation sont détaillées dans la
       {' '}<a href="https://privacy.microsoft.com/fr-fr/privacystatement" rel="noopener">
         déclaration de confidentialité de Microsoft
-      </a> et sur la page dédiée à
+      </a>, et sur la page dédiée à
       {' '}<a href="https://learn.microsoft.com/fr-fr/clarity/setup-and-installation/faq" rel="noopener">
         Clarity
       </a>.
@@ -124,12 +131,12 @@ import { nombreAthletes } from '../lib/data';
       organisatrices.
     </p>
     <p>
-      <strong>Vous figurez sur ce site et souhaitez ne plus y apparaître ?</strong>{' '}
+      <strong>Vous figurez sur ce site et souhaitez en être retiré ?</strong>{' '}
       La demande est à adresser à
       {' '}<a href="https://www.openpowerlifting.org" rel="noopener">OpenPowerlifting</a>,
-      qui détient la source. SBD.re se contente de reprendre ce qu'ils publient :
-      une modification chez eux se répercute ici à la mise à jour suivante, tandis
-      qu'un retrait effectué ici seulement serait annulé au mois suivant.
+      qui détient la source. SBD.re reprend ce qu'OpenPowerlifting publie. Une
+      correction faite à la source apparaît ici à la mise à jour suivante. Un
+      retrait fait ici seulement serait annulé le mois suivant.
     </p>
     <p>
       Vous pouvez également écrire à
@@ -145,15 +152,14 @@ import { nombreAthletes } from '../lib/data';
     </p>
     <p>
       Ces informations servent uniquement à vous répondre. Elles arrivent par
-      courriel dans la boîte du site, ne sont ni publiées, ni cédées, ni
-      utilisées pour vous démarcher. Elles sont conservées le temps de traiter
-      l'échange, puis supprimées.
+      courriel dans la boîte du site, et restent privées. Elles sont conservées
+      le temps de traiter l'échange, puis supprimées.
     </p>
     <p>
       Pour limiter les envois automatisés, le serveur retient temporairement
       votre adresse IP afin de compter les messages reçus. Cette trace disparaît
-      au bout d'une heure et ne sert à rien d'autre. Aucun service extérieur
-      n'intervient : ni CAPTCHA, ni filtre tiers.
+      au bout d'une heure et ne sert à rien d'autre. Le serveur du site fait ce
+      compte lui-même, sans service extérieur.
     </p>
 
     {/*
@@ -164,10 +170,10 @@ import { nombreAthletes } from '../lib/data';
     */}
     <h2>La boîte à suggestions</h2>
     <p>
-      La page <a href="/suggestions/">Proposer une amélioration</a>, également
-      accessible par le bouton flottant présent sur chaque page, demande le
-      moins possible : la nature de la demande, votre message, et deux champs
-      facultatifs, la page concernée et votre adresse électronique.
+      La page <a href="/suggestions/">Proposer une amélioration</a> s'ouvre
+      aussi par le bouton flottant de chaque page. Elle demande la nature de la
+      demande et votre message. Deux champs restent facultatifs : la page
+      concernée et votre adresse électronique.
     </p>
     <p>
       <strong>Laissez l'adresse vide et la suggestion est anonyme.</strong>
@@ -175,14 +181,14 @@ import { nombreAthletes } from '../lib/data';
     </p>
     <p>
       Chaque suggestion est <strong>enregistrée dans un fichier sur le serveur
-      du site</strong>, en plus d'être envoyée par courriel. La raison est
-      simple : une boîte de réception se trie et s'efface, alors qu'une idée
-      mérite d'être retrouvée des mois plus tard. Ce fichier n'est pas
-      accessible depuis le web.
+      du site</strong>, en plus d'être envoyée par courriel. Une boîte de
+      réception se trie et s'efface, alors qu'une idée mérite d'être retrouvée
+      des mois plus tard. Ce fichier reste inaccessible depuis le web.
     </p>
-    <p>Y figurent la date, la nature, la page concernée, votre message, et votre
-      adresse si vous l'avez donnée. N'y figurent ni votre adresse IP, ni votre
-      navigateur, ni aucun identifiant de visite : rien ne permet de relier deux
+    <p>
+      Y figurent la date, la nature, la page concernée, votre message, et votre
+      adresse si vous l'avez donnée. Votre adresse IP, votre navigateur et tout
+      identifiant de visite en sont exclus. Rien ne permet donc de relier deux
       suggestions à la même personne.
     </p>
     <p>
@@ -209,10 +215,10 @@ import { nombreAthletes } from '../lib/data';
       */}
       <li>
         Aucune régie publicitaire. Les partenaires du site sont des images et
-        des liens hébergés ici : ils ne déposent aucun script et ne voient
-        passer aucun visiteur.
+        des liens hébergés ici. Ils fonctionnent sans script, et les visites
+        leur restent invisibles.
       </li>
-      <li>Aucune revente ni partage de données à des fins commerciales.</li>
+      <li>Aucune donnée vendue ou partagée à des fins commerciales.</li>
       <li>Aucun profilage, aucune décision automatisée.</li>
       <li>Aucun compte utilisateur, aucun mot de passe, aucune newsletter.</li>
     </ul>

@@ -166,12 +166,14 @@ const tranchesAge = [...new Set(classement.map((e) => e.ageClass).filter(Boolean
       <RankingTable entries={classement} id="classement" />
     </InteractiveTable>
 
+    {/* Une information par phrase. Les deux-points de la dernière
+        annonçaient une explication, et non une donnée ou une liste. */}
     <p class="note">
       La coche à côté d'un nom signale un compétiteur officiel. La compétition
       indiquée est celle du meilleur total. Un score Dots souligné en
       pointillé vient d'une autre compétition, et son lien y mène. Les
-      athlètes invités figurent au classement : leur performance a été
-      réalisée en compétition, devant les mêmes juges.
+      athlètes invités figurent au classement. Leur performance a été réalisée
+      en compétition, devant les mêmes juges.
     </p>
 
     <Partenaire emplacement="classement" />

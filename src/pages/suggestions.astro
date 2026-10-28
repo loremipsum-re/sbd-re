@@ -27,9 +27,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   <div class="wrap page">
     <header class="entete-page">
       <h1>Proposer une amélioration</h1>
+      {/* Le chapeau dit ce que la page attend, à l'impératif, sans les
+          deux-points qui annonçaient une chute plutôt qu'une liste. */}
       <p class="chapeau">
-        Une donnée qui cloche, une page qui résiste, une idée qui manque : tout
-        se dit ici. Le message suffit, l'adresse électronique reste facultative.
+        Signalez une donnée fausse ou une page qui fonctionne mal, ou proposez
+        une idée. Le message suffit, l'adresse électronique reste facultative.
       </p>
     </header>
 
@@ -51,10 +53,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
         LE COÛT EST MESURÉ. Dépliée, la figure mesure environ 2 140 px de haut
         à 375 px de large, et 1 490 px à 1 280 px : elle séparerait le bouton
-        d'envoi de la section « Autrement » de plusieurs écrans. Repliée, elle
+        d'envoi de la section GitHub de plusieurs écrans. Repliée, elle
         tient sur la ligne d'une pastille, celle du glossaire et des pages de
-        données. Le bouton d'envoi ne bouge pas, « Autrement » descend de 68 px
-        aux deux largeurs.
+        données. Le bouton d'envoi ne bouge pas, la section GitHub descend de
+        68 px aux deux largeurs.
 
         La classe du message sans JavaScript s'appelait `.repli`, comme la
         pastille de tokens.css. Elle est renommée pour que les deux ne se
@@ -67,8 +69,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </div>
     </section>
 
+    {/* Le titre dit ce que la section offre. « Autrement » ne disait pas
+        quoi, et seul le paragraphe nommait GitHub. */}
     <section class="autrement">
-      <h2>Autrement</h2>
+      <h2>Suivre une demande sur GitHub</h2>
       <p>
         Le code du site est public. Qui a déjà un compte GitHub peut ouvrir une
         demande et suivre son traitement sur{' '}

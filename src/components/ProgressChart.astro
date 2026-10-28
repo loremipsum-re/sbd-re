@@ -414,10 +414,11 @@ const aDeuxSeries = locaux.length > 0 && exterieurs.length > 0;
       {/*
         Détail du point choisi. `aria-live` : il change sans rechargement, il
         doit donc s'annoncer. Le texte de départ dit quoi faire, plutôt que de
-        laisser une zone vide dont on ignore l'usage.
+        laisser une zone vide dont on ignore l'usage. « Choisissez » et non
+        « Touchez » : la phrase s'affiche aussi à la souris et au clavier.
       */}
       <p class="detail" data-detail-point aria-live="polite">
-        Touchez un point de la courbe pour voir le détail de la compétition.
+        Choisissez un point de la courbe pour voir le détail de la compétition.
       </p>
 
       <figcaption>

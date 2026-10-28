@@ -50,49 +50,56 @@ const CONTROLES: ControleAudit[] = [
     critere: 'WCAG 2.2, critère 1.3.1',
     resultat: 'ok',
     detail:
-      "Un seul titre de premier niveau par page, et aucun niveau sauté dans la descente. Les tableaux ont leurs en-têtes de colonne et de ligne, ce qui permet à un lecteur d'écran d'annoncer « Squat, 165 kg » plutôt que « 165 ».",
+      "Un seul titre de premier niveau par page, et aucun niveau sauté dans la descente. Les tableaux ont leurs en-têtes de colonne et de ligne. Un lecteur d'écran annonce ainsi « Squat, 165 kg », intitulé compris.",
   },
   {
     titre: 'Nom des liens, des boutons et des images',
     critere: 'WCAG 2.2, critères 2.4.4 et 1.1.1',
     resultat: 'ok',
     detail:
-      "Aucun lien ni bouton sans intitulé lisible. Les icônes qui accompagnent un mot sont masquées aux lecteurs d'écran, pour éviter d'entendre deux fois la même chose ; celles qui portent une information ont un texte de remplacement.",
+      "Chaque lien et chaque bouton porte un intitulé lisible. Une icône qui accompagne un mot est masquée aux lecteurs d'écran, qui entendent ainsi le mot une seule fois. Une icône porteuse d'information a un texte de remplacement.",
   },
   {
     titre: 'Étiquettes de formulaire',
     critere: 'WCAG 2.2, critère 3.3.2',
     resultat: 'ok',
     detail:
-      "Chaque champ des deux formulaires du site a son étiquette liée, et non un simple texte d'invite qui disparaît à la saisie.",
+      "Chaque champ des deux formulaires du site a son étiquette liée, qui reste visible pendant la saisie.",
   },
   {
     titre: 'Taille des cibles',
     critere: 'WCAG 2.2, critère 2.5.8, niveau AA',
     resultat: 'corrige',
+    /*
+     * REMESURÉ LE 28 OCTOBRE 2026, sur 26 pages, à 375 et 1 280 px, dans les
+     * deux thèmes : 1 328 commandes. « Les autres commandes visent 44 px »
+     * était faux, le logo mesurait 26 px. Corrigé depuis, il en mesure 44.
+     * Restent les points de la courbe et les marqueurs de la carte, mesurés
+     * de 320 à 375 px de large, et que la phrase nomme désormais.
+     */
     detail:
-      "Les en-têtes de colonne cliquables mesuraient 23 px de haut, un pixel sous le minimum de 24. Corrigé le jour de l'audit. Les autres commandes du site visent 44 px, au-delà de ce qu'exige le niveau AA.",
+      "Les en-têtes de colonne cliquables mesuraient 23 px de haut, un pixel sous le minimum de 24. Corrigé le jour de l'audit. Remesuré le 28 octobre 2026 : les autres boutons, les champs, les pastilles et les liens de l'en-tête mesurent 44 px au moins. Le niveau AA en demande 24. Sur téléphone, les points de la courbe de progression mesurent de 19 à 22 px. Les marqueurs de la carte des salles mesurent de 14 à 17 px. L'historique de chaque fiche et la liste des salles en donnent le contenu en texte.",
   },
   {
     titre: 'Affichage à 320 px de large',
     critere: 'WCAG 2.2, critère 1.4.10',
     resultat: 'ok',
     detail:
-      "À la largeur d'un petit téléphone, ou d'un écran agrandi quatre fois, aucune page ne demande de défilement horizontal : les tableaux se replient en cartes plutôt que de déborder.",
+      "À la largeur d'un petit téléphone, ou d'un écran agrandi quatre fois, chaque page tient sans défilement horizontal. Les tableaux se replient en cartes.",
   },
   {
     titre: 'Navigation au clavier',
     critere: 'WCAG 2.2, critères 2.1.1 et 2.4.7',
     resultat: 'ok',
     detail:
-      "Un lien d'évitement ouvre chaque page. Le focus reste visible partout, par un contour de 3 px. Les points de la courbe de progression se parcourent aux flèches depuis un seul arrêt de tabulation, pour ne pas imposer quarante-huit arrêts avant la suite de la page.",
+      "Un lien d'évitement ouvre chaque page. Le focus reste visible partout, par un contour de 3 px. Les points de la courbe de progression se parcourent aux flèches. La touche Tab franchit ainsi la courbe en un seul arrêt, quel que soit le nombre de points.",
   },
   {
     titre: 'Rôles et états annoncés',
     critere: 'WCAG 2.2, critère 4.1.2',
     resultat: 'corrige',
     detail:
-      "La courbe de progression se déclarait image tout en contenant des points cliquables, deux affirmations contradictoires qui rendaient ces points invisibles aux technologies d'assistance. Corrigé le 22 septembre 2026 : elle devient un groupe dès que le script rend ses points manipulables.",
+      "La courbe de progression se déclarait image tout en contenant des points cliquables, deux affirmations contradictoires qui rendaient ces points invisibles aux technologies d'assistance. Corrigé le 22 septembre 2026. Elle devient un groupe dès que le script rend ses points manipulables.",
   },
   {
     titre: 'Mouvement et animation',
@@ -117,7 +124,7 @@ const LIMITES: LimiteAudit[] = [
   {
     titre: 'Aucun test avec de vraies personnes.',
     suite:
-      " Un audit à la mesure dit qu'une page respecte des règles ; il ne dit pas qu'elle s'utilise bien avec un lecteur d'écran au quotidien. C'est la limite principale de cette page.",
+      " Un audit à la mesure dit qu'une page respecte des règles. L'usage quotidien avec un lecteur d'écran demande d'autres tests. C'est la limite principale de cette page.",
     resume: 'Tests avec de vraies personnes',
   },
   {
@@ -129,7 +136,7 @@ const LIMITES: LimiteAudit[] = [
   {
     titre: 'La carte des salles',
     suite:
-      " montre des positions sur un fond dessiné. Les salles sont également listées sous la carte, en texte, ce qui donne la même information sans le visuel, mais cette liste n'a pas été éprouvée au lecteur d'écran.",
+      " montre des positions sur un fond dessiné. Une liste en texte, sous la carte, donne la même information. Elle reste à éprouver au lecteur d'écran.",
     resume: "Liste des salles au lecteur d'écran",
   },
   {
@@ -155,15 +162,21 @@ const LIMITES: LimiteAudit[] = [
       </p>
     </header>
 
+    {/*
+      UN TITRE QUI DIT LE SUJET, ET UNE INFORMATION PAR PHRASE. L'ancien
+      titre opposait ce que la page est à ce qu'elle n'est pas, et la phrase
+      sur la conformité comptait 34 mots et trois négations. Le nombre de
+      pages vient de la liste ci-dessus.
+    */}
     <section class="bloc">
-      <h2>Ce que cette page est, et ce qu'elle n'est pas</h2>
+      <h2>Portée de cet audit</h2>
       <p class="texte">
-        Elle rend compte d'un <strong>audit mené par la mesure</strong> le {DATE_AUDIT},
-        sur huit pages couvrant chaque gabarit du site. Elle ne déclare aucune
-        conformité officielle : le référentiel français impose une déclaration
-        aux organismes publics et aux grandes entreprises, ce site n'entre dans
-        aucune de ces catégories, et aucun audit certifié n'a été commandé.
-        Annoncer une conformité qui n'a pas été auditée vaudrait moins que rien.
+        Cette page rend compte d'un <strong>audit interne, mené par la
+        mesure</strong> le {DATE_AUDIT}, sur {PAGES_AUDITEES.length}&nbsp;pages
+        couvrant chaque gabarit du site. Le référentiel français impose une
+        déclaration de conformité aux organismes publics et aux grandes
+        entreprises. Ce site est hors de ce champ. Aucun audit certifié n'a
+        été commandé.
       </p>
       <p class="texte">
         L'objectif visé est le niveau AA des WCAG 2.2, référentiel international
@@ -174,11 +187,10 @@ const LIMITES: LimiteAudit[] = [
     <section class="bloc">
       <h2>Comment la vérification a été faite</h2>
       <p class="texte">
-        Tout a été mesuré dans un navigateur, sur les pages réelles, et non
-        estimé à la lecture du code. Les contrastes sont calculés sur la couleur
-        effectivement composée sous chaque texte, transparences comprises, ce qui
-        change le résultat : un aplat posé à 5 % sur un fond sombre donne une
-        valeur très différente de celle qu'on lirait dans la feuille de style.
+        Tout a été mesuré dans un navigateur, sur les pages réelles. Les
+        contrastes sont calculés sur la couleur réellement composée sous chaque
+        texte, transparences comprises. Un aplat posé à 5 % sur un fond sombre
+        donne ainsi une autre valeur que celle de la feuille de style.
       </p>
       <p class="texte">Les pages passées au crible :</p>
       <ul class="pages">
@@ -191,8 +203,8 @@ const LIMITES: LimiteAudit[] = [
         }
       </ul>
       <p class="note">
-        Aucun outil d'analyse tiers n'a été chargé sur le site pour cet audit :
-        les scripts de mesure ont été exécutés depuis le navigateur, puis jetés.
+        Les scripts de mesure ont été exécutés depuis le navigateur, puis
+        jetés. Aucun outil d'analyse tiers n'a été chargé sur le site.
       </p>
     </section>
 
@@ -233,10 +245,7 @@ const LIMITES: LimiteAudit[] = [
 
     <section class="bloc">
       <h2>Ce qui n'a pas été vérifié</h2>
-      <p class="texte">
-        Dire ce qu'on n'a pas fait vaut mieux que de laisser croire qu'on a tout
-        fait.
-      </p>
+      <p class="texte">Voici les limites de cet audit.</p>
       <ul class="limites">
         {
           LIMITES.map((l) => (
@@ -252,11 +261,11 @@ const LIMITES: LimiteAudit[] = [
     <section class="bloc">
       <h2>Signaler un obstacle</h2>
       <p class="texte">
-        Si une page vous résiste, la page{' '}
-        <a href="/suggestions/">Proposer une amélioration</a> est faite pour ça,
-        sans compte à créer et sans adresse obligatoire. Décrivez ce que vous
-        tentiez de faire et avec quel outil : c'est le genre de signalement qui
-        corrige le plus vite.
+        Une page vous résiste ? Signalez-le depuis la page{' '}
+        <a href="/suggestions/">Proposer une amélioration</a>. Le message
+        suffit, l'adresse électronique reste facultative. Décrivez ce que vous
+        tentiez de faire, et avec quel outil. Un signalement aussi précis se
+        traite le plus vite.
       </p>
       <p class="note">
         Les corrections apportées figurent sur la page{' '}
