@@ -1,0 +1,551 @@
+---
+/**
+ * La courbe en escalier d'un record, calculée au build, en HTML et en SVG.
+ *
+ * UN ESCALIER, ET NON UNE LIGNE BRISÉE. Un record tient tel quel jusqu'au jour
+ * où il tombe : il reste à plat, puis monte d'un coup. Une ligne tirée d'un
+ * record au suivant inventerait une hausse continue entre deux compétitions.
+ * La longueur de chaque palier est la durée du record, et se lit sans calcul.
+ *
+ * L'AXE DU TEMPS PART DU 1er JANVIER de la première année et s'arrête au
+ * dernier jour où le record était en jeu, lu dans les données par la page. Les
+ * années forment des bandes, une sur deux teintée : chaque marche se date d'un
+ * coup d'œil, sans quadrillage vertical.
+ *
+ * LE TEXTE RESTE DU TEXTE. Le tracé vit dans un SVG étiré à la largeur du
+ * cadre, sans proportions fixes, et `vector-effect` garde ses traits à 2 px.
+ * Les graduations, les années, les points et l'étiquette du record actuel sont
+ * des éléments HTML posés en pourcentage par-dessus : leur taille suit les
+ * jetons du site à toutes les largeurs. Un SVG mis à l'échelle d'un bloc,
+ * comme celui de ProgressChart, réduisait ses libellés à 9 px à 320 px.
+ *
+ * UNE IMAGE, ET RIEN À MANIPULER. Aucun point n'est un lien : la liste qui suit
+ * la courbe sur la page porte les liens, les dates exactes et les écarts.
+ * Le dessin est donc masqué aux lecteurs d'écran, et la légende de la figure,
+ * visible de tous, le résume en phrases.
+ */
+import { escalierLisible, type EtapeRecord } from '../lib/records';
+import { dateLongue, nombre } from '../lib/format';
+
+interface Props {
+  /** Les records successifs, du plus ancien à l'actuel, sur trois dates au moins. */
+  etapes: EtapeRecord[];
+  /** Dernier jour où le record était en jeu : la courbe s'arrête là. */
+  fin: string;
+  /** L'équipement, tel qu'il s'écrit dans une phrase : « raw ». */
+  equipement: string;
+}
+
+const { etapes, fin, equipement } = Astro.props;
+
+/* Une seule marche ne fait pas un escalier. La page vérifie la règle avant
+   d'appeler la courbe, et la génération s'arrête ici si un autre appel
+   l'oubliait. Voir escalierLisible() dans lib/records.ts. */
+if (!escalierLisible(etapes)) {
+  throw new Error(
+    `Courbe du record : ${etapes.length} étape(s), il faut trois dates de record au moins.`,
+  );
+}
+
+const JOUR = 86_400_000;
+const instant = (iso: string) => Date.parse(`${iso}T12:00:00Z`);
+const arrondi = (n: number) => Number(n.toFixed(2));
+/* Nombre et unité ne se séparent jamais d'une ligne à l'autre. */
+const kg = (v: number) => `${nombre(v)} kg`;
+
+const premiere = etapes[0];
+const actuelle = etapes[etapes.length - 1];
+
+/* ---------- Le temps ---------- */
+
+const anneeDebut = Number(premiere.date.slice(0, 4));
+const debut = instant(`${anneeDebut}-01-01`);
+/* Trente jours au moins, pour qu'une histoire tenue en un seul jour garde une
+   largeur. Le cas n'existe pas dans les données, la division par zéro si. */
+const finAxe = Math.max(instant(fin), instant(actuelle.date), debut + 30 * JOUR);
+const x = (t: number) => ((t - debut) / (finAxe - debut)) * 100;
+const anneeFin = new Date(finAxe).getUTCFullYear();
+
+/*
+ * LES ANNÉES, PLACÉES PAR LA MESURE. Une étiquette d'année mesure 4ch, ses
+ * chiffres étant tabulaires : 30 px à 320 px de large, 32 px au-delà. La place
+ * se calcule à la largeur la plus étroite de chaque format, où elle manque le
+ * plus. Au-dessus, l'écart entre deux années grandit et leur étiquette garde
+ * sa taille : ce qui tient au plus étroit tient partout.
+ *
+ * Largeurs du tracé, mesurées dans le navigateur : 209 px à 320 px de large,
+ * 512 px à 640 px, le seuil du second format. Les valeurs retenues sont un peu
+ * en dessous, par prudence. Elles valent pour des graduations de trois
+ * chiffres, le cas de tous les totaux de l'île. Un total de 1 000 kg écrirait
+ * « 1 000 » sur cinq caractères et rognerait le tracé d'environ 15 px : il
+ * faudrait alors revoir ces deux valeurs.
+ */
+const FORMATS = { etroit: 204, large: 506 };
+const LARGEUR_ANNEE = 32;
+const ECART_ANNEES = 6;
+
+interface Annee {
+  annee: number;
+  /** Milieu de la bande, en pourcentage du tracé. */
+  centre: number;
+  /** Début et largeur de la bande, pour la teinte d'une année sur deux. */
+  gauche: number;
+  largeur: number;
+  /** Visible dans chaque format. */
+  etroit: boolean;
+  large: boolean;
+}
+
+const annees: Annee[] = [];
+for (let a = anneeDebut; a <= anneeFin; a++) {
+  const gauche = x(Math.max(instant(`${a}-01-01`), debut));
+  const droite = Math.min(100, x(instant(`${a + 1}-01-01`)));
+  if (droite <= gauche) continue;
+  annees.push({
+    annee: a,
+    centre: (gauche + droite) / 2,
+    gauche,
+    largeur: droite - gauche,
+    etroit: false,
+    large: false,
+  });
+}
+
+/*
+ * Une étiquette sur `pas` années, le plus petit pas qui laisse respirer deux
+ * étiquettes voisines. Puis, dans l'ordre, chacune est posée à sa place
+ * réelle, ramenée dans le tracé à ses deux bouts comme le fait le CSS, et
+ * écartée si elle touche la précédente. La bande d'une année entamée de
+ * quelques jours, en fin d'axe, perd ainsi son étiquette au lieu de chevaucher
+ * l'année d'avant.
+ */
+function placerAnnees(format: keyof typeof FORMATS) {
+  const largeurTrace = FORMATS[format];
+  const parAn = (largeurTrace * 365.25 * JOUR) / (finAxe - debut);
+  const pas = [1, 2, 5, 10].find((p) => p * parAn >= LARGEUR_ANNEE + ECART_ANNEES) ?? 10;
+  let finPrecedente = -Infinity;
+  for (const a of annees) {
+    if (a.annee % pas !== 0) continue;
+    // Une bande plus étroite que la moitié de son étiquette ne la porte pas.
+    if ((a.largeur / 100) * largeurTrace < LARGEUR_ANNEE / 2) continue;
+    const centre = (a.centre / 100) * largeurTrace;
+    const g = Math.min(Math.max(centre - LARGEUR_ANNEE / 2, 0), largeurTrace - LARGEUR_ANNEE);
+    if (g < finPrecedente + ECART_ANNEES) continue;
+    a[format] = true;
+    finPrecedente = g + LARGEUR_ANNEE;
+  }
+}
+placerAnnees('etroit');
+placerAnnees('large');
+
+/* ---------- Les charges ---------- */
+
+/*
+ * GRADUATIONS RONDES, six au plus. Le plus petit pas qui n'en donne pas
+ * davantage, à partir du multiple rond situé sous le premier record. Avec
+ * cinq au plus, le −59 kg hommes passait au pas de 100 et gardait 75 kg sans
+ * repère sous son record. Le haut du tracé est le record actuel, qui est aussi
+ * la plus forte charge : son étiquette se pose au-dessus, dans la marge
+ * réservée.
+ */
+const PAS_KG = [5, 10, 20, 25, 50, 100, 200, 250, 500];
+const min = Math.min(...etapes.map((e) => e.valueKg));
+const max = actuelle.valueKg;
+const pasKg =
+  PAS_KG.find((p) => Math.floor((max - Math.floor(min / p) * p) / p) + 1 <= 6) ?? 500;
+const bas = Math.floor(min / pasKg) * pasKg;
+const graduations: number[] = [];
+for (let v = bas; v <= max; v += pasKg) graduations.push(v);
+
+const y = (v: number) => ((max - v) / (max - bas)) * 100;
+const chiffres = Math.max(...graduations.map((v) => nombre(v).length));
+
+/* ---------- L'escalier ---------- */
+
+const points = etapes.map((e, i) => ({
+  ...e,
+  px: arrondi(x(instant(e.date))),
+  py: arrondi(y(e.valueKg)),
+  actuel: i === etapes.length - 1,
+}));
+
+const marches =
+  `M${points[0].px} ${points[0].py}` +
+  points
+    .slice(1)
+    .map((p) => `H${p.px}V${p.py}`)
+    .join('') +
+  'H100';
+
+/* L'étiquette du record actuel s'aligne à droite dans la moitié droite du
+   tracé, à gauche dans l'autre. Le CSS la garde dans le cadre. */
+const etiquetteADroite = points[points.length - 1].px >= 50;
+
+/* ---------- La légende, en phrases ---------- */
+
+/** « 6 ans et 10 mois », entre deux dates, en mois entiers révolus. */
+function duree(de: string, a: string): string {
+  const [y1, m1, j1] = de.split('-').map(Number);
+  const [y2, m2, j2] = a.split('-').map(Number);
+  const mois = (y2 - y1) * 12 + (m2 - m1) - (j2 < j1 ? 1 : 0);
+  const ans = Math.floor(mois / 12);
+  const reste = mois % 12;
+  const morceaux: string[] = [];
+  if (ans > 0) morceaux.push(`${ans} an${ans > 1 ? 's' : ''}`);
+  if (reste > 0) morceaux.push(`${reste} mois`);
+  if (morceaux.length === 0) {
+    const jours = Math.round((instant(a) - instant(de)) / JOUR);
+    return `${jours} jour${jours > 1 ? 's' : ''}`;
+  }
+  return morceaux.join(' et ');
+}
+
+const anneePremiere = premiere.date.slice(0, 4);
+const anneeActuelle = actuelle.date.slice(0, 4);
+const phraseHistoire =
+  anneePremiere === anneeActuelle
+    ? `Le record au total en ${equipement} est passé de ${kg(premiere.valueKg)} à ${kg(actuelle.valueKg)} en ${anneeActuelle}.`
+    : `Le record au total en ${equipement} est passé de ${kg(premiere.valueKg)} en ${anneePremiere} à ${kg(actuelle.valueKg)} en ${anneeActuelle}.`;
+
+/* Le détenteur, depuis le premier de ses records d'affilée. Au 28 octobre
+   2026, Gabriel Begue a établi les huit derniers records du −93 kg hommes : il
+   le détient donc depuis le premier d'entre eux, le 27 mai 2018. */
+let debutRegne = etapes.length - 1;
+while (debutRegne > 0 && etapes[debutRegne - 1].slug === actuelle.slug) debutRegne--;
+/* La date ne se coupe pas : « le 18 / juillet 2026 » se lisait mal à 320 px. */
+const dateInsecable = (iso: string) => dateLongue(iso).replace(/ /g, ' ');
+const phraseDetenteur = `${actuelle.holder} le détient depuis le ${dateInsecable(etapes[debutRegne].date)}.`;
+
+/* Le record qui a tenu le plus longtemps, s'il a cédé. Quand le record actuel
+   tient déjà depuis plus longtemps, la phrase du détenteur le dit, et celle-ci
+   se tait. */
+const enCours = Math.round((finAxe - instant(actuelle.date)) / JOUR);
+const plusDurable = etapes
+  .slice(0, -1)
+  .map((e, i) => ({ e, suivante: etapes[i + 1], jours: e.jours ?? 0 }))
+  .reduce((a, b) => (b.jours > a.jours ? b : a));
+const phraseDurable =
+  plusDurable.jours > enCours
+    ? `Le record le plus durable a tenu ${duree(plusDurable.e.date, plusDurable.suivante.date)} : ${kg(plusDurable.e.valueKg)}, par ${plusDurable.e.holder}.`
+    : null;
+
+const legende = [phraseHistoire, phraseDetenteur, phraseDurable].filter(Boolean).join(' ');
+---
+
+<figure class="courbe">
+  <div class="dessin" aria-hidden="true" style={`--chiffres:${chiffres}`}>
+    <div class="axe-y">
+      {graduations.map((v, i) => (
+        <span class="graduation" style={`--y:${arrondi(y(v))}`}>
+          {i === graduations.length - 1 && <span class="unite">kg</span>}
+          {nombre(v)}
+        </span>
+      ))}
+    </div>
+
+    <div class="trace">
+      <svg class="toile" viewBox="0 0 100 100" preserveAspectRatio="none" focusable="false">
+        {annees
+          .filter((a) => a.annee % 2 === 0)
+          .map((a) => (
+            <rect class="bande" x={arrondi(a.gauche)} y="0" width={arrondi(a.largeur)} height="100" />
+          ))}
+        {graduations.map((v) => (
+          <line class="grille" x1="0" x2="100" y1={arrondi(y(v))} y2={arrondi(y(v))} />
+        ))}
+        <path class="marches" d={marches} />
+      </svg>
+
+      {points.map((p) => (
+        <span class={p.actuel ? 'point actuel' : 'point'} style={`--x:${p.px};--y:${p.py}`} />
+      ))}
+
+      <p class="etiquette" data-droite={etiquetteADroite ? '' : undefined} style={`--x:${points[points.length - 1].px}`}>
+        <span class="etiquette-valeur num">{kg(actuelle.valueKg)}</span>
+        <span class="etiquette-nom">{actuelle.holder}</span>
+      </p>
+    </div>
+
+    <div class="axe-x">
+      {annees.map((a) => (
+        <span
+          class="annee num-tab"
+          data-etroit={a.etroit ? '' : undefined}
+          data-large={a.large ? '' : undefined}
+          style={`--x:${arrondi(a.centre)}`}
+        >
+          {a.annee}
+        </span>
+      ))}
+    </div>
+  </div>
+
+  <figcaption>{legende}</figcaption>
+</figure>
+
+<style>
+  /*
+   * LE CADRE DES INFOGRAPHIES : aplat de surface, filet de 2 px, aucune ombre.
+   * La courbe est une image des données, elle en porte la forme.
+   */
+  .courbe {
+    margin: 0 0 var(--space-4);
+    padding: var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    min-width: 0;
+  }
+
+  /*
+   * TROIS RANGÉES ET DEUX COLONNES. En haut, la marge où se pose l'étiquette
+   * du record actuel, qui est toujours la plus haute charge. Au milieu, les
+   * graduations et le tracé. En bas, les années. Les hauteurs sont fixes : les
+   * positions sont des pourcentages, et c'est la rangée qui leur donne une
+   * échelle.
+   */
+  .dessin {
+    --zone-etiquette: 3.5rem;
+    --hauteur-trace: 11rem;
+    /*
+     * UN DEMI-POINT DE MARGE DE CHAQUE CÔTÉ DU TRACÉ. Le record actuel tombe
+     * souvent au bout de l'axe, et son point de 16 px dépassait alors du
+     * tracé de 8 px, mesuré. Tout ce qui se place en pourcentage, escalier,
+     * points, étiquette et années, se place entre ces deux marges.
+     */
+    --marge: 8px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: var(--zone-etiquette) var(--hauteur-trace) auto;
+    column-gap: var(--space-1);
+  }
+
+  .axe-y {
+    grid-column: 1;
+    grid-row: 2;
+    position: relative;
+    width: calc(var(--chiffres) * 1ch);
+    font-size: var(--step--1);
+  }
+
+  .graduation {
+    position: absolute;
+    right: 0;
+    top: calc(var(--y) * 1%);
+    transform: translateY(-50%);
+    line-height: 1;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* L'unité, une fois, au-dessus de la plus haute graduation. */
+  .unite {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + var(--space-1));
+  }
+
+  .trace {
+    grid-column: 2;
+    grid-row: 2;
+    position: relative;
+    min-width: 0;
+  }
+
+  .toile {
+    position: absolute;
+    top: 0;
+    left: var(--marge);
+    width: calc(100% - 2 * var(--marge));
+    height: 100%;
+    overflow: visible;
+  }
+
+  /* L'abscisse d'un élément posé sur le tracé, marges comprises. */
+  .point,
+  .etiquette {
+    --gauche: calc(var(--marge) + (100% - 2 * var(--marge)) * var(--x) / 100);
+  }
+
+  /* Une année sur deux, un aplat du fond de page sous la surface du cadre. */
+  .bande {
+    fill: var(--bg);
+  }
+
+  .grille {
+    stroke: var(--border);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* Le trait des données, 2 px quelle que soit la largeur, et des angles nets
+     à chaque marche. */
+  .marches {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-linejoin: miter;
+    stroke-linecap: square;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /*
+   * LES POINTS : un record, un point. L'anneau couleur de surface détache le
+   * point du trait qui le traverse et de son voisin, sans ombre. Le record
+   * actuel est plein, dans l'aplat d'accent, et cerclé du trait d'accent, qui
+   * lui donne son contraste en thème clair, où l'aplat jaune seul ne se
+   * détache pas du fond.
+   */
+  /* 8 px sur téléphone : à 320 px, les deux premiers records du −105 kg
+     hommes, à cinq semaines d'écart, se chevauchaient à 10 px. */
+  .point {
+    position: absolute;
+    left: var(--gauche);
+    top: calc(var(--y) * 1%);
+    width: 8px;
+    height: 8px;
+    transform: translate(-50%, -50%);
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    background: var(--surface);
+    outline: 2px solid var(--surface);
+  }
+
+  .point.actuel {
+    width: 16px;
+    height: 16px;
+    background: var(--accent-fill);
+  }
+
+  /*
+   * L'ÉTIQUETTE DU RECORD ACTUEL, au-dessus de son point. Elle se décale d'une
+   * part de sa propre largeur égale à la position du point dans le tracé : au
+   * bord droit, elle finit au bord droit, au milieu, elle se centre. Elle reste
+   * ainsi dans le cadre à toutes les largeurs, sans rien mesurer.
+   */
+  .etiquette {
+    position: absolute;
+    left: var(--gauche);
+    bottom: calc(100% + var(--space-3));
+    transform: translateX(calc(var(--x) * -1%));
+    display: flex;
+    flex-direction: column;
+    width: max-content;
+    max-width: calc(100% - 2 * var(--marge));
+    margin: 0;
+    line-height: 1.15;
+  }
+
+  .etiquette[data-droite] {
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .etiquette-valeur {
+    font-size: var(--step-1);
+    color: var(--text);
+  }
+
+  .etiquette-nom {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .axe-x {
+    grid-column: 2;
+    grid-row: 3;
+    position: relative;
+    height: 1.75rem;
+    margin-inline: var(--marge);
+  }
+
+  /* L'étiquette d'une année se centre sur sa bande, et ses deux bouts restent
+     dans le tracé. Ses chiffres sont tabulaires : elle mesure 4ch, exactement. */
+  .annee {
+    display: none;
+    position: absolute;
+    top: var(--space-2);
+    left: clamp(0px, calc(var(--x) * 1% - 2ch), calc(100% - 4ch));
+    width: 4ch;
+    font-size: var(--step--1);
+    font-weight: 400;
+    line-height: 1;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  /* Chaque format montre les années placées pour lui. Les deux règles ont le
+     même poids : c'est l'ordre qui décide, le second format en dernier. */
+  .annee[data-etroit] {
+    display: block;
+  }
+
+  figcaption {
+    max-width: 68ch;
+    margin-top: var(--space-4);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /*
+   * COULEURS FORCÉES, le contraste élevé de Windows. Le navigateur y impose
+   * ses couleurs système aux textes, aux fonds et aux bordures, et laisse le
+   * SVG tel quel, mesuré dans Chromium : sur un fond système blanc, l'escalier
+   * jaune devenait presque invisible et les bandes faisaient des rayures
+   * sombres. Le tracé passe donc lui aussi aux couleurs système, et le point
+   * actuel garde son plein.
+   */
+  @media (forced-colors: active) {
+    .marches {
+      stroke: CanvasText;
+    }
+
+    .grille {
+      stroke: GrayText;
+    }
+
+    .bande {
+      fill: transparent;
+    }
+
+    .point.actuel {
+      background: CanvasText;
+    }
+  }
+
+  @media (min-width: 40rem) {
+    .courbe {
+      padding: var(--space-6);
+    }
+
+    .dessin {
+      --zone-etiquette: 2.75rem;
+      --hauteur-trace: 15rem;
+    }
+
+    .point {
+      width: 10px;
+      height: 10px;
+    }
+
+    /* Sur une ligne : la place ne manque plus en largeur. */
+    .etiquette {
+      flex-direction: row;
+      align-items: baseline;
+      gap: var(--space-2);
+    }
+
+    .etiquette[data-droite] {
+      align-items: baseline;
+    }
+
+    .annee[data-etroit] {
+      display: none;
+    }
+
+    .annee[data-large] {
+      display: block;
+    }
+  }
+</style>
