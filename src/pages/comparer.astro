@@ -124,7 +124,7 @@ const nombreAthletes = athletes.length;
       Choisissez jusqu'à quatre athlètes et comparez leurs meilleures{' '}
       <Terme cle="barre">barres</Terme>. L'écart s'affiche en pourcentage par
       rapport au meilleur de chaque ligne. L'adresse de la page garde votre
-      sélection : le lien se partage tel quel.
+      sélection, et le lien se partage tel quel.
     </p>
 
     {/*
@@ -132,9 +132,8 @@ const nombreAthletes = athletes.length;
       athlètes : le chapeau annonce l'écart au meilleur de chaque ligne, la
       pastille en donne le calcul à qui le demande. Mesuré, elle descend le
       champ et le tableau de 60 px, à 375 comme à 1 280 px. Dépliée dans la
-      section « Ce que ces chiffres disent », l'infographie coupait le texte en
-      deux et repoussait ses deux derniers paragraphes de 1 720 px sur
-      téléphone.
+      section « Lire la comparaison », l'infographie coupait le texte en deux
+      et repoussait ses deux derniers paragraphes de 1 720 px sur téléphone.
     */}
     <div class="rangee-replis">
       <Repli titre="L'écart en images">
@@ -200,11 +199,17 @@ const nombreAthletes = athletes.length;
       pour voir les colonnes suivantes.
     </p>
 
-    <h2>Ce que ces chiffres disent, et ce qu'ils ne disent pas</h2>
+    {/*
+      UN TITRE QUI DIT LE GESTE. « Ce que ces chiffres disent, et ce qu'ils ne
+      disent pas » opposait deux moitiés, et la section explique comment lire
+      le tableau. Ses trois paragraphes tiennent en phrases affirmatives, une
+      information chacune.
+    */}
+    <h2>Lire la comparaison</h2>
     <p>
-      Les meilleures barres de chaque athlète ne viennent pas forcément de la
-      même compétition, ni de la même année. Un squat de 2019 peut ainsi côtoyer
-      un soulevé de terre de 2025.
+      Les meilleures barres d'un athlète peuvent venir de compétitions et
+      d'années différentes. Un squat de 2019 peut ainsi côtoyer un soulevé de
+      terre de 2025.
     </p>
     <p>
       Le <Terme cle="total">total</Terme> et les points{' '}
@@ -213,10 +218,10 @@ const nombreAthletes = athletes.length;
       comptent quel que soit le format de la compétition.
     </p>
     <p>
-      Comparer deux athlètes de <Terme cle="categorie">catégories</Terme> de
-      poids différentes au total brut a ses limites : c'est précisément ce que
-      corrigent les points Dots, qui rapportent la performance au{' '}
-      <Terme cle="poids-corps">poids de corps</Terme>.
+      Les points Dots rapportent le total au{' '}
+      <Terme cle="poids-corps">poids de corps</Terme>. Ils permettent de
+      comparer deux athlètes de <Terme cle="categorie">catégories</Terme>{' '}
+      différentes.
     </p>
   </div>
 </BaseLayout>
