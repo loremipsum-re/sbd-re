@@ -23,8 +23,8 @@ import InteractiveTable from '../../components/InteractiveTable.astro';
 import Terme from '../../components/Terme.astro';
 import InfographieCategories from '../../components/infographies/InfographieCategories.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { SEXE_LABEL, listeCategories } from '../../lib/categoriesPages';
-import { kg } from '../../lib/format';
+import { SEXE_LABEL, listeCategories, plusFournies } from '../../lib/categoriesPages';
+import { kg, pluriel } from '../../lib/format';
 import { recordsPour } from '../../lib/records';
 import type { Sex } from '../../lib/types';
 import Partenaire from '../../components/Partenaire.astro';
@@ -42,6 +42,13 @@ const parSexe: { sex: Sex; label: string; liste: typeof categories }[] = [
   { sex: 'M', label: SEXE_LABEL.M, liste: categories.filter((c) => c.sex === 'M') },
   { sex: 'F', label: SEXE_LABEL.F, liste: categories.filter((c) => c.sex === 'F') },
 ];
+
+/** Les trois plus fournies de chaque sexe, surlignées dans le sélecteur. La
+    légende sous les pastilles écrit « trois » en toutes lettres. */
+const FOURNIES_PAR_SEXE = 3;
+const fournies = new Set(
+  parSexe.flatMap(({ liste }) => [...plusFournies(liste, FOURNIES_PAR_SEXE)]),
+);
 ---
 
 <BaseLayout
@@ -75,13 +82,29 @@ const parSexe: { sex: Sex; label: string; liste: typeof categories }[] = [
             <ul aria-labelledby={`choix-${sex}`}>
               {liste.map((cat) => (
                 <li>
-                  <a href={`/categories/${cat.chemin}/`}>{cat.classe.label}</a>
+                  {/* L'effectif se lit à l'œil, masqué au lecteur d'écran,
+                      qui entend la phrase complète : « 61 » seul après
+                      « −83 kg » ne dirait pas de quoi il s'agit. */}
+                  <a
+                    href={`/categories/${cat.chemin}/`}
+                    class:list={[{ fournie: fournies.has(cat.chemin) }]}
+                  >
+                    {cat.classe.label}
+                    <span class="effectif num-tab" aria-hidden="true">{cat.athletes}</span>
+                    <span class="sr-only">
+                      , {cat.athletes} {pluriel(cat.athletes, 'athlète')}
+                    </span>
+                  </a>
                 </li>
               ))}
             </ul>
           </div>
         ))
       }
+      <p class="legende">
+        Le chiffre donne le nombre d'athlètes. En jaune, les trois catégories
+        les plus fournies de chaque sexe.
+      </p>
     </nav>
 
     {/*
@@ -215,7 +238,7 @@ const parSexe: { sex: Sex; label: string; liste: typeof categories }[] = [
     display: inline-flex;
     align-items: center;
     min-height: var(--cible-min);
-    padding: 0 var(--space-4);
+    padding: 0 var(--space-3);
     border: 1px solid var(--border);
     border-radius: 999px;
     background: var(--surface);
@@ -230,6 +253,49 @@ const parSexe: { sex: Sex; label: string; liste: typeof categories }[] = [
   .choix a:hover {
     border-color: var(--accent);
     color: var(--accent);
+  }
+
+  /*
+   * L'EFFECTIF DANS LA PASTILLE, plus petit et en second plan : la catégorie
+   * reste ce qu'on lit d'abord. Il élargit chaque pastille, d'où le
+   * rembourrage ramené de 16 à 12 px. Mesuré le 28 octobre 2026 : à 375 px,
+   * six rangées avec ou sans l'effectif, la dernière pastille finissant à
+   * 721 px. Seul l'écran de 320 px y perd, neuf rangées au lieu de six.
+   */
+  .choix a {
+    gap: var(--space-2);
+  }
+
+  .effectif {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /*
+   * LES PLUS FOURNIES EN APLAT. Le jaune plein est celui des boutons
+   * principaux : il désigne ici les catégories où la concurrence est la plus
+   * dense. Le basalte dessus donne 10,66:1 en clair. Le survol assombrit
+   * l'aplat en clair et l'éclaircit en sombre, comme celui d'un bouton.
+   */
+  .choix a.fournie,
+  .choix a.fournie .effectif {
+    color: var(--on-accent);
+  }
+
+  .choix a.fournie {
+    border-color: var(--accent-fill);
+    background: var(--accent-fill);
+  }
+
+  .choix a.fournie:hover {
+    border-color: var(--accent-fill-hover);
+    background: var(--accent-fill-hover);
+  }
+
+  .legende {
+    margin: 0;
+    font-size: var(--step--1);
+    color: var(--muted);
   }
 
 
