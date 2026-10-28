@@ -85,7 +85,9 @@ const communes = [...new Set(salles.map((s) => s.commune))].sort((a, b) =>
             signaler une salle absente ou une information fausse.
           */}
           <div class="rangee-replis rangee-salles">
-            <Repli titre="Salles par commune en images">
+            {/* Nommée par sa question : 251 px à 320 px de large, la
+                pastille tient toujours sur sa ligne. */}
+            <Repli titre="Combien de salles par commune ?">
               <InfographieSalles />
             </Repli>
           </div>

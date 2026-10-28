@@ -71,11 +71,17 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
       vivent ici et sur les fiches, hors du classement et des records : c'est
       la question que pose cette page.
     */}
+    {/*
+      LES PASTILLES DISENT LEUR QUESTION. Mesuré à 320 et 375 px, les deux
+      pastilles occupaient déjà deux rangées, une chacune, et les nouveaux
+      libellés y tiennent : aucune rangée de plus. À 1 280 px, elles restent
+      côte à côte.
+    */}
     <div class="rangee-replis">
-      <Repli titre="Pays et titres en images">
+      <Repli titre="Quels pays, quels titres ?">
         <InfographieInternational lienArticle="international" />
       </Repli>
-      <Repli titre="Sources en images">
+      <Repli titre="D'où viennent les données ?">
         <InfographieDonnees />
       </Repli>
     </div>
