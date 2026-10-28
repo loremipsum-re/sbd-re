@@ -33,8 +33,13 @@ const developpeSeul = meets.filter((m) => m.events.length === 1 && m.events[0] =
       recense les résultats de compétitions de force athlétique du monde entier.
       Le fichier complet est public et compte près de 4 millions de lignes.
     </p>
+    {/*
+      LES ESPACES AVANT UNE EXPRESSION OU UNE BALISE EN DÉBUT DE LIGNE SONT
+      ÉCRITES, `{' '}` : Astro les supprime. Cinq mots étaient collés sur
+      cette page, de « 1 238résultats » à « Leclassement communauté ».
+    */}
     <p>
-      Le site s'appuie actuellement sur {results.length.toLocaleString('fr-FR')}
+      Le site s'appuie actuellement sur {results.length.toLocaleString('fr-FR')}{' '}
       résultats, {nombreAthletes()} athlètes et {meets.length} compétitions,
       couvrant la période du {dateLongue(debut)} au {dateLongue(fin)}. Les
       données sont régénérées automatiquement le 1<sup>er</sup> de chaque mois.
@@ -42,9 +47,11 @@ const developpeSeul = meets.filter((m) => m.events.length === 1 && m.events[0] =
 
     <h2>Comment une compétition est reconnue comme réunionnaise</h2>
     <p>
-      C'est la question centrale du projet, et elle n'a pas de réponse
-      automatique satisfaisante :
-      <strong>le jeu de données ne contient aucune information de région</strong>.
+      C'est la question centrale du projet.{' '}
+      <strong>
+        Le jeu de données d'OpenPowerlifting ne précise pas la région d'une
+        compétition.
+      </strong>{' '}
       Le champ prévu pour cela est vide sur la totalité des résultats de la
       fédération française.
     </p>
@@ -55,19 +62,19 @@ const developpeSeul = meets.filter((m) => m.events.length === 1 && m.events[0] =
         des championnats départementaux et régionaux.
       </li>
       <li>
-        La compétition figure dans une liste vérifiée à la main. C'est
-        indispensable : <em>Open de la Fournaise</em>, <em>Bench Cup 974</em> ou
-        <em>Fanm Kapab Contest</em> sont incontestablement réunionnais sans
-        jamais nommer l'île.
+        La compétition figure dans une liste vérifiée à la main. Cette liste
+        est indispensable. <em>Open de la Fournaise</em>,{' '}
+        <em>Bench Cup 974</em> ou <em>Fanm Kapab Contest</em> sont réunionnais
+        sans nommer l'île.
       </li>
     </ol>
     <p>
       <strong>La ville ne suffit jamais à inclure une compétition.</strong>{' '}
       Saint-Denis, Saint-Louis, Saint-Paul et Saint-Pierre existent aussi en
-      métropole : s'y fier ferait entrer des compétitions qui n'ont rien à voir
-      avec l'île. Une compétition organisée dans une commune réunionnaise mais
-      dont le nom ne le dit pas est donc simplement <em>signalée</em>, puis
-      vérifiée à la main avant d'être ajoutée.
+      métropole. S'y fier ferait entrer des compétitions métropolitaines. Une
+      compétition tenue dans une commune réunionnaise, sous un nom qui ne cite
+      pas l'île, est donc <em>signalée</em>. Elle est vérifiée à la main avant
+      d'être ajoutée.
     </p>
 
     {/*
@@ -89,38 +96,35 @@ const developpeSeul = meets.filter((m) => m.events.length === 1 && m.events[0] =
       </li>
       <li>
         <strong>Records par mouvement</strong> : toutes les compétitions. Une{' '}
-        <Terme cle="barre">barre</Terme> compte dès lors qu'elle a été soulevée
-        devant des juges, y compris
-        lors d'une compétition ne comportant qu'un seul mouvement. Le développé
-        couché seul représente à lui seul {developpeSeul} des {meets.length}{' '}
-        compétitions de l'île :
-        l'écarter afficherait un record inférieur à la réalité.
+        <Terme cle="barre">barre</Terme> compte dès qu'elle est soulevée devant
+        des juges, y compris sur une compétition d'un seul mouvement. Le
+        développé couché seul représente {developpeSeul} des {meets.length}{' '}
+        compétitions de l'île. Les écarter afficherait des records inférieurs à
+        la réalité.
       </li>
       <li>
         <strong>Record au total</strong> : full power uniquement. Sur une
-        compétition d'un seul mouvement, le « total » publié n'est que cette
-        barre-là : le retenir mettrait un développé couché de 130 kg en
-        concurrence avec un vrai total de 700 kg.
+        compétition d'un seul mouvement, le « total » publié vaut cette seule
+        barre. Le retenir mettrait un développé couché de 130 kg en concurrence
+        avec un vrai total de 700 kg.
       </li>
       <li>
         <strong>Performances annulées</strong> : les résultats disqualifiés, y
-        compris pour dopage, et les forfaits ne sont jamais retenus.
+        compris pour dopage, et les forfaits sont écartés.
       </li>
       <li>
         <strong>Athlètes invités</strong> : leurs performances comptent. Elles
-        ont bien été réalisées en compétition, sous les mêmes juges, même si
-        l'athlète n'était pas classé officiellement ce jour-là.
+        ont été réalisées en compétition, devant les mêmes juges, par un athlète
+        classé hors concours ce jour-là.
       </li>
     </ul>
 
     <h2>Une erreur ?</h2>
-    <p>
-      Deux cas de figure, et ils n'ont pas le même remède :
-    </p>
+    <p>Deux cas de figure, chacun avec son remède :</p>
     <ul>
       <li>
         <strong>Une performance est fausse ou absente</strong> → l'erreur vient
-        des données source. Il faut la signaler directement à
+        des données source. Il faut la signaler directement à{' '}
         <a href="https://www.openpowerlifting.org" rel="noopener">OpenPowerlifting</a>,
         qui corrigera à la source. La correction arrivera ici à la mise à jour
         suivante.
@@ -128,18 +132,24 @@ const developpeSeul = meets.filter((m) => m.events.length === 1 && m.events[0] =
       <li>
         <strong>Une compétition réunionnaise manque, ou une compétition
         métropolitaine s'est glissée dans le classement</strong> → c'est un
-        problème de ce site. Écris-moi.
+        problème de ce site. Signalez-le depuis la page{' '}
+        <a href="/suggestions/">Proposer une amélioration</a>.
       </li>
     </ul>
 
+    {/*
+      AU FUTUR : le classement communauté n'est pas encore ouvert, sa page
+      l'annonce. Le présent laissait croire qu'il recevait déjà des
+      performances.
+    */}
     <h2>Officiel et communauté</h2>
     <p>
-      Le classement officiel présenté ici ne contient que des résultats{' '}
-      <Terme cle="homologue">homologués</Terme>. Le
-      <a href="/communaute/">classement communauté</a> accueille les
+      Le classement officiel présenté ici contient uniquement des résultats{' '}
+      <Terme cle="homologue">homologués</Terme>. Le{' '}
+      <a href="/communaute/">classement communauté</a> accueillera les
       performances déclarées en salle et les compétitions non homologuées. Les
-      deux ne se mélangent jamais : une performance déclarée ne peut pas
-      apparaître dans un record officiel, ni l'inverse.
+      deux resteront séparés, et aucune performance ne passera de l'un à
+      l'autre.
     </p>
 
     <h2>Contact</h2>
@@ -149,10 +159,10 @@ const developpeSeul = meets.filter((m) => m.events.length === 1 && m.events[0] =
 
     <h2>Indépendance</h2>
     <p>
-      Ce site est un projet personnel, sans but lucratif et sans régie publicitaire. Il
-      n'est affilié ni à la FFForce, ni à SBD Apparel, ni à aucun club. Le nom
-      « SBD » désigne ici les trois mouvements de la discipline : Squat, Bench,
-      Deadlift.
+      Ce site est un projet personnel, sans but lucratif. Il fonctionne sans
+      régie publicitaire. Il est indépendant de la FFForce, de SBD Apparel et
+      des clubs. Le nom « SBD » désigne ici les trois mouvements de la
+      discipline : Squat, Bench, Deadlift.
     </p>
   </div>
 </BaseLayout>
