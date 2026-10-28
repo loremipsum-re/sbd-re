@@ -183,6 +183,29 @@ export interface EtapeRecord {
 }
 
 /**
+ * Les performances qui comptent pour un record, dans l'ordre chronologique.
+ * Une seule définition pour l'histoire du record et pour sa dernière mise en
+ * jeu, qui doivent lire exactement les mêmes lignes.
+ */
+function performancesEligibles(
+  lift: LiftKey,
+  sex: Sex,
+  weightClassId: string,
+  equipement: EquipmentGroup,
+  source: Result[],
+): Result[] {
+  return source
+    .filter(
+      (r) =>
+        r.sex === sex &&
+        r.weightClassKg === weightClassId &&
+        equipmentGroup(r.equipment) === equipement &&
+        (valeurPour(r, lift) ?? 0) > 0,
+    )
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/**
  * Histoire d'un record : qui l'a détenu, quand, et de combien il l'a amélioré.
  *
  * On parcourt les performances dans l'ordre chronologique en ne retenant que
@@ -200,15 +223,7 @@ export function progressionRecord(
   equipement: EquipmentGroup,
   source: Result[] = results,
 ): EtapeRecord[] {
-  const eligibles = source
-    .filter(
-      (r) =>
-        r.sex === sex &&
-        r.weightClassKg === weightClassId &&
-        equipmentGroup(r.equipment) === equipement &&
-        (valeurPour(r, lift) ?? 0) > 0,
-    )
-    .sort((a, b) => a.date.localeCompare(b.date));
+  const eligibles = performancesEligibles(lift, sex, weightClassId, equipement, source);
 
   const etapes: EtapeRecord[] = [];
   let meilleure = 0;
@@ -239,6 +254,37 @@ export function progressionRecord(
   }
 
   return etapes;
+}
+
+/**
+ * L'histoire d'un record se dessine-t-elle en escalier ?
+ *
+ * Il faut trois dates de record distinctes. Avec deux, l'escalier n'a qu'une
+ * marche, et deux records le même jour donnent un simple trait vertical : la
+ * liste dit la même chose en moins de place. Mesuré le 28 octobre 2026 sur des
+ * historiques tronqués à une date, à 375 px : 376 px pour la courbe d'une
+ * seule marche, de 162 à 188 px pour une liste de deux records.
+ */
+export function escalierLisible(etapes: EtapeRecord[]): boolean {
+  return new Set(etapes.map((e) => e.date)).size >= 3;
+}
+
+/**
+ * Le dernier jour où le record était en jeu : la date de la performance
+ * éligible la plus récente, qu'elle l'ait battu ou non. Null si aucune.
+ *
+ * C'est là que s'arrête la courbe d'un record. La prolonger jusqu'à la fin des
+ * données ferait tenir le record du 72 kg femmes, catégorie disputée pour la
+ * dernière fois en janvier 2021, des années de plus face à personne.
+ */
+export function derniereMiseEnJeu(
+  lift: LiftKey,
+  sex: Sex,
+  weightClassId: string,
+  equipement: EquipmentGroup,
+  source: Result[] = results,
+): string | null {
+  return performancesEligibles(lift, sex, weightClassId, equipement, source).at(-1)?.date ?? null;
 }
 
 /** Types d'équipement réellement présents dans les données, pour ne pas afficher de sections vides. */

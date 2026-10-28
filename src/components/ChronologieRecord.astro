@@ -2,10 +2,12 @@
 /**
  * La liste des records successifs, du plus ancien au record actuel.
  *
- * Elle donne, pour chaque record, son détenteur, sa date exacte, l'écart avec
- * le précédent, et les liens vers l'athlète et la compétition. Elle quitte la
- * page de catégorie pour vivre ici, avec ses styles : la page pourra la
- * placer de plus d'une façon sans recopier son balisage.
+ * C'est la VERSION TEXTE de la courbe en escalier (CourbeRecord.astro) : elle
+ * porte ce que le dessin tait, le détenteur de chaque record, sa date exacte,
+ * l'écart avec le précédent, et les liens vers l'athlète et la compétition.
+ * La page de catégorie la replie sous la courbe, ou la montre seule quand
+ * l'histoire est trop courte pour un escalier. Elle vit ici pour que les deux
+ * cas rendent la même liste.
  */
 import { dateLongue, kg, nombre } from '../lib/format';
 import type { EtapeRecord } from '../lib/records';

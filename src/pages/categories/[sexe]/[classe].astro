@@ -1,6 +1,7 @@
 ---
 import ChronologieRecord from '../../../components/ChronologieRecord.astro';
 import Coupe from '../../../components/Coupe.astro';
+import CourbeRecord from '../../../components/CourbeRecord.astro';
 import InteractiveTable from '../../../components/InteractiveTable.astro';
 import Glossaire from '../../../components/Glossaire.astro';
 import RankingTable from '../../../components/RankingTable.astro';
@@ -15,7 +16,12 @@ import {
   listeCategories,
 } from '../../../lib/categoriesPages';
 import { dateLongue, kg } from '../../../lib/format';
-import { progressionRecord, recordsPour } from '../../../lib/records';
+import {
+  derniereMiseEnJeu,
+  escalierLisible,
+  progressionRecord,
+  recordsPour,
+} from '../../../lib/records';
 import { meetPath } from '../../../lib/slug';
 import type { LiftKey } from '../../../lib/types';
 import Partenaire from '../../../components/Partenaire.astro';
@@ -45,8 +51,26 @@ const recordActuel = (lift: LiftKey, equipement: EquipmentGroup) =>
  * les quatre mouvements pour chaque équipement donnerait huit chronologies sur
  * une même page, et l'histoire se perdrait dans le tableau. Le total en Raw est
  * la marque de référence, celle que tout le monde cite.
+ *
+ * LA COURBE RESTE EN RAW, MÊME QUAND LA PAGE MONTRE AUSSI L'ÉQUIPÉ. Compté le
+ * 28 octobre 2026 : 830 des 849 performances en full power de l'île sont en
+ * raw, et l'équipé compte au plus deux records successifs au total par
+ * catégorie, soit une seule marche. Une seconde courbe n'aurait rien à
+ * raconter.
+ *
+ * TROIS CAS, SELON L'HISTOIRE.
+ *  - Un seul record : la section s'efface, comme avant la courbe. Le bloc des
+ *    records le donne déjà, avec son détenteur et sa date. En −47 kg femmes,
+ *    le record du 18 janvier 2020 n'a jamais été battu.
+ *  - Moins de trois dates de record : la liste seule, dépliée. Une courbe
+ *    d'une seule marche prendrait deux fois sa place pour en dire autant.
+ *  - Au-delà : la courbe, puis la liste repliée, qui en est la version texte.
+ * Le 28 octobre 2026, les 16 autres catégories comptent 4 à 13 dates.
  */
 const chronologie = progressionRecord('total', cat.sex, cat.classe.id, 'raw');
+const finChronologie = derniereMiseEnJeu('total', cat.sex, cat.classe.id, 'raw');
+const courbe =
+  finChronologie && escalierLisible(chronologie) ? { fin: finChronologie } : null;
 
 const libelleEquipement = (id: EquipmentGroup) =>
   EQUIPMENT_GROUPS.find((e) => e.id === id)?.label ?? id;
@@ -128,7 +152,26 @@ const description =
             La durée de règne de chaque marque se lit entre deux dates.
           </p>
 
-          <ChronologieRecord etapes={chronologie} />
+          {/*
+            LA LISTE, VERSION TEXTE DE LA COURBE, REPLIÉE DESSOUS. Elle donne
+            ce que le dessin ne porte pas : le détenteur de chaque record, sa
+            date exacte, l'écart avec le précédent, et les liens vers l'athlète
+            et la compétition. Dépliée, elle mesurait 879 px à 375 px en
+            −93 kg, et repoussait le classement d'autant. Sans courbe, elle
+            reste dépliée.
+          */}
+          {
+            courbe ? (
+              <>
+                <CourbeRecord etapes={chronologie} fin={courbe.fin} equipement="raw" />
+                <Repli titre={`Les ${chronologie.length} records en détail`}>
+                  <ChronologieRecord etapes={chronologie} />
+                </Repli>
+              </>
+            ) : (
+              <ChronologieRecord etapes={chronologie} />
+            )
+          }
         </section>
       )
     }
@@ -254,5 +297,6 @@ const description =
     color: var(--muted);
   }
 
-  /* La liste des records successifs a ses styles dans ChronologieRecord.astro. */
+  /* La liste des records successifs a ses styles dans ChronologieRecord.astro,
+     la courbe dans CourbeRecord.astro. */
 </style>
