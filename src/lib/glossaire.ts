@@ -6,7 +6,8 @@
  *
  *   le glossaire repliable des listes   Glossaire.astro et Infobulle.astro,
  *   le terme souligné d'une page        Terme.astro,
- *   le terme souligné d'un article      lexique-markdown.ts, à la génération.
+ *   le terme souligné d'un article      lexique-markdown.ts, à la génération,
+ *                                       chapeau compris.
  *
  * Les écrire dans les gabarits garantirait qu'une définition change à un
  * endroit et pas à l'autre.
@@ -66,8 +67,9 @@ export interface Terme {
   /** Définition d'une phrase, affichée par la bulle d'un terme souligné. */
   phrase: string;
   /**
-   * Formes reconnues dans le corps d'un article, où la première apparition est
-   * soulignée à la génération. Un terme sans formes n'y est jamais souligné.
+   * Formes reconnues dans un article, chapeau puis corps, où la première
+   * apparition est soulignée à la génération. Un terme sans formes n'y est
+   * jamais souligné.
    */
   formes?: RegExp;
   /** Figure dans le glossaire repliable posé au-dessus des listes. */

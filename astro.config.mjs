@@ -118,7 +118,9 @@ const REDIRECTIONS = ancienesAdressesCompetitions();
  * ou si sa propre configuration change. Une définition corrigée dans le
  * glossaire restait donc ancienne dans les articles, à jour dans les pages :
  * mesuré. L'empreinte des deux fichiers du lexique entre dans le greffon, donc
- * dans la configuration, et la moindre modification fait tout recalculer.
+ * dans la configuration, et la moindre modification fait tout recalculer. Le
+ * découpage du chapeau, que le greffon remet à la page de l'article, est gardé
+ * avec ce HTML : l'empreinte le recalcule aussi.
  *
  * Le greffon : src/lib/lexique-markdown.ts. Le script : src/lib/bulles-lexique.ts.
  * Le style : src/styles/tokens.css. Les définitions : src/lib/glossaire.ts.
