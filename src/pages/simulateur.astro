@@ -22,7 +22,9 @@
  * TOUT SE CALCULE DANS LE NAVIGATEUR. Aucune saisie ne part sur le réseau, ni
  * vers le serveur, ni ailleurs : le classement est déposé dans la page, et le
  * script le lit sur place. Le site n'a donc rien à recueillir, rien à
- * conserver, et rien à déclarer.
+ * conserver, et rien à déclarer. La mesure d'audience, quand le visiteur l'a
+ * acceptée, enregistre la page : `data-clarity-mask` lui masque le
+ * formulaire et le résultat, qui ne sont faits que des valeurs saisies.
  *
  * CE N'EST PAS UNE INSCRIPTION AU CLASSEMENT. Le classement officiel ne
  * recense que des performances réalisées en compétition homologuée. Cette
@@ -122,7 +124,13 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
       `data-pret` est écrit d'office : la barre reste visible sans script,
       comme le formulaire l'était.
     */}
-    <form class="barre-filtres formulaire" id="formulaire" autocomplete="off" data-pret>
+    <form
+      class="barre-filtres formulaire"
+      id="formulaire"
+      autocomplete="off"
+      data-pret
+      data-clarity-mask="True"
+    >
       {/* Ce qu'on CHOISIT dans une liste. */}
       <fieldset class="groupe">
         <legend>Votre profil</legend>
@@ -194,7 +202,7 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
 
     {/* `aria-live` : le résultat change sans rechargement, il doit donc
         s'annoncer à qui ne voit pas l'écran. */}
-    <section class="resultat" id="resultat" aria-live="polite">
+    <section class="resultat" id="resultat" aria-live="polite" data-clarity-mask="True">
       <p class="invite">Renseignez au moins une barre pour voir votre place.</p>
     </section>
 
