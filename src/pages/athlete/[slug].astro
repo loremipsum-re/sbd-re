@@ -150,8 +150,12 @@ const phraseExterieur =
   (paysVisites.length > 0 ? `, en ${paysVisites.map(paysFr).join(', ')}` : '') +
   '.';
 
-/** « 1er » puis « 2e », « 3e »… La première place fait exception en français. */
-const ordinal = (n: number) => (n === 1 ? '1er' : `${n}e`);
+/**
+ * « 1er » puis « 2e », « 3e »… La première place fait exception en français,
+ * et elle s'accorde : « 1re de La Réunion » pour une athlète. « 1er chez les
+ * femmes » s'affichait sur la fiche de la première d'entre elles.
+ */
+const ordinal = (n: number) => (n === 1 ? (dernier?.sex === 'F' ? '1re' : '1er') : `${n}e`);
 
 const metalDe = (n: number): Metal | undefined =>
   n === 1 ? 'or' : n === 2 ? 'argent' : n === 3 ? 'bronze' : undefined;
@@ -170,6 +174,25 @@ const metalDuRang = rangs
   : undefined;
 
 const libelleSexe = dernier?.sex === 'F' ? 'chez les femmes' : 'chez les hommes';
+
+/*
+ * LE CENTILE À PARTIR DU DEUXIÈME RANG SEULEMENT. Sous « 1er de La Réunion »,
+ * « parmi les 1 % meilleurs des 320 athlètes » répétait le rang sans rien
+ * apprendre. Chaque classement, général et par sexe, garde sa part de la
+ * phrase tant que l'athlète n'y est pas premier. L'insécable devant « % »
+ * empêche le signe de passer seul à la ligne.
+ */
+const partsCentile = rangs
+  ? [
+      rangs.global.rang > 1
+        ? `les ${rangs.global.centile} % meilleurs des ${rangs.global.total} athlètes classés`
+        : null,
+      rangs.sexe.rang > 1
+        ? `les ${rangs.sexe.centile} % meilleurs des ${rangs.sexe.total} ${dernier?.sex === 'F' ? 'femmes' : 'hommes'}`
+        : null,
+    ].filter((p): p is string => p !== null)
+  : [];
+const phraseCentile = partsCentile.length ? `Parmi ${partsCentile.join(', et ')}.` : '';
 
 /**
  * Points de la courbe : les totaux full power, sur l'île et ailleurs.
@@ -357,10 +380,8 @@ const description =
               {ordinal(rangs.sexe.rang)} {libelleSexe}
             </p>
             <p class="rang-detail">
-              Classement aux points Dots, avec {points(rangs.dots)} points. Parmi les
-              {' '}{rangs.global.centile} % meilleurs des {rangs.global.total} athlètes
-              classés, et les {rangs.sexe.centile} % meilleurs des {rangs.sexe.total}{' '}
-              {dernier.sex === 'F' ? 'femmes' : 'hommes'}.
+              Classement aux points Dots, avec {points(rangs.dots)} points.
+              {phraseCentile && <>{' '}{phraseCentile}</>}
             </p>
           </div>
         </div>
