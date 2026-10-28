@@ -387,6 +387,10 @@ h3 {
      donne le système de marque. */
   letter-spacing: -0.02em;
   text-wrap: balance;
+  /* Un mot plus large que la colonne se coupe au lieu de faire déborder la
+     page : « Randrianantenaina », en titre d'article à 320 px, dépassait de
+     2 px, mesuré le 28 octobre 2026. Sans effet sur un mot qui tient. */
+  overflow-wrap: break-word;
   margin: 0 0 var(--space-4);
 }
 
