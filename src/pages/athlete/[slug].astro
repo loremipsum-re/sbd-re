@@ -179,16 +179,17 @@ const libelleSexe = dernier?.sex === 'F' ? 'chez les femmes' : 'chez les hommes'
  * LE CENTILE À PARTIR DU DEUXIÈME RANG SEULEMENT. Sous « 1er de La Réunion »,
  * « parmi les 1 % meilleurs des 320 athlètes » répétait le rang sans rien
  * apprendre. Chaque classement, général et par sexe, garde sa part de la
- * phrase tant que l'athlète n'y est pas premier. L'insécable devant « % »
- * empêche le signe de passer seul à la ligne.
+ * phrase tant que l'athlète n'y est pas premier. Les insécables, devant
+ * « % » et entre un effectif et son nom, empêchent un signe ou un nombre de
+ * passer seul à la ligne.
  */
 const partsCentile = rangs
   ? [
       rangs.global.rang > 1
-        ? `les ${rangs.global.centile} % meilleurs des ${rangs.global.total} athlètes classés`
+        ? `les ${rangs.global.centile} % meilleurs des ${rangs.global.total} athlètes classés`
         : null,
       rangs.sexe.rang > 1
-        ? `les ${rangs.sexe.centile} % meilleurs des ${rangs.sexe.total} ${dernier?.sex === 'F' ? 'femmes' : 'hommes'}`
+        ? `les ${rangs.sexe.centile} % meilleurs des ${rangs.sexe.total} ${dernier?.sex === 'F' ? 'femmes' : 'hommes'}`
         : null,
     ].filter((p): p is string => p !== null)
   : [];

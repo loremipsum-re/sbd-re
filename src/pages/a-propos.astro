@@ -39,8 +39,9 @@ const developpeSeul = meets.filter((m) => m.events.length === 1 && m.events[0] =
       cette page, de « 1 238résultats » à « Leclassement communauté ».
     */}
     <p>
-      Le site s'appuie actuellement sur {results.length.toLocaleString('fr-FR')}{' '}
-      résultats, {nombreAthletes()} athlètes et {meets.length} compétitions,
+      Le site s'appuie actuellement sur{' '}
+      {results.length.toLocaleString('fr-FR')}&nbsp;résultats,{' '}
+      {nombreAthletes()}&nbsp;athlètes et {meets.length}&nbsp;compétitions,
       couvrant la période du {dateLongue(debut)} au {dateLongue(fin)}. Les
       données sont régénérées automatiquement le 1<sup>er</sup> de chaque mois.
     </p>
@@ -98,15 +99,15 @@ const developpeSeul = meets.filter((m) => m.events.length === 1 && m.events[0] =
         <strong>Records par mouvement</strong> : toutes les compétitions. Une{' '}
         <Terme cle="barre">barre</Terme> compte dès qu'elle est soulevée devant
         des juges, y compris sur une compétition d'un seul mouvement. Le
-        développé couché seul représente {developpeSeul} des {meets.length}{' '}
-        compétitions de l'île. Les écarter afficherait des records inférieurs à
-        la réalité.
+        développé couché seul représente {developpeSeul} des{' '}
+        {meets.length}&nbsp;compétitions de l'île. Les écarter afficherait des
+        records inférieurs à la réalité.
       </li>
       <li>
         <strong>Record au total</strong> : full power uniquement. Sur une
         compétition d'un seul mouvement, le « total » publié vaut cette seule
-        barre. Le retenir mettrait un développé couché de 130 kg en concurrence
-        avec un vrai total de 700 kg.
+        barre. Le retenir mettrait un développé couché de 130&nbsp;kg en
+        concurrence avec un vrai total de 700&nbsp;kg.
       </li>
       <li>
         <strong>Performances annulées</strong> : les résultats disqualifiés, y

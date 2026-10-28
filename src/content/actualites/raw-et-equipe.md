@@ -1,6 +1,6 @@
 ---
 titre: "Raw et équipé, ce qui sépare les deux classements"
-description: "La combinaison de force ajoute des kilos à la barre. 68 résultats équipés sur 1 221 à La Réunion, de 2017 à juillet 2026."
+description: "La combinaison de force ajoute des kilos à la barre. 68 résultats équipés sur 1 221 à La Réunion, de 2017 à juillet 2026."
 date: 2026-10-14
 athletes:
   - Gabriel Begue
@@ -17,7 +17,7 @@ barre, donc les deux catégories se classent séparément.
 En raw, la ceinture, les genouillères souples et les bandes de poignets restent
 autorisées. Elles soutiennent l'articulation sans rendre d'énergie.
 
-## 68 résultats équipés sur 1 221, de 2017 à juillet 2026
+## 68 résultats équipés sur 1 221, de 2017 à juillet 2026
 
 Les compétitions de l'île sont recensées depuis 2017. Le raw représente 1 153
 résultats, l'équipé 68. Dix-sept athlètes ont concouru équipé.

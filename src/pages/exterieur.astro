@@ -38,9 +38,10 @@ const resultats = [...resultatsExterieur].sort((a, b) => b.date.localeCompare(a.
         chiffres sont calculés par lib/exterieur.ts.
       */}
       <p class="chapeau">
-        {stats.resultats} résultats obtenus hors de l'île par {stats.athletes}{' '}
-        athlètes du site, dans {stats.pays} pays et {stats.federations}{' '}
-        fédérations, de {annee(stats.debut)} à {annee(stats.fin)}.
+        {stats.resultats}&nbsp;résultats obtenus hors de l'île par{' '}
+        {stats.athletes}&nbsp;athlètes du site, dans {stats.pays}&nbsp;pays et{' '}
+        {stats.federations}&nbsp;fédérations, de {annee(stats.debut)} à{' '}
+        {annee(stats.fin)}.
       </p>
       {/*
         DEUX PHRASES COURTES pour la seconde ligne de l'encadré. Elle en
