@@ -276,6 +276,11 @@ const fournies = new Set(
    * principaux : il désigne ici les catégories où la concurrence est la plus
    * dense. Le basalte dessus donne 10,66:1 en clair. Le survol assombrit
    * l'aplat en clair et l'éclaircit en sombre, comme celui d'un bouton.
+   *
+   * LE FILET EST D'ACCENT, comme celui d'un état choisi dans la barre de
+   * filtres : en thème clair, l'aplat seul ne se détache du fond qu'à
+   * 1,39:1, le filet d'accent tient 5,34:1. En sombre, les deux jetons ont
+   * la même couleur.
    */
   .choix a.fournie,
   .choix a.fournie .effectif {
@@ -283,12 +288,12 @@ const fournies = new Set(
   }
 
   .choix a.fournie {
-    border-color: var(--accent-fill);
+    border-color: var(--accent);
     background: var(--accent-fill);
   }
 
   .choix a.fournie:hover {
-    border-color: var(--accent-fill-hover);
+    border-color: var(--accent-hover);
     background: var(--accent-fill-hover);
   }
 
