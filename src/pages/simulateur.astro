@@ -30,6 +30,7 @@
  */
 import Glossaire from '../components/Glossaire.astro';
 import Repli from '../components/Repli.astro';
+import Terme from '../components/Terme.astro';
 import InfographieDots from '../components/infographies/InfographieDots.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import '../styles/filtres.css';
@@ -85,16 +86,17 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     <header class="entete-page">
       <h1>Me situer</h1>
       <p class="chapeau">
-        Renseignez vos trois barres, votre équipement et votre poids de corps :
-        la page vous rend la place que ce total occuperait au classement de
-        La Réunion, et surtout les kilos qui vous séparent des athlètes situés
-        juste devant.
+        Renseignez vos trois <Terme cle="barre">barres</Terme>, votre équipement
+        et votre <Terme cle="poids-corps">poids de corps</Terme> : la page vous
+        rend la place que ce <Terme cle="total">total</Terme> occuperait au
+        classement de La Réunion, et surtout les kilos qui vous séparent des
+        athlètes situés juste devant.
       </p>
       <p class="chapeau petit">
         Tout se calcule dans votre navigateur. Aucune valeur saisie ne part sur
         le réseau, et le site n'en conserve aucune. Cette simulation ne vous
         inscrit pas au classement officiel, qui ne recense que des performances
-        réalisées en compétition homologuée.
+        réalisées en compétition <Terme cle="homologue">homologuée</Terme>.
       </p>
     </header>
 
@@ -193,10 +195,13 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     </section>
 
     <p class="note">
-      Le classement retient le meilleur total réalisé en full power sur un
-      plateau réunionnais. Les athlètes affichés ici sont ceux de votre
-      catégorie et de votre équipement : un total équipé ne se compare pas à un
-      total raw, les textiles restituant une partie de l'effort.
+      Le classement retient le meilleur total réalisé en{' '}
+      <Terme cle="full-power">full power</Terme> sur un plateau réunionnais. Les
+      athlètes affichés ici sont ceux de votre{' '}
+      <Terme cle="categorie">catégorie</Terme> et de votre équipement : un
+      total <Terme cle="equipped">équipé</Terme> ne se compare
+      pas à un total <Terme cle="raw">raw</Terme>, les textiles restituant une
+      partie de l'effort.
     </p>
   </div>
 

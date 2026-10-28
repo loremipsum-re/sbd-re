@@ -4,6 +4,7 @@ import Coupe from '../../../components/Coupe.astro';
 import InteractiveTable from '../../../components/InteractiveTable.astro';
 import Medaille from '../../../components/Medaille.astro';
 import Repli from '../../../components/Repli.astro';
+import Terme from '../../../components/Terme.astro';
 import InfographieCompetition from '../../../components/infographies/InfographieCompetition.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import {
@@ -351,13 +352,25 @@ const description =
     </InteractiveTable>
 
     <p class="note">
-      Les médailles distinguent le podium <strong>de chaque catégorie</strong>,
-      puisqu'une compétition se dispute catégorie par catégorie. La coupe
-      signale une barre qui constitue aujourd'hui un record à La Réunion.
+      Les médailles distinguent le podium <strong>de chaque{' '}
+      <Terme cle="categorie">catégorie</Terme></strong>, puisqu'une compétition
+      se dispute catégorie par catégorie. La coupe signale une{' '}
+      <Terme cle="barre">barre</Terme> qui constitue aujourd'hui un{' '}
+      <Terme cle="record">record</Terme> à La Réunion.
       {
-        aDuFullPower
-          ? ' Le total et les points Dots concernent le full power.'
-          : ' Cette compétition portait sur un seul mouvement, le total et les points Dots ne s’y appliquent pas.'
+        aDuFullPower ? (
+          <>
+            {' '}Le <Terme cle="total">total</Terme> et les points{' '}
+            <Terme cle="dots">Dots</Terme> concernent le{' '}
+            <Terme cle="full-power">full power</Terme>.
+          </>
+        ) : (
+          <>
+            {' '}Cette compétition portait sur un seul mouvement, le{' '}
+            <Terme cle="total">total</Terme> et les points{' '}
+            <Terme cle="dots">Dots</Terme> ne s’y appliquent pas.
+          </>
+        )
       }
     </p>
 

@@ -1,5 +1,6 @@
 ---
 import Repli from '../components/Repli.astro';
+import Terme from '../components/Terme.astro';
 import InfographieComparer from '../components/infographies/InfographieComparer.astro';
 import '../styles/filtres.css';
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -120,9 +121,10 @@ const nombreAthletes = athletes.length;
     <h1>Comparer des athlètes</h1>
 
     <p class="chapeau">
-      Choisissez jusqu'à quatre athlètes et comparez leurs meilleures barres.
-      L'écart s'affiche en pourcentage par rapport au meilleur de chaque ligne.
-      L'adresse de la page garde votre sélection : le lien se partage tel quel.
+      Choisissez jusqu'à quatre athlètes et comparez leurs meilleures{' '}
+      <Terme cle="barre">barres</Terme>. L'écart s'affiche en pourcentage par
+      rapport au meilleur de chaque ligne. L'adresse de la page garde votre
+      sélection : le lien se partage tel quel.
     </p>
 
     {/*
@@ -203,14 +205,16 @@ const nombreAthletes = athletes.length;
       un soulevé de terre de 2025.
     </p>
     <p>
-      Le total et les points Dots proviennent uniquement du full power, seul
+      Le <Terme cle="total">total</Terme> et les points{' '}
+      <Terme cle="dots">Dots</Terme> proviennent uniquement du full power, seul
       format où les trois mouvements s'enchaînent. Les barres isolées, elles,
       comptent quel que soit le format de la compétition.
     </p>
     <p>
-      Comparer deux athlètes de catégories de poids différentes au total brut a
-      ses limites : c'est précisément ce que corrigent les points Dots, qui
-      rapportent la performance au poids de corps.
+      Comparer deux athlètes de <Terme cle="categorie">catégories</Terme> de
+      poids différentes au total brut a ses limites : c'est précisément ce que
+      corrigent les points Dots, qui rapportent la performance au{' '}
+      <Terme cle="poids-corps">poids de corps</Terme>.
     </p>
   </div>
 </BaseLayout>

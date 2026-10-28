@@ -560,7 +560,10 @@ const courant = (href: string) =>
   .entete {
     position: sticky;
     top: 0;
-    z-index: 5;
+    /* Au-dessus des bulles du lexique (5), elles-mêmes au-dessus des boutons
+       flottants (4) : une bulle ouverte glisse sous l'en-tête quand la page
+       défile. Voir tokens.css. */
+    z-index: 6;
     background: color-mix(in srgb, var(--bg) 85%, transparent);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border);

@@ -3,6 +3,7 @@ import IconeMouvement from '../components/IconeMouvement.astro';
 import SpriteMouvements from '../components/SpriteMouvements.astro';
 import InteractiveTable from '../components/InteractiveTable.astro';
 import Repli from '../components/Repli.astro';
+import Terme from '../components/Terme.astro';
 import InfographieEquipement from '../components/infographies/InfographieEquipement.astro';
 import InfographieRecords from '../components/infographies/InfographieRecords.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -137,9 +138,9 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
         qui lit les chiffres.
       */}
       <p class="chapeau">
-        La meilleure barre réalisée en compétition à La Réunion, pour chaque
-        catégorie de poids, chez les hommes et chez les femmes, en raw et en
-        équipé.
+        La meilleure <Terme cle="barre">barre</Terme> réalisée en compétition à
+        La Réunion, pour chaque <Terme cle="categorie">catégorie</Terme> de
+        poids, chez les hommes et chez les femmes, en <Terme cle="raw">raw</Terme> et en <Terme cle="equipped">équipé</Terme>.
       </p>
     </header>
 
@@ -342,7 +343,8 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
 
     <p class="note">
       Le développé couché tient compte des compétitions dédiées à ce mouvement.
-      Squat, soulevé de terre et total viennent du full power. Les résultats
+      Squat, soulevé de terre et <Terme cle="total">total</Terme> viennent du{' '}
+      <Terme cle="full-power">full power</Terme>. Les résultats
       de squat seul et de soulevé de terre seul figurent sans catégorie de
       poids dans les données. Un tiret signale une catégorie où aucune
       performance n'a encore été enregistrée lors d'une compétition

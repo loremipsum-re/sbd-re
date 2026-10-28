@@ -1,6 +1,7 @@
 ---
 import RankingTable from '../components/RankingTable.astro';
 import Repli from '../components/Repli.astro';
+import Terme from '../components/Terme.astro';
 import InfographieSaisons from '../components/infographies/InfographieSaisons.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import nextMeet from '../data/next-meet.json';
@@ -93,8 +94,10 @@ const stats = [
       <div>
         <h2>Top 10 toutes catégories</h2>
         <p class="fin">
-          Classement aux points Dots : le total ramené au poids de corps. Full
-          power uniquement.
+          Classement aux points <Terme cle="dots">Dots</Terme> : le{' '}
+          <Terme cle="total">total</Terme> ramené au{' '}
+          <Terme cle="poids-corps">poids de corps</Terme>.{' '}
+          <Terme cle="full-power">Full power</Terme> uniquement.
         </p>
       </div>
       <a class="lien-plus lien-nu" href="/classement/">Classement complet →</a>
@@ -159,7 +162,8 @@ const stats = [
         <h2>Performances hors compétition</h2>
         <p class="fin">
           Le top des performances réunionnaises réalisées en salle et en
-          compétition non homologuée. Bientôt disponible.
+          compétition non <Terme cle="homologue">homologuée</Terme>. Bientôt
+          disponible.
         </p>
       </div>
       <a class="bouton lien-nu" href="/communaute/">Voir le classement communauté</a>

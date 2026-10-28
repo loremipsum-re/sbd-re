@@ -1,7 +1,9 @@
 // @ts-check
+import { createHash } from 'node:crypto';
 import { readFileSync, statSync } from 'node:fs';
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
+import { lexiqueMarkdown } from './src/lib/lexique-markdown.ts';
 
 /** Reproduit meetNameSlug() et athleteSlug() de src/lib/slug.ts. */
 const slugifier = (/** @type {string} */ valeur) =>
@@ -91,6 +93,61 @@ function ancienesAdressesCompetitions() {
 
 const REDIRECTIONS = ancienesAdressesCompetitions();
 
+/**
+ * Le lexique souligné : les termes techniques, à leur première apparition, avec
+ * leur définition en bulle. Deux branchements, posés ici une fois pour tout le
+ * site.
+ *
+ * 1. LE GREFFON DES ARTICLES, sur le moteur Markdown. Astro 7 lit le Markdown
+ *    avec Sätteri, son moteur natif, qui remplace la chaîne remark et rehype :
+ *    `markdown.rehypePlugins` n'y tourne plus. Les greffons se déclarent sur
+ *    le moteur lui-même. La voie documentée demanderait d'installer
+ *    `@astrojs/markdown-satteri` pour appeler `satteri({ … })` ; le moteur
+ *    qu'Astro pose par défaut accepte aussi qu'une intégration lui ajoute un
+ *    greffon, ce qui évite une dépendance de plus au projet. Si le moteur
+ *    change un jour, la génération s'arrête ici, en le disant : un lexique qui
+ *    disparaîtrait des articles sans prévenir passerait inaperçu.
+ *
+ * 2. LE SCRIPT DES BULLES, sur chaque page. Il ne fait rien là où aucun terme
+ *    n'est souligné. Posé par Terme.astro, il aurait atterri au milieu d'une
+ *    phrase : Astro rend le script d'un composant là où celui-ci apparaît pour
+ *    la première fois.
+ *
+ * L'EMPREINTE DU LEXIQUE. Astro garde le HTML de chaque article d'une
+ * génération à l'autre, et ne le recalcule que si le fichier Markdown change,
+ * ou si sa propre configuration change. Une définition corrigée dans le
+ * glossaire restait donc ancienne dans les articles, à jour dans les pages :
+ * mesuré. L'empreinte des deux fichiers du lexique entre dans le greffon, donc
+ * dans la configuration, et la moindre modification fait tout recalculer.
+ *
+ * Le greffon : src/lib/lexique-markdown.ts. Le script : src/lib/bulles-lexique.ts.
+ * Le style : src/styles/tokens.css. Les définitions : src/lib/glossaire.ts.
+ */
+const empreinteLexique = createHash('sha256')
+  .update(readFileSync(new URL('./src/lib/glossaire.ts', import.meta.url)))
+  .update(readFileSync(new URL('./src/lib/lexique-markdown.ts', import.meta.url)))
+  .digest('hex')
+  .slice(0, 16);
+
+/** @type {import('astro').AstroIntegration} */
+const lexique = {
+  name: 'sbd-lexique',
+  hooks: {
+    'astro:config:setup': ({ config, injectScript }) => {
+      const moteur = /** @type {{ name: string, options: { hastPlugins?: unknown[] } }} */ (
+        config.markdown.processor
+      );
+      if (moteur.name !== 'satteri' || !Array.isArray(moteur.options.hastPlugins)) {
+        throw new Error(
+          `Le lexique des articles attend le moteur Markdown Sätteri, trouvé « ${moteur.name} ». Voir astro.config.mjs.`,
+        );
+      }
+      moteur.options.hastPlugins.push(lexiqueMarkdown(empreinteLexique));
+      injectScript('page', "import '/src/lib/bulles-lexique.ts';");
+    },
+  },
+};
+
 // https://astro.build/config
 export default defineConfig({
   // Sert à générer les URL absolues : balises canoniques, plan de site, partages.
@@ -114,6 +171,8 @@ export default defineConfig({
   redirects: REDIRECTIONS,
 
   integrations: [
+    lexique,
+
     sitemap({
       // Les pages de redirection ne doivent pas figurer au plan de site : elles
       // n'ont pas de contenu propre et diluent le référencement.
