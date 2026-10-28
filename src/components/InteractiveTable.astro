@@ -29,9 +29,11 @@
  * rangée d'état. La carte des salles, la comparaison et le simulateur en
  * reprennent la forme.
  *
- * LE TRI S'ÉCRIT DANS L'ADRESSE, `?tri=nom`, et `&sens=croissant` quand il
- * va à rebours de son premier clic : une liste triée se partage par un lien,
- * et le retour arrière la retrouve triée. Voir `ecrireAdresse` dans le script.
+ * LE TRI PAR DÉFAUT N'EST DÉCLARÉ NULLE PART : c'est l'ordre servi. Le script
+ * reconnaît la colonne qui le reproduit, et la rangée d'état dit le tri dès
+ * qu'il s'en écarte, avec un bouton pour y revenir. Le tri s'écrit dans
+ * l'adresse, `?tri=nom`, et `&sens=croissant` quand il va à rebours de son
+ * premier clic. Voir `ordreServi` dans le script.
  */
 
 import EtatVide from './EtatVide.astro';
@@ -156,21 +158,36 @@ const repliable = aFiltres && replier !== undefined;
         {/*
           LA RANGÉE D'ÉTAT, au même endroit sur toutes les pages : le compteur
           à gauche, « Réinitialiser » à droite dès qu'un filtre ou une
-          recherche est actif, et dessous une étiquette par filtre actif.
-          Panneau fermé, c'est elle qui dit ce que la liste montre.
+          recherche est actif, dessous le tri quand ce n'est pas celui de la
+          liste, puis une étiquette par filtre actif. Panneau fermé, c'est elle
+          qui dit ce que la liste montre, et dans quel ordre.
 
           Le compteur accepte le focus du script, `tabindex="-1"` : quand le
           bouton qu'on vient d'actionner disparaît, le focus s'y pose plutôt
           que dans le champ de recherche, qui ferait surgir le clavier d'un
           téléphone.
+
+          LE COMPTEUR ANNONCE AUSSI LE TRI, par une phrase réservée aux
+          lecteurs d'écran : c'est la zone que ceux-ci entendent déjà à chaque
+          changement. `aria-atomic` la fait lire en entier, nombre et tri
+          ensemble. L'étiquette visible dit la même phrase et reste muette,
+          sans quoi elle serait lue deux fois de suite.
         */}
         <div class="rangee-etat">
-          <p class="compteur" aria-live="polite" data-compteur tabindex="-1">
-            {total !== undefined && `${total} ${total > 1 ? plurielFinal : singulier}`}
+          <p class="compteur" aria-live="polite" aria-atomic="true" data-compteur tabindex="-1">
+            <span data-compte>{total !== undefined && `${total} ${total > 1 ? plurielFinal : singulier}`}</span><span class="sr-only" data-annonce-tri></span>
           </p>
           <button type="button" class="bouton-outil bouton-reinitialiser" data-reinitialiser hidden>
             Réinitialiser
           </button>
+          {/* Masqué au tri par défaut, sans JavaScript comme avec : le script
+              l'affiche dès que l'ordre de la liste n'est plus celui servi. */}
+          <div class="tri-actif" data-tri-actif hidden>
+            <p class="etiquette-tri" data-etiquette-tri aria-hidden="true"></p>
+            <button type="button" class="bouton-outil bouton-tri-defaut" data-retour-tri>
+              Revenir au tri par défaut
+            </button>
+          </div>
           <ul class="etiquettes-actives" data-etiquettes-actives aria-label="Filtres actifs" hidden>
           </ul>
         </div>
@@ -236,6 +253,11 @@ const repliable = aFiltres && replier !== undefined;
 
     const champ = bloc.querySelector<HTMLInputElement>('[data-recherche]');
     const compteur = bloc.querySelector<HTMLElement>('[data-compteur]');
+    const compte = bloc.querySelector<HTMLElement>('[data-compte]');
+    const annonceTri = bloc.querySelector<HTMLElement>('[data-annonce-tri]');
+    const triActif = bloc.querySelector<HTMLElement>('[data-tri-actif]');
+    const etiquetteTri = bloc.querySelector<HTMLElement>('[data-etiquette-tri]');
+    const retourTri = bloc.querySelector<HTMLButtonElement>('[data-retour-tri]');
     const etatVide = bloc.querySelector<HTMLElement>('[data-etat-vide]');
     const selects = Array.from(bloc.querySelectorAll<HTMLSelectElement>('[data-filtre]'));
     const barreFiltres = bloc.querySelector<HTMLElement>('[data-barre-filtres]');
@@ -286,12 +308,15 @@ const repliable = aFiltres && replier !== undefined;
       entetes.filter((e) => e.dataset.cle).map((e) => [e.cellIndex, e.dataset.cle!]),
     );
 
-    function valeurCellule(ligne: HTMLTableRowElement, index: number): string | number {
+    function valeurBrute(ligne: HTMLTableRowElement, index: number): string {
       const cle = clesParColonne.get(index);
-      const brut =
-        cle !== undefined
-          ? (ligne.dataset[cle] ?? '')
-          : (ligne.cells[index]?.dataset.valeur ?? ligne.cells[index]?.textContent ?? '');
+      return cle !== undefined
+        ? (ligne.dataset[cle] ?? '')
+        : (ligne.cells[index]?.dataset.valeur ?? ligne.cells[index]?.textContent ?? '');
+    }
+
+    function valeurCellule(ligne: HTMLTableRowElement, index: number): string | number {
+      const brut = valeurBrute(ligne, index);
 
       if (colonnesNumeriques.has(index)) {
         // Une valeur absente doit finir en queue de classement, jamais en tête :
@@ -300,6 +325,99 @@ const repliable = aFiltres && replier !== undefined;
         return Number.isFinite(n) ? n : Number.NEGATIVE_INFINITY;
       }
       return normaliser(String(brut));
+    }
+
+    /**
+     * Compare deux lignes sur une colonne, dans l'ordre croissant. Le tri et
+     * la reconnaissance de l'ordre servi passent tous deux par elle : deux
+     * comparaisons distinctes finiraient par ne plus s'accorder.
+     *
+     * Deux valeurs absentes donnent `-Infinity - -Infinity`, soit NaN, que
+     * `sort()` traite comme une égalité : on le dit ici en clair.
+     */
+    function comparer(a: HTMLTableRowElement, b: HTMLTableRowElement, index: number): number {
+      const va = valeurCellule(a, index);
+      const vb = valeurCellule(b, index);
+      const comparaison =
+        typeof va === 'number' && typeof vb === 'number'
+          ? va - vb
+          : String(va).localeCompare(String(vb), 'fr');
+      return Number.isNaN(comparaison) ? 0 : comparaison;
+    }
+
+    /*
+     * LE TRI PAR DÉFAUT EST L'ORDRE SERVI, reconnu dans les données plutôt
+     * que déclaré par chaque page. Une colonne le reproduit quand ses valeurs,
+     * lues de ligne en ligne, ne font que monter, ou que descendre : le tri
+     * étant stable, trier par elle dans ce sens ne déplace alors aucune ligne,
+     * filtrée ou non.
+     *
+     * Mesuré le 28 octobre 2026 sur les 450 listes du site : le classement et
+     * les 17 pages de catégorie suivent le total décroissant, /records/ et
+     * /categories/ la catégorie croissante, /competitions/, /exterieur/ et
+     * l'historique des fiches la date décroissante, les résultats de 56
+     * compétitions sur 63 la place croissante. Dans les 7 autres, chaque
+     * athlète a fini premier de sa catégorie, et l'ordre suit le total ou la
+     * barre du jour. Une déclaration aurait demandé un attribut par page, à
+     * tenir d'accord avec l'ordre que calcule chacune.
+     *
+     * SUR UNE PETITE LISTE, PLUSIEURS COLONNES COÏNCIDENT : deux lignes sont
+     * toujours dans l'ordre de chaque colonne, dans un sens ou dans l'autre.
+     * Le bouton de retour nomme alors la première colonne de nombres, puis la
+     * première de texte : la date d'une fiche ou le total d'une catégorie, et
+     * non le nom qui se trouve suivre l'alphabet. Une colonne aux valeurs
+     * toutes égales ne nomme rien.
+     *
+     * CALCULÉ À LA DEMANDE, COLONNE PAR COLONNE : une page qu'on ne trie pas
+     * ne paie rien, et un tri ne lit que sa colonne et celle du défaut.
+     * Mesuré sur /exterieur/, 537 lignes : toutes les colonnes d'un coup
+     * doublaient la durée du premier tri, 42 ms contre 22 sans étiquette. À
+     * la demande, il prend 25 ms.
+     */
+    type Ordre = { croissant: boolean; decroissant: boolean; constante: boolean };
+    const ordres = new Map<number, Ordre>();
+
+    function ordreServi(index: number): Ordre {
+      let ordre = ordres.get(index);
+      if (!ordre) {
+        let croissant = true;
+        let decroissant = true;
+        for (const groupe of groupes) {
+          for (let i = 1; i < groupe.lignes.length; i++) {
+            const c = comparer(groupe.lignes[i - 1]!, groupe.lignes[i]!, index);
+            if (c > 0) croissant = false;
+            if (c < 0) decroissant = false;
+          }
+        }
+        ordre = { croissant, decroissant, constante: croissant && decroissant };
+        ordres.set(index, ordre);
+      }
+      return ordre;
+    }
+
+    /** Ce tri laisse-t-il la liste dans l'ordre où la page l'a servie ? */
+    function estOrdreServi(index: number, ascendant: boolean): boolean {
+      const ordre = ordreServi(index);
+      return ascendant ? ordre.croissant : ordre.decroissant;
+    }
+
+    /** L'en-tête qui nomme le tri par défaut, s'il en est un. */
+    let enteteDuDefaut: HTMLTableCellElement | null | undefined;
+
+    function enteteServi(): HTMLTableCellElement | null {
+      if (enteteDuDefaut === undefined) {
+        const toutes = [...colonnes.values()];
+        const parPriorite = [
+          ...toutes.filter((e) => colonnesNumeriques.has(e.cellIndex)),
+          ...toutes.filter((e) => !colonnesNumeriques.has(e.cellIndex)),
+        ];
+        enteteDuDefaut =
+          parPriorite.find((e) => {
+            const ordre = ordreServi(e.cellIndex);
+            return !ordre.constante && (ordre.croissant || ordre.decroissant);
+          }) ?? null;
+      }
+      return enteteDuDefaut;
     }
 
     /**
@@ -366,10 +484,11 @@ const repliable = aFiltres && replier !== undefined;
      * `&sens=decroissant` pour un texte. Un lien vers « /classement/?tri=dots »
      * donne donc le classement aux Dots, du plus haut au plus bas.
      *
-     * L'adresse ne porte un tri que s'il en a été choisi un. Ses deux
-     * paramètres côtoient ceux des filtres : aucun filtre ne s'appelle `tri`
-     * ni `sens`, pour la même raison qu'un attribut de tri et un attribut de
-     * filtre ne partagent jamais leur nom.
+     * Le retour au tri par défaut retire les deux paramètres : l'adresse ne
+     * porte un tri que s'il en a été choisi un. Ils côtoient ceux des
+     * filtres : aucun filtre ne s'appelle `tri` ni `sens`, pour la même raison
+     * qu'un attribut de tri et un attribut de filtre ne partagent jamais leur
+     * nom.
      */
     function cleTri(entete: HTMLTableCellElement): string {
       return normaliser(entete.textContent ?? '')
@@ -436,12 +555,7 @@ const repliable = aFiltres && replier !== undefined;
         if (colonneTri !== null) {
           const index = colonneTri;
           visibles = [...visibles].sort((a, b) => {
-            const va = valeurCellule(a, index);
-            const vb = valeurCellule(b, index);
-            const comparaison =
-              typeof va === 'number' && typeof vb === 'number'
-                ? va - vb
-                : String(va).localeCompare(String(vb), 'fr');
+            const comparaison = comparer(a, b, index);
             return sensAscendant ? comparaison : -comparaison;
           });
         }
@@ -486,7 +600,7 @@ const repliable = aFiltres && replier !== undefined;
         );
       }
 
-      if (compteur) {
+      if (compte) {
         const singulier = bloc.dataset.singulier ?? 'résultat';
         const pluriel = bloc.dataset.pluriel ?? `${singulier}s`;
         const mot = totalVisible > 1 ? pluriel : singulier;
@@ -494,7 +608,7 @@ const repliable = aFiltres && replier !== undefined;
          * « sur 320 » dès qu'un critère retire des lignes : le visiteur voit
          * ce que ses filtres ont écarté, sans avoir à se souvenir du total.
          */
-        compteur.textContent =
+        compte.textContent =
           totalVisible === 0
             ? 'Aucun résultat'
             : totalVisible === lignes.length
@@ -506,7 +620,89 @@ const repliable = aFiltres && replier !== undefined;
       // vérité, sans quoi les deux finiraient par se contredire.
       etatVide?.toggleAttribute('hidden', totalVisible > 0);
 
+      afficherTri();
       afficherEtat();
+    }
+
+    /** Le nom d'une colonne tel que l'écrit son en-tête : « Poids de corps ». */
+    function nomColonne(entete: HTMLTableCellElement): string {
+      return (entete.textContent ?? '').replace(/\s+/g, ' ').trim();
+    }
+
+    /*
+     * LE SENS, DANS LES MOTS D'UN TABLEUR. Trois familles de colonnes : le
+     * texte, de A à Z ; les dates, du plus ancien au plus récent ; les autres
+     * nombres, du plus petit au plus grand. Le texte dans l'ordre alphabétique
+     * se passe de précision : « Trié par Nom » dit déjà de A à Z.
+     *
+     * UNE DATE SE RECONNAÎT À SA VALEUR, huit chiffres AAAAMMJJ : c'est la
+     * forme que les pages donnent à `data-valeur` pour trier une date, sur
+     * /competitions/, /exterieur/ et l'historique d'une fiche. Un total, un
+     * score ou un effectif tient en quatre chiffres au plus.
+     */
+    const colonnesDates = new Map<number, boolean>();
+
+    function estColonneDate(index: number): boolean {
+      let date = colonnesDates.get(index);
+      if (date === undefined) {
+        const valeurs = lignes.map((l) => valeurBrute(l, index).trim()).filter(Boolean);
+        date =
+          colonnesNumeriques.has(index) &&
+          valeurs.length > 0 &&
+          valeurs.every((v) => /^(19|20)\d\d(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])$/.test(v));
+        colonnesDates.set(index, date);
+      }
+      return date;
+    }
+
+    function motsDuSens(index: number, ascendant: boolean): string {
+      if (!colonnesNumeriques.has(index)) return ascendant ? '' : 'de Z à A';
+      if (estColonneDate(index)) {
+        return ascendant ? 'du plus ancien au plus récent' : 'du plus récent au plus ancien';
+      }
+      return ascendant ? 'du plus petit au plus grand' : 'du plus grand au plus petit';
+    }
+
+    /**
+     * Ce que la rangée d'état dit du tri : rien au tri par défaut, sinon le
+     * critère et le sens, et un bouton qui ramène l'ordre servi.
+     *
+     * Le critère garde la casse de son en-tête, en gras, comme une pastille
+     * de la barre « Trier par » qu'il désigne : « Trié par Nom ». Une règle de
+     * minuscules écrirait « dots », quand le site écrit toujours « Dots », et
+     * une liste d'exceptions recopierait les en-têtes au lieu de les lire.
+     */
+    function afficherTri() {
+      const entete = colonneTri === null ? undefined : colonnes.get(colonneTri);
+      const visible = entete !== undefined && !estOrdreServi(entete.cellIndex, sensAscendant);
+
+      if (triActif) triActif.hidden = !visible;
+      if (!visible || !entete) {
+        if (annonceTri) annonceTri.textContent = '';
+        return;
+      }
+
+      const nom = nomColonne(entete);
+      const sens = motsDuSens(entete.cellIndex, sensAscendant);
+      if (etiquetteTri) {
+        const critere = document.createElement('strong');
+        critere.textContent = nom;
+        const morceaux: (string | Node)[] = ['Trié par ', critere];
+        if (sens) {
+          const mots = document.createElement('span');
+          mots.className = 'sens';
+          mots.textContent = sens;
+          morceaux.push(', ', mots);
+        }
+        etiquetteTri.replaceChildren(...morceaux);
+      }
+      if (annonceTri) annonceTri.textContent = `. Trié par ${nom}${sens ? `, ${sens}` : ''}.`;
+      if (retourTri) {
+        const servi = enteteServi();
+        retourTri.textContent = servi
+          ? `Revenir au tri par ${nomColonne(servi)}`
+          : 'Revenir au tri par défaut';
+      }
     }
 
     /** Le libellé visible d'un filtre, « Sexe » ou « Catégorie ». */
@@ -645,6 +841,24 @@ const repliable = aFiltres && replier !== undefined;
       ecrireAdresse();
     }
 
+    /**
+     * Rend la liste dans l'ordre servi : l'état du chargement, aucune
+     * colonne marquée, et l'adresse sans tri. Les filtres et la recherche
+     * restent, comme le tri reste quand on les réinitialise.
+     *
+     * Le bouton disparaît sous le doigt : le focus va au bouton « Filtres »,
+     * sinon au compteur, qui lit alors l'effectif sans le tri. Jamais dans le
+     * champ de recherche, qui ferait surgir le clavier d'un téléphone.
+     */
+    function revenirAuTriServi() {
+      colonneTri = null;
+      sensAscendant = true;
+      marquerTri();
+      appliquer();
+      ecrireAdresse();
+      cibleDuFocus()?.focus();
+    }
+
     // ----- Tri par clic sur l'en-tête -----
     for (const entete of entetes) {
       const index = entete.cellIndex;
@@ -710,6 +924,7 @@ const repliable = aFiltres && replier !== undefined;
       .querySelector<HTMLButtonElement>('[data-tout-afficher]')
       ?.addEventListener('click', toutAfficher);
     reinitialiser?.addEventListener('click', toutAfficher);
+    retourTri?.addEventListener('click', revenirAuTriServi);
 
     etiquettes?.addEventListener('click', (evenement) => {
       const bouton = (evenement.target as HTMLElement).closest<HTMLButtonElement>('[data-retirer]');
@@ -761,7 +976,8 @@ const repliable = aFiltres && replier !== undefined;
      * Un état venu de l'adresse doit être appliqué immédiatement, sans quoi la
      * page s'afficherait complète alors que les filtres annoncent autre chose.
      * Même chose pour un menu que le navigateur a rempli de lui-même au retour
-     * sur la page, et pour un tri. Sinon, seul l'état de la barre est posé.
+     * sur la page, et pour un tri : l'étiquette le dit dès l'arrivée. Sinon,
+     * seul l'état de la barre est posé.
      */
     const dejaFiltre = selects.some((s) => s.value !== '') || Boolean(champ?.value);
     if ((interactif && (location.search || dejaFiltre)) || colonneTri !== null) appliquer();
