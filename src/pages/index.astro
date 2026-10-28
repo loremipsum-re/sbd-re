@@ -31,7 +31,9 @@ const stats = [
   { valeur: nombreAthletes().toString(), libelle: 'athlètes' },
   { valeur: meets.length.toString(), libelle: 'compétitions' },
   { valeur: results.length.toLocaleString('fr-FR'), libelle: 'résultats' },
-  { valeur: `${annee(debut)}–${annee(fin)}`, libelle: 'de données' },
+  /* « 2017 à 2026 », et non un tiret. À 320 px, la période passe sur deux
+     lignes : l'insécable fait tomber la coupure avant « à », jamais après. */
+  { valeur: `${annee(debut)} à\u00a0${annee(fin)}`, libelle: 'de données' },
 ];
 ---
 
@@ -92,18 +94,21 @@ const stats = [
   <section class="wrap bloc">
     <header class="titre-bloc">
       <div>
-        <h2>Top 10 toutes catégories</h2>
+        <h2>Top 10 aux points Dots</h2>
         <p class="fin">
-          Classement aux points <Terme cle="dots">Dots</Terme> : le{' '}
-          <Terme cle="total">total</Terme> ramené au{' '}
-          <Terme cle="poids-corps">poids de corps</Terme>.{' '}
-          <Terme cle="full-power">Full power</Terme> uniquement.
+          Les points <Terme cle="dots">Dots</Terme> ramènent le{' '}
+          <Terme cle="total">total</Terme> au{' '}
+          <Terme cle="poids-corps">poids de corps</Terme>. Seules les
+          compétitions sur les trois mouvements comptent.
         </p>
       </div>
       <a class="lien-plus lien-nu" href="/classement/">Classement complet →</a>
     </header>
 
-    <RankingTable entries={top} />
+    {/* Les Dots dominent chaque ligne : c'est l'ordre de la liste. Avec le
+        total en grand, on lisait 807,5, puis 660, puis 790, et l'ordre
+        paraissait faux. */}
+    <RankingTable entries={top} dominante="dots" />
   </section>
 
   <section class="wrap bloc">
