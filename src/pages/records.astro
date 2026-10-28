@@ -1,4 +1,5 @@
 ---
+import AnneesRecords from '../components/AnneesRecords.astro';
 import IconeMouvement from '../components/IconeMouvement.astro';
 import SpriteMouvements from '../components/SpriteMouvements.astro';
 import InteractiveTable from '../components/InteractiveTable.astro';
@@ -127,7 +128,16 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
 >
   <SpriteMouvements />
     <div class="wrap">
-    <header class="entete-page">
+    {/*
+      L'EN-TÊTE PORTE L'ÂGE DES RECORDS, à droite du chapeau sur ordinateur,
+      dessous sur téléphone. Il dit d'un regard lesquels tiennent depuis
+      longtemps, ce que les cases des grilles ne disent qu'une à une.
+
+      COÛT MESURÉ le 28 octobre 2026 : la première grille descend de 78 px à
+      1 280 px, où les colonnes partagent la hauteur du chapeau, et de 140 px
+      à 375 px, les pastilles y regagnant une ligne.
+    */}
+    <header class="entete-page entete-records">
       <h1>Records de La Réunion</h1>
       {/*
         UN SEUL CHAPEAU, COURT. Les deux paragraphes d'avant occupaient 560 px
@@ -136,12 +146,18 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
         leurs trois choix n'ont pas besoin d'être expliqués. La règle de calcul
         du développé couché vit dans la note sous les grilles, où elle sert à
         qui lit les chiffres.
+
+        DEUX PHRASES, une par information : ce qu'est un record ici, puis ce
+        que séparent les grilles. « Record » reste sans soulignement, le
+        chapeau le définit.
       */}
       <p class="chapeau">
-        La meilleure <Terme cle="barre">barre</Terme> réalisée en compétition à
-        La Réunion, pour chaque <Terme cle="categorie">catégorie</Terme> de
-        poids, chez les hommes et chez les femmes, en <Terme cle="raw">raw</Terme> et en <Terme cle="equipped">équipé</Terme>.
+        Le record de chaque <Terme cle="categorie">catégorie</Terme> de poids,
+        mouvement par mouvement, réalisé en compétition à La Réunion. Les grilles
+        séparent hommes et femmes, <Terme cle="raw">raw</Terme> et{' '}
+        <Terme cle="equipped">équipé</Terme>.
       </p>
+      <AnneesRecords />
     </header>
 
     {/*
@@ -155,18 +171,17 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
       elle mesure 1 487 px à 375 px de large et repousserait les commandes de
       près de deux écrans.
 
-      DEUX LIGNES SUR TÉLÉPHONE, mesuré à 375 px le 24 octobre 2026. Aucune
-      paire de libellés en « en images » ne tient sur une ligne, même
-      raccourcie en « Équipement en images » et « Records en images » : 182 et
-      160 px, plus l'écart de 8, pour 343 disponibles. La seconde pastille
-      ajoute donc 52 px au-dessus des commandes. À 1 280 px, les deux
-      partagent la ligne et la page ne bouge pas.
+      LES PASTILLES NOMMENT LEUR QUESTION, et tiennent ainsi sur une ligne à
+      375 px : 143 et 168 px, plus l'écart de 8, pour 343 disponibles, mesuré
+      le 28 octobre 2026. « Raw, bandes et équipé en images » et « Records de
+      l'île en images » prenaient deux lignes et 52 px de plus. À 320 px, la
+      seconde passe encore dessous.
     */}
     <div class="rangee-replis">
-      <Repli titre="Raw, bandes et équipé en images">
+      <Repli titre={'Raw ou équipé\u00a0?'}>
         <InfographieEquipement lienArticle="equipement" />
       </Repli>
-      <Repli titre="Records de l'île en images">
+      <Repli titre={'Qui soulève le plus\u00a0?'}>
         <InfographieRecords lienArticle="records" />
       </Repli>
     </div>
@@ -404,6 +419,29 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
    * menus voisins, dont le segment choisi prend l'aplat d'accent. Un
    * `<fieldset>` par critère, sa `<legend>` tenant lieu d'étiquette.
    */
+
+  /*
+   * L'EN-TÊTE SUR DEUX COLONNES dès 60rem : le chapeau à gauche, l'âge des
+   * records à droite, calés sur leur haut, le chapeau restant collé au titre.
+   * Dessous, les colonnes suivent le chapeau à l'écart d'un paragraphe, la
+   * marge que tokens.css lui donne quand un bloc le suit.
+   */
+  @media (min-width: 60rem) {
+    .entete-records {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(18rem, 26rem);
+      column-gap: var(--space-12);
+      align-items: start;
+    }
+
+    .entete-records h1 {
+      grid-column: 1 / -1;
+    }
+
+    .entete-records .chapeau {
+      margin-bottom: 0;
+    }
+  }
 
   .section {
     margin-bottom: var(--space-12);

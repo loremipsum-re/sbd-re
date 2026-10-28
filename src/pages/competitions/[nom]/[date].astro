@@ -1,9 +1,11 @@
 ---
 import BadgeOfficiel from '../../../components/BadgeOfficiel.astro';
 import Coupe from '../../../components/Coupe.astro';
+import GrilleRecords from '../../../components/GrilleRecords.astro';
 import InteractiveTable from '../../../components/InteractiveTable.astro';
 import Medaille from '../../../components/Medaille.astro';
 import Repli from '../../../components/Repli.astro';
+import SpriteMouvements from '../../../components/SpriteMouvements.astro';
 import Terme from '../../../components/Terme.astro';
 import InfographieCompetition from '../../../components/infographies/InfographieCompetition.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
@@ -19,7 +21,13 @@ import Partenaire from '../../../components/Partenaire.astro';
 import { articlesDeLaCompetition } from '../../../lib/actualites';
 import { dateLongue, nombre, place, points } from '../../../lib/format';
 import { editionsDe, libelleEvent, listeMeets, resultatsDuMeet } from '../../../lib/meets';
-import { cleRecord, clesRecords } from '../../../lib/records';
+import {
+  cleRecord,
+  clesRecords,
+  nombreRecordsBattusLe,
+  parAthlete,
+  recordsDeLaCompetition,
+} from '../../../lib/records';
 import { athleteSlug } from '../../../lib/slug';
 import type { LiftKey, Metal, Result } from '../../../lib/types';
 
@@ -42,6 +50,27 @@ const femmes = resultats.filter((r) => r.sex === 'F').length;
 
 const estRecord = (r: Result, lift: LiftKey) =>
   records.has(cleRecord(lift, r.name, r.date, r.meetName));
+
+/*
+ * LE BANDEAU DES RECORDS : les coupes du tableau, rassemblées en tête. Ce sont
+ * les records établis ce jour-là qui tiennent toujours, et la phrase dit
+ * combien sont tombés depuis, pour que la liste ne passe pas pour complète.
+ *
+ * « BATTUS » SEULEMENT S'ILS ONT TOUS BATTU QUELQUE CHOSE. Une première marque
+ * ouvre une catégorie restée vide jusque-là, souvent celle d'un athlète seul
+ * en équipé : elle est établie, pas battue. Huit compétitions en comptent
+ * parmi leurs records en cours, relevé le 28 octobre 2026, et leur titre dit
+ * alors « établis ».
+ */
+const recordsDuJour = recordsDeLaCompetition(meet.date, meet.meetName);
+const athletesRecords = parAthlete(recordsDuJour);
+const avecBandeau = recordsDuJour.length > 0;
+const battusCeJour = nombreRecordsBattusLe(meet.date, meet.meetName);
+const battusEnCours = recordsDuJour.filter((r) => r.gainKg !== null).length;
+const premieresMarques = recordsDuJour.length - battusEnCours;
+const recordsIle = recordsDuJour.filter((r) => r.recordIle).length;
+const titreRecords =
+  premieresMarques === 0 ? 'Records battus ce jour-là' : 'Records établis ce jour-là';
 
 /**
  * Médaille du podium, décernée par CATÉGORIE et non sur l'ensemble du plateau.
@@ -144,12 +173,97 @@ const description =
       pixels. La pastille prend une partie de la marge qui séparait les
       chiffres clés du titre « Résultats ». Mesuré : les résultats descendent
       de 44 px, à 375 comme à 1 280 px.
+
+      LA PASTILLE NOMME LA QUESTION de l'image, la répartition des athlètes
+      entre les catégories. Elle tient sur une ligne jusqu'à 320 px : 278 px
+      pour 288, mesuré le 28 octobre 2026.
     */}
     <div class="rangee-replis repli-competition">
-      <Repli titre="La compétition en images">
+      <Repli titre={'Comment se répartissent les athlètes\u00a0?'}>
         <InfographieCompetition chemin={meet.chemin} />
       </Repli>
     </div>
+
+    {/*
+      LE BANDEAU DES RECORDS, EN TÊTE DES RÉSULTATS, absent quand la
+      compétition ne détient aucun record en cours. Ce que le compte rendu
+      raconte se lit avant le tableau, où il fallait repérer les coupes une à
+      une. Mesuré le 28 octobre 2026 à 375 px : 221 px pour un record, 514
+      au plus, la suite repliée au-delà de trois athlètes.
+    */}
+    {
+      avecBandeau && (
+        <section class="bandeau-records" aria-labelledby="records-du-jour">
+          <SpriteMouvements />
+          <h2 id="records-du-jour">
+            <span class="coupe-titre" aria-hidden="true">
+              <Coupe metal="or" detail="Record en cours" taille={24} />
+            </span>
+            {titreRecords}
+          </h2>
+          <p class="resume">
+            {battusCeJour === 0 ? (
+              <>
+                Les <Terme cle="record">records</Terme> de{' '}
+                <Terme cle="categorie">catégorie</Terme> de ce jour-là sont des
+                premières marques.
+              </>
+            ) : battusEnCours === battusCeJour ? (
+              battusCeJour === 1 ? (
+                <>
+                  Le <Terme cle="record">record</Terme> de{' '}
+                  <Terme cle="categorie">catégorie</Terme> battu ce jour-là tient
+                  toujours.
+                </>
+              ) : (
+                <>
+                  Les {battusCeJour} <Terme cle="record">records</Terme> de{' '}
+                  <Terme cle="categorie">catégorie</Terme> battus ce jour-là
+                  tiennent toujours.
+                </>
+              )
+            ) : battusEnCours === 0 ? (
+              <>
+                {battusCeJour === 1 ? 'Le' : `Les ${battusCeJour}`}{' '}
+                <Terme cle="record">{battusCeJour === 1 ? 'record' : 'records'}</Terme> de{' '}
+                <Terme cle="categorie">catégorie</Terme>{' '}
+                {battusCeJour === 1 ? 'battu ce jour-là est tombé' : 'battus ce jour-là sont tombés'}{' '}
+                depuis.
+              </>
+            ) : (
+              <>
+                {battusEnCours === 1 ? 'Un' : battusEnCours} des {battusCeJour}{' '}
+                <Terme cle="record">records</Terme> de{' '}
+                <Terme cle="categorie">catégorie</Terme> battus ce jour-là{' '}
+                {battusEnCours === 1 ? 'tient' : 'tiennent'} toujours.
+              </>
+            )}
+            {premieresMarques > 0 && (
+              <>
+                {' '}
+                {premieresMarques === 1
+                  ? `Une première marque, la première performance recensée de sa catégorie, tient ${battusEnCours > 0 ? 'aussi' : 'toujours'}.`
+                  : `${premieresMarques} premières marques, les premières performances recensées de leur catégorie, tiennent ${battusEnCours > 0 ? 'aussi' : 'toujours'}.`}
+              </>
+            )}
+            {recordsIle > 0 && (
+              <>
+                {' '}
+                {recordsIle === 1
+                  ? "La case sur fond jaune est aussi un record de l'île, toutes catégories confondues."
+                  : `Les ${recordsIle} cases sur fond jaune sont aussi des records de l'île, toutes catégories confondues.`}
+              </>
+            )}
+          </p>
+          <GrilleRecords
+            groupes={athletesRecords}
+            marquerIle
+            visibles={3}
+            legende={`${titreRecords} et qui tiennent toujours, par athlète et par mouvement`}
+          />
+        </section>
+      )
+    }
 
     <h2>Résultats</h2>
 
@@ -351,12 +465,12 @@ const description =
       </div>
     </InteractiveTable>
 
+    {/* « Catégorie » et « record » ne sont soulignés ici qu'en l'absence du
+        bandeau, qui les emploie en premier. */}
     <p class="note">
-      Les médailles distinguent le podium <strong>de chaque{' '}
-      <Terme cle="categorie">catégorie</Terme></strong>, puisqu'une compétition
+      Les médailles distinguent le podium <strong>de chaque{' '}{avecBandeau ? 'catégorie' : <Terme cle="categorie">catégorie</Terme>}</strong>, puisqu'une compétition
       se dispute catégorie par catégorie. La coupe signale une{' '}
-      <Terme cle="barre">barre</Terme> qui constitue aujourd'hui un{' '}
-      <Terme cle="record">record</Terme> à La Réunion.
+      <Terme cle="barre">barre</Terme> qui constitue aujourd'hui un{' '}{avecBandeau ? 'record' : <Terme cle="record">record</Terme>} à La Réunion.
       {
         aDuFullPower ? (
           <>
@@ -384,7 +498,7 @@ const description =
       */
       articlesDuMeet.length > 0 && (
         <section class="actus">
-          <h2>Sur cette compétition</h2>
+          <h2>Articles sur cette compétition</h2>
           <ul>
             {articlesDuMeet.map((a) => (
               <li>
@@ -460,6 +574,35 @@ const description =
      d'une section avant le titre « Résultats ». */
   .repli-competition {
     margin-bottom: var(--space-8);
+  }
+
+  /* Le bandeau garde le même écart avant « Résultats » que la pastille. */
+  .bandeau-records {
+    margin-bottom: var(--space-8);
+  }
+
+  .bandeau-records h2 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  /* La coupe du tableau, pour dire d'un coup d'œil ce que le bandeau
+     rassemble. Décorative : le titre le dit en toutes lettres. */
+  .coupe-titre {
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+  .coupe-titre :global(.coupe) {
+    margin-left: 0;
+    vertical-align: 0;
+  }
+
+  .resume {
+    max-width: 68ch;
+    margin-bottom: var(--space-4);
+    font-size: var(--step--1);
+    color: var(--muted);
   }
 
   .stats dt {
@@ -600,10 +743,8 @@ const description =
     border-top: 1px solid var(--border);
   }
 
-  .actus h2 {
-    font-size: var(--step-1);
-    margin-bottom: var(--space-3);
-  }
+  /* L'intertitre garde la taille et la marge des autres h2 de la page : il
+     valait 22,7 px contre 28,8, relevé à l'audit du 27 octobre 2026. */
 
   .actus ul {
     list-style: none;

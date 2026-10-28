@@ -1,0 +1,188 @@
+---
+/**
+ * L'année des records en cours, en colonnes : combien datent de chaque saison.
+ *
+ *   33
+ *   ██
+ *   ██            10          11      10
+ *   ██  10        ██    9     ██  7   ██  9
+ *   ██  ██  6  6  ██    ██ 0  ██  ██  ██  ██
+ *   17  18  19  20  21  22  23  24  25  26
+ *
+ * CE QUE LES GRILLES NE DISENT PAS. Chaque case de la page porte l'année de
+ * son record, mais il faut lire les cent cases pour savoir lesquels tiennent
+ * depuis longtemps. Les colonnes le disent d'un regard, et la phrase le dit
+ * en clair : en octobre 2026, un tiers des records datait de la saison, et
+ * dix tenaient depuis la première.
+ *
+ * TOUTES LES SAISONS DES DONNÉES, MÊME VIDES. Une saison sans record en cours
+ * garde sa colonne, à zéro : la retirer rapprocherait deux années qui ne se
+ * suivent pas. Une saison est une année civile, comme dans l'infographie des
+ * records, et la saison en cours est celle de la dernière compétition.
+ *
+ * LA SAISON EN COURS EN APLAT, les autres en gris plein. Le filet d'accent
+ * tient les 3:1 qu'un repère doit à son fond, que l'aplat seul ne donne pas
+ * en thème clair (1,29:1). L'année est écrite sous chaque colonne et le
+ * nombre au-dessus : la couleur ne porte rien seule.
+ *
+ * Les comptes viennent de `recordsEnCours`, qui reprend `recordsPour`, la
+ * source des grilles de la page : les colonnes et les cases ne peuvent pas se
+ * contredire.
+ */
+import { periode } from '../lib/data';
+import { annee, pluriel } from '../lib/format';
+import { recordsEnCours } from '../lib/records';
+
+const records = recordsEnCours();
+const premiere = Number(annee(periode().debut));
+const saison = Number(annee(periode().fin));
+
+const parAn = new Map<number, number>();
+for (const r of records) {
+  const an = Number(annee(r.date));
+  parAn.set(an, (parAn.get(an) ?? 0) + 1);
+}
+const colonnes = Array.from({ length: saison - premiere + 1 }, (_, i) => {
+  const an = premiere + i;
+  return { an, n: parAn.get(an) ?? 0 };
+});
+const plusHaut = Math.max(1, ...colonnes.map((c) => c.n));
+
+const courante = parAn.get(saison) ?? 0;
+const plusAncienne = colonnes.find((c) => c.n > 0);
+
+/*
+ * LA LECTURE, EN DEUX PHRASES. La saison en cours, puis les plus anciens. La
+ * seconde ne dit « première saison des données » que si c'est vrai : le jour
+ * où les records de 2017 seront tous tombés, elle nommera l'année qui suit.
+ */
+const phraseSaison =
+  courante === 0
+    ? `Aucun record en cours ne date de ${saison}.`
+    : courante === records.length
+      ? `Les ${records.length} records datent de ${saison}.`
+      : `${courante} des ${records.length} records datent de ${saison}.`;
+const phraseAncienne =
+  plusAncienne && plusAncienne.an !== saison
+    ? `${plusAncienne.n === 1 ? 'Le plus ancien tient' : `Les ${plusAncienne.n} plus anciens tiennent`} depuis ${plusAncienne.an}${
+        plusAncienne.an === premiere ? ', première saison des données' : ''
+      }.`
+    : '';
+---
+
+<figure class="annees-records">
+  <figcaption>{phraseSaison}{phraseAncienne && ` ${phraseAncienne}`}</figcaption>
+  <ol class="colonnes" aria-label="Records en cours, par année" style={`--saisons:${colonnes.length}`}>
+    {
+      colonnes.map((c) => (
+        <li data-courante={c.an === saison ? '' : undefined}>
+          <span class="compte num-tab" aria-hidden="true">
+            {c.n}
+          </span>
+          <span class="barre" aria-hidden="true" style={`--part:${(c.n / plusHaut).toFixed(4)}`} />
+          <span class="an num-tab" aria-hidden="true">
+            <span class="an-long">{c.an}</span>
+            <span class="an-court">{String(c.an).slice(2)}</span>
+          </span>
+          <span class="sr-only">
+            {c.an} : {c.n} {pluriel(c.n, 'record')}
+          </span>
+        </li>
+      ))
+    }
+  </ol>
+</figure>
+
+<style>
+  .annees-records {
+    margin: 0;
+    min-width: 0;
+  }
+
+  figcaption {
+    margin-bottom: var(--space-3);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /*
+   * UNE COLONNE PAR SAISON, toutes de même largeur, calées sur leur base.
+   * Les années tiennent en chiffres resserrés. Sous 22,5rem, elles perdent
+   * leur siècle : à 320 px, une colonne mesure 28 px, « 2017 » en demande 26
+   * et les années se touchaient. La phrase au-dessus les écrit en entier.
+   */
+  .colonnes {
+    display: grid;
+    grid-template-columns: repeat(var(--saisons), minmax(0, 1fr));
+    align-items: end;
+    max-width: 30rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .colonnes li {
+    display: grid;
+    justify-items: center;
+    align-content: end;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .compte {
+    font-size: var(--step--1);
+    line-height: 1.2;
+    color: var(--muted);
+  }
+
+  /* La hauteur suit le compte : 3rem pour la saison la plus fournie. Une
+     saison à zéro garde sa place, sans barre. */
+  .barre {
+    width: 70%;
+    max-width: 2rem;
+    height: calc(var(--part) * 3rem);
+    background: var(--muted);
+  }
+
+  /* Le filet de chaque année, bout à bout, trace la ligne de base. */
+  .an {
+    justify-self: stretch;
+    padding-top: var(--space-1);
+    border-top: 2px solid var(--muted);
+    font-size: var(--step--1);
+    font-stretch: var(--stretch-condense);
+    line-height: 1.2;
+    text-align: center;
+    white-space: nowrap;
+    color: var(--muted);
+  }
+
+  [data-courante] .barre {
+    border: 2px solid var(--accent);
+    background: var(--accent-fill);
+  }
+
+  [data-courante] .compte,
+  [data-courante] .an {
+    font-weight: 800;
+    color: var(--text);
+  }
+
+  /* Le filet de base garde sa couleur sous la saison en cours. */
+  [data-courante] .an {
+    border-top-color: var(--muted);
+  }
+
+  .an-court {
+    display: none;
+  }
+
+  @media (max-width: 22.499rem) {
+    .an-long {
+      display: none;
+    }
+    .an-court {
+      display: inline;
+    }
+  }
+</style>

@@ -287,6 +287,202 @@ export function derniereMiseEnJeu(
   return performancesEligibles(lift, sex, weightClassId, equipement, source).at(-1)?.date ?? null;
 }
 
+/**
+ * Un record en cours, avec ce qu'il a battu.
+ *
+ * DEUX SORTES DE RECORDS EN COURS, et le mot n'est pas le même. 27 des 101
+ * records actuels sont des PREMIÈRES MARQUES, relevé le 28 octobre 2026 : la
+ * catégorie n'avait aucune performance avant ce jour-là, souvent celle d'un
+ * athlète seul en équipé. Ceux-là ont été établis, et non battus. Les autres
+ * ont dépassé le record de leur catégorie, de `gainKg` kilos.
+ */
+export interface RecordEnCours extends RecordEntry {
+  /**
+   * Record de la catégorie la veille de cette marque : la meilleure valeur des
+   * jours précédents, même mouvement, même sexe, même équipement. `null` pour
+   * une première marque.
+   */
+  precedentKg: number | null;
+  /** Kilos gagnés sur ce record précédent, `null` pour une première marque. */
+  gainKg: number | null;
+  /**
+   * Record de l'île : la barre la plus lourde de son mouvement pour son sexe,
+   * toutes catégories et tous équipements confondus. C'est le sens des
+   * comptes rendus, et `recordAbsolu` le calcule déjà pour l'infographie
+   * d'une compétition : les deux comptes restent d'accord.
+   */
+  recordIle: boolean;
+}
+
+const LEVEES: LiftKey[] = ['squat', 'bench', 'deadlift', 'total'];
+
+let cacheEnCours: RecordEnCours[] | null = null;
+
+/**
+ * Tous les records en cours, des quatre levées, avec leur record précédent.
+ *
+ * LA VEILLE, ET NON LA COMPÉTITION PRÉCÉDENTE. Deux athlètes d'une même
+ * catégorie peuvent dépasser l'ancien record le même jour : l'écart se mesure
+ * au record qui tenait avant la compétition, pas à celui de l'adversaire du
+ * jour. Deux compétitions disputées le même jour ne se départagent pas, faute
+ * d'heure dans les données : la seconde ne compte pas comme antérieure.
+ *
+ * Calculé une seule fois, comme `clesRecords` : l'accueil, la page des records
+ * et chaque page de compétition le lisent.
+ */
+export function recordsEnCours(): RecordEnCours[] {
+  if (cacheEnCours) return cacheEnCours;
+
+  const liste: RecordEnCours[] = [];
+  for (const lift of LEVEES) {
+    const absolus = (['M', 'F'] as Sex[]).map((sexe) => recordAbsolu(lift, sexe));
+    for (const rec of recordsPour(lift)) {
+      let precedent = 0;
+      for (const r of results) {
+        if (r.date >= rec.date) continue;
+        if (r.sex !== rec.sex || r.weightClassKg !== rec.weightClass.id) continue;
+        if (equipmentGroup(r.equipment) !== rec.equipment) continue;
+        const valeur = valeurPour(r, lift);
+        if (valeur !== null && valeur > precedent) precedent = valeur;
+      }
+      liste.push({
+        ...rec,
+        precedentKg: precedent > 0 ? precedent : null,
+        gainKg: precedent > 0 ? Math.round((rec.valueKg - precedent) * 100) / 100 : null,
+        recordIle: absolus.some(
+          (a) =>
+            a !== null &&
+            a.sex === rec.sex &&
+            a.weightClass.id === rec.weightClass.id &&
+            a.equipment === rec.equipment,
+        ),
+      });
+    }
+  }
+
+  cacheEnCours = liste;
+  return liste;
+}
+
+/**
+ * Records en cours BATTUS dans l'année : une marque antérieure existait dans
+ * leur catégorie. Les premières marques en sont écartées, puisque rien n'a
+ * été battu.
+ */
+export function recordsBattusEn(an: string): RecordEnCours[] {
+  return recordsEnCours().filter((r) => r.date.startsWith(`${an}-`) && r.gainKg !== null);
+}
+
+/**
+ * Records en cours établis lors d'une compétition : les coupes de son tableau
+ * de résultats, premières marques comprises.
+ */
+export function recordsDeLaCompetition(date: string, meetName: string): RecordEnCours[] {
+  return recordsEnCours().filter((r) => r.date === date && r.meetName === meetName);
+}
+
+let cacheParCle: Map<string, { date: string; meetName: string; valeur: number }[]> | null = null;
+
+/** Toutes les marques de chaque catégorie, par mouvement, sexe et équipement. */
+function marquesParCle(): Map<string, { date: string; meetName: string; valeur: number }[]> {
+  if (cacheParCle) return cacheParCle;
+  const index = new Map<string, { date: string; meetName: string; valeur: number }[]>();
+  for (const lift of LEVEES) {
+    for (const r of results) {
+      const valeur = valeurPour(r, lift);
+      if (valeur === null || valeur <= 0 || !parseWeightClass(r.weightClassKg)) continue;
+      const cle = `${lift}|${r.sex}|${r.weightClassKg}|${equipmentGroup(r.equipment)}`;
+      const marques = index.get(cle) ?? [];
+      marques.push({ date: r.date, meetName: r.meetName, valeur });
+      index.set(cle, marques);
+    }
+  }
+  cacheParCle = index;
+  return index;
+}
+
+/**
+ * Nombre de records de catégorie BATTUS lors d'une compétition, qu'ils
+ * tiennent encore ou non : la meilleure marque du jour dépasse le record de
+ * la veille. Une catégorie compte une fois, même si deux athlètes y ont
+ * dépassé l'ancien record le même jour.
+ *
+ * Le bandeau d'une compétition ne montre que les records qui tiennent
+ * toujours. Ce compte lui permet de dire combien sont tombés depuis : au
+ * Reunion Island Meet du 19 juillet 2025, 19 records sont battus, et 8
+ * tiennent encore au 28 octobre 2026.
+ */
+export function nombreRecordsBattusLe(date: string, meetName: string): number {
+  let battus = 0;
+  for (const marques of marquesParCle().values()) {
+    let veille = 0;
+    let jour = 0;
+    for (const m of marques) {
+      if (m.date < date && m.valeur > veille) veille = m.valeur;
+      if (m.date === date && m.meetName === meetName && m.valeur > jour) jour = m.valeur;
+    }
+    if (veille > 0 && jour > veille) battus++;
+  }
+  return battus;
+}
+
+/** Records d'un même athlète, d'une même compétition et d'une même catégorie. */
+export interface RecordsAthlete {
+  holder: string;
+  slug: string;
+  sex: Sex;
+  weightClass: WeightClass;
+  equipment: EquipmentGroup;
+  date: string;
+  meetName: string;
+  meetTown: string;
+  /** Dans l'ordre des mouvements : squat, développé couché, soulevé de terre, total. */
+  records: RecordEnCours[];
+}
+
+/**
+ * Regroupe des records par athlète, compétition et catégorie.
+ *
+ * LA CATÉGORIE ENTRE DANS LA CLÉ. Un athlète peut disputer le full power en
+ * raw et le développé couché en équipé le même jour : ses records relèvent
+ * alors de deux catégories, qui ont chacune leur ligne.
+ *
+ * Ordre : les records de l'île d'abord, puis le nombre de records, puis le
+ * nom. En tête vient donc l'athlète qui détient le plus de records de l'île,
+ * ceux que les comptes rendus mettent en avant.
+ */
+export function parAthlete(records: RecordEnCours[]): RecordsAthlete[] {
+  const groupes = new Map<string, RecordsAthlete>();
+  for (const r of records) {
+    const cle = [r.slug, r.date, r.meetName, r.sex, r.weightClass.id, r.equipment].join('|');
+    const groupe = groupes.get(cle) ?? {
+      holder: r.holder,
+      slug: r.slug,
+      sex: r.sex,
+      weightClass: r.weightClass,
+      equipment: r.equipment,
+      date: r.date,
+      meetName: r.meetName,
+      meetTown: r.meetTown,
+      records: [],
+    };
+    groupe.records.push(r);
+    groupes.set(cle, groupe);
+  }
+  const ile = (g: RecordsAthlete) => g.records.filter((r) => r.recordIle).length;
+  return [...groupes.values()]
+    .map((g) => ({
+      ...g,
+      records: [...g.records].sort((a, b) => LEVEES.indexOf(a.lift) - LEVEES.indexOf(b.lift)),
+    }))
+    .sort(
+      (a, b) =>
+        ile(b) - ile(a) ||
+        b.records.length - a.records.length ||
+        a.holder.localeCompare(b.holder, 'fr'),
+    );
+}
+
 /** Types d'équipement réellement présents dans les données, pour ne pas afficher de sections vides. */
 export function equipementsPresents(source: Result[] = results): EquipmentGroup[] {
   const vus = new Set<EquipmentGroup>();
