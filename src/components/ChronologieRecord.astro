@@ -1,0 +1,127 @@
+---
+/**
+ * La liste des records successifs, du plus ancien au record actuel.
+ *
+ * Elle donne, pour chaque record, son détenteur, sa date exacte, l'écart avec
+ * le précédent, et les liens vers l'athlète et la compétition. Elle quitte la
+ * page de catégorie pour vivre ici, avec ses styles : la page pourra la
+ * placer de plus d'une façon sans recopier son balisage.
+ */
+import { dateLongue, kg, nombre } from '../lib/format';
+import type { EtapeRecord } from '../lib/records';
+import { meetPath } from '../lib/slug';
+
+interface Props {
+  etapes: EtapeRecord[];
+}
+
+const { etapes } = Astro.props;
+---
+
+<ol class="chrono">
+  {
+    etapes.map((etape, i) => (
+      <li data-actuel={i === etapes.length - 1 ? '' : undefined}>
+        <span class="chrono-valeur num">{kg(etape.valueKg)}</span>
+        <span class="chrono-corps">
+          <a class="chrono-nom" href={`/athlete/${etape.slug}/`}>
+            {etape.holder}
+          </a>
+          <span class="chrono-meta">
+            <a href={`/competitions/${meetPath(etape.date, etape.meetName)}/`}>
+              {dateLongue(etape.date)}
+            </a>
+            {etape.gainKg > 0 && (
+              <span class="evolution" data-sens="hausse">
+                <span aria-hidden="true">▲</span>
+                {`${nombre(etape.gainKg)} kg`}
+                <span class="sr-only">de plus que la marque précédente</span>
+              </span>
+            )}
+            {i === etapes.length - 1 && <span class="encours">record actuel</span>}
+          </span>
+        </span>
+      </li>
+    ))
+  }
+</ol>
+
+<style>
+  .chrono {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .chrono li {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-6);
+    border-bottom: 1px solid var(--border);
+  }
+  .chrono li:last-child {
+    border-bottom: 0;
+  }
+
+  /* La marque en cours se distingue : c'est celle qu'on vient chercher. */
+  .chrono li[data-actuel] {
+    background: color-mix(in srgb, var(--or) 8%, transparent);
+  }
+
+  .chrono-valeur {
+    min-width: 6rem;
+    font-size: var(--step-1);
+    color: var(--muted);
+  }
+  .chrono li[data-actuel] .chrono-valeur {
+    color: var(--or);
+  }
+
+  .chrono-corps {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .chrono-nom {
+    font-weight: 600;
+    color: var(--text);
+  }
+  .chrono-nom:hover {
+    color: var(--accent);
+  }
+
+  .chrono-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /* Le marqueur d'écart est commun au site et vit dans tokens.css. Rien à
+     régler ici : `.chrono-meta` est déjà une rangée flex, le marqueur y est
+     donc un élément parmi les autres et tient sa ligne. */
+
+  /*
+   * LE TEXTE DE LA LIGNE EN COURS, LISIBLE SUR SA TEINTE. Le doré à 8 % fonce
+   * le fond de la carte, et le thème clair y passait sous le seuil, mesuré le
+   * 27 octobre 2026 : 4,10:1 pour « record actuel » en doré, 4,47:1 pour la
+   * date en accent. La mention passe au texte courant, 11,5:1, et le lien au
+   * survol de l'accent, 7,4:1. Seul le grand chiffre garde le doré, à
+   * 3,8:1 : en graisse 800 et à 19 px au moins, il relève du seuil des
+   * grands textes, 3:1.
+   */
+  .encours {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .chrono li[data-actuel] .chrono-meta a {
+    color: var(--accent-hover);
+  }
+</style>
