@@ -494,7 +494,7 @@ const description =
       */
       articlesDuMeet.length > 0 && (
         <section class="actus">
-          <h2>Sur cette compétition</h2>
+          <h2>Articles sur cette compétition</h2>
           <ul>
             {articlesDuMeet.map((a) => (
               <li>
@@ -739,10 +739,8 @@ const description =
     border-top: 1px solid var(--border);
   }
 
-  .actus h2 {
-    font-size: var(--step-1);
-    margin-bottom: var(--space-3);
-  }
+  /* L'intertitre garde la taille et la marge des autres h2 de la page : il
+     valait 22,7 px contre 28,8, relevé à l'audit du 27 octobre 2026. */
 
   .actus ul {
     list-style: none;
