@@ -128,7 +128,10 @@ const description =
                           </a>
                         </>
                       ) : (
-                        <span class="absent">Place libre</span>
+                        <span class="absent">
+                          <span aria-hidden="true">—</span>
+                          <span class="sr-only">Aucun record</span>
+                        </span>
                       )}
                     </dd>
                   </div>
@@ -291,7 +294,15 @@ const description =
     color: var(--accent);
   }
 
+  /* Une valeur absente s'écrit d'un tiret, comme sur /records/, à la taille
+     des valeurs voisines. Elle apparaît quand un équipement de la catégorie
+     n'a pas ce mouvement : le 28 octobre 2026, l'équipé du −105 kg hommes
+     n'avait que du développé couché, sous l'ancien libellé « Place libre ».
+     Le tiret est masqué aux lecteurs d'écran, qui entendent « Aucun record ». */
   .absent {
+    display: block;
+    font-size: var(--step-1);
+    line-height: 1.1;
     color: var(--muted);
   }
 
