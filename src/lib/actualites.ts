@@ -58,11 +58,6 @@ export async function articlesDeLaCompetition(chemin: string): Promise<Article[]
   return (await articles()).filter((a) => a.data.competition === chemin);
 }
 
-/** Les articles qui citent un athlète. */
-export async function articlesDeLAthlete(nom: string): Promise<Article[]> {
-  return (await articles()).filter((a) => a.data.athletes.includes(nom));
-}
-
 /**
  * Articles proches, pour la fin d'un article.
  *

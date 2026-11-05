@@ -110,17 +110,3 @@ export function editionsDe(nomSlug: string, source: Result[] = results): Meet[] 
 export function meetsRecents(n = 6, source: Result[] = results): Meet[] {
   return listeMeets(source).slice(0, n);
 }
-
-/** Compétitions groupées par année, pour un affichage en sections. */
-export function meetsParAnnee(source: Result[] = results): { annee: string; meets: Meet[] }[] {
-  const groupes = new Map<string, Meet[]>();
-  for (const meet of listeMeets(source)) {
-    const annee = meet.date.slice(0, 4);
-    const liste = groupes.get(annee);
-    if (liste) liste.push(meet);
-    else groupes.set(annee, [meet]);
-  }
-  return [...groupes.entries()]
-    .map(([annee, meets]) => ({ annee, meets }))
-    .sort((a, b) => b.annee.localeCompare(a.annee));
-}

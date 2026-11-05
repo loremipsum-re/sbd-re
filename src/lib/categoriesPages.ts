@@ -44,10 +44,6 @@ export function classeSlug(id: string): string {
   return id.endsWith('+') ? `${id.slice(0, -1)}-plus` : id;
 }
 
-export function classeDepuisSlug(slug: string): string {
-  return slug.endsWith('-plus') ? `${slug.slice(0, -5)}+` : slug;
-}
-
 /** Catégories réellement disputées, ordonnées par sexe puis par poids. */
 export function listeCategories(source: Result[] = fullPowerResults): CategoriePage[] {
   const parCle = new Map<string, { sex: Sex; id: string; noms: Set<string>; lignes: number }>();

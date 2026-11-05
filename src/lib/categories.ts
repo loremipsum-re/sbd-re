@@ -38,10 +38,6 @@ export const LIFTS: { id: LiftKey; label: string; short: string }[] = [
   { id: 'total', label: 'Total', short: 'TOT' },
 ];
 
-export function liftLabel(lift: LiftKey): string {
-  return LIFTS.find((l) => l.id === lift)?.label ?? lift;
-}
-
 /* -------------------------------------------------------------------------
  * Équipement
  * ---------------------------------------------------------------------- */

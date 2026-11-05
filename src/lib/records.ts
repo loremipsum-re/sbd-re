@@ -105,18 +105,6 @@ export function recordsPour(lift: LiftKey, source: Result[] = results): RecordEn
   );
 }
 
-/** Records d'un mouvement, filtrés pour un sexe et un type d'équipement. */
-export function recordsFiltres(
-  lift: LiftKey,
-  sex: Sex,
-  equipment: EquipmentGroup,
-  source: Result[] = results,
-): RecordEntry[] {
-  return recordsPour(lift, source).filter(
-    (r) => r.sex === sex && r.equipment === equipment,
-  );
-}
-
 /**
  * Meilleure performance absolue d'un mouvement, toutes catégories confondues.
  * Sert aux chiffres mis en avant sur la page d'accueil.

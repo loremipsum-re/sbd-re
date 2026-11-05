@@ -74,12 +74,3 @@ export function meetNameSlug(meetName: string): string {
 export function meetPath(date: string, meetName: string): string {
   return `${meetNameSlug(meetName)}/${date}`;
 }
-
-/**
- * Ancienne forme « date-nom », conservée uniquement pour générer les
- * redirections vers la nouvelle arborescence. À supprimer quand les moteurs de
- * recherche auront pris en compte le changement, disons dans un an.
- */
-export function ancienMeetSlug(date: string, meetName: string): string {
-  return `${date}-${meetNameSlug(meetName)}`;
-}
