@@ -22,6 +22,12 @@
  * La couleur est celle du texte qu'elle accompagne (`currentColor`). Un blanc
  * fixe disparaîtrait purement et simplement sur le thème clair, où les cartes
  * sont blanches.
+ *
+ * LE TRACÉ N'EST ÉCRIT QU'UNE FOIS PAR PAGE. Le premier badge rendu le range
+ * dans un `<symbol>`, et chaque badge l'appelle par `<use>`. Recopié en entier,
+ * il pesait 2,5 Mo sur l'ensemble du site, dont 400 Ko pour /exterieur/ seule.
+ * `Astro.locals` vit le temps d'une page : le symbole y est posé une fois.
+ * L'ordre n'importe pas, `<use>` trouve aussi un symbole écrit plus bas.
  */
 
 interface Props {
@@ -30,6 +36,9 @@ interface Props {
 }
 
 const { taille = 15, detail = 'Compétiteur officiel' } = Astro.props;
+
+const poserSymbole = !Astro.locals.badgeOfficielPose;
+Astro.locals.badgeOfficielPose = true;
 
 type Point = readonly [number, number];
 
@@ -103,7 +112,14 @@ const coche = [
 
 <span class="badge" title={detail}>
   <svg width={taille} height={taille} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-    <path d={`${feston} ${coche}`} fill="currentColor" fill-rule="evenodd"></path>
+    {
+      poserSymbole && (
+        <symbol id="badge-officiel" viewBox="0 0 24 24">
+          <path d={`${feston} ${coche}`} fill-rule="evenodd"></path>
+        </symbol>
+      )
+    }
+    <use href="#badge-officiel" fill="currentColor"></use>
   </svg>
   <span class="sr-only">{detail}</span>
 </span>
