@@ -409,12 +409,13 @@ const courant = (href: string) =>
       une commande que Safari ne focalise pas, laisse le focus nulle part, et
       le clic à côté a son propre traitement.
 
-      Cette note vit ici et non dans le script : un script `is:inline` part
-      tel quel, commentaires compris, dans chacune des pages du site.
+      Le script est TRAITÉ par Astro, et non `is:inline` : il part minifié,
+      sans ses commentaires. En `is:inline`, il pesait 4,9 Ko dans chacune des
+      pages du site, 2,5 Mo en tout, dont la moitié de commentaires.
     */}
-    <script is:inline>
+    <script>
       (() => {
-        const menu = document.querySelector('details.menu');
+        const menu = document.querySelector<HTMLDetailsElement>('details.menu');
         if (!menu) return;
 
         const fermer = () => {
@@ -438,14 +439,14 @@ const courant = (href: string) =>
          */
         document.addEventListener('click', (evenement) => {
           if (!menu.open) return;
-          const cible = evenement.target;
+          const cible = evenement.target as Element;
           if (cible.closest('.panneau') || cible.closest('summary')) return;
           fermer();
         });
 
         // Le focus qui sort du menu le referme : voir la note avant ce script.
         menu.addEventListener('focusout', (evenement) => {
-          const suivant = evenement.relatedTarget;
+          const suivant = evenement.relatedTarget as Node | null;
           if (menu.open && suivant && !menu.contains(suivant)) menu.open = false;
         });
       })();
@@ -467,9 +468,9 @@ const courant = (href: string) =>
        * recouvriraient encore un coin de carte.
        */
       (() => {
-        const boutons = [...document.querySelectorAll('.haut, [data-ouvrir-suggestion]')];
+        const boutons = [...document.querySelectorAll<HTMLElement>('.haut, [data-ouvrir-suggestion]')];
         if (!boutons.length) return;
-        const colonne = document.querySelector('main .wrap') ?? document.querySelector('main');
+        const colonne = document.querySelector<HTMLElement>('main .wrap') ?? document.querySelector('main');
 
         // Un seuil généreux : sous 600 px de défilement, le haut de page est
         // encore à portée de pouce et les boutons ne serviraient qu'à masquer
@@ -506,7 +507,7 @@ const courant = (href: string) =>
         const basculer = () => {
           const y = window.scrollY;
           const enBas = y + innerHeight >= document.documentElement.scrollHeight - 2;
-          const focus = boutons.includes(document.activeElement);
+          const focus = boutons.includes(document.activeElement as HTMLElement);
           if (y < SEUIL) visibles = false;
           else if (!empietent || enBas || focus || y < repere - PAS) visibles = true;
           else if (y > repere + PAS) visibles = false;
