@@ -45,6 +45,7 @@
  */
 import ile from '../data/ile-reunion.json';
 import { placerEtiquettes, projeter, TAILLE_NOM_COMMUNE, type Point } from '../lib/carte';
+import { jsonPourScript } from '../lib/format';
 import '../styles/filtres.css';
 
 interface Salle {
@@ -218,10 +219,10 @@ const etiquettesCommunes = placerEtiquettes(
   </div>
 
   {/*
-    Les données pour le script, en JSON inerte. Astro échappe le contenu, ce
-    qui ferme l'injection par un nom de salle venu d'OSM.
+    Les données pour le script, en JSON inerte. jsonPourScript() neutralise
+    tout « < », ce qui ferme l'injection par un nom de salle venu d'OSM.
   */}
-  <script is:inline type="application/json" data-salles set:html={JSON.stringify(points)} />
+  <script is:inline type="application/json" data-salles set:html={jsonPourScript(points)} />
 </div>
 
 <script>

@@ -28,7 +28,7 @@
  * est masquée. Recalculer l'échelle à chaque bascule ferait bondir la courbe
  * et donnerait l'illusion d'une progression qui n'existe pas.
  */
-import { dateCourte, kg, nombre } from '../lib/format';
+import { dateCourte, jsonPourScript, kg, nombre } from '../lib/format';
 import EtatVide from './EtatVide.astro';
 
 export interface PointGraphe {
@@ -408,7 +408,7 @@ const aDeuxSeries = locaux.length > 0 && exterieurs.length > 0;
         is:inline
         type="application/json"
         class="details"
-        set:html={JSON.stringify(tries.map(detail))}
+        set:html={jsonPourScript(tries.map(detail))}
       />
 
       {/*

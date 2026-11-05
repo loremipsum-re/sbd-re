@@ -44,6 +44,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import '../styles/filtres.css';
 import { EQUIPMENT_GROUPS, equipmentGroup, weightClassesFor } from '../lib/categories';
 import { fullPowerResults } from '../lib/data';
+import { jsonPourScript } from '../lib/format';
 import { equipementsPresents, recordsPour } from '../lib/records';
 import { meilleurTotalParAthlete } from '../lib/rankings';
 import type { Result } from '../lib/types';
@@ -268,7 +269,7 @@ const libelleEquipement = (id: string) => EQUIPMENT_GROUPS.find((e) => e.id === 
     type="application/json"
     id="donnees-classement"
     is:inline
-    set:html={JSON.stringify({ general, populations, records, classes: classesParSexe })}
+    set:html={jsonPourScript({ general, populations, records, classes: classesParSexe })}
   />
 </BaseLayout>
 
