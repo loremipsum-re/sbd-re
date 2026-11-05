@@ -98,15 +98,17 @@ Le compte SFTP se connecte à `/home/loremis`, qui contient le site **et**
 `sbd-re-prive/config.php`. Le mot de passe rangé dans les secrets GitHub donne
 donc accès aux identifiants MySQL, et permet de déposer du PHP qui s'exécutera.
 
-Le serveur n'est jamais authentifié. `StrictHostKeyChecking=accept-new`
-n'accepte une clé inconnue qu'une fois, mais la machine GitHub est neuve à
-chaque passage : toute clé est donc « nouvelle », à chaque fois. Même chose
-pour `sftp:auto-confirm yes` côté lftp. Un serveur qui se ferait passer pour
-OVH recevrait le mot de passe.
+**Le serveur est authentifié depuis le 5 novembre 2026.** Sa clé ED25519 est
+épinglée dans `.github/ssh_known_hosts`, nom d'hôte haché, et les trois
+connexions du déploiement passent en `StrictHostKeyChecking=yes`. Avant,
+`accept-new` et `sftp:auto-confirm yes` acceptaient toute clé, la machine
+GitHub étant neuve à chaque passage. L'empreinte a été recoupée par deux
+chemins : la clé servie ce jour-là et celle enregistrée par le poste de
+l'auteur lors de sa connexion SSH. Le remplacement de la clé est décrit dans
+le README.
 
-**Correctif** : épingler l'empreinte du serveur dans un secret, et passer en
-`StrictHostKeyChecking=yes`. **Ensuite** : un compte FTP secondaire limité à
-`sbd-re/`, que l'espace client OVH permet de créer (à vérifier sur l'offre).
+**Reste** : un compte FTP secondaire limité à `sbd-re/`, que l'espace client
+OVH permet de créer (à vérifier sur l'offre).
 
 ### 4.2 Écrire sur GitHub revient à exécuter du code chez OVH
 
@@ -236,8 +238,8 @@ athlètes sur une seule page. Son poids suit leur nombre : 981 Ko pour 312.
 
 ## 7. Recommandations, dans l'ordre
 
-1. **Épingler l'empreinte du serveur** dans le déploiement. Petit changement,
-   gros risque fermé.
+1. ~~Épingler l'empreinte du serveur~~ dans le déploiement. Fait le
+   5 novembre 2026.
 2. **Lire les en-têtes du courriel reçu**, trancher entre `mail()` et SMTP,
    puis mettre communaute.md en accord.
 3. **Ajouter une sonde de disponibilité**, et la vérification de version en fin

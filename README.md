@@ -222,6 +222,28 @@ serveur répond `500 This security scheme is not implemented` à la commande
 `AUTH TLS`. Le SSH, lui, est disponible — sur un hôte **dédié**,
 `ssh.cluster0XX.hosting.ovh.net`, port 22, à ne pas confondre avec l'hôte FTP.
 
+**La clé du serveur est épinglée** dans `.github/ssh_known_hosts`. Le
+déploiement refuse tout serveur qui présente une autre clé, et le mot de passe
+ne part pas. Le nom d'hôte y est haché, il reste donc absent du dépôt public.
+La clé est la même que celle que ta machine a enregistrée à ta première
+connexion SSH, empreinte ED25519 `SHA256:N4DQHF8Pzfs8s5/QgV8tEx5NgKZeghhkDfpnO+ZG7Fo`,
+vérifiée le 5 novembre 2026.
+
+Si OVH change un jour cette clé, le déploiement échoue à l'étape « Repérer le
+dossier cible », avec `Host key verification failed`. Vérifier d'abord la
+nouvelle empreinte par un second chemin, ta propre connexion SSH par exemple.
+Puis remplacer le fichier, depuis le dossier du projet :
+
+```bash
+ssh-keyscan -t ed25519 ssh.cluster0XX.hosting.ovh.net > .github/ssh_known_hosts
+ssh-keygen -lf .github/ssh_known_hosts
+ssh-keygen -H -f .github/ssh_known_hosts
+```
+
+La deuxième commande affiche l'empreinte à comparer. La troisième hache le nom
+d'hôte et laisse une copie `.old` à supprimer. Le nom d'hôte doit être écrit
+exactement comme dans le secret `FTP_SERVER`.
+
 **Pourquoi lftp et non rsync.** rsync exige d'être installé des deux côtés de la
 connexion : il lance son propre programme sur le serveur distant, ce qu'un
 hébergement mutualisé ne permet pas. `lftp` parle directement le protocole SFTP,

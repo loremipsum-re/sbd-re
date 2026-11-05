@@ -50,6 +50,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-05',
+    nature: 'correction',
+    version: '1.9.2',
+    titre: 'Une mise en ligne qui vérifie le serveur',
+    texte:
+      "Le site se dépose uniquement sur le serveur d'OVH reconnu par sa clé de sécurité. Une autre clé arrête la mise en ligne avant tout envoi.",
+  },
+  {
+    date: '2026-11-05',
     nature: 'fonction',
     version: '1.9.1',
     titre: 'Deux articles de plus dans les actualités',
