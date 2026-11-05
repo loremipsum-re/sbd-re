@@ -71,3 +71,15 @@ export function place(value: string): string {
 export function pluriel(n: number, singulier: string, pluriel_ = `${singulier}s`): string {
   return n > 1 ? pluriel_ : singulier;
 }
+
+/**
+ * JSON à poser dans un `<script type="application/json">` par `set:html`.
+ *
+ * `set:html` n'échappe rien. Un nom contenant « </script> », venu
+ * d'OpenPowerlifting ou d'OpenStreetMap, fermerait la balise et ferait lire la
+ * suite comme du HTML. `\u003c` est le même caractère pour `JSON.parse`, et ne
+ * ferme aucune balise.
+ */
+export function jsonPourScript(valeur: unknown): string {
+  return JSON.stringify(valeur).replace(/</g, '\u003c');
+}

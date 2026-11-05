@@ -319,8 +319,8 @@ const repliable = aFiltres && replier !== undefined;
       const brut = valeurBrute(ligne, index);
 
       if (colonnesNumeriques.has(index)) {
-        // Une valeur absente doit finir en queue de classement, jamais en tête :
-        // -Infinity l'y envoie quel que soit le sens du tri.
+        // Une valeur absente vaut -Infinity. Le tri la garde en queue dans les
+        // deux sens : voir `appliquer()`.
         const n = Number.parseFloat(String(brut).replace(',', '.'));
         return Number.isFinite(n) ? n : Number.NEGATIVE_INFINITY;
       }
@@ -555,6 +555,12 @@ const repliable = aFiltres && replier !== undefined;
         if (colonneTri !== null) {
           const index = colonneTri;
           visibles = [...visibles].sort((a, b) => {
+            // Une valeur absente reste en queue dans les deux sens. Inverser
+            // `comparer` la ferait remonter en tête du tri croissant : un
+            // athlète sans squat devenait premier au squat.
+            const absentA = valeurCellule(a, index) === Number.NEGATIVE_INFINITY;
+            const absentB = valeurCellule(b, index) === Number.NEGATIVE_INFINITY;
+            if (absentA !== absentB) return absentA ? 1 : -1;
             const comparaison = comparer(a, b, index);
             return sensAscendant ? comparaison : -comparaison;
           });

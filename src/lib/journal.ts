@@ -49,6 +49,30 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 
 export const JOURNAL: readonly EntreeJournal[] = [
   {
+    date: '2026-11-05',
+    nature: 'fonction',
+    version: '1.9.1',
+    titre: 'Deux articles de plus dans les actualités',
+    texte:
+      "Le premier présente les formats de compétition de l'île, du full power au développé couché seul, et ce qu'ils changent pour le total et les records. Le second explique comment faire corriger un résultat faux ou manquant.",
+  },
+  {
+    date: '2026-11-05',
+    nature: 'visuel',
+    version: '1.9.1',
+    titre: 'Des pages plus légères',
+    texte:
+      "La page des résultats hors de l'île pèse 26 % de moins, le classement 20 % de moins. Le tracé du badge officiel s'écrit une fois par page, et le script du menu part allégé.",
+  },
+  {
+    date: '2026-11-05',
+    nature: 'correction',
+    version: '1.9.1',
+    titre: 'Tri et suggestions fiabilisés',
+    texte:
+      "Un tri croissant range en fin de liste les athlètes sans valeur dans la colonne triée. Les suggestions reçues restent conservées sur le serveur après chaque mise en ligne du site.",
+  },
+  {
     date: '2026-10-28',
     nature: 'visuel',
     version: '1.9',

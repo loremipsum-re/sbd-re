@@ -140,6 +140,14 @@ jobs:
           #                  supprimer casserait le renouvellement du HTTPS.
           #   .ovhconfig   — configuration de l'environnement d'exécution OVH.
           #
+          # Une troisième, pour un fichier écrit PAR LE SITE en production :
+          #   suggestions.jsonl — le registre des suggestions, que
+          #                  public/api/suggestion.php remplit sur le serveur.
+          #                  Il n'existe pas dans dist/ : sans exclusion,
+          #                  chaque déploiement l'effaçait. Le motif est donné
+          #                  deux fois, chemin complet et nom seul, pour tenir
+          #                  quelle que soit la façon dont lftp compare.
+          #
           # Le script lftp passe par un FICHIER, pas par la ligne de commande.
           # Deux raisons : les arguments d'un processus sont lisibles par tout
           # le système, et surtout lftp n'interprète PAS les variables du shell —
@@ -154,7 +162,7 @@ jobs:
             printf '%s\n' 'set net:timeout 20'
             printf '%s\n' 'set net:max-retries 3'
             printf '%s\n' "open -u \"$SSH_USER\",\"$SSH_PASS\" sftp://$SSH_HOST"
-            printf '%s\n' "mirror --reverse --delete --verbose --no-perms --parallel=4 --exclude-glob .well-known/ --exclude-glob .ovhconfig ./dist/ \"$CIBLE/\""
+            printf '%s\n' "mirror --reverse --delete --verbose --no-perms --parallel=4 --exclude-glob .well-known/ --exclude-glob .ovhconfig --exclude-glob api/journal/suggestions.jsonl --exclude-glob suggestions.jsonl ./dist/ \"$CIBLE/\""
             printf '%s\n' 'bye'
           } > /tmp/deploy.lftp
 

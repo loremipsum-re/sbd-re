@@ -1,6 +1,6 @@
 // @ts-check
 import { createHash } from 'node:crypto';
-import { readFileSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import { lexiqueMarkdown } from './src/lib/lexique-markdown.ts';
@@ -56,11 +56,13 @@ const DATES = datesDeModification();
 
 /**
  * Date de référence pour les pages qui ne dépendent pas d'un résultat précis
- * (accueil, à propos…) : celle de la dernière régénération des données.
+ * (accueil, à propos…) : celle du résultat le plus récent.
+ *
+ * La date de modification du fichier ne convient pas : git ne la conserve
+ * pas, et sur GitHub Actions elle valait le jour de chaque build. Toutes ces
+ * pages se déclaraient donc modifiées à chaque déploiement.
  */
-const DATE_DONNEES = statSync(new URL('./src/data/results.json', import.meta.url))
-  .mtime.toISOString()
-  .slice(0, 10);
+const DATE_DONNEES = [...DATES.values()].reduce((a, b) => (a > b ? a : b), '');
 
 /**
  * Redirections des anciennes adresses de compétition.

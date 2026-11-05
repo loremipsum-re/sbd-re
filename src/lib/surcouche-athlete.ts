@@ -33,29 +33,6 @@ export async function surcoucheDe(nom: string): Promise<Surcouche | undefined> {
   return (await surcouches()).get(athleteSlug(nom));
 }
 
-/**
- * Vérifie que chaque surcouche vise un athlète existant.
- *
- * Le CMS pose le slug depuis une liste tirée des données, donc le cas ne
- * devrait pas se produire. Il le devient après une mise à jour mensuelle qui
- * ferait disparaître un athlète : la surcouche resterait, orpheline et
- * invisible. Mieux vaut le dire à la génération que le découvrir six mois plus
- * tard.
- */
-export async function verifierSurcouches(nomsConnus: Set<string>): Promise<void> {
-  const slugsConnus = new Set([...nomsConnus].map((n) => athleteSlug(n)));
-  const orphelines = [...(await surcouches()).keys()].filter((s) => !slugsConnus.has(s));
-
-  if (orphelines.length > 0) {
-    throw new Error(
-      `Surcouches d'athlètes : ${orphelines.length} fiche(s) visent un athlète ` +
-        `absent des données.\n  ${orphelines.join('\n  ')}\n` +
-        `Soit le nom a changé chez OpenPowerlifting, soit l'athlète n'a plus de ` +
-        `résultat. Corrige le champ « Athlète » dans le CMS, ou supprime la fiche.`,
-    );
-  }
-}
-
 /** Rend la présentation Markdown d'une surcouche, si elle en a une. */
 export async function presentationDe(s: Surcouche) {
   const { Content } = await render(s);

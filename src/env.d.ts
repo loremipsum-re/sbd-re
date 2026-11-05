@@ -14,6 +14,13 @@ declare global {
     __sbdMesureChargee?: boolean;
   }
 
+  namespace App {
+    interface Locals {
+      /** Le tracé du badge officiel est déjà dans la page : voir BadgeOfficiel. */
+      badgeOfficielPose?: boolean;
+    }
+  }
+
   interface DocumentEventMap {
     /** Émis par `enregistrerChoix`, dans lib/consentement.ts. */
     'sbd:consentement': CustomEvent<'oui' | 'non'>;

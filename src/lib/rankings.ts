@@ -292,10 +292,3 @@ export function rangsDots(name: string): RangsAthlete | null {
   }
   return cacheRangs.get(name) ?? null;
 }
-
-/** Historique complet d'un athlète, de la compétition la plus ancienne à la plus récente. */
-export function historiqueAthlete(name: string, source: Result[]): Result[] {
-  return source
-    .filter((r) => r.name === name)
-    .sort((a, b) => a.date.localeCompare(b.date) || a.event.localeCompare(b.event));
-}

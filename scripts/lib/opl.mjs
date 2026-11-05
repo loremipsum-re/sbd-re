@@ -11,7 +11,7 @@
  *     rendrait le développement insupportable.
  */
 
-import { createWriteStream, existsSync, mkdirSync, statSync } from 'node:fs';
+import { createWriteStream, existsSync, mkdirSync, renameSync, statSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -75,7 +75,12 @@ export async function ensureDump({ force = false } = {}) {
     }
   });
 
-  await pipeline(source, createWriteStream(ZIP_PATH));
+  // Écrit sous un nom provisoire, renommé une fois complet. Un téléchargement
+  // coupé laissait sinon un zip tronqué, que le cache de 20 jours réutilisait
+  // ensuite sans le retélécharger.
+  const provisoire = `${ZIP_PATH}.part`;
+  await pipeline(source, createWriteStream(provisoire));
+  renameSync(provisoire, ZIP_PATH);
   process.stdout.write('\n');
   console.log(`Téléchargé : ${formatBytes(statSync(ZIP_PATH).size)}`);
 
