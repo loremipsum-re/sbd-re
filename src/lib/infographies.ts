@@ -48,7 +48,7 @@ export const INFOGRAPHIES = {
   communes: { libelle: 'Les communes organisatrices', article: 'communes-organisatrices' },
   international: { libelle: "Les résultats hors de l'île", article: 'titres-internationaux' },
   donnees: { libelle: "D'où viennent les chiffres" },
-  formats: { libelle: 'Les formats de compétition' },
+  formats: { libelle: 'Les formats de compétition', article: 'formats-de-competition' },
   competition: { libelle: 'La compétition traitée, en chiffres', exigeCompetition: true },
 } as const satisfies Record<string, FicheInfographie>;
 
