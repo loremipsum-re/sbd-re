@@ -17,7 +17,8 @@ par GitHub Actions.
 
 - [README.md](README.md) : comment le projet fonctionne, comment le lancer, comment déployer.
 - [docs/parcours.md](docs/parcours.md) : **pourquoi** il est ce qu'il est. Décisions, découvertes et pièges rencontrés. C'est le document qui fait gagner le plus de temps.
-- [docs/communaute.md](docs/communaute.md) : la conception de la partie communauté, à lire avant d'y toucher. Architecture, modèle de données, et surtout le modèle de sécurité qui remplace les politiques RLS.
+- [docs/communaute.md](docs/communaute.md) : la conception de la partie communauté, à lire avant d'y toucher. Architecture, et surtout le modèle de sécurité qui remplace les politiques RLS.
+- [docs/comptes.md](docs/comptes.md) : le plan de travail des comptes, profils et chat, arrêté le 6 novembre 2026. Modèle de données, règles d'accès, parcours, phases pas à pas. Il remplace une partie de communaute.md.
 - [docs/architecture.md](docs/architecture.md) : la forme d'ensemble du système, ses points fragiles classés, et les signaux qui imposeront de la revoir.
 
 ## Attentes de travail
@@ -542,9 +543,12 @@ barres d'onglets, les feuilles modales et les piles de navigation.
 
 **Chantier principal**
 
-La **partie communauté**, phases 4 à 7 du plan initial : classement
-non-officiel, comptes Google et e-mail, lien vidéo obligatoire, soumissions
-modérées, tranches de poids et de taille.
+La **partie communauté**, replanifiée le 6 novembre 2026 dans
+[docs/comptes.md](docs/comptes.md) : comptes par pseudo, profils publics et
+référencés, performances avec vidéo vérifiées par la communauté (60 %) ou par
+l'admin, chat en salons visible 7 jours et conservé 1 an. Ni classement, ni
+connexion Google, ni tranches d'âge dans la version 1. Les points ci-dessous
+datent du plan de juillet et restent vrais pour l'infrastructure.
 
 **Conception arrêtée le 30 juillet 2026**, à lire dans
 [docs/communaute.md](docs/communaute.md). Supabase est écarté au profit d'une

@@ -1,5 +1,10 @@
 # La partie communauté — conception
 
+> **Révisé le 6 novembre 2026.** Les sections 3, 5, 6, 8, 9 et 10 sont
+> remplacées par [comptes.md](comptes.md) : comptes par pseudo, profils
+> publics, vérification par la communauté et chat. Les sections 1, 2, 4 et 11
+> restent valables.
+
 Ce document est au classement communauté ce que [parcours.md](parcours.md) est au
 site officiel : il explique **pourquoi** l'architecture est celle-là, et quels
 faits la contraignent.
