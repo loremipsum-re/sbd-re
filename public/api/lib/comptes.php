@@ -30,6 +30,15 @@ const INSCRIPTIONS_PAR_HEURE = 3;
 const LIENS_PAR_HEURE = 3;
 
 /**
+ * Un formulaire d'inscription rempli en moins de 3 secondes n'a pas été lu :
+ * c'est un robot. Au-delà de 2 heures, la page traînait dans un onglet. Même
+ * piège que contact.php, à 3 secondes au lieu de 4 : un gestionnaire de mots
+ * de passe remplit vite, et la case à cocher reste à cliquer.
+ */
+const DELAI_MINIMAL_SECONDES = 3;
+const DELAI_MAXIMAL_SECONDES = 7200;
+
+/**
  * Freinage des mots de passe essayés en série : 5 échecs en 15 minutes sur
  * une adresse, 20 sur une IP. Plus large pour l'IP : sur l'île, les
  * opérateurs mobiles font sortir beaucoup de clients par la même adresse.
@@ -92,6 +101,14 @@ function erreurMotDePasse(string $motDePasse): string
     }
 
     return '';
+}
+
+/** Le formulaire a-t-il été rempli à vitesse humaine ? */
+function delaiHumain(int $affiche, int $maintenant): bool
+{
+    $ecoule = $maintenant - $affiche;
+
+    return $affiche > 0 && $ecoule >= DELAI_MINIMAL_SECONDES && $ecoule <= DELAI_MAXIMAL_SECONDES;
 }
 
 /** L'adresse en minuscules si elle est valide, sinon ''. */
@@ -167,6 +184,21 @@ function jetonsRecents(int $membreId, string $type): int
     return (int) ($ligne['n'] ?? 0);
 }
 
+/**
+ * Efface cent comptes jamais confirmés, vieux de plus de 24 heures, avec
+ * leurs jetons. La base ne garde aucun faux compte, sans tâche planifiée :
+ * chaque inscription fait le ménage en passant.
+ */
+function purgerNonConfirmes(): void
+{
+    executer(
+        'DELETE FROM membre
+          WHERE courriel_verifie = 0
+            AND date_inscription < NOW() - INTERVAL ' . VERIFICATION_MINUTES . ' MINUTE
+          LIMIT 100',
+    );
+}
+
 /** Envoie le lien de vérification d'adresse. */
 function envoyerLienVerification(int $membreId, string $pseudo, string $courriel): bool
 {
@@ -179,6 +211,7 @@ function envoyerLienVerification(int $membreId, string $pseudo, string $courriel
         '',
         'https://sbd.re/api/verifier.php?jeton=' . $jeton,
         '',
-        "Vous n'avez rien demandé ? Ignorez ce message : le compte reste inactif.",
+        "Sans clic sur ce lien, le compte s'efface de lui-même au bout de 24 heures.",
+        "Vous n'avez rien demandé ? Ignorez simplement ce message.",
     ]));
 }

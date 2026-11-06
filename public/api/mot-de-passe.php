@@ -58,6 +58,11 @@ if ($jeton !== '') {
 }
 
 $reponse = 'Si un compte existe pour cette adresse, un lien part. Il reste valable une heure.';
+
+// Champ appât : un robot reçoit la réponse habituelle, et rien ne part.
+if (texte('site') !== '') {
+    repondreOk($reponse);
+}
 $courriel = normaliserCourriel(texte('courriel'));
 
 if ($courriel === '') {

@@ -2,14 +2,18 @@
 /**
  * Créer un compte : pseudo, adresse, mot de passe, case « 18 ans et plus ».
  *
- * Le compte naît NON VÉRIFIÉ et la session s'ouvre aussitôt : le membre
- * arrive sur /compte/, d'où il peut redemander le lien si le courriel tarde.
- * Tant que l'adresse n'est pas confirmée, il ne publie rien.
+ * RIEN N'EST UTILISABLE AVANT LA CONFIRMATION, choix de l'auteur du
+ * 6 novembre 2026 : « je ne veux pas de poubelle ». Le compte naît non
+ * confirmé, sans session. Seul le lien reçu par courriel l'active, et un
+ * compte jamais confirmé s'efface au bout de 24 heures. Si le courriel ne
+ * part pas, le compte s'efface aussitôt : on peut réessayer tout de suite.
  *
- * L'adresse déjà inscrite est dite comme telle. Un site de force athlétique ne
- * cache pas grand-chose derrière, et la taire obligerait à écrire à son
- * propriétaire à chaque essai, ce qui ferait de ce formulaire une machine à
- * courriels pour qui voudrait l'en inonder.
+ * L'ANTI-SPAM EST MAISON, sans service tiers : champ appât, délai minimal
+ * entre l'affichage et l'envoi, trois comptes par heure et par IP.
+ *
+ * L'adresse déjà inscrite est dite comme telle. La taire obligerait à écrire
+ * à son propriétaire à chaque essai, ce qui ferait de ce formulaire une
+ * machine à inonder sa boîte.
  */
 
 declare(strict_types=1);
@@ -23,7 +27,10 @@ ouvrirApi(['POST']);
 
 // Champ appât : rempli, c'est un robot. On répond comme si tout allait bien.
 if (texte('site') !== '') {
-    repondreOk('Compte créé. Un lien de confirmation part vers votre adresse.');
+    repondreOk('Compte créé. Ouvrez le lien reçu par courriel pour l\'activer.');
+}
+if (!delaiHumain((int) (entree()['depuis'] ?? 0), time())) {
+    refuser(422, 'Formulaire expiré ou envoyé trop vite. Rechargez la page et réessayez.');
 }
 
 $pseudo = mb_strtolower(texte('pseudo'));
@@ -44,6 +51,10 @@ if ($erreur !== '') {
     refuser(422, $erreur);
 }
 
+// Le ménage d'abord : un pseudo ou une adresse laissés par un compte jamais
+// confirmé redeviennent libres après 24 heures.
+purgerNonConfirmes();
+
 $ip = ipVisiteur();
 $recentes = ligne(
     'SELECT COUNT(*) AS n FROM membre
@@ -54,11 +65,14 @@ if ((int) ($recentes['n'] ?? 0) >= INSCRIPTIONS_PAR_HEURE) {
     refuser(429, 'Trop de comptes créés depuis cette connexion. Réessayez dans une heure.');
 }
 
+$existant = ligne('SELECT courriel_verifie FROM membre WHERE courriel = :c', ['c' => $courriel]);
+if ($existant !== null) {
+    refuser(409, (int) $existant['courriel_verifie'] === 1
+        ? 'Cette adresse a déjà un compte. Connectez-vous, ou demandez un nouveau mot de passe.'
+        : 'Cette adresse attend sa confirmation. Connectez-vous : un nouveau lien partira.');
+}
 if (ligne('SELECT 1 FROM membre WHERE pseudo = :p', ['p' => $pseudo]) !== null) {
     refuser(409, 'Ce pseudo est déjà pris.');
-}
-if (ligne('SELECT 1 FROM membre WHERE courriel = :c', ['c' => $courriel]) !== null) {
-    refuser(409, 'Cette adresse a déjà un compte. Connectez-vous, ou demandez un nouveau mot de passe.');
 }
 
 try {
@@ -81,12 +95,11 @@ try {
 }
 
 $membreId = (int) bdd()->lastInsertId();
-ouvrirSession($membreId);
 
 if (!envoyerLienVerification($membreId, $pseudo, $courriel)) {
-    // Le compte existe : l'échec ne porte que sur le courriel, que /compte/
-    // permet de redemander.
-    repondreOk('Compte créé, mais le courriel de confirmation n\'est pas parti. Redemandez-le depuis votre compte.');
+    // Un compte que personne ne pourra confirmer est un compte poubelle.
+    executer('DELETE FROM membre WHERE id = :id', ['id' => $membreId]);
+    refuser(500, 'Le courriel de confirmation n\'est pas parti, et le compte n\'est pas créé. Réessayez dans un moment.');
 }
 
-repondreOk('Compte créé. Un lien de confirmation part vers votre adresse, valable 24 heures.');
+repondreOk('Compte créé. Ouvrez le lien reçu par courriel dans les 24 heures pour l\'activer, indésirables compris.');

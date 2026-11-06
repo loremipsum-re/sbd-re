@@ -37,6 +37,10 @@ import '../../styles/compte.css';
           <label for="courriel">Adresse électronique</label>
           <input id="courriel" name="courriel" type="email" required autocomplete="email" />
         </div>
+        <div class="appat" aria-hidden="true">
+          <label for="site">Ne remplissez pas ce champ</label>
+          <input id="site" name="site" type="text" tabindex="-1" autocomplete="off" />
+        </div>
         <div class="actions">
           <button type="submit">Recevoir un lien</button>
         </div>
@@ -89,7 +93,10 @@ import '../../styles/compte.css';
   }
 
   brancher(demande, (donnees) =>
-    api('/api/mot-de-passe.php', 'POST', { courriel: champ(donnees, 'courriel') }),
+    api('/api/mot-de-passe.php', 'POST', {
+      courriel: champ(donnees, 'courriel'),
+      site: champ(donnees, 'site'),
+    }),
   );
 
   brancher(

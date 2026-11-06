@@ -280,6 +280,15 @@ verifie('Dix lettres accentuées comptent dix', \SBDRE\erreurMotDePasse('ééé�
 verifie('72 octets acceptés',              \SBDRE\erreurMotDePasse(str_repeat('a', 72)) === '',     true);
 verifie('73 octets refusés, bcrypt ignorerait la suite', \SBDRE\erreurMotDePasse(str_repeat('a', 73)) !== '', true);
 
+titre('Délai de remplissage, contre les robots');
+
+verifie('Envoyé en 2 secondes : robot',             \SBDRE\delaiHumain($maintenant - 2, $maintenant),    false);
+verifie('Envoyé en 3 secondes : accepté',           \SBDRE\delaiHumain($maintenant - 3, $maintenant),    true);
+verifie('Envoyé en 2 heures pile : accepté',        \SBDRE\delaiHumain($maintenant - 7200, $maintenant), true);
+verifie('Page restée ouverte plus de 2 heures',     \SBDRE\delaiHumain($maintenant - 7201, $maintenant), false);
+verifie('Sans horodatage : refusé',                 \SBDRE\delaiHumain(0, $maintenant),                  false);
+verifie('Horodatage dans le futur : refusé',        \SBDRE\delaiHumain($maintenant + 60, $maintenant),   false);
+
 titre('Adresse électronique');
 
 verifie('Mise en minuscules',              \SBDRE\normaliserCourriel(' Jean@Exemple.RE ') === 'jean@exemple.re', true);

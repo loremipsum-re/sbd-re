@@ -20,6 +20,9 @@ import '../../styles/compte.css';
         <h1>Se connecter</h1>
       </header>
 
+      {/* Le résultat du lien de confirmation, posé par /api/verifier.php. */}
+      <p class="etat-compte" data-retour role="status" aria-live="polite" hidden></p>
+
       <noscript>
         <p class="aide">Ce formulaire demande JavaScript.</p>
       </noscript>
@@ -41,6 +44,11 @@ import '../../styles/compte.css';
           />
         </div>
 
+        <div class="appat" aria-hidden="true">
+          <label for="site">Ne remplissez pas ce champ</label>
+          <input id="site" name="site" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+
         <div class="actions">
           <button type="submit">Se connecter</button>
         </div>
@@ -57,9 +65,22 @@ import '../../styles/compte.css';
 </BaseLayout>
 
 <script>
-  import { api, brancher, champ } from '../../lib/api-compte';
+  import { afficher, api, brancher, champ } from '../../lib/api-compte';
 
   const form = document.querySelector<HTMLFormElement>('[data-connexion]')!;
+  const retour = document.querySelector<HTMLElement>('[data-retour]')!;
+
+  const adresse = new URLSearchParams(location.search).get('adresse');
+  if (adresse === 'confirmee') {
+    afficher(retour, 'Adresse confirmée. Votre compte est actif : connectez-vous.', true);
+  } else if (adresse === 'lien-invalide') {
+    afficher(
+      retour,
+      'Ce lien a expiré ou a déjà servi. Connectez-vous : un nouveau lien partira si le compte attend encore sa confirmation.',
+      false,
+    );
+  }
+  if (adresse) history.replaceState(null, '', location.pathname);
 
   brancher(
     form,
@@ -67,6 +88,7 @@ import '../../styles/compte.css';
       api('/api/connexion.php', 'POST', {
         courriel: champ(donnees, 'courriel'),
         mot_de_passe: champ(donnees, 'mot_de_passe'),
+        site: champ(donnees, 'site'),
       }),
     () => location.assign('/compte/'),
   );

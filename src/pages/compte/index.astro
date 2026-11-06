@@ -1,9 +1,10 @@
 ---
 /**
- * Mon compte : l'état de l'adresse, le profil, la déconnexion, l'effacement.
+ * Mon compte : le profil, la déconnexion, l'effacement.
  *
  * La page est statique et se remplit par `GET /api/moi.php`. Sans session,
- * elle renvoie vers la connexion. La liste des salles vient de la collection
+ * elle renvoie vers la connexion. Seul un compte confirmé a une session : la
+ * page n'a donc jamais d'adresse non confirmée à gérer. La liste des salles vient de la collection
  * de /salles/ à la génération : le serveur ne contrôle que la forme de
  * l'identifiant, et le menu ne propose que des fiches existantes.
  *
@@ -33,21 +34,7 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
         <p class="aide">Cette page demande JavaScript.</p>
       </noscript>
 
-      <p class="etat-compte" data-retour role="status" aria-live="polite" hidden></p>
-
       <section data-compte hidden>
-        <form class="form-compte" data-verification hidden novalidate>
-          <p>
-            Votre adresse n'est pas encore confirmée. Ouvrez le lien reçu par
-            courriel, indésirables compris. Tant qu'elle ne l'est pas, votre
-            profil reste vide et rien ne se publie.
-          </p>
-          <div class="actions">
-            <button type="submit" class="secondaire">Renvoyer le lien</button>
-          </div>
-          <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
-        </form>
-
         <h2>Profil</h2>
         <form class="form-compte" data-profil novalidate>
           <div class="champ">
@@ -116,27 +103,15 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
 </BaseLayout>
 
 <script>
-  import { afficher, api, brancher, champ } from '../../lib/api-compte';
+  import { api, brancher, champ } from '../../lib/api-compte';
 
-  const retour = document.querySelector<HTMLElement>('[data-retour]')!;
   const bonjour = document.querySelector<HTMLElement>('[data-bonjour]')!;
   const section = document.querySelector<HTMLElement>('[data-compte]')!;
-  const verification = document.querySelector<HTMLFormElement>('[data-verification]')!;
   const profil = document.querySelector<HTMLFormElement>('[data-profil]')!;
-
-  // Le résultat du lien de confirmation, posé par /api/verifier.php.
-  const adresse = new URLSearchParams(location.search).get('adresse');
-  if (adresse === 'confirmee') {
-    afficher(retour, 'Adresse confirmée. Votre compte est actif.', true);
-  } else if (adresse === 'lien-invalide') {
-    afficher(retour, 'Ce lien a expiré ou a déjà servi. Redemandez-en un ci-dessous.', false);
-  }
-  if (adresse) history.replaceState(null, '', location.pathname);
 
   interface Compte {
     pseudo: string;
     courriel: string;
-    courriel_verifie: number;
     instagram_visible: number;
     bio: string | null;
     salle: string | null;
@@ -155,7 +130,6 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
 
     const compte = lecture.compte as Compte;
     bonjour.textContent = `Connecté en tant que ${compte.pseudo}, adresse ${compte.courriel}.`;
-    verification.hidden = compte.courriel_verifie === 1;
     section.hidden = false;
 
     profil.querySelector<HTMLTextAreaElement>('[name="bio"]')!.value = compte.bio ?? '';
@@ -165,8 +139,6 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
     document.querySelector('[data-libelle-instagram]')!.textContent =
       `Afficher le lien vers instagram.com/${compte.pseudo}`;
   });
-
-  brancher(verification, () => api('/api/verifier.php', 'POST'));
 
   brancher(profil, (donnees) =>
     api('/api/moi.php', 'PATCH', {
