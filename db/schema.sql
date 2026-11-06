@@ -66,6 +66,13 @@ CREATE TABLE IF NOT EXISTS membre (
   -- ligne final, « abc » suivi d'un saut de ligne.
   pseudo          VARCHAR(30)     NOT NULL,
 
+  -- Le pseudo se change une fois par an, sauf demande à l'admin (demande de
+  -- l'auteur du 7 novembre 2026). L'ancien reste réservé à ce membre, et son
+  -- adresse de profil renvoie vers la nouvelle : un lien partagé ne meurt
+  -- pas, et personne ne peut reprendre un pseudo qu'on vient de quitter.
+  pseudo_precedent VARCHAR(30)    NULL     DEFAULT NULL,
+  date_pseudo     DATETIME        NULL     DEFAULT NULL,
+
   -- Le nom Instagram, distinct du pseudo, choix de l'auteur du 7 novembre
   -- 2026. Même format qu'un pseudo, sans longueur minimale. Unique : un
   -- compte Instagram ne s'affiche que sur un seul profil.
@@ -105,6 +112,7 @@ CREATE TABLE IF NOT EXISTS membre (
   PRIMARY KEY (id),
   UNIQUE KEY uq_membre_courriel (courriel),
   UNIQUE KEY uq_membre_pseudo   (pseudo),
+  UNIQUE KEY uq_membre_pseudo_precedent (pseudo_precedent),
   UNIQUE KEY uq_membre_instagram (instagram),
   KEY ix_membre_ip (ip_inscription, date_inscription),
 

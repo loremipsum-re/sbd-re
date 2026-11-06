@@ -206,7 +206,7 @@ foreach (['STRICT_ALL_TABLES', 'ONLY_FULL_GROUP_BY', 'NO_ZERO_DATE'] as $attendu
 titre('4. Tables du schéma');
 
 $attendues = [
-    'membre'              => ['pseudo', 'instagram', 'date_instagram', 'instagram_visible', 'banni', 'ip_inscription'],
+    'membre'              => ['pseudo', 'pseudo_precedent', 'date_pseudo', 'instagram', 'date_instagram', 'instagram_visible', 'banni', 'ip_inscription'],
     'performance'         => ['categorie', 'admin_id', 'date_verif_admin'],
     'vote'                => ['performance_id', 'membre_id', 'ok'],
     'message'             => ['canal', 'pseudo', 'texte', 'masque_par'],
