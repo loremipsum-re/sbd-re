@@ -49,12 +49,12 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 
 export const JOURNAL: readonly EntreeJournal[] = [
   {
-    date: '2026-11-06',
+    date: '2026-11-07',
     nature: 'correction',
-    version: '1.9.6',
+    version: '1.9.7',
     titre: 'Des courriels signés au nom de sbd.re',
     texte:
-      "Les messages du site partent de la messagerie de sbd.re, signés à son nom. Les boîtes exigeantes, comme celles d'iCloud, les refusaient jusqu'ici.",
+      "Les messages du site partent signés au nom de sbd.re. Les boîtes exigeantes, comme celles d'iCloud, les refusaient jusqu'ici.",
   },
   {
     date: '2026-11-06',
