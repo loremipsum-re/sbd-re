@@ -188,8 +188,12 @@ function badgeCommunaute(int $votes, int $favorables): bool
  * il ne change pas en version 1.
  * ====================================================================== */
 
-/** Ce qu'un membre change sur son profil. */
-const CHAMPS_PROFIL = ['instagram_visible', 'bio', 'salle'];
+/**
+ * Ce qu'un membre change sur son profil. `instagram` passe en plus par la
+ * règle des six mois, dans moi.php : sa date de changement ne vient jamais
+ * de la requête.
+ */
+const CHAMPS_PROFIL = ['instagram', 'instagram_visible', 'bio', 'salle'];
 
 /** Ce qu'un membre saisit en ajoutant une performance. */
 const CHAMPS_PERFORMANCE = [

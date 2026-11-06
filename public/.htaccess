@@ -39,6 +39,17 @@ DirectoryIndex index.html
   # règle, les moteurs de recherche voient deux sites au contenu identique.
   RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
   RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
+
+  # --- Profils de membres, rendus par PHP ------------------------------------
+  # /membres/<pseudo>/ n'existe pas sur le disque : api/profil-page.php le rend
+  # à la demande depuis le gabarit d'Astro. Le gabarit lui-même, et /membres/
+  # sans pseudo, répondent 404. Sans barre finale, on la pose, comme Astro le
+  # fait partout (`trailingSlash: 'always'`).
+  RewriteRule ^membres/-gabarit - [R=404,L]
+  RewriteRule ^membres/?$ - [R=404,L]
+  RewriteRule ^membres/([^/]+)$ /membres/$1/ [R=301,L]
+  RewriteRule ^membres/([^/]+)/$ api/profil-page.php?pseudo=$1 [B,L]
+  RewriteRule ^sitemap-membres\.xml$ api/sitemap-membres.php [L]
 </IfModule>
 
 ErrorDocument 404 /404.html

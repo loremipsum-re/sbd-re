@@ -127,6 +127,58 @@ function delaiHumain(int $affiche, int $maintenant): bool
     return $affiche > 0 && $ecoule >= DELAI_MINIMAL_SECONDES && $ecoule <= DELAI_MAXIMAL_SECONDES;
 }
 
+/* =========================================================================
+ * Le nom Instagram, distinct du pseudo
+ *
+ * Choix de l'auteur du 7 novembre 2026 : le lien du profil vise un nom
+ * Instagram à part, que le membre choisit, et qu'il ne change qu'une fois
+ * tous les six mois. Changer à volonté permettrait d'emprunter le nom d'un
+ * autre le temps d'une capture d'écran. Retirer le nom reste possible à tout
+ * moment, sans remettre l'horloge à zéro.
+ * ====================================================================== */
+
+const DELAI_INSTAGRAM_MOIS = 6;
+
+/** Ce que le membre a tapé, ramené à un nom : « @Jean », une adresse instagram.com/jean/. */
+function normaliserInstagram(string $saisie): string
+{
+    $saisie = trim($saisie);
+    if (preg_match('~instagram\.com/([^/?#\s]+)~i', $saisie, $m) === 1) {
+        $saisie = $m[1];
+    }
+
+    return mb_strtolower(ltrim($saisie, '@'));
+}
+
+/** Le format d'Instagram : minuscules, chiffres, point, tiret bas, 30 au plus. */
+function instagramValide(string $nom): bool
+{
+    return preg_match('/^[a-z0-9._]{1,30}\z/', $nom) === 1
+        && preg_match('/[a-z0-9]/', $nom) === 1;
+}
+
+/** Le moment où un nouveau nom sera accepté, 0 si c'est déjà le cas. */
+function prochainInstagram(?string $dernierChangement, int $maintenant): int
+{
+    if ($dernierChangement === null || $dernierChangement === '') {
+        return 0;
+    }
+    $possible = strtotime($dernierChangement . ' +' . DELAI_INSTAGRAM_MOIS . ' months');
+
+    return $possible !== false && $possible > $maintenant ? $possible : 0;
+}
+
+/** Une date en toutes lettres : « 7 mai 2027 », ou « mai 2027 » sans le jour. */
+function dateFr(int $moment, bool $avecJour = true): string
+{
+    $mois = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
+        'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    $jour = (int) date('j', $moment);
+
+    return ($avecJour ? ($jour === 1 ? '1er' : (string) $jour) . ' ' : '')
+        . $mois[(int) date('n', $moment) - 1] . ' ' . date('Y', $moment);
+}
+
 /** L'adresse, déjà normalisée, est-elle chez un domaine qui refuse nos courriels ? */
 function adresseInjoignable(string $courriel): bool
 {

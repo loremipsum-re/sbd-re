@@ -50,6 +50,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-07',
+    nature: 'fonction',
+    version: '1.9.9',
+    titre: 'Les profils de membres, en essai',
+    texte:
+      "Chaque membre en essai a son profil public, avec sa présentation, sa salle et, s'il le souhaite, son compte Instagram. Ce nom se change une fois tous les six mois.",
+  },
+  {
+    date: '2026-11-07',
     nature: 'correction',
     version: '1.9.8',
     titre: 'Les adresses iCloud, en attente',

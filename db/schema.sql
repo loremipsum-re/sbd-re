@@ -66,7 +66,26 @@ CREATE TABLE IF NOT EXISTS membre (
   -- ligne final, « abc » suivi d'un saut de ligne.
   pseudo          VARCHAR(30)     NOT NULL,
 
-  -- Affiche le lien vers instagram.com/<pseudo> sur le profil.
+  -- Le pseudo se change une fois par an, sauf demande à l'admin (demande de
+  -- l'auteur du 7 novembre 2026). L'ancien reste réservé à ce membre, et son
+  -- adresse de profil renvoie vers la nouvelle : un lien partagé ne meurt
+  -- pas, et personne ne peut reprendre un pseudo qu'on vient de quitter.
+  pseudo_precedent VARCHAR(30)    NULL     DEFAULT NULL,
+  date_pseudo     DATETIME        NULL     DEFAULT NULL,
+
+  -- Le nom Instagram, distinct du pseudo, choix de l'auteur du 7 novembre
+  -- 2026. Même format qu'un pseudo, sans longueur minimale. Unique : un
+  -- compte Instagram ne s'affiche que sur un seul profil.
+  instagram       VARCHAR(30)     NULL     DEFAULT NULL,
+
+  -- Date du dernier nom posé. Un nouveau nom n'est accepté que six mois
+  -- après : changer de nom à volonté permettrait d'emprunter celui d'un
+  -- autre le temps d'une capture d'écran. Retirer le nom ne remet pas
+  -- l'horloge à zéro, sans quoi le délai se contournerait en deux gestes.
+  date_instagram  DATETIME        NULL     DEFAULT NULL,
+
+  -- Affiche le lien vers instagram.com/<instagram> sur le profil. Se coche
+  -- et se décoche à volonté, sans toucher au délai.
   instagram_visible TINYINT(1)    NOT NULL DEFAULT 0,
 
   bio             VARCHAR(160)    NULL     DEFAULT NULL,
@@ -93,11 +112,18 @@ CREATE TABLE IF NOT EXISTS membre (
   PRIMARY KEY (id),
   UNIQUE KEY uq_membre_courriel (courriel),
   UNIQUE KEY uq_membre_pseudo   (pseudo),
+  UNIQUE KEY uq_membre_pseudo_precedent (pseudo_precedent),
+  UNIQUE KEY uq_membre_instagram (instagram),
   KEY ix_membre_ip (ip_inscription, date_inscription),
 
   CONSTRAINT ck_membre_pseudo CHECK (
     REGEXP_LIKE(pseudo, '^[a-z0-9._]{3,30}\\z', 'c')
     AND REGEXP_LIKE(pseudo, '[a-z0-9]', 'c')
+  ),
+  CONSTRAINT ck_membre_instagram CHECK (
+    instagram IS NULL
+    OR (REGEXP_LIKE(instagram, '^[a-z0-9._]{1,30}\\z', 'c')
+        AND REGEXP_LIKE(instagram, '[a-z0-9]', 'c'))
   )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
