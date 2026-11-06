@@ -1,0 +1,104 @@
+---
+/**
+ * Le gabarit des profils de membres, que public/api/profil-page.php remplit.
+ *
+ * POURQUOI UN GABARIT. Les profils changent entre deux déploiements, et la
+ * base n'est joignable que depuis OVH : PHP les rend à la demande. Astro
+ * produit ici la page une fois, au dessin du site, avec des repères
+ * « %%NOM%% » que PHP remplace par des valeurs échappées. En-tête, menu,
+ * thème, pied de page et bannière restent ainsi ceux de toutes les pages.
+ *
+ * L'ADRESSE `/membres/-gabarit/` ne peut appartenir à aucun membre : le tiret
+ * est refusé dans les pseudos. Le .htaccess la renvoie en 404, et PHP lit le
+ * fichier sur le disque. Elle sort du plan de site, voir astro.config.mjs.
+ *
+ * LES STYLES SONT GLOBAUX, sous `.page-membre` : les blocs écrits par PHP ne
+ * portent pas l'attribut qu'Astro pose pour isoler les styles d'un fichier.
+ *
+ * Les repères : PSEUDO, TITRE, DESCRIPTION, ROBOTS (index ou noindex, selon
+ * que le profil a des performances), PRESENTATION, FICHE, RECORDS, DONNEES
+ * (le JSON-LD ProfilePage). Toute adresse `/membres/-gabarit/` devient celle
+ * du profil, l'adresse canonique comprise.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout titre="%%PSEUDO%%" titreOnglet="%%TITRE%%" description="%%DESCRIPTION%%">
+  <meta slot="tete" name="robots" content="%%ROBOTS%%" />
+
+  <div class="wrap page-membre">
+    <header class="entete-page">
+      <p class="surtitre">Membre de la communauté</p>
+      <h1>%%PSEUDO%%</h1>
+      %%PRESENTATION%%
+    </header>
+
+    %%FICHE%%
+
+    <section class="records-membre" aria-labelledby="titre-records">
+      <h2 id="titre-records">Records</h2>
+      %%RECORDS%%
+    </section>
+  </div>
+
+  <script type="application/ld+json" is:inline>%%DONNEES%%</script>
+</BaseLayout>
+
+<style is:global>
+  .page-membre {
+    padding-block: var(--space-8) var(--space-16);
+  }
+
+  .page-membre .surtitre {
+    margin: 0 0 var(--space-2);
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  /* Le pseudo ne se tronque jamais : il passe à la ligne s'il est long. */
+  .page-membre h1 {
+    overflow-wrap: anywhere;
+  }
+
+  .page-membre .fiche-membre {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+    gap: var(--space-4);
+    margin: 0 0 var(--space-12);
+    max-width: 48rem;
+  }
+
+  .page-membre .fiche-membre div {
+    min-width: 0;
+    padding: var(--space-3) var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .page-membre .fiche-membre dt {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .page-membre .fiche-membre dd {
+    margin: var(--space-1) 0 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  /* Un lien seul dans sa case est un contrôle : 44 px, comme le reste. */
+  .page-membre .fiche-membre a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+  }
+
+  .page-membre .records-membre {
+    max-width: 48rem;
+  }
+
+  .page-membre .records-membre h2 {
+    margin-bottom: var(--space-3);
+  }
+</style>

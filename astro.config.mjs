@@ -182,9 +182,12 @@ export default defineConfig({
       // n'ont pas de contenu propre et diluent le référencement.
       // Les pages de compte non plus : elles portent `noindex`, et la charte
       // attend l'ouverture de la communauté (docs/comptes.md, phase 9).
+      // Le gabarit des profils non plus : les profils ont leur propre plan,
+      // rendu par PHP et ajouté à l'index par `customSitemaps`.
       filter: (page) =>
         !/\/competitions\/\d{4}-\d{2}-\d{2}-/.test(page) &&
-        !/\/compte\/|\/communaute\/charte\//.test(page),
+        !/\/compte\/|\/communaute\/charte\/|\/membres\//.test(page),
+      customSitemaps: ['https://sbd.re/sitemap-membres.xml'],
 
       serialize(item) {
         const chemin = new URL(item.url).pathname;

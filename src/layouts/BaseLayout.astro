@@ -213,6 +213,10 @@ const courant = (href: string) =>
         // Stockage indisponible : on ne charge rien, faute de consentement vérifiable.
       }
     </script>}
+
+    {/* Ce qu'une page ajoute à l'en-tête, comme la balise robots du gabarit
+        des profils, que PHP remplit à chaque profil. */}
+    <slot name="tete" />
   </head>
 
   <body>
