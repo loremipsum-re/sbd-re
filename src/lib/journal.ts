@@ -51,6 +51,14 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-06',
     nature: 'correction',
+    version: '1.9.6',
+    titre: 'Des courriels signés au nom de sbd.re',
+    texte:
+      "Les messages du site partent de la messagerie de sbd.re, signés à son nom. Les boîtes exigeantes, comme celles d'iCloud, les refusaient jusqu'ici.",
+  },
+  {
+    date: '2026-11-06',
+    nature: 'correction',
     version: '1.9.5',
     titre: "Un compte membre s'active par courriel",
     texte:
