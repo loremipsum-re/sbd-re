@@ -136,10 +136,11 @@ des serveurs que le SPF autorise. Réglages dans `db/config.exemple.php`, sectio
 
 ### PHPMailer, première dépendance tierce du projet
 
-> **Retiré le matin du 6 novembre 2026, revenu le soir même.** iCloud refuse
-> les messages de `mail()`, qu'OVH ne signe pas en DKIM. La boîte est
-> désormais `no-reply@sbd.re` sur `smtp.mail.ovh.net`, et seul le mot de passe
-> reste dans `config.php`. Voir l'en-tête de `public/api/lib/courriel.php`.
+> **Retiré le matin du 6 novembre 2026, revenu le soir même**, pour une autre
+> raison : iCloud refuse les messages de `mail()`, qu'OVH ne signe pas en
+> DKIM, et le SMTP d'OVH est injoignable depuis l'hébergement. PHPMailer signe
+> donc lui-même les messages de `mail()`, avec une clé rangée dans
+> `~/sbd-re-prive/`. Voir l'en-tête de `public/api/lib/courriel.php`.
 
 Choisie par l'auteur le 30 juillet 2026. C'est la bibliothèque que **WordPress
 emploie lui-même**, donc un terrain qu'il connaît, et elle est éprouvée par des
