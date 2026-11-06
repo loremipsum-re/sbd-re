@@ -3,38 +3,33 @@
 declare(strict_types=1);
 
 /**
- * Vérification de l'envoi de courriel par le serveur, sans SMTP authentifié.
+ * Vérification de l'envoi de courriel, par la chaîne réelle du site.
  *
  * -----------------------------------------------------------------------------
  * POURQUOI CE SCRIPT EXISTE
  * -----------------------------------------------------------------------------
- * Le formulaire de partenariat poste avec `mail()`, la fonction du serveur, et
- * non par SMTP authentifié : aucune boîte à créer, aucun mot de passe à
- * déposer. En contrepartie on ne sait pas si ça marche tant qu'on n'a pas
- * essayé, et un formulaire qui avale les demandes en silence est pire qu'un
- * formulaire absent.
+ * Un formulaire qui avale les messages en silence est pire qu'un formulaire
+ * absent. Ce script appelle `envoyerCourriel()` de public/api/lib/courriel.php,
+ * la fonction des formulaires et des comptes, et dit quelle voie elle a prise :
  *
- * Ce script envoie exactement le même genre de message que le formulaire, avec
- * les mêmes en-têtes, pour éprouver la chaîne sans passer par la page.
+ *   - SMTP authentifié sur no-reply@sbd.re, dès que config.php porte le mot de
+ *     passe de la boîte, section `smtp`. C'est la voie signée DKIM, la seule
+ *     qu'iCloud accepte (refus [HM08] mesuré le 6 novembre 2026 avec mail()).
+ *   - mail() sinon, depuis les serveurs de l'hébergement, sans signature.
  *
  * -----------------------------------------------------------------------------
- * IL NE PEUT PAS TOURNER SUR UNE MACHINE DE DÉVELOPPEMENT
+ * OÙ LE LANCER
  * -----------------------------------------------------------------------------
- * `mail()` a besoin d'un serveur de courrier local. Windows n'en a pas, et le
- * script le dit plutôt que d'échouer sans expliquer. Il est fait pour être
- * lancé en SSH sur l'hébergement OVH.
+ * Chez OVH, en SSH avec le login principal, depuis ~/sbd-re-prive, à côté de
+ * config.php. En ligne de commande, mail() est refusée par l'hébergement
+ * (« not allowed to submit mail ») : seul le SMTP s'y éprouve.
  *
  * -----------------------------------------------------------------------------
  * CE QU'IL PROUVE, ET CE QU'IL NE PROUVE PAS
  * -----------------------------------------------------------------------------
  * Il prouve que le serveur a ACCEPTÉ le message. Il ne prouve PAS qu'il arrive :
- * entre les deux restent les filtres du destinataire. Un premier envoi depuis un
- * domaine qui n'écrit jamais atterrit souvent en indésirables. Regarder ce
- * dossier avant de conclure à une panne.
- *
- * Il appelle la fonction partagée de public/api/lib/courriel.php, celle des
- * formulaires et des comptes : c'est la chaîne réelle qu'on éprouve, pas une
- * copie. Il la cherche dans le dépôt, puis à côté de ~/sbd-re-prive/ chez OVH.
+ * entre les deux restent les filtres du destinataire. Regarder les indésirables
+ * avant de conclure à une panne, et l'onglet Scripts e-mails d'OVH pour mail().
  *
  *   Usage : php verifier-envoi.php [adresse]
  */
@@ -71,43 +66,45 @@ if (!filter_var($destinataire, FILTER_VALIDATE_EMAIL)) {
     exit(1);
 }
 
-$sendmail = (string) ini_get('sendmail_path');
-echo "  destinataire  : {$destinataire}\n";
-echo "  expéditeur    : " . EXPEDITEUR . "\n";
-echo "  sendmail_path : " . ($sendmail !== '' ? $sendmail : '(vide)') . "\n";
-echo "  système       : " . PHP_OS_FAMILY . ' / PHP ' . PHP_VERSION . "\n\n";
+$smtp = motDePasseSmtp() !== '';
 
-if (PHP_OS_FAMILY === 'Windows' || $sendmail === '') {
-    echo "ARRÊT : aucun serveur de courrier n'est configuré ici.\n\n";
-    echo "  `mail()` délègue l'envoi à un binaire système, absent sur une\n";
-    echo "  machine de développement. Ce n'est pas une panne : ce script est\n";
-    echo "  fait pour tourner sur l'hébergement.\n\n";
-    echo "  Sur OVH, en SSH avec le login principal, depuis ~/sbd-re-prive :\n";
-    echo "      php verifier-envoi.php {$destinataire}\n";
+echo "  destinataire : {$destinataire}\n";
+echo "  expéditeur   : " . EXPEDITEUR . "\n";
+echo "  voie         : " . ($smtp ? 'SMTP authentifié, ' . SMTP_HOTE . ':' . SMTP_PORT : 'mail(), sans signature') . "\n";
+echo "  système      : " . PHP_OS_FAMILY . ' / PHP ' . PHP_VERSION . "\n\n";
+
+if (!$smtp) {
+    echo "ARRÊT : le SMTP n'est pas configuré.\n\n";
+    echo "  Ajouter à config.php, dans ~/sbd-re-prive :\n";
+    echo "      'smtp' => ['mot_de_passe' => '…'],\n";
+    echo "  avec le mot de passe de la boîte " . EXPEDITEUR . ". En ligne de\n";
+    echo "  commande, mail() est refusée par l'hébergement : rien à éprouver sans SMTP.\n";
     exit(2);
 }
 
 $corps = implode("\n", [
     "Message d'essai envoyé par db/verifier-envoi.php.",
     '',
-    "Si vous lisez ceci, le serveur accepte et achemine les courriels, et le",
-    "formulaire de la page Partenariats fonctionne de bout en bout.",
+    "Si vous lisez ceci dans la boîte de réception, le site envoie par SMTP",
+    "authentifié, et les liens de confirmation des comptes arriveront aussi.",
     '',
     'Date    : ' . date('d/m/Y à H:i:s'),
     'Serveur : ' . (gethostname() ?: 'inconnu'),
 ]);
 
-$envoye = envoyerCourriel($destinataire, '[sbd.re] Essai d\'envoi, accentué', $corps);
-
-if ($envoye) {
-    echo "ACCEPTÉ : le serveur a pris le message en charge.\n\n";
+// La voie SMTP seule : envoyerCourriel() repasserait par mail() en cas
+// d'échec, et le journal montrerait la raison du mauvais refus.
+if (envoyerParSmtp($destinataire, '[sbd.re] Essai d\'envoi, accentué', $corps, '', motDePasseSmtp())) {
+    echo "ACCEPTÉ : le serveur de messagerie d'OVH a pris le message en charge.\n\n";
     echo "  Vérifiez maintenant la boîte {$destinataire}, INDÉSIRABLES COMPRIS.\n";
     echo "  L'acceptation ne garantit pas la remise.\n";
     exit(0);
 }
 
-echo "REFUSÉ : mail() a rendu false.\n\n";
-echo "  Causes habituelles sur un mutualisé : envoi désactivé par l'hébergeur,\n";
-echo "  quota atteint, ou expéditeur refusé parce qu'il n'appartient pas à un\n";
-echo "  domaine du compte. L'expéditeur employé ici est " . EXPEDITEUR . ".\n";
+echo "REFUSÉ. La raison, telle que le serveur l'a donnée :\n\n";
+$journal = __DIR__ . '/courriels-refuses.log';
+$lignes = is_file($journal) ? file($journal, FILE_IGNORE_NEW_LINES) : false;
+echo '  ' . ($lignes ? end($lignes) : '(journal introuvable, voir le journal d\'erreurs de PHP)') . "\n\n";
+echo "  « Could not authenticate » : mauvais mot de passe, ou boîte " . EXPEDITEUR . "\n";
+echo "  inexistante. À créer dans l'espace client OVH, rubrique E-mails.\n";
 exit(1);
