@@ -135,6 +135,11 @@ lit dans les en-têtes du courriel reçu, ligne `Authentication-Results`.
 Tant que ce n'est pas tranché, la partie communauté n'a pas de chemin d'envoi
 choisi. Or son inscription repose entièrement sur un courriel de vérification.
 
+**Tranché le 6 novembre 2026 en faveur de `mail()`**
+([comptes.md](comptes.md), section 2) : PHPMailer est retiré, et
+`lib/courriel.php` sert les formulaires comme les comptes. Reste à lire
+`spf=pass` dans un courriel reçu, phase 0 du même plan.
+
 ### 4.4 Aucune alerte
 
 Rien ne signale une panne du site, un échec de la mise à jour mensuelle ou un

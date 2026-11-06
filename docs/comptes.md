@@ -381,16 +381,31 @@ tourne en PHP 5.4, qui refuserait le script. Les vérificateurs se lancent
 donc avec le login principal. Et le client `ftp` de Windows ne lance aucune
 commande : il ne fait que déplacer des fichiers, en clair.
 
+**Une correction après coup, le 6 novembre.** En phase 2, un test a montré
+que `$`, en fin d'expression, accepte aussi un retour à la ligne final, en PHP
+comme dans MySQL. La contrainte du pseudo laissait donc passer « abc » suivi
+d'un saut de ligne. Elle finit désormais par `\z`, et `verifier.php` l'essaie :
+44 essais, 57 réussites attendues. **À recharger sur la base de test** avant la
+phase 3 (supprimer les tables, importer le schéma, relancer le script).
+
 ### Phase 2, le socle PHP
 
-- [ ] `session.php` : jeton aléatoire, empreinte en base, cookie `Secure`,
-      `HttpOnly`, `SameSite=Lax`, 30 jours, contrôle d'`Origin`.
-- [ ] Réécrire `autorisation.php` selon la section 4, et
-      `db/verifier-autorisation.php` qui la teste sans base.
-- [ ] Remplacer `courriel.php` par un appel à `mail()` partagé avec les
-      formulaires. Retirer PHPMailer.
-- [ ] **Fini quand** `php -l` passe sur chaque fichier et que les règles sont
-      toutes vertes en local.
+- [x] `session.php` : 32 octets tirés au hasard, empreinte en base, cookie
+      `__Host-sbdre` en `Secure`, `HttpOnly`, `SameSite=Lax`, 30 jours sans
+      prolongation, origine exigée sur toute écriture.
+- [x] `autorisation.php` réécrit selon la section 4, badge communauté
+      compris, et `db/verifier-autorisation.php` : 67 règles, sans base.
+- [x] `courriel.php` réduit à `envoyerCourriel()`, partagée par le
+      partenariat, les suggestions et bientôt les comptes. PHPMailer et
+      `verifier-courriel.php` retirés, `config.exemple.php` réduit à la base.
+- [x] **Fini le 6 novembre 2026** : `php -l` passe sur chaque fichier, 67
+      règles sur 67 en local. Les deux formulaires, lancés sur un serveur PHP
+      local, passent par la fonction partagée avec les mêmes en-têtes
+      qu'avant, relevés dans le journal de `mail()`.
+
+**Le pseudo ne change pas en version 1.** Il est l'adresse du profil : le
+changer casserait chaque lien partagé. `CHAMPS_PROFIL` ne l'accepte donc
+pas. Une ligne à ajouter si l'auteur en décide autrement.
 
 ### Phase 3, les comptes
 
