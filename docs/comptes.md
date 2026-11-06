@@ -56,11 +56,13 @@ salons créés par les membres.
 
 ## 3. Le modèle de données
 
-Six tables. La base de production est vide : le schéma se réécrit sans
+Sept tables, écrites dans [db/schema.sql](../db/schema.sql), qui fait foi
+sur ce résumé. La base de production est vide : le schéma se réécrit sans
 migration.
 
 **`membre`** : `id`, `courriel` (unique), `mot_de_passe_hash`, `pseudo`
-(unique, 3 à 30 caractères, `a-z 0-9 . _`, stocké en minuscules),
+(unique, 3 à 30 caractères, `a-z 0-9 . _`, au moins une lettre ou un
+chiffre, stocké en minuscules, contrôlé par une contrainte `CHECK`),
 `instagram_visible` (0 ou 1), `bio` (160 caractères, facultative), `salle`
 (identifiant d'une fiche de `/salles/`, facultatif), `role`
 (`membre` ou `admin`), `courriel_verifie`, `banni`, `ip_inscription`,
@@ -72,16 +74,17 @@ migration.
 `date_performance`, `lien_video`, `admin_id` et `date_verif_admin` (vides
 tant que l'admin n'a pas cliqué), `date_creation`.
 
-**`vote`** : `performance_id`, `membre_id`, `ok` (0 ou 1), `date`. Clé
+**`vote`** : `performance_id`, `membre_id`, `ok` (0 ou 1), `date_vote`. Clé
 primaire sur le couple : un avis par membre et par performance, qu'il peut
 changer.
 
 **`message`** : `id`, `canal`, `membre_id`, `pseudo` (copié au moment de
 l'envoi, pour que le journal reste lisible après un effacement de compte),
-`texte` (500 caractères), `ip`, `date`, `masque_par`.
+`texte` (500 caractères), `ip`, `date_envoi`, `masque_par`.
 
 **`signalement`** : `id`, `type` (`message`, `membre`, `performance`),
-`cible_id`, `auteur_id`, `motif` (200 caractères), `date`, `traite`.
+`cible_id`, `auteur_id`, `motif` (200 caractères), `date_signalement`,
+`traite`. Un seul signalement par membre et par cible.
 
 **`jeton`** : inchangée, avec un type de plus, `session`, à côté de
 `verification` et `reinitialisation`.
@@ -174,7 +177,8 @@ compté dans `membre.ip_inscription`.
 
 `/membres/<pseudo>/` est servie par PHP, parce que les profils changent entre
 deux déploiements et que la base n'est joignable que depuis OVH. Pour garder
-un seul dessin du site, **Astro génère un gabarit**, `/membres/_gabarit/`,
+un seul dessin du site, **Astro génère un gabarit**, `/membres/-gabarit/`,
+adresse qu'aucun pseudo ne peut prendre puisque le tiret y est refusé,
 avec des repères à remplacer. `profil-page.php` lit ce fichier, y écrit les
 valeurs échappées et renvoie la page.
 
@@ -359,8 +363,12 @@ Chaque phase se vérifie avant la suivante. Une phase vaut une PR.
 
 ### Phase 1, le schéma
 
-- [ ] Réécrire `db/schema.sql` selon la section 3.
-- [ ] Mettre `db/verifier.php` à jour, le passer en SSH sur la base de test.
+- [x] Réécrire `db/schema.sql` selon la section 3, fait le 6 novembre.
+- [x] Mettre `db/verifier.php` à jour : il repère une table restée en
+      version de juillet et passe 43 essais : 28 refus attendus, 8 écritures
+      valides, 7 contrôles après l'effacement d'un compte.
+- [ ] Sur la base de test, en SSH : supprimer les tables de juillet (commande
+      en tête du schéma), charger le schéma, lancer `php verifier.php`.
 - [ ] **Fini quand** le script donne un bilan vert chez OVH.
 
 ### Phase 2, le socle PHP
@@ -386,7 +394,7 @@ Chaque phase se vérifie avant la suivante. Une phase vaut une PR.
 
 ### Phase 4, les profils publics
 
-- [ ] Gabarit Astro `/membres/_gabarit/`, exclu du plan de site.
+- [ ] Gabarit Astro `/membres/-gabarit/`, exclu du plan de site.
 - [ ] `profil-page.php`, règle du `.htaccess`, `sitemap-membres.php`,
       ligne `Sitemap` dans `robots.txt`.
 - [ ] **Fini quand** un profil s'affiche au dessin du site, en clair et en
