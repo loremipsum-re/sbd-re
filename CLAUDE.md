@@ -456,7 +456,10 @@ php db/verifier-autorisation.php    # 39 règles d'autorisation, sans base
 ```
 
 MySQL, lui, n'est **pas** installé en local. Tout ce qui touche à la base
-s'éprouve sur le serveur OVH, par `php db/verifier.php` en SSH.
+s'éprouve sur le serveur OVH, par `php db/verifier.php` en SSH, **avec le
+login principal**, depuis `~/sbd-re-prive/`. L'autre login est enfermé dans
+le dossier public et son SSH tourne en PHP 5.4 : voir docs/comptes.md,
+phase 1.
 
 Sous Windows, si `node` ou `php` est introuvable, recharger le PATH :
 

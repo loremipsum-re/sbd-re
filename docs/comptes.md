@@ -367,9 +367,19 @@ Chaque phase se vérifie avant la suivante. Une phase vaut une PR.
 - [x] Mettre `db/verifier.php` à jour : il repère une table restée en
       version de juillet et passe 43 essais : 28 refus attendus, 8 écritures
       valides, 7 contrôles après l'effacement d'un compte.
-- [ ] Sur la base de test, en SSH : supprimer les tables de juillet (commande
-      en tête du schéma), charger le schéma, lancer `php verifier.php`.
-- [ ] **Fini quand** le script donne un bilan vert chez OVH.
+- [x] Sur la base de test : tables de juillet supprimées et schéma chargé
+      dans phpMyAdmin, puis `php verifier.php` en SSH.
+- [x] **Fini le 6 novembre 2026** : 56 réussites, 0 échec, PHP 8.5.12 en
+      ligne de commande. Les 43 essais sont passés, dont la contrainte
+      `REGEXP_LIKE` du pseudo, qui n'avait jamais tourné.
+
+**Deux comptes chez OVH, à ne pas confondre.** Le login principal,
+`loremis`, arrive dans le dossier de l'hébergement, voit `sbd-re-prive/`, et
+son SSH tourne en PHP 8. Un second login, `lorem`, est enfermé dans
+`sbd-re/`, le dossier public : il ne voit pas `sbd-re-prive/`, et son SSH
+tourne en PHP 5.4, qui refuserait le script. Les vérificateurs se lancent
+donc avec le login principal. Et le client `ftp` de Windows ne lance aucune
+commande : il ne fait que déplacer des fichiers, en clair.
 
 ### Phase 2, le socle PHP
 
