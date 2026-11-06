@@ -74,6 +74,22 @@ const PSEUDOS_RESERVES = [
  */
 const EMPREINTE_FACTICE = '$2y$12$M7Pedm8dUWXFjG/O807t/usPDxybhuWPVv9ba4wjhX2TjCK3tJxYW';
 
+/**
+ * Les domaines d'Apple, qui refusent nos courriels. Mesuré le 7 novembre
+ * 2026 : « 554 5.7.1 [HM08] Message rejected due to local policy », alors que
+ * DKIM, DMARC et SPF passent tous. Apple bloque les serveurs d'envoi partagés
+ * d'OVH, pas la signature. Un compte iCloud ne recevrait jamais son lien et
+ * s'effacerait au bout de 24 heures : l'inscription le refuse d'emblée, en le
+ * disant. Choix de l'auteur du même jour.
+ *
+ * À retirer le jour où un envoi vers iCloud passe : Apple joint par
+ * icloudadmin@apple.com, ou un service d'envoi tiers.
+ */
+const DOMAINES_INJOIGNABLES = ['icloud.com', 'me.com', 'mac.com'];
+
+const MESSAGE_INJOIGNABLE = 'Les adresses iCloud (icloud.com, me.com, mac.com) ne reçoivent pas encore '
+    . 'les courriels de sbd.re. Utilisez une autre adresse pour le moment.';
+
 /* =========================================================================
  * Formes acceptées, fonctions pures
  * ====================================================================== */
@@ -109,6 +125,12 @@ function delaiHumain(int $affiche, int $maintenant): bool
     $ecoule = $maintenant - $affiche;
 
     return $affiche > 0 && $ecoule >= DELAI_MINIMAL_SECONDES && $ecoule <= DELAI_MAXIMAL_SECONDES;
+}
+
+/** L'adresse, déjà normalisée, est-elle chez un domaine qui refuse nos courriels ? */
+function adresseInjoignable(string $courriel): bool
+{
+    return in_array(substr((string) strrchr($courriel, '@'), 1), DOMAINES_INJOIGNABLES, true);
 }
 
 /** L'adresse en minuscules si elle est valide, sinon ''. */
