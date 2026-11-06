@@ -206,7 +206,7 @@ foreach (['STRICT_ALL_TABLES', 'ONLY_FULL_GROUP_BY', 'NO_ZERO_DATE'] as $attendu
 titre('4. Tables du schéma');
 
 $attendues = [
-    'membre'              => ['pseudo', 'instagram_visible', 'banni', 'ip_inscription'],
+    'membre'              => ['pseudo', 'instagram', 'date_instagram', 'instagram_visible', 'banni', 'ip_inscription'],
     'performance'         => ['categorie', 'admin_id', 'date_verif_admin'],
     'vote'                => ['performance_id', 'membre_id', 'ok'],
     'message'             => ['canal', 'pseudo', 'texte', 'masque_par'],
@@ -329,6 +329,19 @@ try {
         'UPDATE membre SET bio = ? WHERE id = ?', [str_repeat('a', 161), $membreId]);
     $refuse('Rôle inconnu « moderateur »',
         'UPDATE membre SET role = ? WHERE id = ?', ['moderateur', $membreId]);
+
+    // Le nom Instagram, distinct du pseudo (migration du 7 novembre 2026).
+    $sqlInstagram = 'UPDATE membre SET instagram = ? WHERE id = ?';
+    try {
+        $bdd->prepare($sqlInstagram)->execute(["la.force_$s", $membreId]);
+        ok('Nom Instagram valide : accepté, comme prévu.');
+    } catch (PDOException $e) {
+        ko('Nom Instagram valide : REFUSÉ. ' . $e->getMessage());
+    }
+    $refuse('Nom Instagram en majuscules', $sqlInstagram, ["LaForce$s", $autreId]);
+    $refuse('Nom Instagram à tiret', $sqlInstagram, ["la-force-$s", $autreId]);
+    $refuse('Nom Instagram fait de points seulement', $sqlInstagram, ['..', $autreId]);
+    $refuse('Nom Instagram déjà pris par un autre membre', $sqlInstagram, ["la.force_$s", $autreId]);
 
     /* --- Performances ------------------------------------------------- */
 
