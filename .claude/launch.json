@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 4321
+    },
+    {
+      "name": "sbd-re-php",
+      "runtimeExecutable": "C:\\Users\\nasuo\\php\\php.exe",
+      "runtimeArgs": ["-S", "127.0.0.1:8098", "-t", "dist"],
+      "port": 8098
     }
   ]
 }
