@@ -223,21 +223,38 @@ ajout ──> visible sur le profil, « non vérifiée »
 - **Smileys d'époque**, choix de l'auteur du 6 novembre : les codes des
   forums phpBB. Le membre tape `:)` ou clique sur la barre de 16 smileys sous
   le champ, qui insère le code. **La base garde le code tel quel**, le journal
-  reste du texte. Le navigateur le remplace à l'affichage, dans un nœud de
-  texte, jamais par `innerHTML`. Un code ne se remplace que seul entre deux
-  espaces ou en bout de message : « 5x8) » reste « 5x8) ». Les emojis du
-  clavier passent aussi, `utf8mb4` les stocke.
+  reste du texte. Le navigateur le remplace à l'affichage par une image,
+  créée par `document.createElement('img')`, jamais par `innerHTML`. Un code
+  ne se remplace que seul entre deux espaces ou en bout de message :
+  « 5x8) » reste « 5x8) ». Les emojis du clavier passent aussi, `utf8mb4` les
+  stocke.
+- **Les images d'époque**, choix de l'auteur du 6 novembre : le dessin des
+  smileys de phpBB, dans sa version vectorielle, `vector-remaster/svg/` du
+  dépôt `rednoah/phpBB-smilies`. C'est celle que phpBB livre lui-même depuis
+  la 3.3, créditée dans son `CREDITS.txt`. Licence Apache 2.0 : le texte de
+  la licence voyage avec les fichiers, dans `public/smileys/LICENSE`.
+  16 fichiers SVG, 23,5 Ko en tout, servis par sbd.re, aucun script tiers.
+  Vérifié le 6 novembre sur quatre fichiers : ni script, ni ressource
+  extérieure. À revérifier sur les seize à la copie.
+- **Pourquoi pas les GIF d'origine** : 15 pixels, flous sur un téléphone, et
+  sous GPL 2, la licence de phpBB. Le SVG garde le même dessin, net à toute
+  taille. Il perd l'animation de trois d'entre eux, `:cry:`, `:oops:` et
+  `:roll:`.
+- **Affichage** : hauteur `1.25em`, alignée sur le texte, `alt` en français
+  pour les lecteurs d'écran. Ces images sont du contenu, pas des icônes :
+  elles restent hors de la règle du jeu unique Tabler, comme `Coupe.astro`.
+  Le dégradé jaune et orange se teste sur les deux thèmes, le sombre d'abord.
 
-| Code | Affiché | Code | Affiché |
-|---|---|---|---|
-| `:)` | 🙂 | `:lol:` | 😆 |
-| `:D` | 😀 | `:x` | 😠 |
-| `;)` | 😉 | `:P` | 😛 |
-| `:(` | 🙁 | `:oops:` | 😳 |
-| `:o` | 😮 | `:cry:` | 😢 |
-| `:shock:` | 😲 | `:roll:` | 🙄 |
-| `:?` | 😕 | `:mrgreen:` | 😁 |
-| `8)` | 😎 | `:idea:` | 💡 |
+| Code | Fichier phpBB | `alt` | Code | Fichier phpBB | `alt` |
+|---|---|---|---|---|---|
+| `:)` | `icon_e_smile` | sourire | `:lol:` | `icon_lol` | mort de rire |
+| `:D` | `icon_e_biggrin` | grand sourire | `:x` | `icon_mad` | en colère |
+| `;)` | `icon_e_wink` | clin d'œil | `:P` | `icon_razz` | tire la langue |
+| `:(` | `icon_e_sad` | triste | `:oops:` | `icon_redface` | gêné |
+| `:o` | `icon_e_surprised` | surpris | `:cry:` | `icon_cry` | pleure |
+| `:shock:` | `icon_eek` | choqué | `:roll:` | `icon_rolleyes` | lève les yeux au ciel |
+| `:?` | `icon_e_confused` | perplexe | `:mrgreen:` | `icon_mrgreen` | rire vert |
+| `8)` | `icon_cool` | cool | `:idea:` | `icon_idea` | idée |
 
 - **Freinage** : un message toutes les 3 secondes par membre, lu sur la date
   de son dernier message.
@@ -396,9 +413,11 @@ Chaque phase se vérifie avant la suivante. Une phase vaut une PR.
 ### Phase 7, le chat
 
 - [ ] `chat.php`, les cinq salons, la purge.
+- [ ] Copier les 16 SVG et la licence dans `public/smileys/`, contrôler
+      chaque fichier : ni `<script>`, ni `href` extérieur.
 - [ ] L'interface sur `/communaute/` : salons, messages, champ, barre de
-      smileys. Le remplacement des codes garde un autotest : `:)` devient 🙂,
-      « 5x8) » ne bouge pas, `<b>` reste du texte.
+      smileys. Le remplacement des codes garde un autotest : `:)` devient
+      l'image `icon_e_smile`, « 5x8) » ne bouge pas, `<b>` reste du texte.
 - [ ] `moderation.php` et ses deux listes.
 - [ ] **Fini quand** deux navigateurs se parlent, qu'un terme interdit est
       refusé, et que le freinage mord.
@@ -430,5 +449,5 @@ Réponses de l'auteur, reportées dans les sections concernées.
 3. **Case « 18 ans et plus »** fondue avec l'acceptation de la charte : oui,
    pour poser la règle par écrit. Section 6.1.
 4. **Les cinq salons restent**, sujets libres dans chacun. Section 6.4.
-5. **Smileys d'époque**, les codes phpBB, au lieu d'une barre d'emojis.
-   Section 6.4.
+5. **Smileys d'époque**, les codes phpBB, affichés avec les images de phpBB
+   en SVG, au lieu d'une barre d'emojis. Section 6.4.
