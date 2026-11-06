@@ -84,14 +84,103 @@ function jetonBienForme(string $jeton): bool
 
 /**
  * Refuse et met fin à la requête. Ne rend jamais la main : impossible
- * d'oublier un `return` derrière un refus.
+ * d'oublier un `return` derrière un refus. Même forme que contact.php,
+ * `{ok, message}`, et le message est TOUJOURS écrit par le site.
  */
 function refuser(int $code, string $message): never
 {
     http_response_code($code);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['erreur' => $message], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['ok' => false, 'message' => $message], JSON_UNESCAPED_UNICODE);
     exit;
+}
+
+/**
+ * Répond un succès et met fin à la requête.
+ *
+ * @param array<string, mixed> $donnees
+ */
+function repondreOk(string $message, array $donnees = []): never
+{
+    http_response_code(200);
+    echo json_encode(['ok' => true, 'message' => $message] + $donnees, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+/**
+ * Ouvre un point d'entrée : en-têtes, méthodes admises, origine, et une
+ * réponse lisible si quelque chose casse. Rend la méthode de la requête.
+ *
+ * Sans le gestionnaire, une base injoignable afficherait une page d'erreur
+ * de PHP, peut-être avec un chemin du serveur. Le détail va au journal.
+ *
+ * @param list<string> $methodes
+ */
+function ouvrirApi(array $methodes): string
+{
+    header('Content-Type: application/json; charset=utf-8');
+    header('X-Content-Type-Options: nosniff');
+    // Une réponse de compte ne se garde dans aucun cache, ni du navigateur ni
+    // d'un intermédiaire : elle porte une adresse, un pseudo, un état.
+    header('Cache-Control: no-store');
+
+    set_exception_handler(static function (\Throwable $e): void {
+        error_log('SBD.re : ' . $e->getMessage());
+        refuser(500, 'Service indisponible. Réessayez dans un moment.');
+    });
+
+    $methode = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+    if (!in_array($methode, $methodes, true)) {
+        refuser(405, 'Méthode non autorisée.');
+    }
+
+    exigerOrigine();
+
+    return $methode;
+}
+
+/**
+ * Le corps JSON de la requête, ou un tableau vide. Lu une seule fois, borné
+ * à 20 Ko : aucun formulaire du site n'en approche.
+ *
+ * @return array<string, mixed>
+ */
+function entree(): array
+{
+    static $donnees = null;
+
+    if ($donnees === null) {
+        $brut = file_get_contents('php://input', false, null, 0, 20000);
+        $lu = json_decode((string) $brut, true);
+        $donnees = is_array($lu) ? $lu : [];
+    }
+
+    return $donnees;
+}
+
+/**
+ * Un champ texte du corps. Un tableau ou un nombre envoyé à la place d'un
+ * texte devient une chaîne vide, jamais une erreur de type.
+ */
+function texte(string $cle): string
+{
+    $valeur = entree()[$cle] ?? null;
+
+    return is_string($valeur) ? trim($valeur) : '';
+}
+
+/** Le même, sans retirer les espaces : un mot de passe les garde. */
+function brut(string $cle): string
+{
+    $valeur = entree()[$cle] ?? null;
+
+    return is_string($valeur) ? $valeur : '';
+}
+
+/** L'adresse IP du visiteur, pour les freinages et le journal d'un an. */
+function ipVisiteur(): string
+{
+    return substr((string) ($_SERVER['REMOTE_ADDR'] ?? 'inconnue'), 0, 45);
 }
 
 /** Refuse une écriture qui ne vient pas de sbd.re. */

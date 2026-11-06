@@ -409,13 +409,41 @@ pas. Une ligne à ajouter si l'auteur en décide autrement.
 
 ### Phase 3, les comptes
 
-- [ ] `inscription.php`, `verifier.php`, `connexion.php`, `mot-de-passe.php`,
-      `moi.php`.
-- [ ] Pages Astro `/compte/inscription/`, `/compte/connexion/`, `/compte/`
+- [x] `inscription.php`, `verifier.php`, `connexion.php`, `mot-de-passe.php`,
+      `moi.php`, sur `lib/comptes.php` (formes, jetons, freinages).
+- [x] Pages Astro `/compte/inscription/`, `/compte/connexion/`, `/compte/`
       (mon profil), `/compte/mot-de-passe/`.
-- [ ] La charte `/communaute/charte/`.
+- [x] La charte `/communaute/charte/`, reprise de la section 7.
+- [x] En local, le 6 novembre : 88 règles sur 88, et 24 appels aux points
+      d'entrée sur un serveur PHP, chacun avec la réponse attendue jusqu'à la
+      base (méthode, origine, appât, chaque refus de forme, jeton mal formé,
+      cookie). Pages mesurées à 375 px : aucun débordement, contrôles à 44 px.
 - [ ] **Fini quand** un compte se crée, se vérifie par le courriel reçu, se
       connecte, se modifie et s'efface, en production.
+
+Choix faits en écrivant, à connaître :
+
+- **Les pages de compte portent `prive`** (`BaseLayout`) : `noindex`, hors
+  du plan de site, et Clarity n'y est jamais chargé, même après
+  consentement. Elles restent hors du menu jusqu'à la phase 9.
+- **L'inscription ouvre la session** : le membre arrive sur `/compte/`, d'où
+  il redemande le lien si le courriel tarde.
+- **Une adresse déjà inscrite se dit telle quelle.** La taire obligerait à
+  écrire au titulaire à chaque essai, ce qui ferait du formulaire un moyen
+  d'inonder sa boîte. La demande de mot de passe, elle, répond toujours la
+  même phrase.
+- **Le lien de mot de passe passe son jeton après le « # »**, qui ne part
+  jamais au serveur ni dans ses journaux. La page l'efface de l'adresse.
+- **Mot de passe : 10 caractères au moins, 72 octets au plus**, sans règle
+  de composition. Au-delà de 72 octets, bcrypt ignore la suite.
+- **Freinage de la connexion** : 5 échecs en 15 minutes par adresse, 20 par
+  IP, plus large parce que les opérateurs mobiles de l'île font sortir
+  beaucoup de clients par la même adresse.
+- **Pseudos réservés** (`admin`, `sbd.re`, `moderateur`…), écrits dans
+  `lib/comptes.php` : ils feraient passer un membre pour le site.
+- **Le filtre de mots du pseudo et de la présentation attend la phase 7**,
+  avec `moderation.php`. Sans ouverture avant la phase 9, aucun profil
+  public n'existe d'ici là.
 
 ### Phase 4, les profils publics
 

@@ -44,6 +44,7 @@ if (!is_file($chemin)) {
 }
 
 require_once $chemin;
+require_once dirname($chemin) . '/comptes.php';
 
 /* -------------------------------------------------------------------------
  * Affichage
@@ -250,6 +251,40 @@ verifie('La charge est acceptée',                   array_key_exists('charge_kg
 verifie('Publier au nom d\'un autre est ignoré',    array_key_exists('membre_id', $perfEnvoyee),        false);
 verifie('Se poser le badge admin est ignoré',       array_key_exists('admin_id', $perfEnvoyee),         false);
 verifie('Dater soi-même le badge est ignoré',       array_key_exists('date_verif_admin', $perfEnvoyee), false);
+
+/* -------------------------------------------------------------------------
+ * Comptes : formes acceptées
+ * ---------------------------------------------------------------------- */
+
+titre('Pseudo');
+
+verifie('« jean_93 » est accepté',                       \SBDRE\pseudoValide('jean_93'),            true);
+verifie('« la.force.974 » est accepté',                  \SBDRE\pseudoValide('la.force.974'),       true);
+verifie('« _squat » est accepté, comme sur Instagram',   \SBDRE\pseudoValide('_squat'),             true);
+verifie('Majuscules refusées',                           \SBDRE\pseudoValide('Jean'),               false);
+verifie('Accent refusé',                                 \SBDRE\pseudoValide('rené'),               false);
+verifie('Tiret refusé, réservé au gabarit',              \SBDRE\pseudoValide('-gabarit'),           false);
+verifie('Points seuls refusés',                          \SBDRE\pseudoValide('...'),                false);
+verifie('Deux caractères refusés',                       \SBDRE\pseudoValide('ab'),                 false);
+verifie('31 caractères refusés',                         \SBDRE\pseudoValide(str_repeat('a', 31)),  false);
+verifie('Retour à la ligne final refusé',                \SBDRE\pseudoValide("jean\n"),             false);
+verifie('« admin » est réservé',                         \SBDRE\pseudoValide('admin'),              false);
+verifie('« sbd.re » est réservé',                        \SBDRE\pseudoValide('sbd.re'),             false);
+
+titre('Mot de passe');
+
+verifie('9 caractères refusés',            \SBDRE\erreurMotDePasse('123456789') !== '',             true);
+verifie('10 caractères acceptés',          \SBDRE\erreurMotDePasse('1234567890') === '',            true);
+verifie('Espaces comptés, pas retirés',    \SBDRE\erreurMotDePasse('  deux mots  ') === '',         true);
+verifie('Dix lettres accentuées comptent dix', \SBDRE\erreurMotDePasse('éééééééééé') === '',        true);
+verifie('72 octets acceptés',              \SBDRE\erreurMotDePasse(str_repeat('a', 72)) === '',     true);
+verifie('73 octets refusés, bcrypt ignorerait la suite', \SBDRE\erreurMotDePasse(str_repeat('a', 73)) !== '', true);
+
+titre('Adresse électronique');
+
+verifie('Mise en minuscules',              \SBDRE\normaliserCourriel(' Jean@Exemple.RE ') === 'jean@exemple.re', true);
+verifie('Adresse sans arobase refusée',    \SBDRE\normaliserCourriel('jean.exemple.re') === '',      true);
+verifie('Retour à la ligne refusé',        \SBDRE\normaliserCourriel("jean@exemple.re\nBcc: x@y.z") === '', true);
 
 /* -------------------------------------------------------------------------
  * Bilan

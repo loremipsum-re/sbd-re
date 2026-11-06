@@ -180,7 +180,11 @@ export default defineConfig({
     sitemap({
       // Les pages de redirection ne doivent pas figurer au plan de site : elles
       // n'ont pas de contenu propre et diluent le référencement.
-      filter: (page) => !/\/competitions\/\d{4}-\d{2}-\d{2}-/.test(page),
+      // Les pages de compte non plus : elles portent `noindex`, et la charte
+      // attend l'ouverture de la communauté (docs/comptes.md, phase 9).
+      filter: (page) =>
+        !/\/competitions\/\d{4}-\d{2}-\d{2}-/.test(page) &&
+        !/\/compte\/|\/communaute\/charte\//.test(page),
 
       serialize(item) {
         const chemin = new URL(item.url).pathname;

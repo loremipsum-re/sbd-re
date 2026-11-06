@@ -50,6 +50,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-06',
+    nature: 'fonction',
+    version: '1.9.4',
+    titre: 'Les comptes membres, en essai',
+    texte:
+      "Les pages pour créer un compte, se connecter et retrouver son mot de passe sont en ligne, en essai et hors du menu. Elles ouvriront avec la communauté.",
+  },
+  {
+    date: '2026-11-06',
     nature: 'correction',
     version: '1.9.3',
     titre: 'Un seul chemin pour les courriels du site',
