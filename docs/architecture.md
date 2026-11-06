@@ -135,10 +135,14 @@ lit dans les en-têtes du courriel reçu, ligne `Authentication-Results`.
 Tant que ce n'est pas tranché, la partie communauté n'a pas de chemin d'envoi
 choisi. Or son inscription repose entièrement sur un courriel de vérification.
 
-**Tranché le 6 novembre 2026 en faveur de `mail()`**
-([comptes.md](comptes.md), section 2) : PHPMailer est retiré, et
-`lib/courriel.php` sert les formulaires comme les comptes. Reste à lire
-`spf=pass` dans un courriel reçu, phase 0 du même plan.
+**Tranché le 6 novembre 2026, en deux temps.** Le matin, `mail()` est retenu
+et PHPMailer retiré. Le soir, le premier lien de confirmation vers iCloud
+revient refusé, « 554 5.7.1 [HM08] Message rejected due to local policy ».
+La documentation d'OVH l'explique : `mail()` part des serveurs de
+l'hébergement sans signature DKIM, que seul le SMTP authentifié d'une boîte
+du domaine apporte. `lib/courriel.php` envoie donc par SMTP sur
+`no-reply@sbd.re`, et garde `mail()` en repli pour que les formulaires ne
+tombent pas avec une boîte mal réglée.
 
 ### 4.4 Aucune alerte
 

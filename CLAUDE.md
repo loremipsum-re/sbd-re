@@ -566,18 +566,21 @@ en-têtes, champ appât, délai minimal, et trois envois par heure et par adress
 IP comptés avant l'envoi. Les bibliothèques de `public/api/lib/` restent en 403,
 gardées par leur propre `.htaccess` et par `if (!defined('SBDRE_API'))`.
 
-**L'ENVOI DE COURRIEL EST PROUVÉ EN PRODUCTION**, et cela débloque la partie
-communauté, qui repose entièrement sur un courriel de vérification. Le serveur
-poste avec `mail()`, sans SMTP authentifié, donc sans boîte à créer ni mot de
-passe à déposer. L'expéditeur est `no-reply@sbd.re`, une adresse du domaine, ce
-qu'exige le SPF. Testé le 10 septembre 2026 vers un domaine extérieur : le
-message arrive. Tous les envois passent par `envoyerCourriel()` de
-`public/api/lib/courriel.php`, seule à écrire les en-têtes ; PHPMailer est
-retiré le 6 novembre 2026.
+**L'ENVOI DE COURRIEL PASSE PAR SMTP AUTHENTIFIÉ**, depuis le 6 novembre
+2026. `mail()` atteint la boîte de loremipsum.re, mais iCloud refuse ses
+messages, « 554 5.7.1 [HM08] » : OVH ne les signe pas en DKIM, et Apple
+authentifie tout message entrant par SPF et DKIM. Tous les envois passent par
+`envoyerCourriel()` de `public/api/lib/courriel.php` : SMTP sur la boîte
+`no-reply@sbd.re` (`smtp.mail.ovh.net`, port 465) dès que `config.php` porte
+son mot de passe, `smtp.mot_de_passe`, et `mail()` en repli. PHPMailer, retiré
+le matin, revient le soir même pour cela. DKIM s'active dans l'espace client
+(E-mails, MX Plan, sbd.re, Informations générales, pastille DKIM), et un
+enregistrement DMARC le complète.
 
-`db/verifier-envoi.php` rejoue cet envoi. Il refuse de tourner sur une machine
-de développement, `mail()` demandant un serveur de courrier local, et le dit au
-lieu d'échouer en silence.
+Chaque refus s'écrit dans `~/sbd-re-prive/courriels-refuses.log`, avec le
+seul domaine du destinataire. `db/verifier-envoi.php`, lancé en SSH depuis
+`~/sbd-re-prive`, éprouve la voie SMTP seule : en ligne de commande, `mail()`
+est refusée par l'hébergement.
 
 Deux conséquences à ne pas perdre de vue. MySQL n'a pas d'équivalent des
 politiques RLS : **toute l'autorisation vit dans le code PHP**, et c'est
