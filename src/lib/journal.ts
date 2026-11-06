@@ -51,6 +51,14 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-07',
     nature: 'correction',
+    version: '1.9.8',
+    titre: 'Les adresses iCloud, en attente',
+    texte:
+      "Les adresses iCloud ne reçoivent pas encore les courriels de sbd.re. La création d'un compte le signale et propose d'utiliser une autre adresse.",
+  },
+  {
+    date: '2026-11-07',
+    nature: 'correction',
     version: '1.9.7',
     titre: 'Des courriels signés au nom de sbd.re',
     texte:

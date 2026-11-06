@@ -46,6 +46,9 @@ if (!pseudoValide($pseudo)) {
 if ($courriel === '') {
     refuser(422, 'Cette adresse électronique semble incorrecte.');
 }
+if (adresseInjoignable($courriel)) {
+    refuser(422, MESSAGE_INJOIGNABLE);
+}
 $erreur = erreurMotDePasse($motDePasse);
 if ($erreur !== '') {
     refuser(422, $erreur);

@@ -295,6 +295,15 @@ verifie('Mise en minuscules',              \SBDRE\normaliserCourriel(' Jean@Exem
 verifie('Adresse sans arobase refusée',    \SBDRE\normaliserCourriel('jean.exemple.re') === '',      true);
 verifie('Retour à la ligne refusé',        \SBDRE\normaliserCourriel("jean@exemple.re\nBcc: x@y.z") === '', true);
 
+titre('Domaines qui refusent nos courriels');
+
+verifie('icloud.com injoignable',          \SBDRE\adresseInjoignable(\SBDRE\normaliserCourriel('Jean@iCloud.com')), true);
+verifie('me.com injoignable',              \SBDRE\adresseInjoignable('jean@me.com'),               true);
+verifie('mac.com injoignable',             \SBDRE\adresseInjoignable('jean@mac.com'),              true);
+verifie('gmail.com joignable',             \SBDRE\adresseInjoignable('jean@gmail.com'),            false);
+verifie('icloud.com.exemple.re joignable', \SBDRE\adresseInjoignable('jean@icloud.com.exemple.re'), false);
+verifie('home.com joignable, pas « me.com »', \SBDRE\adresseInjoignable('jean@home.com'),           false);
+
 /* -------------------------------------------------------------------------
  * Bilan
  * ---------------------------------------------------------------------- */

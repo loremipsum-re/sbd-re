@@ -498,6 +498,11 @@ choix de l'auteur du 27 octobre 2026.
 
 **Défauts connus, à reprendre**
 
+- **iCloud refuse les courriels du site**, « [HM08] », malgré DKIM, DMARC et
+  SPF valides : Apple bloque les serveurs d'envoi partagés d'OVH.
+  L'inscription refuse donc icloud.com, me.com et mac.com, en le disant
+  (`DOMAINES_INJOIGNABLES`, `lib/comptes.php`). Voir docs/comptes.md, 6.1.
+
 - Entre 60 et 80rem, la coupe d'un record déborde sur la colonne voisine de
   l'historique d'une fiche, jusqu'à 18 px. Le tableau de neuf colonnes manque
   de place : cartes jusqu'à 80rem, colonne Format compacte ou date courte,
