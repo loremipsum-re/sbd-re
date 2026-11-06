@@ -25,8 +25,8 @@ qui ne serve pas à parler perfs, montrer son profil et ses records.**
   communauté » au-delà de 60 % d'avis favorables. « Vérifiée par SBD.re » en
   un clic d'administrateur.
 - **Un chat en salons**, réservé aux membres connectés dont l'adresse est
-  vérifiée. Texte et emojis. Les messages restent visibles 7 jours et sont
-  conservés 1 an.
+  vérifiée. Texte et smileys d'époque, ceux des forums phpBB. Les messages
+  restent visibles 7 jours et sont conservés 1 an.
 - **La modération** : un filtre de mots, un bouton de signalement sur chaque
   message, profil et performance, et une page d'administration.
 
@@ -111,15 +111,20 @@ jamais du corps de la requête.
 |---|---|
 | Lire un profil, ses performances, ses badges | Tout le monde |
 | Modifier son profil, ajouter ou retirer sa performance | Le membre lui-même, adresse vérifiée, non banni |
-| Voter sur une performance | Membre vérifié, non banni, inscrit depuis 7 jours, jamais sur la sienne |
+| Voter sur une performance | Membre vérifié, non banni, inscrit depuis 30 jours, jamais sur la sienne |
 | Lire et écrire dans le chat | Membre vérifié, non banni |
 | Signaler | Membre vérifié |
 | Badge admin, masquer un message, retirer une performance, bannir | Admin |
 | Devenir admin | Personne par l'API. À la main en base. |
 
 **Le badge communauté** s'affiche quand une performance réunit au moins
-**3 votes** (à confirmer) et au moins **60 %** de votes favorables. Le délai de
-7 jours avant de voter freine les comptes créés en série pour se valider soi-même.
+**20 votes** et au moins **60 %** de votes favorables, soit 12 sur 20. Seuls
+comptent les votes de membres non bannis : un réseau de faux comptes banni
+perd ses voix. Le délai de **30 jours** avant de voter freine les comptes créés
+en série pour se valider soi-même.
+
+Conséquence voulue : pendant les 30 premiers jours après l'ouverture, personne
+ne peut voter. Le badge admin couvre ce démarrage.
 
 ---
 
@@ -188,7 +193,7 @@ valeurs échappées et renvoie la page.
 ```
 ajout ──> visible sur le profil, « non vérifiée »
             │
-            ├── votes des membres ──> 3 votes et 60 % d'avis favorables
+            ├── votes des membres ──> 20 votes et 60 % d'avis favorables
             │                          ──> badge « Vérifiée par la communauté »
             │
             └── clic de l'admin ─────> badge « Vérifiée par SBD.re »
@@ -206,14 +211,34 @@ ajout ──> visible sur le profil, « non vérifiée »
 ### 6.4 Chat
 
 - **Cinq salons fixes**, écrits dans `chat.php` : `general`, `squat`,
-  `developpe-couche`, `souleve-de-terre`, `competitions`.
+  `developpe-couche`, `souleve-de-terre`, `competitions`. Un salon donne un
+  thème, pas une règle : on y parle de ce qu'on veut, la charte s'applique
+  partout.
 - **Lecture par interrogation** toutes les 5 secondes quand l'onglet est
   visible, arrêtée quand il est masqué. Un mutualisé ne garde pas de connexion
   ouverte, donc pas de WebSocket. À revoir au-delà d'une cinquantaine de
   personnes connectées en même temps.
 - **Écriture** : 500 caractères, texte seul, affiché par `textContent`. Les
-  adresses ne deviennent pas des liens, ce qui coupe court au hameçonnage. Une
-  barre de 16 emojis sous le champ, le clavier du téléphone fait le reste.
+  adresses ne deviennent pas des liens, ce qui coupe court au hameçonnage.
+- **Smileys d'époque**, choix de l'auteur du 6 novembre : les codes des
+  forums phpBB. Le membre tape `:)` ou clique sur la barre de 16 smileys sous
+  le champ, qui insère le code. **La base garde le code tel quel**, le journal
+  reste du texte. Le navigateur le remplace à l'affichage, dans un nœud de
+  texte, jamais par `innerHTML`. Un code ne se remplace que seul entre deux
+  espaces ou en bout de message : « 5x8) » reste « 5x8) ». Les emojis du
+  clavier passent aussi, `utf8mb4` les stocke.
+
+| Code | Affiché | Code | Affiché |
+|---|---|---|---|
+| `:)` | 🙂 | `:lol:` | 😆 |
+| `:D` | 😀 | `:x` | 😠 |
+| `;)` | 😉 | `:P` | 😛 |
+| `:(` | 🙁 | `:oops:` | 😳 |
+| `:o` | 😮 | `:cry:` | 😢 |
+| `:shock:` | 😲 | `:roll:` | 🙄 |
+| `:?` | 😕 | `:mrgreen:` | 😁 |
+| `8)` | 😎 | `:idea:` | 💡 |
+
 - **Freinage** : un message toutes les 3 secondes par membre, lu sur la date
   de son dernier message.
 - **Conservation** : la lecture ne rend que les 7 derniers jours. Chaque
@@ -277,7 +302,8 @@ Chacun de ces gestes **doit** être refusé avant l'ouverture.
 | Tentative | Attendu |
 |---|---|
 | Voter sur sa propre performance | refus |
-| Voter avec un compte de moins de 7 jours | refus |
+| Voter avec un compte de moins de 30 jours | refus |
+| Badge communauté à 19 votes, ou à 11 favorables sur 20 | pas de badge |
 | Voter deux fois pour peser double | un seul vote compté |
 | Poser le badge admin avec un compte membre | refus |
 | Se nommer admin par `PATCH moi.php` | refus |
@@ -305,7 +331,7 @@ Chaque phase se vérifie avant la suivante. Une phase vaut une PR.
 
 ### Phase 0, l'auteur
 
-- [ ] Répondre aux questions de la section 11.
+- [x] Répondre aux questions de la section 11, fait le 6 novembre.
 - [ ] Confirmer que la base de **production** existe, en plus de celle de test
       éprouvée le 30 juillet.
 - [ ] Dans un courriel reçu du formulaire de contact, relever la ligne
@@ -358,16 +384,21 @@ Chaque phase se vérifie avant la suivante. Une phase vaut une PR.
 
 ### Phase 6, la vérification
 
-- [ ] `votes.php` et le calcul du badge communauté.
+- [ ] `votes.php` et le calcul du badge communauté, écrit en fonction pure
+      pour être testé sans base : 19 votes, 11 sur 20, 12 sur 20.
 - [ ] Un fil « À vérifier » sur `/communaute/`, les plus récentes d'abord.
 - [ ] Le clic admin dans `admin.php`.
-- [ ] **Fini quand** trois comptes de test font passer une performance au
-      badge communauté, et qu'un compte de moins de 7 jours est refusé.
+- [ ] **Fini quand** le calcul passe ses trois cas en local, qu'un vote
+      compte en production, et qu'un compte de moins de 30 jours est refusé.
+      Vingt comptes de test seraient de trop : la date d'inscription se
+      recule à la main sur la base de test.
 
 ### Phase 7, le chat
 
 - [ ] `chat.php`, les cinq salons, la purge.
-- [ ] L'interface sur `/communaute/` : salons, messages, champ, barre d'emojis.
+- [ ] L'interface sur `/communaute/` : salons, messages, champ, barre de
+      smileys. Le remplacement des codes garde un autotest : `:)` devient 🙂,
+      « 5x8) » ne bouge pas, `<b>` reste du texte.
 - [ ] `moderation.php` et ses deux listes.
 - [ ] **Fini quand** deux navigateurs se parlent, qu'un terme interdit est
       refusé, et que le freinage mord.
@@ -390,15 +421,14 @@ Chaque phase se vérifie avant la suivante. Une phase vaut une PR.
 
 ---
 
-## 11. Questions ouvertes
+## 11. Décisions du 6 novembre
 
-Chaque réponse se reporte dans ce document avant de coder.
+Réponses de l'auteur, reportées dans les sections concernées.
 
-1. **Combien de votes au minimum** pour le badge communauté ? Proposé : 3.
-   Avec 60 %, cela veut dire 2 avis favorables sur 3.
-2. **Le délai de 7 jours avant de voter** convient-il ?
-3. **Une case « 18 ans et plus »** à l'inscription, fondue avec l'acceptation
-   de la charte, convient-elle ? Elle coûte une ligne et pose la règle par écrit.
-4. **Les cinq salons** : `general`, `squat`, `developpe-couche`,
-   `souleve-de-terre`, `competitions`. À garder, renommer, compléter ?
-5. **Les 16 emojis** de la barre : à choisir, ou laisser la proposition.
+1. **Votes minimum : 20**, à 60 % de favorables. Section 4.
+2. **Délai avant de voter : 30 jours.** Section 4.
+3. **Case « 18 ans et plus »** fondue avec l'acceptation de la charte : oui,
+   pour poser la règle par écrit. Section 6.1.
+4. **Les cinq salons restent**, sujets libres dans chacun. Section 6.4.
+5. **Smileys d'époque**, les codes phpBB, au lieu d'une barre d'emojis.
+   Section 6.4.
