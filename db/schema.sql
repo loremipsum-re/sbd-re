@@ -1,271 +1,284 @@
 -- =============================================================================
--- SBD.re — schéma de la partie COMMUNAUTÉ
+-- SBD.re — schéma des comptes, profils, performances et chat
 --
--- Cible : MySQL 5.7+ ou MariaDB 10.3+. Le script reste volontairement
--- conservateur, mais il n'a plus besoin de l'être par prudence : il a été
--- CHARGÉ AVEC SUCCÈS le 30 juillet 2026 sur la base OVH du projet, servie par
--- MySQL 8 (l'absence de largeur d'affichage sur les entiers, `bigint unsigned`
--- au lieu de `bigint(20) unsigned`, situe le serveur en 8.0.19 ou plus récent).
+-- Plan de travail : docs/comptes.md, section 3. Réécrit le 6 novembre 2026 ;
+-- la version du 30 juillet (Google, tranches, file de modération) est
+-- remplacée sans migration, la base de production étant vide.
 --
--- Deux façons de le charger, l'une et l'autre depuis l'hébergement lui-même :
--- phpMyAdmin (onglet « Importer »), ou le client `mysql` en SSH. En revanche un
--- tunnel SSH depuis une machine de développement ne fonctionne pas, OVH ayant
--- fermé cette voie vers ses bases mutualisées.
+-- Cible : MySQL 8.0.16 ou plus récent, pour que les contraintes CHECK
+-- s'appliquent. La base OVH tourne en 8.4.10, mesuré.
 --
--- Le script est réexécutable : chaque table est créée seulement si elle n'existe
--- pas déjà. Attention, cela signifie aussi qu'il ne MODIFIE pas une table
--- existante. Pour repartir d'un schéma propre en base de test, supprimer les
--- tables d'abord.
+-- Chargement, depuis l'hébergement seulement (OVH ferme le tunnel SSH vers ses
+-- bases mutualisées) : phpMyAdmin, onglet « Importer », ou `mysql` en SSH.
+-- Puis `php verifier.php` en SSH, qui doit finir sur un bilan vert.
+--
+-- Le script est réexécutable : chaque table n'est créée que si elle manque.
+-- Il ne MODIFIE donc pas une table existante. La base de test porte encore les
+-- tables de juillet : les supprimer d'abord, enfants avant parents.
+--
+--   DROP TABLE IF EXISTS signalement, message, vote, jeton, performance,
+--                        tentative_connexion, membre;
+--
+-- Jamais sur la base de production une fois ouverte.
 --
 -- CE QUE CE SCHÉMA NE FAIT PAS
 -- ----------------------------
--- MySQL ne connaît pas les politiques de sécurité par ligne (le « RLS » de
--- PostgreSQL, qui était prévu avec Supabase). Aucune ligne de ce fichier
--- n'empêche donc quiconque de lire ou modifier n'importe quoi : la base fait
--- confiance à qui présente le mot de passe. Toute l'autorisation vit dans le
--- code PHP, et c'est là que se joue la sécurité du classement.
---
--- Voir docs/communaute.md, section « Ce qui remplace les politiques RLS ».
---
--- Les contraintes CHECK présentes plus bas sont un filet, pas une validation.
--- Sur MySQL 5.7 elles auraient été analysées puis ignorées en silence ; ici
--- elles MORDENT, vérifié par `SHOW CREATE TABLE performance` qui les restitue
--- intactes. PHP valide de toute façon chaque champ avant l'écriture, et c'est
--- lui qui fait autorité : la base n'est que le dernier recours.
+-- MySQL n'a pas de sécurité par ligne. La base fait confiance à qui présente
+-- le mot de passe, et toute l'autorisation vit dans le code PHP
+-- (public/api/lib/autorisation.php). Les contraintes CHECK ci-dessous sont un
+-- filet : PHP valide chaque champ avant d'écrire, et c'est lui qui fait
+-- autorité. Le filet ne tient qu'avec le `sql_mode` strict que chaque
+-- connexion impose, sans quoi MySQL rabote une valeur avant de la contrôler.
 -- =============================================================================
 
 SET NAMES utf8mb4;
 
--- InnoDB pour les clés étrangères, utf8mb4 pour accepter les accents et les
--- emoji d'un pseudo. L'ancien « utf8 » de MySQL ne code que trois octets et
--- tronque silencieusement le reste.
+-- InnoDB pour les clés étrangères. utf8mb4 pour les accents et les emojis :
+-- l'ancien « utf8 » de MySQL s'arrête à trois octets et tronque le reste.
 
 
 -- -----------------------------------------------------------------------------
 -- membre
 --
--- Un compte. Deux moyens de connexion cohabitent sur la même ligne :
---
---   * mot_de_passe_hash renseigné  → connexion par courriel et mot de passe
---   * google_sub renseigné         → connexion par Google
---
--- Les deux peuvent l'être en même temps, ce qui permet à quelqu'un inscrit par
--- courriel d'ajouter Google plus tard sans créer un second compte. Au moins un
--- des deux doit l'être, sinon le compte serait inaccessible : c'est PHP qui le
--- garantit à l'inscription.
+-- Un compte, et son profil public à /membres/<pseudo>/.
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS membre (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 
-  -- 254 caractères est la longueur maximale d'une adresse de courriel.
-  -- Toujours stockée en minuscules, sinon « Jean@x.re » et « jean@x.re »
-  -- créeraient deux comptes pour une seule personne.
+  -- 254 caractères, la longueur maximale d'une adresse. Stockée en
+  -- minuscules par PHP : « Jean@x.re » et « jean@x.re » sont une seule
+  -- personne.
   courriel        VARCHAR(254)    NOT NULL,
 
-  -- NULL pour un compte créé par Google, qui n'a pas de mot de passe ici.
-  -- 255 caractères : password_hash() produit 60 octets avec bcrypt aujourd'hui,
-  -- mais l'algorithme par défaut de PHP change au fil des versions et la
-  -- documentation recommande cette largeur pour ne pas avoir à migrer.
-  mot_de_passe_hash VARCHAR(255)  NULL     DEFAULT NULL,
+  -- password_hash() produit 60 octets avec bcrypt, mais l'algorithme par
+  -- défaut de PHP évolue : la documentation recommande 255.
+  mot_de_passe_hash VARCHAR(255)  NOT NULL,
 
-  -- Identifiant stable du compte Google (le champ « sub » du jeton d'identité).
-  -- On ne se sert PAS de l'adresse de courriel pour reconnaître un compte
-  -- Google : elle peut changer, « sub » jamais.
-  google_sub      VARCHAR(255)    NULL     DEFAULT NULL,
+  -- Le format d'un nom Instagram : lettres minuscules, chiffres, point,
+  -- tiret bas, 30 caractères au plus. Le pseudo sert aussi d'adresse du
+  -- profil, d'où trois règles de plus :
+  --   * stocké en minuscules, pour qu'une adresse n'existe qu'une fois ;
+  --   * au moins une lettre ou un chiffre, pour écarter « ... » ;
+  --   * aucun tiret, ce qui réserve /membres/-gabarit/ au gabarit d'Astro.
+  -- Le drapeau 'c' rend l'expression sensible à la casse : la collation
+  -- _ci de la colonne laisserait sinon passer « Jean ».
+  pseudo          VARCHAR(30)     NOT NULL,
 
-  -- Nom public, obligatoire, unique. Sert aussi à fabriquer l'adresse de la
-  -- fiche.
-  pseudo          VARCHAR(40)     NOT NULL,
+  -- Affiche le lien vers instagram.com/<pseudo> sur le profil.
+  instagram_visible TINYINT(1)    NOT NULL DEFAULT 0,
 
-  -- Forme du pseudo utilisée dans l'URL. Stockée et unique, plutôt que
-  -- recalculée à la lecture : « Jean-Luc » et « Jean Luc » produisent le même
-  -- slug, et deux fiches se marcheraient dessus. Le site officiel fait échouer
-  -- son build sur ce genre de collision ; ici c'est l'index unique qui refuse.
-  slug            VARCHAR(60)     NOT NULL,
+  bio             VARCHAR(160)    NULL     DEFAULT NULL,
 
-  -- Facultatif. L'athlète choisit à l'inscription si le classement affiche son
-  -- pseudo ou son nom réel : voir afficher_nom_reel.
-  nom_reel        VARCHAR(80)     NULL     DEFAULT NULL,
-  afficher_nom_reel TINYINT(1)    NOT NULL DEFAULT 0,
+  -- Identifiant d'une fiche de /salles/. Pas de clé étrangère : les salles
+  -- vivent dans le dépôt, pas en base. PHP valide contre leur liste.
+  salle           VARCHAR(80)     NULL     DEFAULT NULL,
 
-  -- Reprend les identifiants de SEXES dans src/lib/categories.ts.
-  sexe            ENUM('M','F')   NOT NULL,
+  -- Donné à la main en base. Aucun point d'entrée ne permet de le changer.
+  role            ENUM('membre','admin') NOT NULL DEFAULT 'membre',
 
-  -- Identifiant d'une tranche de COMMUNITY_HEIGHT_BRACKETS
-  -- (src/lib/categories.ts) : « 170-180 », « 200+ ». La taille ne bougeant
-  -- plus à l'âge adulte, elle vit sur le membre. Le poids, lui, change entre
-  -- deux performances : il est porté par la performance.
-  tranche_taille  VARCHAR(10)     NULL     DEFAULT NULL,
-
-  -- Tranche d'âge COURANTE, d'après COMMUNITY_AGE_BRACKETS. Elle ne sert qu'à
-  -- pré-remplir le formulaire : c'est la copie figée sur la performance qui
-  -- fait foi, comme pour le poids. Sans quoi le classement master d'un athlète
-  -- de 39 ans basculerait tout seul le jour de ses 40 ans, réécrivant
-  -- rétroactivement des barres soulevées des années plus tôt.
-  tranche_age     VARCHAR(10)     NULL     DEFAULT NULL,
-
-  -- « membre » ne peut agir que sur ses propres performances. « moderateur »
-  -- accède à la file d'attente. « admin » peut en plus changer les rôles.
-  -- Le rôle est donné à la main en base : aucun point d'entrée de l'API ne
-  -- permet de se promouvoir, ce serait la faille la plus évidente.
-  role            ENUM('membre','moderateur','admin') NOT NULL DEFAULT 'membre',
-
-  -- Une adresse non vérifiée ne doit pas pouvoir soumettre : sans quoi
-  -- n'importe qui inscrirait l'adresse d'un tiers.
+  -- Sans adresse vérifiée : ni publier, ni voter, ni chat.
   courriel_verifie TINYINT(1)     NOT NULL DEFAULT 0,
 
+  banni           TINYINT(1)      NOT NULL DEFAULT 0,
+
+  -- 45 caractères couvrent une IPv6 sous sa forme la plus longue. Sert au
+  -- freinage, 3 inscriptions par heure et par IP, et à la conservation d'un
+  -- an que demande la LCEN (docs/comptes.md, section 8).
+  ip_inscription  VARCHAR(45)     NOT NULL,
+
   date_inscription DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  date_maj        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP
-                                  ON UPDATE CURRENT_TIMESTAMP,
 
   PRIMARY KEY (id),
   UNIQUE KEY uq_membre_courriel (courriel),
   UNIQUE KEY uq_membre_pseudo   (pseudo),
-  UNIQUE KEY uq_membre_slug     (slug),
+  KEY ix_membre_ip (ip_inscription, date_inscription),
 
-  -- Un index UNIQUE accepte plusieurs NULL sous MySQL : les comptes sans
-  -- Google ne se gênent donc pas entre eux.
-  UNIQUE KEY uq_membre_google   (google_sub)
+  CONSTRAINT ck_membre_pseudo CHECK (
+    REGEXP_LIKE(pseudo, '^[a-z0-9._]{3,30}$', 'c')
+    AND REGEXP_LIKE(pseudo, '[a-z0-9]', 'c')
+  )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- -----------------------------------------------------------------------------
 -- performance
 --
--- Une barre déclarée. Trois décisions sont encodées ici.
+-- Une barre, publiée dès l'ajout. Ne se modifie pas : on la retire et on la
+-- refait, ce qui remet ses votes à zéro. Une modification qui garderait les
+-- votes ferait valider 300 kg avec les avis donnés à 150 kg.
 --
--- 1. PAS DE TOTAL SAISISSABLE. Seuls les trois mouvements existent. Un « total »
---    déclaré en salle ne veut rien dire : rien ne garantit que les trois barres
---    ont été faites le même jour, dans le même état de fraîcheur. Le total
---    communauté est donc CALCULÉ à la lecture, en additionnant les trois
---    meilleures barres publiées d'un membre à équipement égal, et seulement si
---    les trois existent. Le stocker le laisserait périmer.
---
--- 2. LE POIDS EST SUR LA PERFORMANCE, PAS SUR LE MEMBRE. Quelqu'un qui prend
---    dix kilos en un an ne doit pas voir ses anciennes barres changer de
---    tranche rétroactivement. La tranche est figée au moment de la barre.
---
--- 3. PAS DE SCORE DOTS. Le Dots exige un poids de corps au kilo près. Les
---    tranches déclaratives ne le fournissent pas, et prendre le milieu de la
---    tranche fabriquerait un chiffre faux. Le classement communauté se lit donc
---    par tranche, sans score relatif. C'est le prix, assumé, du choix des
---    tranches.
+-- Aucun total ni badge stocké : le total se calcule avec les trois meilleures
+-- barres à équipement égal, le badge communauté avec la table vote. Stockés,
+-- ils périmeraient au premier vote.
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS performance (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   membre_id       BIGINT UNSIGNED NOT NULL,
 
-  -- Reprend les identifiants de LIFTS dans src/lib/categories.ts, moins
-  -- « total ». Employer le même vocabulaire de bout en bout évite une table de
-  -- correspondance entre la base et l'affichage.
+  -- Le vocabulaire de LIFTS et EquipmentGroup, src/lib/categories.ts.
   mouvement       ENUM('squat','bench','deadlift') NOT NULL,
-
-  -- Reprend EquipmentGroup dans src/lib/categories.ts.
   equipement      ENUM('raw','wraps','equipped')   NOT NULL,
 
-  -- DECIMAL et non FLOAT : une charge est une valeur exacte, et les flottants
-  -- feraient apparaître 182.49999 dans un classement. Trois chiffres avant la
-  -- virgule couvrent tout record humain, deux après suffisent aux plaques de
-  -- 0,25 kg.
+  -- DECIMAL et non FLOAT : 182,5 kg doit rester 182,5 et non 182,49999.
+  -- 999,99 au plus ; au-delà, le mode strict refuse au lieu de raboter.
   charge_kg       DECIMAL(5,2)    NOT NULL,
 
-  -- Identifiant d'une tranche de COMMUNITY_WEIGHT_BRACKETS : « 80-90 », « 120+ ».
-  tranche_poids   VARCHAR(10)     NOT NULL,
-
-  -- Tranche d'âge AU MOMENT DE LA BARRE, d'après COMMUNITY_AGE_BRACKETS.
-  -- Figée ici pour la même raison que le poids : un anniversaire ne doit pas
-  -- déplacer des performances passées d'une catégorie à l'autre. Le formulaire
-  -- la pré-remplit depuis le profil, mais c'est cette copie qui fait foi.
-  tranche_age     VARCHAR(10)     NOT NULL,
+  -- Catégorie de poids du site officiel, facultative : « 93 », « 120+ ».
+  categorie       VARCHAR(5)      NULL     DEFAULT NULL,
 
   date_performance DATE           NOT NULL,
 
-  -- Salle ou lieu, facultatif et purement descriptif. Ne sert jamais à situer
-  -- géographiquement une performance : le site officiel a appris à ses dépens
-  -- qu'un nom de lieu ne prouve rien.
-  lieu            VARCHAR(120)    NULL     DEFAULT NULL,
-
-  -- OBLIGATOIRE. Sans vidéo, la modération n'aurait rien à examiner et le
-  -- classement ne vaudrait rien au premier chiffre gonflé. C'est ce champ qui
-  -- rend le reste crédible.
+  -- Obligatoire. PHP le limite à Instagram, YouTube et TikTok ; le filet
+  -- exige au moins https, ce qui écarte un lien « javascript: ».
   lien_video      VARCHAR(500)    NOT NULL,
 
-  -- Cycle de vie : en_attente à la soumission, puis publiee ou refusee.
-  -- Une performance modifiée par son auteur repasse en_attente, sinon on
-  -- publierait 150 kg puis on le remplacerait par 300 kg sans repasser devant
-  -- personne.
-  etat            ENUM('en_attente','publiee','refusee') NOT NULL DEFAULT 'en_attente',
+  -- Le badge admin se lit sur la DATE, pas sur admin_id : si l'admin efface
+  -- un jour son compte, admin_id repasse à NULL et le badge reste.
+  admin_id        BIGINT UNSIGNED NULL     DEFAULT NULL,
+  date_verif_admin DATETIME       NULL     DEFAULT NULL,
 
-  -- Renseigné en cas de refus, et montré à l'auteur : un refus sans motif fait
-  -- fuir quelqu'un qui aurait juste mal saisi sa date.
-  motif_refus     TEXT            NULL     DEFAULT NULL,
-
-  -- ON DELETE SET NULL : si un modérateur supprime son compte, les décisions
-  -- qu'il a prises restent, et les performances publiées ne disparaissent pas
-  -- avec lui.
-  moderateur_id   BIGINT UNSIGNED NULL     DEFAULT NULL,
-  date_moderation DATETIME        NULL     DEFAULT NULL,
-
-  date_soumission DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  date_maj        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP
-                                  ON UPDATE CURRENT_TIMESTAMP,
+  date_creation   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   PRIMARY KEY (id),
 
-  -- ON DELETE CASCADE : une performance est une donnée personnelle. Quand un
-  -- membre exerce son droit à l'effacement, ses barres partent avec son compte.
-  -- Sans cette cascade, il resterait des performances orphelines nominatives.
-  CONSTRAINT fk_perf_membre     FOREIGN KEY (membre_id)     REFERENCES membre (id)
+  -- Une performance est une donnée personnelle : elle part avec son compte.
+  CONSTRAINT fk_perf_membre FOREIGN KEY (membre_id) REFERENCES membre (id)
     ON DELETE CASCADE,
-  CONSTRAINT fk_perf_moderateur FOREIGN KEY (moderateur_id) REFERENCES membre (id)
+  CONSTRAINT fk_perf_admin  FOREIGN KEY (admin_id)  REFERENCES membre (id)
     ON DELETE SET NULL,
 
-  -- Le classement public lit toujours « les performances publiées d'un
-  -- mouvement, d'un équipement et d'une tranche ». Cet index couvre exactement
-  -- cette question, la charge décroissante évitant en plus un tri.
-  --
-  -- MySQL n'exploite qu'un préfixe d'un index composé : un filtre par âge sans
-  -- filtre par poids ne s'en servira que partiellement. À l'échelle attendue,
-  -- quelques milliers de lignes au plus, c'est sans conséquence mesurable.
-  -- Affiner avant d'avoir des chiffres serait de l'optimisation à l'aveugle.
-  KEY ix_perf_classement (etat, mouvement, equipement, tranche_poids, tranche_age, charge_kg),
+  -- Les records d'un profil : meilleure charge par mouvement et équipement.
+  KEY ix_perf_membre (membre_id, mouvement, equipement, charge_kg),
 
-  -- La file de modération, lue à chaque visite de la page de modération.
-  KEY ix_perf_file (etat, date_soumission),
+  -- Le fil « À vérifier », les plus récentes d'abord.
+  KEY ix_perf_recentes (date_creation),
 
-  -- Les performances d'un membre, pour sa fiche et son espace personnel.
-  KEY ix_perf_membre (membre_id, etat),
+  CONSTRAINT ck_perf_charge CHECK (charge_kg > 0),
+  CONSTRAINT ck_perf_video  CHECK (lien_video LIKE 'https://%')
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- Filet, non appliqué sous MySQL 5.7 : PHP valide de toute façon.
-  CONSTRAINT ck_perf_charge CHECK (charge_kg > 0 AND charge_kg <= 999.99)
+
+-- -----------------------------------------------------------------------------
+-- vote
+--
+-- Un avis par membre et par performance, qu'il peut changer : la clé primaire
+-- sur le couple empêche de peser double. Le badge communauté demande 20 votes
+-- de membres non bannis, dont 60 % favorables. Les règles de qui vote (30 jours
+-- d'ancienneté, jamais sur sa propre barre) vivent dans PHP.
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS vote (
+  performance_id  BIGINT UNSIGNED NOT NULL,
+  membre_id       BIGINT UNSIGNED NOT NULL,
+  ok              TINYINT(1)      NOT NULL,
+  date_vote       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                  ON UPDATE CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (performance_id, membre_id),
+  KEY ix_vote_membre (membre_id),
+
+  -- Une performance retirée emporte ses votes, un compte effacé aussi.
+  CONSTRAINT fk_vote_perf   FOREIGN KEY (performance_id) REFERENCES performance (id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_vote_membre FOREIGN KEY (membre_id)      REFERENCES membre (id)
+    ON DELETE CASCADE,
+
+  CONSTRAINT ck_vote_ok CHECK (ok IN (0, 1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- -----------------------------------------------------------------------------
+-- message
+--
+-- Le chat ET son journal, dans une seule table. « Visible 7 jours » est un
+-- filtre de lecture. « Conservé 1 an » est une purge par lots de 100, lancée à
+-- chaque écriture. Le texte est stocké tel que tapé, smileys compris en code
+-- (« :) ») : le navigateur les dessine à l'affichage.
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS message (
+  id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+
+  -- La liste des salons vit dans chat.php, source unique. Pas d'ENUM : un
+  -- salon de plus ne demande pas de toucher au schéma.
+  canal           VARCHAR(20)     NOT NULL,
+
+  -- NULL après effacement du compte : le message sort du chat (la lecture
+  -- l'écarte) et reste au journal jusqu'à son année, signé du pseudo copié.
+  membre_id       BIGINT UNSIGNED NULL     DEFAULT NULL,
+  pseudo          VARCHAR(30)     NOT NULL,
+
+  texte           VARCHAR(500)    NOT NULL,
+  ip              VARCHAR(45)     NOT NULL,
+  date_envoi      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  -- L'admin qui l'a masqué. Sans clé étrangère, exprès : un SET NULL à
+  -- l'effacement de cet admin ferait réapparaître le message.
+  masque_par      BIGINT UNSIGNED NULL     DEFAULT NULL,
+
+  PRIMARY KEY (id),
+
+  CONSTRAINT fk_message_membre FOREIGN KEY (membre_id) REFERENCES membre (id)
+    ON DELETE SET NULL,
+
+  -- Lecture d'un salon sur 7 jours.
+  KEY ix_message_canal (canal, date_envoi),
+  -- Freinage : la date du dernier message d'un membre.
+  KEY ix_message_membre (membre_id, date_envoi),
+  -- Purge des lignes de plus d'un an.
+  KEY ix_message_date (date_envoi),
+
+  CONSTRAINT ck_message_texte CHECK (texte <> '')
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- -----------------------------------------------------------------------------
+-- signalement
+--
+-- La file de l'admin. cible_id désigne un message, un membre ou une
+-- performance selon type : pas de clé étrangère possible vers trois tables.
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS signalement (
+  id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  type            ENUM('message','membre','performance') NOT NULL,
+  cible_id        BIGINT UNSIGNED NOT NULL,
+
+  -- NULL si l'auteur efface son compte : le signalement reste à traiter.
+  auteur_id       BIGINT UNSIGNED NULL     DEFAULT NULL,
+  motif           VARCHAR(200)    NULL     DEFAULT NULL,
+  date_signalement DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  traite          TINYINT(1)      NOT NULL DEFAULT 0,
+
+  PRIMARY KEY (id),
+
+  -- Un signalement par membre et par cible : un seul compte ne noie pas la
+  -- file sous cent copies du même.
+  UNIQUE KEY uq_signalement (type, cible_id, auteur_id),
+  KEY ix_signalement_file (traite, date_signalement),
+
+  CONSTRAINT fk_signalement_auteur FOREIGN KEY (auteur_id) REFERENCES membre (id)
+    ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- -----------------------------------------------------------------------------
 -- jeton
 --
--- Jetons à usage unique pour la vérification d'adresse et la réinitialisation
--- de mot de passe.
---
--- Le jeton n'est PAS stocké : seule son empreinte l'est. Même raisonnement que
--- pour un mot de passe. Quelqu'un qui lirait cette table par une injection SQL
--- y trouverait des empreintes inutilisables, là où des jetons en clair lui
--- donneraient la main sur tous les comptes en attente de réinitialisation.
+-- Vérification d'adresse (24 h), réinitialisation de mot de passe, et
+-- session (30 jours). Seule l'EMPREINTE est stockée : une injection SQL qui
+-- lirait la table n'y trouverait rien d'utilisable. Bannir un membre efface
+-- ses jetons de session, ce qui le déconnecte partout.
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS jeton (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   membre_id       BIGINT UNSIGNED NOT NULL,
-  type            ENUM('verification','reinitialisation') NOT NULL,
+  type            ENUM('verification','reinitialisation','session') NOT NULL,
 
-  -- Empreinte SHA-256 du jeton envoyé par courriel, en hexadécimal.
+  -- SHA-256 du jeton, en hexadécimal.
   jeton_hash      CHAR(64)        NOT NULL,
 
-  -- Un jeton de réinitialisation doit expirer vite : une boîte de courriel
-  -- consultée des mois plus tard ne doit pas rouvrir un compte.
   date_expiration DATETIME        NOT NULL,
 
-  -- Renseigné à la première utilisation. Un jeton déjà employé est refusé,
-  -- sans quoi le même lien rouvrirait le compte indéfiniment.
+  -- Un jeton de vérification ou de réinitialisation ne sert qu'une fois.
+  -- Une session, elle, ne se « consomme » pas : elle expire ou s'efface.
   date_utilisation DATETIME       NULL     DEFAULT NULL,
 
   date_creation   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -273,6 +286,7 @@ CREATE TABLE IF NOT EXISTS jeton (
   PRIMARY KEY (id),
   UNIQUE KEY uq_jeton_hash (jeton_hash),
   KEY ix_jeton_membre (membre_id, type),
+  KEY ix_jeton_expiration (date_expiration),
   CONSTRAINT fk_jeton_membre FOREIGN KEY (membre_id) REFERENCES membre (id)
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -281,27 +295,18 @@ CREATE TABLE IF NOT EXISTS jeton (
 -- -----------------------------------------------------------------------------
 -- tentative_connexion
 --
--- Journal des tentatives, pour freiner les essais de mots de passe en série.
---
--- Sans cette table, rien n'empêche de tester des milliers de mots de passe sur
--- une adresse connue : c'est l'attaque la plus banale du web, et un hachage
--- solide n'y change rien. On compte les échecs récents par adresse ET par IP,
--- car un attaquant change d'adresse visée tout en gardant son IP, et
--- inversement.
---
--- Cette table grossit à chaque connexion : prévoir une purge des lignes de plus
--- de quelques jours, elles n'ont aucune valeur passé ce délai.
+-- Freine les essais de mots de passe en série. Les échecs récents se
+-- comptent par adresse ET par IP : un attaquant change l'une en gardant
+-- l'autre. Les lignes de plus de quelques jours n'ont plus de valeur : la
+-- connexion les purge en passant.
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS tentative_connexion (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 
   -- L'adresse SAISIE, pas un membre : une tentative sur un compte inexistant
-  -- doit compter elle aussi.
+  -- compte aussi.
   courriel        VARCHAR(254)    NOT NULL,
-
-  -- 45 caractères couvrent une adresse IPv6 sous sa forme la plus longue.
   ip              VARCHAR(45)     NOT NULL,
-
   reussie         TINYINT(1)      NOT NULL DEFAULT 0,
   date_tentative  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 

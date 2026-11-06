@@ -1,6 +1,6 @@
 <?php
 /**
- * Vérification de la fondation de la partie communauté.
+ * Vérification de la fondation des comptes, profils et chat.
  *
  * Ce script ne construit rien. Il répond par la mesure à cinq questions dont
  * tout le reste dépend, sur le serveur OVH lui-même, puisque la base n'est
@@ -9,8 +9,8 @@
  *   1. PDO et son pilote MySQL sont-ils présents ?
  *   2. La connexion à la base passe-t-elle ?
  *   3. Le `sql_mode` imposé à la session est-il bien pris en compte ?
- *   4. Les quatre tables existent-elles ?
- *   5. Le mode strict REFUSE-t-il réellement une saisie aberrante ?
+ *   4. Les sept tables existent-elles, dans leur version du 6 novembre 2026 ?
+ *   5. Le schéma REFUSE-t-il réellement ce qu'il doit refuser ?
  *
  * La cinquième est la vraie raison d'être de ce fichier. Le serveur d'OVH
  * tourne en `sql_mode` permissif : une charge de 1500 kg y entrerait rabotée à
@@ -28,9 +28,10 @@
  * 3. En SSH, depuis ce dossier :  php verifier.php
  * 4. Supprimer ensuite `verifier.php`. Il n'a plus d'utilité.
  *
- * Ce script N'ÉCRIT RIEN de durable : ses essais d'insertion se déroulent dans
- * une transaction systématiquement annulée. La base ressort telle qu'elle est
- * entrée.
+ * Ce script N'ÉCRIT RIEN de durable : ses essais se déroulent dans une
+ * transaction systématiquement annulée. Seuls les compteurs AUTO_INCREMENT
+ * avancent, MySQL ne les rembobinant pas : les identifiants suivants
+ * sauteront quelques numéros, sans autre effet.
  */
 
 declare(strict_types=1);
@@ -195,18 +196,51 @@ foreach (['STRICT_ALL_TABLES', 'ONLY_FULL_GROUP_BY', 'NO_ZERO_DATE'] as $attendu
 }
 
 /* -------------------------------------------------------------------------
- * 4. Les tables
+ * 4. Les tables, dans leur version du 6 novembre
+ *
+ * `CREATE TABLE IF NOT EXISTS` ne remplace jamais une table existante. Une
+ * table de juillet garderait donc ses anciennes colonnes sans rien dire : on
+ * relit chacune et on y cherche une colonne propre à la nouvelle version.
  * ---------------------------------------------------------------------- */
 
 titre('4. Tables du schéma');
 
-$presentes = $bdd->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
+$attendues = [
+    'membre'              => ['pseudo', 'instagram_visible', 'banni', 'ip_inscription'],
+    'performance'         => ['categorie', 'admin_id', 'date_verif_admin'],
+    'vote'                => ['performance_id', 'membre_id', 'ok'],
+    'message'             => ['canal', 'pseudo', 'texte', 'masque_par'],
+    'signalement'         => ['type', 'cible_id', 'traite'],
+    'jeton'               => ['membre_id', 'type', 'jeton_hash'],
+    'tentative_connexion' => ['courriel', 'ip', 'reussie'],
+];
 
-foreach (['membre', 'performance', 'jeton', 'tentative_connexion'] as $table) {
-    if (in_array($table, $presentes, true)) {
-        ok("La table $table existe.");
+$lireColonnes = $bdd->prepare(
+    'SELECT COLUMN_NAME, COLUMN_TYPE FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
+);
+
+foreach ($attendues as $table => $colonnes) {
+    $lireColonnes->execute([$table]);
+    $presentes = array_column($lireColonnes->fetchAll(), 'COLUMN_TYPE', 'COLUMN_NAME');
+
+    if ($presentes === []) {
+        ko("La table $table est ABSENTE. Charger db/schema.sql.");
+        continue;
+    }
+
+    $manquantes = array_diff($colonnes, array_keys($presentes));
+
+    // Le type « session » des jetons est la seule nouveauté de cette table.
+    if ($table === 'jeton' && !str_contains($presentes['type'] ?? '', "'session'")) {
+        $manquantes[] = "type 'session'";
+    }
+
+    if ($manquantes === []) {
+        ok("La table $table est à jour.");
     } else {
-        ko("La table $table est ABSENTE. Recharger db/schema.sql.");
+        ko("La table $table est une ANCIENNE version, il manque : " . implode(', ', $manquantes));
+        info('Supprimer les tables (commande en tête de db/schema.sql), puis le recharger.');
     }
 }
 
@@ -227,114 +261,219 @@ if ($echecs > 0) {
     exit(1);
 }
 
-titre('5. Essais qui doivent être refusés');
+titre('5. Essais');
+
+/** Un essai qui doit passer. Rend l'identifiant créé, 0 en cas de refus. */
+$accepte = function (string $intitule, string $sql, array $valeurs) use ($bdd): int {
+    try {
+        $bdd->prepare($sql)->execute($valeurs);
+        ok($intitule . ' : accepté, comme prévu.');
+        return (int) $bdd->lastInsertId();
+    } catch (PDOException $e) {
+        ko($intitule . ' : REFUSÉ alors qu\'il est valide. ' . $e->getMessage());
+        return 0;
+    }
+};
+
+/** Un essai qui doit être refusé. Une acceptation est un échec du test. */
+$refuse = function (string $intitule, string $sql, array $valeurs) use ($bdd): void {
+    try {
+        $bdd->prepare($sql)->execute($valeurs);
+        ko($intitule . ' : ACCEPTÉ alors qu\'il devait être refusé.');
+    } catch (PDOException $e) {
+        ok($intitule . ' : refusé. (' . $e->getCode() . ')');
+    }
+};
+
+/** Lit un nombre, pour les contrôles après effacement. */
+$compter = function (string $sql, array $valeurs) use ($bdd): int {
+    $requete = $bdd->prepare($sql);
+    $requete->execute($valeurs);
+    return (int) $requete->fetchColumn();
+};
 
 $bdd->beginTransaction();
 
 try {
-    // Un membre de travail, pour que les clés étrangères aient de quoi pointer.
-    $bdd->prepare(
-        'INSERT INTO membre (courriel, pseudo, slug, sexe)
-         VALUES (:courriel, :pseudo, :slug, :sexe)'
-    )->execute([
-        'courriel' => 'essai-' . bin2hex(random_bytes(4)) . '@exemple.re',
-        'pseudo'   => 'essai-' . bin2hex(random_bytes(4)),
-        'slug'     => 'essai-' . bin2hex(random_bytes(4)),
-        'sexe'     => 'M',
-    ]);
-    $membreId = (int) $bdd->lastInsertId();
-    ok('Insertion d\'un membre valide : acceptée, comme prévu.');
+    /* --- Membres ------------------------------------------------------ */
 
-    /**
-     * Tente une insertion de performance et dit si elle a été refusée.
-     */
-    $essai = function (string $intitule, array $champs) use ($bdd, $membreId): void {
-        $defaut = [
-            'membre_id'        => $membreId,
-            'mouvement'        => 'squat',
-            'equipement'       => 'raw',
-            'charge_kg'        => 180.5,
-            'tranche_poids'    => '80-90',
-            'tranche_age'      => '24-39',
-            'date_performance' => '2026-01-15',
-            'lien_video'       => 'https://exemple.re/video',
-        ];
-        $valeurs = array_merge($defaut, $champs);
+    info('Membres');
 
-        try {
-            $bdd->prepare(
-                'INSERT INTO performance
-                   (membre_id, mouvement, equipement, charge_kg, tranche_poids,
-                    tranche_age, date_performance, lien_video)
-                 VALUES
-                   (:membre_id, :mouvement, :equipement, :charge_kg, :tranche_poids,
-                    :tranche_age, :date_performance, :lien_video)'
-            )->execute($valeurs);
+    $sqlMembre = 'INSERT INTO membre (courriel, mot_de_passe_hash, pseudo, ip_inscription)
+                  VALUES (?, ?, ?, ?)';
+    $hash = password_hash('essai', PASSWORD_DEFAULT);
 
-            // Aucune exception : la valeur est passée. C'est un échec du test.
-            $id = (int) $bdd->lastInsertId();
-            $stocke = $bdd->prepare('SELECT charge_kg FROM performance WHERE id = ?');
-            $stocke->execute([$id]);
-            ko($intitule . ' : ACCEPTÉE. Valeur réellement stockée : '
-               . $stocke->fetchColumn());
-        } catch (PDOException $e) {
-            ok($intitule . ' : refusée. (' . $e->getCode() . ')');
-        }
-    };
+    // Un suffixe aléatoire en minuscules et chiffres : deux passages du script
+    // ne se gênent pas, et chaque refus vient bien de la règle visée, jamais
+    // d'un doublon accidentel.
+    $s = bin2hex(random_bytes(3));
+    $ip = '203.0.113.1'; // plage réservée à la documentation, jamais routée
+
+    $membreId = $accepte('Membre valide', $sqlMembre, ["essai-$s@exemple.re", $hash, "essai_$s", $ip]);
+    $autreId  = $accepte('Second membre valide, pseudo à point', $sqlMembre, ["autre-$s@exemple.re", $hash, "autre.$s", $ip]);
+
+    if ($membreId === 0 || $autreId === 0) {
+        throw new RuntimeException('impossible de créer les membres de travail, la suite n\'aurait pas de sens.');
+    }
+
+    $refuse('Pseudo en majuscules', $sqlMembre, ["a-$s@exemple.re", $hash, "Jean$s", $ip]);
+    $refuse('Pseudo fait de points seulement', $sqlMembre, ["b-$s@exemple.re", $hash, '...', $ip]);
+    $refuse('Pseudo à tiret, réservé au gabarit', $sqlMembre, ["c-$s@exemple.re", $hash, "jean-$s", $ip]);
+    $refuse('Pseudo de 31 caractères', $sqlMembre, ["d-$s@exemple.re", $hash, str_repeat('a', 31), $ip]);
+    $refuse('Pseudo de 2 caractères', $sqlMembre, ["e-$s@exemple.re", $hash, 'ab', $ip]);
+    $refuse('Pseudo à espace', $sqlMembre, ["f-$s@exemple.re", $hash, "jean $s", $ip]);
+    $refuse('Pseudo déjà pris', $sqlMembre, ["g-$s@exemple.re", $hash, "essai_$s", $ip]);
+    $refuse('Courriel déjà pris', $sqlMembre, ["essai-$s@exemple.re", $hash, "neuf_$s", $ip]);
+    $refuse('Présentation de 161 caractères',
+        'UPDATE membre SET bio = ? WHERE id = ?', [str_repeat('a', 161), $membreId]);
+    $refuse('Rôle inconnu « moderateur »',
+        'UPDATE membre SET role = ? WHERE id = ?', ['moderateur', $membreId]);
+
+    /* --- Performances ------------------------------------------------- */
+
+    info('Performances');
+
+    $sqlPerf = 'INSERT INTO performance
+                  (membre_id, mouvement, equipement, charge_kg, date_performance, lien_video)
+                VALUES (:membre_id, :mouvement, :equipement, :charge_kg, :date_performance, :lien_video)';
+    $perf = fn (array $champs): array => array_merge([
+        'membre_id'        => $membreId,
+        'mouvement'        => 'squat',
+        'equipement'       => 'raw',
+        'charge_kg'        => 180.5,
+        'date_performance' => '2026-10-15',
+        'lien_video'       => 'https://www.instagram.com/p/essai/',
+    ], $champs);
+
+    $perfId  = $accepte('Performance valide', $sqlPerf, $perf([]));
+    $perf2Id = $accepte('Performance valide du second membre', $sqlPerf, $perf(['membre_id' => $autreId]));
 
     // Le cas qui motive tout ce fichier. En mode permissif, MySQL ramènerait
-    // 1500 à 999,99 — la borne du DECIMAL(5,2) — et la contrainte CHECK
+    // 1500 à 999,99, la borne du DECIMAL(5,2), et la contrainte CHECK
     // trouverait cette valeur rabotée parfaitement conforme.
-    $essai('Charge de 1500 kg (faute de frappe)', ['charge_kg' => 1500]);
+    $refuse('Charge de 1500 kg (faute de frappe)', $sqlPerf, $perf(['charge_kg' => 1500]));
+    $refuse('Charge négative de -50 kg', $sqlPerf, $perf(['charge_kg' => -50]));
+    $refuse('Charge nulle', $sqlPerf, $perf(['charge_kg' => 0]));
+    $refuse('Date 0000-00-00', $sqlPerf, $perf(['date_performance' => '0000-00-00']));
+    $refuse('Mouvement inconnu « curl »', $sqlPerf, $perf(['mouvement' => 'curl']));
+    $refuse('Membre inexistant (n° 999999999)', $sqlPerf, $perf(['membre_id' => 999999999]));
+    $refuse('Lien « javascript: »', $sqlPerf, $perf(['lien_video' => 'javascript:alert(1)']));
+    $refuse('Lien en http sans s', $sqlPerf, $perf(['lien_video' => 'http://www.instagram.com/p/essai/']));
+    $refuse('Catégorie de 6 caractères',
+        'UPDATE performance SET categorie = ? WHERE id = ?', ['120+++', $perfId]);
 
-    // La contrainte CHECK du schéma, elle, se charge du négatif.
-    $essai('Charge négative de -50 kg', ['charge_kg' => -50]);
+    /* --- Votes -------------------------------------------------------- */
 
-    // Sans mode strict, la chaîne serait tronquée à la largeur de la colonne.
-    $essai('Tranche de poids trop longue', ['tranche_poids' => str_repeat('9', 40)]);
+    info('Votes');
 
-    // Sans NO_ZERO_DATE, cette date serait acceptée comme valide.
-    $essai('Date 0000-00-00', ['date_performance' => '0000-00-00']);
+    $sqlVote = 'INSERT INTO vote (performance_id, membre_id, ok) VALUES (?, ?, ?)';
 
-    // Valeur absente de l'ENUM : refusée en strict, remplacée par une chaîne
-    // vide en permissif.
-    $essai('Mouvement inconnu « curl »', ['mouvement' => 'curl']);
+    $accepte('Vote valide', $sqlVote, [$perfId, $autreId, 1]);
+    $refuse('Second vote du même membre', $sqlVote, [$perfId, $autreId, 0]);
+    $refuse('Vote valant 2', $sqlVote, [$perf2Id, $membreId, 2]);
+    $refuse('Vote sur une performance inexistante', $sqlVote, [999999999, $autreId, 1]);
 
-    // Clé étrangère : un membre qui n'existe pas.
-    $essai('Membre inexistant (n° 999999999)', ['membre_id' => 999999999]);
-
-    // Contrôle de bon fonctionnement : une performance valide doit passer.
-    // Sans ce contrôle, un schéma qui refuse TOUT paraîtrait irréprochable.
+    // Changer d'avis passe par une mise à jour de la même ligne.
     try {
-        $bdd->prepare(
-            'INSERT INTO performance
-               (membre_id, mouvement, equipement, charge_kg, tranche_poids,
-                tranche_age, date_performance, lien_video)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-        )->execute([$membreId, 'bench', 'raw', 122.5, '80-90', '24-39',
-                    '2026-03-02', 'https://exemple.re/video']);
-        ok('Insertion d\'une performance valide : acceptée, comme prévu.');
+        $bdd->prepare('UPDATE vote SET ok = 0 WHERE performance_id = ? AND membre_id = ?')
+            ->execute([$perfId, $autreId]);
+        $avis = $compter('SELECT ok FROM vote WHERE performance_id = ? AND membre_id = ?', [$perfId, $autreId]);
+        $avis === 0 ? ok('Changer d\'avis : accepté, une seule ligne.') : ko('Changer d\'avis n\'a rien changé.');
     } catch (PDOException $e) {
-        ko('Une performance VALIDE a été refusée : ' . $e->getMessage());
+        ko('Changer d\'avis : REFUSÉ. ' . $e->getMessage());
     }
 
-    // L'effacement en cascade, dont dépend le droit à l'effacement du RGPD.
+    /* --- Messages ----------------------------------------------------- */
+
+    info('Messages');
+
+    $sqlMessage = 'INSERT INTO message (canal, membre_id, pseudo, texte, ip) VALUES (?, ?, ?, ?, ?)';
+
+    $messageId = $accepte('Message valide, smiley et emoji compris', $sqlMessage,
+        ['general', $membreId, "essai_$s", 'Nouveau record au squat :) 💪', $ip]);
+    $refuse('Message de 501 caractères', $sqlMessage,
+        ['general', $membreId, "essai_$s", str_repeat('a', 501), $ip]);
+    $refuse('Message vide', $sqlMessage, ['general', $membreId, "essai_$s", '', $ip]);
+
+    $bdd->prepare('UPDATE message SET masque_par = ? WHERE id = ?')->execute([$membreId, $messageId]);
+
+    /* --- Signalements ------------------------------------------------- */
+
+    info('Signalements');
+
+    $sqlSignal = 'INSERT INTO signalement (type, cible_id, auteur_id, motif) VALUES (?, ?, ?, ?)';
+
+    $accepte('Signalement valide', $sqlSignal, ['message', $messageId, $autreId, 'Essai']);
+    $refuse('Même signalement en double', $sqlSignal, ['message', $messageId, $autreId, 'Encore']);
+    $refuse('Type de cible inconnu', $sqlSignal, ['salon', 1, $autreId, null]);
+
+    /* --- Jetons ------------------------------------------------------- */
+
+    info('Jetons');
+
+    $sqlJeton = 'INSERT INTO jeton (membre_id, type, jeton_hash, date_expiration)
+                 VALUES (?, ?, ?, NOW() + INTERVAL 30 DAY)';
+    $empreinte = hash('sha256', random_bytes(32));
+
+    $accepte('Jeton de session', $sqlJeton, [$membreId, 'session', $empreinte]);
+    $refuse('Même empreinte une seconde fois', $sqlJeton, [$autreId, 'session', $empreinte]);
+    $refuse('Type de jeton inconnu', $sqlJeton, [$membreId, 'inconnu', hash('sha256', random_bytes(32))]);
+
+    /* --- Effacement d'un compte --------------------------------------- */
+
+    info('Effacement du premier membre');
+
+    // L'admin du badge, joué ici par le premier membre.
+    $bdd->prepare('UPDATE performance SET admin_id = ?, date_verif_admin = NOW() WHERE id = ?')
+        ->execute([$membreId, $perf2Id]);
+    $bdd->prepare('INSERT INTO vote (performance_id, membre_id, ok) VALUES (?, ?, 1)')
+        ->execute([$perf2Id, $membreId]);
+
     $bdd->prepare('DELETE FROM membre WHERE id = ?')->execute([$membreId]);
-    $restantes = $bdd->prepare('SELECT COUNT(*) FROM performance WHERE membre_id = ?');
-    $restantes->execute([$membreId]);
 
-    if ((int) $restantes->fetchColumn() === 0) {
-        ok('Effacement du membre : ses performances partent en cascade.');
-    } else {
-        ko('Des performances SURVIVENT à l\'effacement de leur membre.');
-    }
+    // Le droit à l'effacement : ses performances, ses votes et ses sessions
+    // partent avec lui.
+    $compter('SELECT COUNT(*) FROM performance WHERE membre_id = ?', [$membreId]) === 0
+        ? ok('Ses performances partent en cascade.')
+        : ko('Des performances SURVIVENT à l\'effacement de leur membre.');
+
+    $compter('SELECT COUNT(*) FROM vote WHERE membre_id = ? OR performance_id = ?', [$membreId, $perfId]) === 0
+        ? ok('Ses votes, et ceux donnés à ses performances, partent aussi.')
+        : ko('Des votes SURVIVENT à l\'effacement.');
+
+    $compter('SELECT COUNT(*) FROM jeton WHERE membre_id = ?', [$membreId]) === 0
+        ? ok('Ses jetons de session partent aussi.')
+        : ko('Des jetons SURVIVENT à l\'effacement.');
+
+    // Le journal d'un an : le message reste, détaché du compte, signé du
+    // pseudo copié, et toujours masqué.
+    $compter(
+        'SELECT COUNT(*) FROM message
+          WHERE id = ? AND membre_id IS NULL AND pseudo = ? AND masque_par = ?',
+        [$messageId, "essai_$s", $membreId]
+    ) === 1
+        ? ok('Son message reste au journal, sans compte, pseudo et masquage gardés.')
+        : ko('Le message a disparu ou a perdu son pseudo ou son masquage.');
+
+    // Le badge admin se lit sur la date : il survit à l'admin.
+    $compter(
+        'SELECT COUNT(*) FROM performance
+          WHERE id = ? AND admin_id IS NULL AND date_verif_admin IS NOT NULL',
+        [$perf2Id]
+    ) === 1
+        ? ok('Le badge admin qu\'il a posé reste en place.')
+        : ko('Le badge admin a disparu avec son admin.');
+
+    $compter('SELECT COUNT(*) FROM signalement WHERE cible_id = ? AND auteur_id = ?', [$messageId, $autreId]) === 1
+        ? ok('Le signalement du second membre reste à traiter.')
+        : ko('Le signalement a disparu.');
 } catch (Throwable $e) {
     // Une erreur qu'aucun essai n'attendait. On la montre plutôt que de laisser
     // PHP afficher une trace d'appels dont on ne tire rien.
     ko('Essai interrompu par une erreur inattendue : ' . $e->getMessage());
 } finally {
     // Annulation systématique, y compris en cas d'exception : la base ressort
-    // exactement telle qu'elle est entrée.
+    // telle qu'elle est entrée.
     $bdd->rollBack();
     info('Transaction annulée : rien n\'a été conservé.');
 }
@@ -354,5 +493,5 @@ if ($echecs > 0) {
     exit(1);
 }
 
-echo "  Fondation vérifiée. On peut écrire l'autorisation et les points d'entrée.\n\n";
+echo "  Fondation vérifiée. Phase suivante : le socle PHP (docs/comptes.md).\n\n";
 exit(0);
