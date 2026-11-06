@@ -81,93 +81,9 @@ return [
                     . 'NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION',
     ],
 
-    // -------------------------------------------------------------------------
-    // Sessions
-    // -------------------------------------------------------------------------
-    'session' => [
-        'nom' => 'sbdre_session',
-
-        // Secure : le cookie ne part qu'en HTTPS.
-        // HttpOnly : le JavaScript de la page ne peut pas le lire, ce qui limite
-        //            fortement les dégâts d'une faille d'injection de script.
-        // SameSite=Lax : le cookie n'accompagne pas une requête déclenchée par
-        //            un autre site, première barrière contre le CSRF.
-        'secure'    => true,
-        'http_only' => true,
-        'same_site' => 'Lax',
-
-        // Durée d'inactivité avant expiration, en secondes.
-        'duree' => 60 * 60 * 24 * 14,
-    ],
-
-    // -------------------------------------------------------------------------
-    // Freinage des tentatives de connexion
-    // -------------------------------------------------------------------------
-    // Sans freinage, rien n'empêche de tester des milliers de mots de passe sur
-    // une adresse connue. Un hachage solide n'y change rien : il ralentit chaque
-    // essai, il n'en limite pas le nombre.
-    'connexion' => [
-        'echecs_max'      => 5,
-        'fenetre_minutes' => 15,
-    ],
-
-    // -------------------------------------------------------------------------
-    // Jetons envoyés par courriel
-    // -------------------------------------------------------------------------
-    // Durées de validité, en minutes. Un lien de réinitialisation doit expirer
-    // vite : une boîte de courriel consultée des mois plus tard ne doit pas
-    // rouvrir un compte.
-    'jetons' => [
-        'verification_minutes'     => 60 * 48,
-        'reinitialisation_minutes' => 60,
-    ],
-
-    // -------------------------------------------------------------------------
-    // Connexion Google
-    // -------------------------------------------------------------------------
-    // À remplir le jour où le projet Google Cloud existe. Laisser vide désactive
-    // simplement le bouton Google, sans rien casser.
-    //
-    // Le secret client reste ici, côté serveur, et ne part jamais au navigateur.
-    // C'est précisément ce qu'un site purement statique ne permettait pas.
-    'google' => [
-        'client_id'     => '',
-        'client_secret' => '',
-        'redirection'   => 'https://sbd.re/api/google/retour',
-    ],
-
-    // -------------------------------------------------------------------------
-    // Courriels sortants
-    // -------------------------------------------------------------------------
-    // L'expéditeur DOIT appartenir au domaine du site. L'enregistrement SPF de
-    // sbd.re se termine par « -all », ce qui demande le rejet de tout message
-    // envoyé au nom du domaine par un serveur non autorisé.
-    'courriel' => [
-        'expediteur'     => 'bonjour@sbd.re',
-        'nom_expediteur' => 'SBD.re',
-    ],
-
-    // -------------------------------------------------------------------------
-    // SMTP
-    // -------------------------------------------------------------------------
-    // Mesuré le 30 juillet 2026 : la fonction mail() de PHP est REFUSÉE par
-    // l'hébergement, « User loremis is not allowed to submit mail ». Le SMTP
-    // authentifié n'est donc pas un contournement, c'est la seule voie, et
-    // c'était de toute façon la bonne : les messages sortent alors des serveurs
-    // de messagerie qu'autorise le SPF du domaine.
-    //
-    // Deux combinaisons possibles chez OVH, l'une et l'autre chiffrées :
-    //   ssl0.ovh.net port 465 avec 'ssl'
-    //   ssl0.ovh.net port 587 avec 'tls'
-    //
-    // L'utilisateur est l'ADRESSE COMPLÈTE de la boîte, pas un identifiant
-    // court, et le mot de passe est celui de cette boîte. Il faut donc que la
-    // boîte existe réellement dans l'espace client OVH.
-    'smtp' => [
-        'hote'         => 'ssl0.ovh.net',
-        'port'         => 465,
-        'chiffrement'  => 'ssl',
-        'utilisateur'  => 'bonjour@sbd.re',
-        'mot_de_passe' => 'a-completer',
-    ],
+    // Rien d'autre ici. Les durées de session et l'expéditeur des courriels
+    // sont des règles du site, versionnées dans le code : lib/session.php et
+    // lib/courriel.php. Ce fichier ne garde que ce qui est propre au serveur
+    // et secret. Les anciennes clés `session`, `connexion`, `jetons`, `google`,
+    // `courriel` et `smtp` d'un config.php déjà déposé sont ignorées.
 ];
