@@ -82,6 +82,7 @@ la mention « à compléter » tant que l'auteur ne les a pas fournis.
 | `/exterieur/` | Résultats obtenus hors de La Réunion |
 | `/athlete/<slug>/` | Une fiche par athlète |
 | `/communaute/` | Page d'attente du classement communauté : son état en une phrase, trois actions, le fonctionnement prévu |
+| `/compte/`, `/compte/inscription/`, `/compte/connexion/`, `/compte/mot-de-passe/`, `/communaute/charte/` | Les comptes, servis par `public/api/*.php`. Prop `prive` de `BaseLayout` : `noindex`, hors plan de site, jamais de Clarity. Hors du menu jusqu'à l'ouverture, phase 9 de docs/comptes.md |
 | `/suggestions/` | Boîte à suggestions anonyme, servie par `public/api/suggestion.php` |
 | `/mises-a-jour/` | Journal des changements : chiffres des données calculés, entrées du site écrites dans `src/lib/journal.ts` |
 | `/accessibilite/` | Audit d'accessibilité mené par la mesure, méthode, résultats et limites |
