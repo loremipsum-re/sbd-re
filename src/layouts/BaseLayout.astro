@@ -32,6 +32,12 @@ interface Props {
    */
   image?: string;
   imageAlt?: string;
+  /**
+   * Page de compte : ni indexée, ni mesurée. Clarity n'y est jamais posé,
+   * même après consentement : ces pages portent une adresse, un pseudo, et
+   * parfois un lien de mot de passe dans l'adresse.
+   */
+  prive?: boolean;
 }
 
 /**
@@ -44,7 +50,7 @@ interface Props {
  */
 const IMAGE_PARTAGE_DEFAUT: string | null = null;
 
-const { titre, description, titreOnglet, image, imageAlt } = Astro.props;
+const { titre, description, titreOnglet, image, imageAlt, prive = false } = Astro.props;
 
 const canonique = new URL(Astro.url.pathname, Astro.site);
 const chemin = Astro.url.pathname;
@@ -85,6 +91,7 @@ const courant = (href: string) =>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{titreOnglet ?? `${titre} | SBD.re`}</title>
     <meta name="description" content={description} />
+    {prive && <meta name="robots" content="noindex" />}
     <link rel="canonical" href={canonique.href} />
 
     <meta property="og:type" content="website" />
@@ -182,7 +189,7 @@ const courant = (href: string) =>
       exigent pour un outil qui enregistre les sessions et transmet les données
       à un tiers.
     */}
-    <script is:inline define:vars={{ CLARITY_ID }}>
+    {!prive && <script is:inline define:vars={{ CLARITY_ID }}>
       window.sbdChargerMesure = function () {
         if (window.__sbdMesureChargee) return;
         window.__sbdMesureChargee = true;
@@ -205,7 +212,7 @@ const courant = (href: string) =>
       } catch (e) {
         // Stockage indisponible : on ne charge rien, faute de consentement vérifiable.
       }
-    </script>
+    </script>}
   </head>
 
   <body>

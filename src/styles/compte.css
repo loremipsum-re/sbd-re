@@ -1,0 +1,158 @@
+/*
+ * Les formulaires des comptes : inscription, connexion, mot de passe, compte.
+ *
+ * Même dessin que le formulaire de suggestion (FormulaireSuggestion.astro),
+ * repris ici sous la classe `.form-compte` parce que ses styles sont
+ * enfermés dans le composant. Les deux suivent les mêmes règles du site :
+ * 44 px par contrôle (`--cible-min`), 16 px par champ (`--police-champ`),
+ * l'aplat `--accent-fill` sous `--on-accent` pour le bouton principal.
+ */
+
+.page-compte {
+  padding-block: var(--space-8) var(--space-16);
+}
+
+.page-compte .colonne {
+  max-width: 34rem;
+}
+
+/* `display: grid` plus bas l'emporterait sur l'attribut `hidden`, et le
+   formulaire masqué resterait affiché : mesuré sur /compte/mot-de-passe/. */
+.page-compte [hidden] {
+  display: none;
+}
+
+.form-compte {
+  display: grid;
+  gap: var(--space-6);
+  margin-block: var(--space-6);
+}
+
+.form-compte .champ {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.form-compte label {
+  font-weight: 600;
+}
+
+.form-compte input:not([type='checkbox']),
+.form-compte select,
+.form-compte textarea {
+  width: 100%;
+  min-height: var(--cible-min);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--police-champ);
+}
+
+.form-compte textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.form-compte input:focus-visible,
+.form-compte select:focus-visible,
+.form-compte textarea:focus-visible {
+  border-color: var(--accent);
+}
+
+/* La case et son libellé sur une ligne, la case à 24 px pour le toucher,
+   l'étiquette entière cliquable : la cible réelle dépasse 44 px. */
+.form-compte .case {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  min-height: var(--cible-min);
+  font-weight: 400;
+}
+
+.form-compte .case input {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0.1rem 0 0;
+  accent-color: var(--accent-fill);
+}
+
+.form-compte .aide {
+  margin: 0;
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+
+.form-compte .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.form-compte button {
+  min-height: var(--cible-min);
+  padding: var(--space-2) var(--space-6);
+  border: 1px solid var(--accent-fill);
+  border-radius: var(--radius);
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Les gestes secondaires : se déconnecter, effacer. Bordure seule. */
+.form-compte button.secondaire {
+  border-color: var(--border);
+  background: transparent;
+  color: var(--text);
+}
+
+.form-compte button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.form-compte .appat {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.etat-compte {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--border);
+  font-weight: 600;
+}
+
+.etat-compte[data-ok='oui'] {
+  border-left-color: var(--positif);
+  color: var(--positif);
+}
+
+.etat-compte[data-ok='non'] {
+  border-left-color: var(--negatif);
+  color: var(--negatif);
+}
+
+.liens-compte {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.liens-compte a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+}

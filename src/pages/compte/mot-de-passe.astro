@@ -1,0 +1,104 @@
+---
+/**
+ * Mot de passe oublié, en deux temps sur la même page.
+ *
+ * Sans jeton : demander un lien. Avec `#jeton=…` dans l'adresse, celui du
+ * courriel : choisir le nouveau mot de passe.
+ *
+ * LE JETON VOYAGE APRÈS LE « # ». Cette partie de l'adresse ne part jamais
+ * au serveur : elle ne s'écrit donc pas dans ses journaux d'accès. Le script
+ * la lit, puis l'efface de la barre d'adresse et de l'historique.
+ *
+ * Page `prive` : ni indexée, ni mesurée. Clarity, qui enregistre les
+ * adresses visitées, n'y est jamais chargé.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/compte.css';
+---
+
+<BaseLayout
+  titre="Mot de passe oublié"
+  description="Recevoir un lien pour choisir un nouveau mot de passe SBD.re."
+  prive
+>
+  <div class="wrap page-compte">
+    <div class="colonne">
+      <header class="entete-page">
+        <h1 data-titre>Mot de passe oublié</h1>
+      </header>
+
+      <noscript>
+        <p class="aide">Ce formulaire demande JavaScript.</p>
+      </noscript>
+
+      <form class="form-compte" data-demande novalidate>
+        <p class="aide">Indiquez votre adresse : un lien valable une heure y part.</p>
+        <div class="champ">
+          <label for="courriel">Adresse électronique</label>
+          <input id="courriel" name="courriel" type="email" required autocomplete="email" />
+        </div>
+        <div class="actions">
+          <button type="submit">Recevoir un lien</button>
+        </div>
+        <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+      </form>
+
+      <form class="form-compte" data-nouveau novalidate hidden>
+        <div class="champ">
+          <label for="mot-de-passe">Nouveau mot de passe</label>
+          <input
+            id="mot-de-passe"
+            name="mot_de_passe"
+            type="password"
+            required
+            minlength="10"
+            autocomplete="new-password"
+            aria-describedby="aide-mot-de-passe"
+          />
+          <p class="aide" id="aide-mot-de-passe">
+            10 caractères au moins. Toutes vos autres sessions se ferment.
+          </p>
+        </div>
+        <div class="actions">
+          <button type="submit">Changer le mot de passe</button>
+        </div>
+        <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+      </form>
+
+      <ul class="liens-compte">
+        <li><a href="/compte/connexion/">Retour à la connexion</a></li>
+      </ul>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { api, brancher, champ } from '../../lib/api-compte';
+
+  const demande = document.querySelector<HTMLFormElement>('[data-demande]')!;
+  const nouveau = document.querySelector<HTMLFormElement>('[data-nouveau]')!;
+
+  const jeton = new URLSearchParams(location.hash.slice(1)).get('jeton') ?? '';
+
+  if (jeton !== '') {
+    // Effacé tout de suite : ni l'historique ni un partage d'écran ne le gardent.
+    history.replaceState(null, '', location.pathname);
+    demande.hidden = true;
+    nouveau.hidden = false;
+    document.querySelector('[data-titre]')!.textContent = 'Choisir un nouveau mot de passe';
+  }
+
+  brancher(demande, (donnees) =>
+    api('/api/mot-de-passe.php', 'POST', { courriel: champ(donnees, 'courriel') }),
+  );
+
+  brancher(
+    nouveau,
+    (donnees) =>
+      api('/api/mot-de-passe.php', 'POST', {
+        jeton,
+        mot_de_passe: champ(donnees, 'mot_de_passe'),
+      }),
+    () => location.assign('/compte/'),
+  );
+</script>

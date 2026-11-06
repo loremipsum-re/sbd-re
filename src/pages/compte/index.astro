@@ -1,0 +1,190 @@
+---
+/**
+ * Mon compte : l'état de l'adresse, le profil, la déconnexion, l'effacement.
+ *
+ * La page est statique et se remplit par `GET /api/moi.php`. Sans session,
+ * elle renvoie vers la connexion. La liste des salles vient de la collection
+ * de /salles/ à la génération : le serveur ne contrôle que la forme de
+ * l'identifiant, et le menu ne propose que des fiches existantes.
+ *
+ * L'EFFACEMENT DEMANDE LE MOT DE PASSE et se range sous une pastille fermée :
+ * un geste sans retour ne doit pas se trouver à un clic d'« Enregistrer ».
+ *
+ * Page `prive` : ni indexée, ni mesurée.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/compte.css';
+
+const salles = (await getCollection('salles', (s) => s.data.actif))
+  .map((s) => ({ id: s.id, libelle: `${s.data.nom}, ${s.data.commune}` }))
+  .sort((a, b) => a.libelle.localeCompare(b.libelle, 'fr'));
+---
+
+<BaseLayout titre="Mon compte" description="Gérer son compte SBD.re." prive>
+  <div class="wrap page-compte">
+    <div class="colonne">
+      <header class="entete-page">
+        <h1>Mon compte</h1>
+        <p class="chapeau" data-bonjour>Chargement du compte…</p>
+      </header>
+
+      <noscript>
+        <p class="aide">Cette page demande JavaScript.</p>
+      </noscript>
+
+      <p class="etat-compte" data-retour role="status" aria-live="polite" hidden></p>
+
+      <section data-compte hidden>
+        <form class="form-compte" data-verification hidden novalidate>
+          <p>
+            Votre adresse n'est pas encore confirmée. Ouvrez le lien reçu par
+            courriel, indésirables compris. Tant qu'elle ne l'est pas, votre
+            profil reste vide et rien ne se publie.
+          </p>
+          <div class="actions">
+            <button type="submit" class="secondaire">Renvoyer le lien</button>
+          </div>
+          <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+        </form>
+
+        <h2>Profil</h2>
+        <form class="form-compte" data-profil novalidate>
+          <div class="champ">
+            <label for="bio">Présentation <span class="aide">facultatif</span></label>
+            <textarea id="bio" name="bio" rows="3" maxlength="160" aria-describedby="aide-bio"
+            ></textarea>
+            <p class="aide" id="aide-bio">
+              160 caractères, visibles de tous. Le profil reste tout public.
+            </p>
+          </div>
+
+          <div class="champ">
+            <label for="salle">Salle <span class="aide">facultatif</span></label>
+            <select id="salle" name="salle">
+              <option value="">Aucune</option>
+              {salles.map((s) => <option value={s.id}>{s.libelle}</option>)}
+            </select>
+          </div>
+
+          <label class="case">
+            <input name="instagram_visible" type="checkbox" />
+            <span data-libelle-instagram>Afficher le lien vers mon Instagram</span>
+          </label>
+
+          <div class="actions">
+            <button type="submit">Enregistrer</button>
+          </div>
+          <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+        </form>
+
+        <h2>Session</h2>
+        <form class="form-compte" data-deconnexion novalidate>
+          <div class="actions">
+            <button type="submit" class="secondaire">Se déconnecter</button>
+          </div>
+          <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+        </form>
+
+        <details class="repli">
+          <summary>Effacer mon compte</summary>
+          <form class="form-compte" data-effacement novalidate>
+            <p>
+              Le profil, les performances et les votes disparaissent aussitôt.
+              Vos messages quittent le chat et restent au journal un an,
+              signés de votre pseudo.
+            </p>
+            <div class="champ">
+              <label for="mot-de-passe">Mot de passe, pour confirmer</label>
+              <input
+                id="mot-de-passe"
+                name="mot_de_passe"
+                type="password"
+                required
+                autocomplete="current-password"
+              />
+            </div>
+            <div class="actions">
+              <button type="submit" class="secondaire">Effacer définitivement</button>
+            </div>
+            <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+          </form>
+        </details>
+      </section>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { afficher, api, brancher, champ } from '../../lib/api-compte';
+
+  const retour = document.querySelector<HTMLElement>('[data-retour]')!;
+  const bonjour = document.querySelector<HTMLElement>('[data-bonjour]')!;
+  const section = document.querySelector<HTMLElement>('[data-compte]')!;
+  const verification = document.querySelector<HTMLFormElement>('[data-verification]')!;
+  const profil = document.querySelector<HTMLFormElement>('[data-profil]')!;
+
+  // Le résultat du lien de confirmation, posé par /api/verifier.php.
+  const adresse = new URLSearchParams(location.search).get('adresse');
+  if (adresse === 'confirmee') {
+    afficher(retour, 'Adresse confirmée. Votre compte est actif.', true);
+  } else if (adresse === 'lien-invalide') {
+    afficher(retour, 'Ce lien a expiré ou a déjà servi. Redemandez-en un ci-dessous.', false);
+  }
+  if (adresse) history.replaceState(null, '', location.pathname);
+
+  interface Compte {
+    pseudo: string;
+    courriel: string;
+    courriel_verifie: number;
+    instagram_visible: number;
+    bio: string | null;
+    salle: string | null;
+  }
+
+  // Pas d'`await` au premier niveau : la cible de compilation ne l'admet pas.
+  void api('/api/moi.php', 'GET').then((lecture) => {
+    if (lecture.statut === 401) {
+      location.replace('/compte/connexion/');
+      return;
+    }
+    if (!lecture.ok) {
+      bonjour.textContent = lecture.message;
+      return;
+    }
+
+    const compte = lecture.compte as Compte;
+    bonjour.textContent = `Connecté en tant que ${compte.pseudo}, adresse ${compte.courriel}.`;
+    verification.hidden = compte.courriel_verifie === 1;
+    section.hidden = false;
+
+    profil.querySelector<HTMLTextAreaElement>('[name="bio"]')!.value = compte.bio ?? '';
+    profil.querySelector<HTMLSelectElement>('[name="salle"]')!.value = compte.salle ?? '';
+    profil.querySelector<HTMLInputElement>('[name="instagram_visible"]')!.checked =
+      compte.instagram_visible === 1;
+    document.querySelector('[data-libelle-instagram]')!.textContent =
+      `Afficher le lien vers instagram.com/${compte.pseudo}`;
+  });
+
+  brancher(verification, () => api('/api/verifier.php', 'POST'));
+
+  brancher(profil, (donnees) =>
+    api('/api/moi.php', 'PATCH', {
+      bio: champ(donnees, 'bio'),
+      salle: champ(donnees, 'salle'),
+      instagram_visible: donnees.get('instagram_visible') === 'on',
+    }),
+  );
+
+  brancher(
+    document.querySelector<HTMLFormElement>('[data-deconnexion]')!,
+    () => api('/api/connexion.php', 'DELETE'),
+    () => location.assign('/compte/connexion/'),
+  );
+
+  brancher(
+    document.querySelector<HTMLFormElement>('[data-effacement]')!,
+    (donnees) => api('/api/moi.php', 'DELETE', { mot_de_passe: champ(donnees, 'mot_de_passe') }),
+    () => location.assign('/'),
+  );
+</script>

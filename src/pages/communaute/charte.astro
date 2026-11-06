@@ -1,0 +1,104 @@
+---
+/**
+ * La charte de la communauté, acceptée à l'inscription.
+ *
+ * Elle reprend la section 7 de docs/comptes.md : profils tout public, chat
+ * plus libre dans une limite écrite. Elle dit les règles et ce qui arrive à
+ * qui les enfreint, sans promettre de délai de traitement que personne ne
+ * tiendrait.
+ *
+ * `prive` jusqu'à l'ouverture (phase 9) : ni indexée, ni au plan de site.
+ * Elle deviendra une page publique ordinaire ce jour-là.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  titre="Charte de la communauté"
+  description="Les règles des profils, des performances et du chat de SBD.re."
+  prive
+>
+  <div class="wrap page">
+    <header class="entete-page">
+      <h1>Charte de la communauté</h1>
+      <p class="chapeau">
+        La communauté de SBD.re réunit des pratiquants de 18 ans et plus autour de
+        leurs performances. Ces règles valent pour tous, à tout moment.
+      </p>
+    </header>
+
+    <section>
+      <h2>Le compte</h2>
+      <ul>
+        <li>Vous avez 18 ans ou plus.</li>
+        <li>Un compte par personne. Votre pseudo vous désigne, pas quelqu'un d'autre.</li>
+        <li>Vous gardez votre mot de passe pour vous.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Les profils, tout public</h2>
+      <p>
+        Un profil se lit par tout le monde et apparaît dans les moteurs de
+        recherche. Pseudo et présentation restent donc corrects : aucune
+        grossièreté, aucun propos sexuel, aucune insulte.
+      </p>
+    </section>
+
+    <section>
+      <h2>Les performances</h2>
+      <ul>
+        <li>Chaque performance s'accompagne d'une vidéo où l'on voit la barre.</li>
+        <li>Vous publiez vos propres barres, jamais celles d'un autre.</li>
+        <li>
+          Vous votez sur ce que montre la vidéo : la charge, l'amplitude, le
+          mouvement. Un vote d'amitié ou de rancune fausse le badge de tous.
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Le chat</h2>
+      <p>
+        Le ton y est plus libre, entre adultes. Les grossièretés passent. Quatre
+        choses sont refusées :
+      </p>
+      <ul>
+        <li>le contenu sexuel ;</li>
+        <li>le racisme et toute haine visant une origine, une religion, un sexe, une orientation ou un handicap ;</li>
+        <li>le harcèlement, y compris réparti en plusieurs messages ;</li>
+        <li>la publication d'informations personnelles d'autrui.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Ce qui arrive en cas d'abus</h2>
+      <p>
+        Un filtre arrête les mots les plus évidents. Pour le reste, chaque
+        message, profil et performance porte un bouton de signalement.
+        L'administrateur peut masquer un message, retirer une performance ou
+        suspendre un compte. Un compte suspendu ne se reconnecte plus.
+      </p>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    padding-block: var(--space-8) var(--space-16);
+    max-width: 68ch;
+  }
+
+  section + section {
+    margin-top: var(--space-8);
+  }
+
+  h2 {
+    margin-bottom: var(--space-3);
+  }
+
+  ul {
+    display: grid;
+    gap: var(--space-2);
+  }
+</style>

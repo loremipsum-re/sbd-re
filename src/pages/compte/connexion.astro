@@ -1,0 +1,73 @@
+---
+/**
+ * Se connecter. Le serveur ne dit pas lequel de l'adresse ou du mot de passe
+ * est faux, et freine les essais en série (public/api/connexion.php).
+ *
+ * Page `prive` : ni indexée, ni mesurée.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/compte.css';
+---
+
+<BaseLayout
+  titre="Se connecter"
+  description="Se connecter à son compte SBD.re."
+  prive
+>
+  <div class="wrap page-compte">
+    <div class="colonne">
+      <header class="entete-page">
+        <h1>Se connecter</h1>
+      </header>
+
+      <noscript>
+        <p class="aide">Ce formulaire demande JavaScript.</p>
+      </noscript>
+
+      <form class="form-compte" data-connexion novalidate>
+        <div class="champ">
+          <label for="courriel">Adresse électronique</label>
+          <input id="courriel" name="courriel" type="email" required autocomplete="email" />
+        </div>
+
+        <div class="champ">
+          <label for="mot-de-passe">Mot de passe</label>
+          <input
+            id="mot-de-passe"
+            name="mot_de_passe"
+            type="password"
+            required
+            autocomplete="current-password"
+          />
+        </div>
+
+        <div class="actions">
+          <button type="submit">Se connecter</button>
+        </div>
+
+        <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+      </form>
+
+      <ul class="liens-compte">
+        <li><a href="/compte/mot-de-passe/">Mot de passe oublié</a></li>
+        <li><a href="/compte/inscription/">Pas encore de compte ? En créer un</a></li>
+      </ul>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { api, brancher, champ } from '../../lib/api-compte';
+
+  const form = document.querySelector<HTMLFormElement>('[data-connexion]')!;
+
+  brancher(
+    form,
+    (donnees) =>
+      api('/api/connexion.php', 'POST', {
+        courriel: champ(donnees, 'courriel'),
+        mot_de_passe: champ(donnees, 'mot_de_passe'),
+      }),
+    () => location.assign('/compte/'),
+  );
+</script>

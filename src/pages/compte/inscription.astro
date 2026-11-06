@@ -1,0 +1,129 @@
+---
+/**
+ * Créer un compte. Le pseudo sert aussi d'adresse au profil public, d'où le
+ * format Instagram : un membre y reprend son nom tel quel.
+ *
+ * Page `prive` : ni indexée, ni mesurée, absente du plan de site et du menu
+ * jusqu'à l'ouverture de la communauté (docs/comptes.md, phase 9).
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/compte.css';
+---
+
+<BaseLayout
+  titre="Créer un compte"
+  description="Créer un compte sur SBD.re avec un pseudo, une adresse électronique et un mot de passe."
+  prive
+>
+  <div class="wrap page-compte">
+    <div class="colonne">
+      <header class="entete-page">
+        <h1>Créer un compte</h1>
+        <p class="chapeau">
+          Un pseudo, une adresse et un mot de passe suffisent. Votre pseudo devient
+          l'adresse de votre profil public.
+        </p>
+      </header>
+
+      <noscript>
+        <p class="aide">Ce formulaire demande JavaScript.</p>
+      </noscript>
+
+      <form class="form-compte" data-inscription novalidate>
+        <div class="champ">
+          <label for="pseudo">Pseudo</label>
+          <input
+            id="pseudo"
+            name="pseudo"
+            type="text"
+            required
+            minlength="3"
+            maxlength="30"
+            autocomplete="username"
+            autocapitalize="none"
+            spellcheck="false"
+            aria-describedby="aide-pseudo"
+          />
+          <p class="aide" id="aide-pseudo">
+            3 à 30 caractères : lettres sans accent, chiffres, point et tiret bas.
+            Votre nom Instagram convient tel quel. Le pseudo ne change plus ensuite.
+          </p>
+        </div>
+
+        <div class="champ">
+          <label for="courriel">Adresse électronique</label>
+          <input
+            id="courriel"
+            name="courriel"
+            type="email"
+            required
+            maxlength="254"
+            autocomplete="email"
+            aria-describedby="aide-courriel"
+          />
+          <p class="aide" id="aide-courriel">
+            Elle reçoit le lien de confirmation et reste invisible sur le site.
+          </p>
+        </div>
+
+        <div class="champ">
+          <label for="mot-de-passe">Mot de passe</label>
+          <input
+            id="mot-de-passe"
+            name="mot_de_passe"
+            type="password"
+            required
+            minlength="10"
+            autocomplete="new-password"
+            aria-describedby="aide-mot-de-passe"
+          />
+          <p class="aide" id="aide-mot-de-passe">
+            10 caractères au moins. Une courte phrase fait un bon mot de passe.
+          </p>
+        </div>
+
+        <label class="case">
+          <input name="charte" type="checkbox" required />
+          <span>
+            J'ai 18 ans ou plus et j'accepte la{' '}
+            <a href="/communaute/charte/">charte de la communauté</a>.
+          </span>
+        </label>
+
+        <div class="appat" aria-hidden="true">
+          <label for="site">Ne remplissez pas ce champ</label>
+          <input id="site" name="site" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+
+        <div class="actions">
+          <button type="submit">Créer mon compte</button>
+        </div>
+
+        <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+      </form>
+
+      <ul class="liens-compte">
+        <li><a href="/compte/connexion/">Déjà inscrit ? Se connecter</a></li>
+      </ul>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { api, brancher, champ } from '../../lib/api-compte';
+
+  const form = document.querySelector<HTMLFormElement>('[data-inscription]')!;
+
+  brancher(
+    form,
+    (donnees) =>
+      api('/api/inscription.php', 'POST', {
+        pseudo: champ(donnees, 'pseudo'),
+        courriel: champ(donnees, 'courriel'),
+        mot_de_passe: champ(donnees, 'mot_de_passe'),
+        charte: donnees.get('charte') === 'on',
+        site: champ(donnees, 'site'),
+      }),
+    () => location.assign('/compte/'),
+  );
+</script>
