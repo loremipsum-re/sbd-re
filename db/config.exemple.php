@@ -81,9 +81,24 @@ return [
                     . 'NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION',
     ],
 
-    // Rien d'autre ici. Les durées de session et l'expéditeur des courriels
-    // sont des règles du site, versionnées dans le code : lib/session.php et
-    // lib/courriel.php. Ce fichier ne garde que ce qui est propre au serveur
-    // et secret. Les anciennes clés `session`, `connexion`, `jetons`, `google`,
-    // `courriel` et `smtp` d'un config.php déjà déposé sont ignorées.
+    // -------------------------------------------------------------------------
+    // Envoi des courriels par SMTP authentifié
+    // -------------------------------------------------------------------------
+    // Le mot de passe de la boîte no-reply@sbd.re, à créer dans l'espace client
+    // OVH (E-mails, MX Plan, inclus dans l'hébergement). Avec lui, les
+    // courriels partent des serveurs de messagerie d'OVH, signés DKIM si DKIM
+    // est activé pour sbd.re : iCloud refuse ceux de mail(), qui ne le sont
+    // pas. Sans lui, ou en cas d'échec, le site repasse par mail().
+    //
+    // L'identifiant, le serveur et le port sont écrits dans lib/courriel.php :
+    // l'identifiant EST l'expéditeur, comme OVH l'exige.
+    'smtp' => [
+        'mot_de_passe' => 'a-completer',
+    ],
+
+    // Rien d'autre ici. Les durées de session sont des règles du site,
+    // versionnées dans lib/session.php. Ce fichier ne garde que ce qui est
+    // propre au serveur et secret. Les anciennes clés `session`, `connexion`,
+    // `jetons`, `google` et `courriel` d'un config.php déjà déposé sont
+    // ignorées, comme `smtp.hote`, `smtp.port` et `smtp.utilisateur`.
 ];

@@ -136,9 +136,10 @@ des serveurs que le SPF autorise. Réglages dans `db/config.exemple.php`, sectio
 
 ### PHPMailer, première dépendance tierce du projet
 
-> **Retiré le 6 novembre 2026.** `mail()` passe depuis le site, prouvé en
-> production le 10 septembre. Voir [comptes.md](comptes.md), phase 2. Ce qui
-> suit reste comme trace de la décision de juillet.
+> **Retiré le matin du 6 novembre 2026, revenu le soir même.** iCloud refuse
+> les messages de `mail()`, qu'OVH ne signe pas en DKIM. La boîte est
+> désormais `no-reply@sbd.re` sur `smtp.mail.ovh.net`, et seul le mot de passe
+> reste dans `config.php`. Voir l'en-tête de `public/api/lib/courriel.php`.
 
 Choisie par l'auteur le 30 juillet 2026. C'est la bibliothèque que **WordPress
 emploie lui-même**, donc un terrain qu'il connaît, et elle est éprouvée par des

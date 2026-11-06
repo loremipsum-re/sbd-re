@@ -44,7 +44,7 @@ salons créés par les membres.
 | Âge minimum 15 ans, tranches d'âge | 18 ans et plus, une case à cocher à l'inscription | Demande de l'auteur. Plus de mineurs, plus de tranche à gérer. |
 | Nom réel facultatif, pseudo, slug | Pseudo seul, qui sert aussi d'adresse | Un champ au lieu de quatre. |
 | Courriel et Google | Courriel seul | Google demande un projet Cloud et un secret. À ajouter plus tard si besoin. |
-| PHPMailer et SMTP | `mail()`, comme les formulaires | Prouvé en production depuis le 10 septembre. Une dépendance de moins. |
+| PHPMailer et SMTP | PHPMailer et SMTP, `mail()` en repli | `mail()` retenu le matin, abandonné le soir : iCloud refuse ses messages non signés DKIM, « [HM08] ». |
 | Modération avant publication | Publication immédiate, vérification après | Les badges remplacent la file d'attente. |
 | Classement par mouvement et par sexe | Records sur le profil, aucun classement | Demande de l'auteur : « et c'est tout ». |
 | Tranches de poids et de taille, sexe | Catégorie de poids facultative, ni taille ni sexe | Moins de données collectées, rien à classer. |
