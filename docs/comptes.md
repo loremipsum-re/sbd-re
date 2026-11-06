@@ -474,11 +474,27 @@ Choix faits en écrivant, à connaître :
 
 ### Phase 4, les profils publics
 
-- [ ] Gabarit Astro `/membres/-gabarit/`, exclu du plan de site.
-- [ ] `profil-page.php`, règle du `.htaccess`, `sitemap-membres.php`,
-      ligne `Sitemap` dans `robots.txt`.
+- [x] Gabarit Astro `/membres/-gabarit/`, exclu du plan de site, huit repères
+      `%%NOM%%` que PHP remplace en un seul passage (`strtr`).
+- [x] `profil-page.php` sur `lib/profil.php`, dont `rendreProfil()` est pure ;
+      règles du `.htaccess` ; `sitemap-membres.php` servi à
+      `/sitemap-membres.xml` et déclaré dans l'index par `customSitemaps`,
+      plutôt qu'une ligne de plus dans `robots.txt`.
+- [x] Les salles viennent de `/api/salles.json`, généré par Astro depuis la
+      collection de `/salles/`.
+- [x] En local, le 7 novembre : deux profils inventés rendus avec le vrai
+      gabarit, 16 contrôles verts (présentation piégée affichée en texte,
+      JSON-LD lisible, adresse canonique, `noindex` sans performance,
+      Instagram selon la case, salle disparue ignorée), mesurés à 375 et
+      1 280 px dans les deux thèmes, liens de la fiche à 44 px.
 - [ ] **Fini quand** un profil s'affiche au dessin du site, en clair et en
       sombre, et que le validateur de données structurées de Google l'accepte.
+      Le `.htaccess` modifié s'éprouve en ligne juste après le déploiement.
+
+**Le nom Instagram est distinct du pseudo**, demande de l'auteur du
+7 novembre : il se pose dans `/compte/`, unique, et se change une fois tous
+les six mois. Le retirer reste libre, sans remettre l'horloge à zéro.
+`db/migration-2026-11-07.sql` ajoute ses colonnes à une base déjà chargée.
 
 ### Phase 5, les performances
 
@@ -539,3 +555,25 @@ Réponses de l'auteur, reportées dans les sections concernées.
 4. **Les cinq salons restent**, sujets libres dans chacun. Section 6.4.
 5. **Smileys d'époque**, les codes phpBB, affichés avec les images de phpBB
    en SVG, au lieu d'une barre d'emojis. Section 6.4.
+
+---
+
+## 12. Demandes du 7 novembre, à organiser
+
+Notées telles que l'auteur les a formulées. Chacune se planifie à part,
+avec ses questions, avant d'écrire une ligne.
+
+- **Le pseudo se change une fois par an, sauf demande spéciale à l'admin.**
+  Les colonnes `pseudo_precedent` et `date_pseudo` sont déjà dans
+  `db/migration-2026-11-07.sql`. Reste la règle, et le renvoi de l'ancienne
+  adresse de profil vers la nouvelle. Prochaine PR.
+- **Un forum « comme dans l'ancien temps »**, que le profil accompagnera :
+  catégories, sujets, réponses. Un premier forum dédié à l'haltéro, puis des
+  forums publics que les membres créent sur des sujets précis. À trancher
+  au moment de le planifier : « haltéro » désigne-t-il l'haltérophilie ou la
+  musculation en général ; le forum remplace-t-il le chat de la phase 7 ou
+  s'y ajoute-t-il ; qui peut créer un forum, et qui le modère.
+- **Un fil d'actualité** sur ce forum.
+- **Des avatars personnalisés, en 300 × 300**, fournis par chaque membre.
+  Plus tard : une image envoyée par un visiteur demande un contrôle de
+  format et de contenu, et sort du « texte seul » de la version 1.
