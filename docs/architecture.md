@@ -140,9 +140,11 @@ et PHPMailer retiré. Le soir, le premier lien de confirmation vers iCloud
 revient refusé, « 554 5.7.1 [HM08] Message rejected due to local policy ».
 La documentation d'OVH l'explique : `mail()` part des serveurs de
 l'hébergement sans signature DKIM, que seul le SMTP authentifié d'une boîte
-du domaine apporte. `lib/courriel.php` envoie donc par SMTP sur
-`no-reply@sbd.re`, et garde `mail()` en repli pour que les formulaires ne
-tombent pas avec une boîte mal réglée.
+du domaine apporte. Mais ce SMTP est injoignable depuis l'hébergement, ports
+465 et 587 refusés, mesuré en SSH le même soir. `lib/courriel.php` garde donc
+`mail()` et signe lui-même, avec une clé rangée dans `~/sbd-re-prive/` et
+publiée dans le DNS. Point fragile : la clé vit sur le serveur seul, et
+`db/dkim.php` la recrée si elle disparaît, avec un nouvel enregistrement DNS.
 
 ### 4.4 Aucune alerte
 

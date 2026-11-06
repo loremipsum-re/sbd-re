@@ -3,28 +3,30 @@
  * Envoi de courriels, pour les formulaires comme pour les comptes.
  *
  * -----------------------------------------------------------------------------
- * SMTP AUTHENTIFIÉ D'ABORD, mail() EN REPLI
+ * mail(), SIGNÉ DKIM PAR LE SITE LUI-MÊME
  * -----------------------------------------------------------------------------
- * Mesuré le 6 novembre 2026 : iCloud refuse le lien de confirmation envoyé par
- * mail(), « 554 5.7.1 [HM08] Message rejected due to local policy ». La
- * documentation d'OVH le dit : mail() part des serveurs de l'hébergement SANS
- * signature DKIM, et Apple authentifie chaque message entrant par SPF et DKIM.
- * Le formulaire de partenariat passait, parce que sa boîte de réception, chez
- * loremipsum.re, est moins sévère.
+ * Mesuré le 6 novembre 2026 : iCloud refuse les messages de mail(),
+ * « 554 5.7.1 [HM08] Message rejected due to local policy ». OVH ne signe
+ * pas en DKIM ce qui part de l'hébergement, et Apple authentifie chaque
+ * message entrant par SPF et DKIM.
  *
- * Le SMTP authentifié sur la boîte no-reply@sbd.re (MX Plan, inclus dans
- * l'hébergement) fait partir le message des serveurs de messagerie d'OVH,
- * signé DKIM quand DKIM est activé pour le domaine. C'est la voie que la
- * documentation d'OVH recommande. Il s'active dès que `config.php` porte le
- * mot de passe de la boîte, section `smtp`. Sans lui, mail() reste en place :
- * les formulaires ne cassent pas pendant la bascule.
+ * Le SMTP authentifié d'OVH, qui signe, a été essayé le même soir : depuis
+ * l'hébergement, smtp.mail.ovh.net et ssl0.ovh.net refusent la connexion sur
+ * 465 comme sur 587 (« Connection refused »), alors qu'ils répondent
+ * d'ailleurs. Le réseau de l'hébergement les bloque.
  *
- * PHPMailer revient pour cela, version 7.1.1, licence LGPL 2.1, retiré le
- * matin même : l'authentification et le chiffrement d'un échange SMTP sont
- * le genre de code qu'on n'écrit pas soi-même sans bonne raison.
+ * Le site signe donc lui-même : PHPMailer pose la signature DKIM avec une clé
+ * privée rangée dans ~/sbd-re-prive/, à côté de config.php, et la clé
+ * publique est publiée dans le DNS sous le sélecteur `sbdre`. La signature
+ * porte le domaine sbd.re, celui de l'expéditeur : DMARC est aligné. Sans clé
+ * sur le serveur, le message part quand même, non signé, comme avant.
+ * db/dkim.php crée la clé et vérifie le DNS.
+ *
+ * PHPMailer 7.1.1, licence LGPL 2.1 : la signature DKIM et l'encodage des
+ * en-têtes sont le genre de code qu'on n'écrit pas soi-même sans bonne raison.
  *
  * TROIS RÈGLES, éprouvées par contact.php :
- *   - l'expéditeur est une adresse du domaine, et en SMTP celle du compte ;
+ *   - l'expéditeur est une adresse du domaine ;
  *   - aucune donnée libre du visiteur n'entre dans un en-tête, seul Reply-To
  *     porte une adresse, validée ici même ;
  *   - le corps part en quoted-printable, replié à 76 caractères.
@@ -39,30 +41,18 @@ if (!defined('SBDRE_API')) {
     exit;
 }
 
-require_once __DIR__ . '/configuration.php';
-
-/** Expéditeur, et identifiant de la boîte en SMTP. Doit appartenir au domaine. */
+/** Expéditeur. Doit appartenir au domaine, pour SPF comme pour DKIM. */
 const EXPEDITEUR = 'no-reply@sbd.re';
 const NOM_EXPEDITEUR = 'SBD.re';
 
-/** Le serveur d'envoi des boîtes MX Plan, selon la documentation d'OVH. */
-const SMTP_HOTE = 'smtp.mail.ovh.net';
-const SMTP_PORT = 465;
+/** La signature DKIM : domaine signataire et sélecteur publié dans le DNS. */
+const DKIM_DOMAINE = 'sbd.re';
+const DKIM_SELECTEUR = 'sbdre';
 
-/**
- * Le mot de passe de la boîte no-reply@sbd.re, ou '' si le SMTP n'est pas
- * configuré. Un config.php absent ne casse rien : les formulaires repassent
- * par mail(), comme avant.
- */
-function motDePasseSmtp(): string
+/** La clé privée, hors de portée du web et du déploiement, comme config.php. */
+function cheminCleDkim(): string
 {
-    try {
-        $valeur = (string) config_val('smtp.mot_de_passe', '');
-    } catch (\RuntimeException) {
-        return '';
-    }
-
-    return str_starts_with($valeur, 'a-completer') ? '' : $valeur;
+    return dirname(__DIR__, 3) . '/sbd-re-prive/dkim-prive.pem';
 }
 
 /**
@@ -82,94 +72,64 @@ function envoyerCourriel(string $destinataire, string $sujet, string $corps, str
             return false;
         }
     }
-    $sujet = str_replace(["\r", "\n"], ' ', $sujet);
 
-    $motDePasse = motDePasseSmtp();
-
-    // Un SMTP qui échoue (mot de passe changé, boîte supprimée) laisse sa
-    // raison au journal, puis le message tente mail() : le formulaire de
-    // partenariat ne doit pas tomber pour une boîte mal réglée.
-    return ($motDePasse !== '' && envoyerParSmtp($destinataire, $sujet, $corps, $repondreA, $motDePasse))
-        || envoyerParMail($destinataire, $sujet, $corps, $repondreA);
-}
-
-/** Par la boîte no-reply@sbd.re, sur les serveurs de messagerie d'OVH. */
-function envoyerParSmtp(string $destinataire, string $sujet, string $corps, string $repondreA, string $motDePasse): bool
-{
-    require_once __DIR__ . '/phpmailer/Exception.php';
-    require_once __DIR__ . '/phpmailer/PHPMailer.php';
-    require_once __DIR__ . '/phpmailer/SMTP.php';
-
-    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+    $mail = preparerCourriel($destinataire, $sujet, $corps, $repondreA);
 
     try {
-        $mail->isSMTP();
-        $mail->Host       = SMTP_HOTE;
-        $mail->Port       = SMTP_PORT;
-        $mail->SMTPAuth   = true;
-        $mail->Username   = EXPEDITEUR;
-        $mail->Password   = $motDePasse;
-        // Chiffré de bout en bout : le mot de passe ne circule jamais en clair.
-        $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
-        $mail->Timeout    = 15;
-        $mail->CharSet    = 'UTF-8';
-        $mail->Encoding   = 'quoted-printable';
-
-        $mail->setFrom(EXPEDITEUR, NOM_EXPEDITEUR);
-        $mail->addAddress($destinataire);
-        if ($repondreA !== '') {
-            $mail->addReplyTo($repondreA);
-        }
-        $mail->isHTML(false);
-        $mail->Subject = $sujet;
-        $mail->Body    = $corps;
-
         $mail->send();
 
         return true;
     } catch (\Throwable $e) {
-        // ErrorInfo dit ce que le serveur a répondu, sans le mot de passe.
-        noterRefus($destinataire, 'SMTP : ' . ($mail->ErrorInfo !== '' ? $mail->ErrorInfo : $e->getMessage()));
+        noterRefus($destinataire, $mail->ErrorInfo !== '' ? $mail->ErrorInfo : $e->getMessage());
 
         return false;
     }
 }
 
-/** Par mail(), depuis les serveurs de l'hébergement, sans signature DKIM. */
-function envoyerParMail(string $destinataire, string $sujet, string $corps, string $repondreA): bool
+/**
+ * Le message prêt à partir, signé si la clé est là. Séparé de l'envoi pour
+ * que db/dkim.php puisse produire un message signé et en vérifier la
+ * signature, sans rien envoyer.
+ */
+function preparerCourriel(string $destinataire, string $sujet, string $corps, string $repondreA = ''): \PHPMailer\PHPMailer\PHPMailer
 {
-    $entetes = ['From: ' . NOM_EXPEDITEUR . ' <' . EXPEDITEUR . '>'];
+    require_once __DIR__ . '/phpmailer/Exception.php';
+    require_once __DIR__ . '/phpmailer/PHPMailer.php';
+
+    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+    $mail->isMail();
+    $mail->CharSet  = 'UTF-8';
+    $mail->Encoding = 'quoted-printable';
+    $mail->XMailer  = 'sbd.re';
+
+    // L'expéditeur d'enveloppe, le « -f » passé à mail() : les refus
+    // reviennent à no-reply@sbd.re, et SPF juge ce domaine.
+    $mail->setFrom(EXPEDITEUR, NOM_EXPEDITEUR);
+    $mail->Sender = EXPEDITEUR;
+
+    $mail->addAddress($destinataire);
     if ($repondreA !== '') {
-        $entetes[] = 'Reply-To: ' . $repondreA;
-    }
-    array_push(
-        $entetes,
-        'Content-Type: text/plain; charset=UTF-8',
-        'Content-Transfer-Encoding: quoted-printable',
-        'MIME-Version: 1.0',
-        'X-Mailer: sbd.re',
-    );
-
-    // Un en-tête ne contient que de l'ASCII : les accents du sujet passent en
-    // forme codée =?UTF-8?B?…?=, que tout client décode.
-    $sujet = mb_encode_mimeheader($sujet, 'UTF-8', 'B');
-
-    // quoted_printable_encode ne reconnaît que CRLF comme fin de ligne : un \n
-    // seul serait codé =0A, réservé aux données binaires. On unifie avant.
-    $corps = quoted_printable_encode(preg_replace('/\r\n|\r|\n/', "\r\n", $corps) ?? $corps);
-
-    $envoye = @mail($destinataire, $sujet, $corps, implode("\r\n", $entetes), '-f' . EXPEDITEUR);
-
-    if (!$envoye) {
-        noterRefus($destinataire, 'mail() : ' . (error_get_last()['message'] ?? 'sans détail'));
+        $mail->addReplyTo($repondreA);
     }
 
-    return $envoye;
+    $mail->isHTML(false);
+    $mail->Subject = str_replace(["\r", "\n"], ' ', $sujet);
+    $mail->Body    = $corps;
+
+    if (is_readable(cheminCleDkim())) {
+        $mail->DKIM_domain     = DKIM_DOMAINE;
+        $mail->DKIM_selector   = DKIM_SELECTEUR;
+        $mail->DKIM_private    = cheminCleDkim();
+        $mail->DKIM_passphrase = '';
+        $mail->DKIM_identity   = EXPEDITEUR;
+    }
+
+    return $mail;
 }
 
 /**
  * Note pourquoi un envoi a été refusé. Sans cette ligne, un refus ne laisse
- * aucune trace : `@` étouffe l'avertissement de mail().
+ * aucune trace.
  *
  * Dans ~/sbd-re-prive/courriels-refuses.log, hors de portée du web et lisible
  * en SSH, sinon dans le journal d'erreurs de PHP. Le domaine du destinataire
