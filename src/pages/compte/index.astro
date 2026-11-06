@@ -36,6 +36,9 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
 
       <section data-compte hidden>
         <h2>Profil</h2>
+        <ul class="liens-compte">
+          <li><a href="/compte/" data-lien-profil>Voir mon profil public</a></li>
+        </ul>
         <form class="form-compte" data-profil novalidate>
           <div class="champ">
             <label for="bio">Présentation <span class="aide">facultatif</span></label>
@@ -54,9 +57,27 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
             </select>
           </div>
 
+          <div class="champ">
+            <label for="instagram">Nom Instagram <span class="aide">facultatif</span></label>
+            <input
+              id="instagram"
+              name="instagram"
+              type="text"
+              maxlength="60"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              aria-describedby="aide-instagram"
+            />
+            <p class="aide" id="aide-instagram" data-aide-instagram>
+              Distinct de votre pseudo. Il se change une fois tous les six mois,
+              et se retire à tout moment.
+            </p>
+          </div>
+
           <label class="case">
             <input name="instagram_visible" type="checkbox" />
-            <span data-libelle-instagram>Afficher le lien vers mon Instagram</span>
+            <span>Afficher le lien vers mon Instagram sur mon profil</span>
           </label>
 
           <div class="actions">
@@ -112,6 +133,9 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
   interface Compte {
     pseudo: string;
     courriel: string;
+    instagram: string | null;
+    /** « 7 mai 2027 », ou '' quand un nouveau nom est déjà accepté. */
+    instagram_prochain: string;
     instagram_visible: number;
     bio: string | null;
     salle: string | null;
@@ -134,16 +158,22 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
 
     profil.querySelector<HTMLTextAreaElement>('[name="bio"]')!.value = compte.bio ?? '';
     profil.querySelector<HTMLSelectElement>('[name="salle"]')!.value = compte.salle ?? '';
+    profil.querySelector<HTMLInputElement>('[name="instagram"]')!.value = compte.instagram ?? '';
     profil.querySelector<HTMLInputElement>('[name="instagram_visible"]')!.checked =
       compte.instagram_visible === 1;
-    document.querySelector('[data-libelle-instagram]')!.textContent =
-      `Afficher le lien vers instagram.com/${compte.pseudo}`;
+    document.querySelector<HTMLAnchorElement>('[data-lien-profil]')!.href =
+      `/membres/${compte.pseudo}/`;
+    if (compte.instagram_prochain !== '') {
+      document.querySelector('[data-aide-instagram]')!.textContent =
+        `Distinct de votre pseudo. Prochain changement possible le ${compte.instagram_prochain}. Il se retire à tout moment.`;
+    }
   });
 
   brancher(profil, (donnees) =>
     api('/api/moi.php', 'PATCH', {
       bio: champ(donnees, 'bio'),
       salle: champ(donnees, 'salle'),
+      instagram: champ(donnees, 'instagram'),
       instagram_visible: donnees.get('instagram_visible') === 'on',
     }),
   );

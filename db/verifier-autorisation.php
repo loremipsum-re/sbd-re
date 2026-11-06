@@ -295,6 +295,25 @@ verifie('Mise en minuscules',              \SBDRE\normaliserCourriel(' Jean@Exem
 verifie('Adresse sans arobase refusée',    \SBDRE\normaliserCourriel('jean.exemple.re') === '',      true);
 verifie('Retour à la ligne refusé',        \SBDRE\normaliserCourriel("jean@exemple.re\nBcc: x@y.z") === '', true);
 
+titre('Nom Instagram, distinct du pseudo');
+
+verifie('« @Jean.Force » devient « jean.force »',      \SBDRE\normaliserInstagram(' @Jean.Force ') === 'jean.force', true);
+verifie('Une adresse instagram.com donne le nom',     \SBDRE\normaliserInstagram('https://www.instagram.com/jean_93/?hl=fr') === 'jean_93', true);
+verifie('« j » seul est un nom valide',               \SBDRE\instagramValide('j'),                  true);
+verifie('Tiret refusé',                               \SBDRE\instagramValide('jean-force'),         false);
+verifie('Points seuls refusés',                       \SBDRE\instagramValide('..'),                 false);
+verifie('31 caractères refusés',                      \SBDRE\instagramValide(str_repeat('a', 31)),  false);
+verifie('Retour à la ligne final refusé',             \SBDRE\instagramValide("jean\n"),             false);
+verifie('Premier nom : accepté tout de suite',        \SBDRE\prochainInstagram(null, $maintenant) === 0, true);
+verifie('Changé il y a 5 mois : refusé',
+    \SBDRE\prochainInstagram(date('Y-m-d H:i:s', strtotime('-5 months', $maintenant)), $maintenant) > 0, true);
+verifie('Changé il y a 6 mois pile : accepté',
+    \SBDRE\prochainInstagram(date('Y-m-d H:i:s', strtotime('-6 months', $maintenant)), $maintenant) === 0, true);
+verifie('Changé le 6 novembre : prochain le 6 mai',
+    \SBDRE\dateFr(\SBDRE\prochainInstagram('2026-11-06 12:00:00', $maintenant)) === '6 mai 2027', true);
+verifie('Le premier du mois s\'écrit « 1er »',        \SBDRE\dateFr(strtotime('2027-05-01 10:00:00')) === '1er mai 2027', true);
+verifie('Sans le jour : « novembre 2026 »',           \SBDRE\dateFr($maintenant, false) === 'novembre 2026', true);
+
 titre('Domaines qui refusent nos courriels');
 
 verifie('icloud.com injoignable',          \SBDRE\adresseInjoignable(\SBDRE\normaliserCourriel('Jean@iCloud.com')), true);
