@@ -445,7 +445,7 @@ pas. Une ligne à ajouter si l'auteur en décide autrement.
       d'entrée sur un serveur PHP, chacun avec la réponse attendue jusqu'à la
       base (méthode, origine, appât, chaque refus de forme, jeton mal formé,
       cookie). Pages mesurées à 375 px : aucun débordement, contrôles à 44 px.
-- [ ] **Fini quand** un compte se crée, se vérifie par le courriel reçu, se
+- [x] **Fini le 7 novembre 2026**, vérifié par l'auteur avec une adresse Gmail : création, courriel reçu, confirmation, connexion, profil, déconnexion, mot de passe oublié, effacement. **Fini quand** un compte se crée, se vérifie par le courriel reçu, se
       connecte, se modifie et s'efface, en production.
 
 Choix faits en écrivant, à connaître :
