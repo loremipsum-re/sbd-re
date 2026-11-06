@@ -164,14 +164,25 @@ Gardées comme les autres par leur `.htaccess` et par `SBDRE_API`.
 ```
 formulaire ──> inscription.php ──> mail() avec lien ──> verifier.php
  pseudo            compte créé,         valable 24 h        courriel_verifie = 1
- courriel          non vérifié                                    │
- mot de passe                                                     ▼
+ courriel          non confirmé,                                  │
+ mot de passe      sans session                                   ▼
  case « 18 ans et plus, j'accepte la charte »              connexion, profil
 ```
 
-Sans adresse vérifiée, le membre se connecte mais ne peut ni publier, ni
-voter, ni entrer dans le chat. Freinage : 3 inscriptions par heure et par IP,
-compté dans `membre.ip_inscription`.
+**Rien n'est utilisable avant le clic**, choix de l'auteur du 6 novembre :
+« je ne veux pas de poubelle ». Un compte non confirmé n'ouvre aucune
+session. Au bon mot de passe, la connexion lui renvoie un lien, trois par
+heure au plus. Il s'efface au bout de 24 heures, et chaque inscription fait ce
+ménage en passant. Si le courriel ne part pas, le compte s'efface aussitôt.
+
+**Anti-spam maison**, choix du même jour, sans service tiers : champ appât
+sur les quatre formulaires de compte, délai minimal de 3 secondes à
+l'inscription, 3 inscriptions par heure et par IP, freinage des connexions
+et des liens.
+
+**Un envoi refusé laisse une trace** : `noterRefus()` écrit la raison dans
+`~/sbd-re-prive/courriels-refuses.log`, avec le seul domaine du
+destinataire.
 
 ### 6.2 Profil public
 
@@ -339,6 +350,9 @@ Chacun de ces gestes **doit** être refusé avant l'ouverture.
 | Lien vidéo hors Instagram, YouTube, TikTok | refus |
 | Se connecter avec un compte banni | refus |
 | Réutiliser un lien de vérification ou de réinitialisation | refus |
+| Se connecter sans avoir confirmé son adresse | pas de session, un nouveau lien |
+| Retrouver un compte non confirmé de plus de 24 heures | effacé |
+| Envoyer l'inscription moins de 3 secondes après l'affichage | refus |
 | Injecter du HTML dans une présentation ou un message | affiché tel quel, jamais interprété |
 | Injecter du SQL dans un champ | aucun effet |
 | Demander `config.php` ou `lib/` en HTTP | refus |
@@ -426,8 +440,8 @@ Choix faits en écrivant, à connaître :
 - **Les pages de compte portent `prive`** (`BaseLayout`) : `noindex`, hors
   du plan de site, et Clarity n'y est jamais chargé, même après
   consentement. Elles restent hors du menu jusqu'à la phase 9.
-- **L'inscription ouvre la session** : le membre arrive sur `/compte/`, d'où
-  il redemande le lien si le courriel tarde.
+- ~~L'inscription ouvre la session~~ : remplacé le 6 novembre par la
+  confirmation d'abord, section 6.1.
 - **Une adresse déjà inscrite se dit telle quelle.** La taire obligerait à
   écrire au titulaire à chaque essai, ce qui ferait du formulaire un moyen
   d'inonder sa boîte. La demande de mot de passe, elle, répond toujours la

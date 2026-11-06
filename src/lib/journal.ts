@@ -50,6 +50,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-06',
+    nature: 'correction',
+    version: '1.9.5',
+    titre: "Un compte membre s'active par courriel",
+    texte:
+      "Un compte en essai devient utilisable au clic sur le lien reçu par courriel. Sans ce clic, il s'efface au bout de 24 heures. Les formulaires de compte repèrent aussi les envois automatiques.",
+  },
+  {
+    date: '2026-11-06',
     nature: 'fonction',
     version: '1.9.4',
     titre: 'Les comptes membres, en essai',

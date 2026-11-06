@@ -199,7 +199,7 @@ function exigerOrigine(): void
  *
  * L'identité vient du COOKIE, vérifié en base, jamais du corps de la requête :
  * un champ `membre_id` envoyé par le navigateur n'est lu nulle part. Un membre
- * banni n'a plus de session, même si son jeton n'est pas encore effacé.
+ * banni ou non confirmé n'a pas de session, même avec un jeton en base.
  *
  * @return array<string, mixed>|null
  */
@@ -225,6 +225,7 @@ function membreCourant(): ?array
           WHERE j.jeton_hash = :empreinte
             AND j.type = 'session'
             AND j.date_expiration > NOW()
+            AND m.courriel_verifie = 1
             AND m.banni = 0",
         ['empreinte' => hash('sha256', $jeton)],
     );

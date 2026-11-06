@@ -68,5 +68,34 @@ function envoyerCourriel(string $destinataire, string $sujet, string $corps, str
     // seul serait codé =0A, réservé aux données binaires. On unifie avant.
     $corps = quoted_printable_encode(preg_replace('/\r\n|\r|\n/', "\r\n", $corps) ?? $corps);
 
-    return @mail($destinataire, $sujet, $corps, implode("\r\n", $entetes), '-f' . EXPEDITEUR);
+    $envoye = @mail($destinataire, $sujet, $corps, implode("\r\n", $entetes), '-f' . EXPEDITEUR);
+
+    if (!$envoye) {
+        noterRefus($destinataire);
+    }
+
+    return $envoye;
+}
+
+/**
+ * Note pourquoi le serveur a refusé un envoi. Sans cette ligne, un courriel
+ * refusé ne laisse aucune trace : `@` étouffe l'avertissement de mail().
+ *
+ * Dans ~/sbd-re-prive/courriels-refuses.log, hors de portée du web et lisible
+ * en SSH, sinon dans le journal d'erreurs de PHP. Le domaine du destinataire
+ * suffit au diagnostic : l'adresse entière n'y entre pas.
+ */
+function noterRefus(string $destinataire): void
+{
+    $ligne = sprintf(
+        "%s  mail() refusé vers %s : %s\n",
+        date('c'),
+        substr((string) strrchr($destinataire, '@'), 1),
+        error_get_last()['message'] ?? 'sans détail',
+    );
+
+    $dossier = dirname(__DIR__, 3) . '/sbd-re-prive';
+    if (!is_dir($dossier) || !@error_log($ligne, 3, $dossier . '/courriels-refuses.log')) {
+        error_log('SBD.re : ' . trim($ligne));
+    }
 }

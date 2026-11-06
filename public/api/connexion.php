@@ -9,6 +9,9 @@
  * LA RÉPONSE NE DIT PAS LEQUEL DES DEUX EST FAUX. « Adresse ou mot de passe
  * incorrect », et le même temps de calcul dans les deux cas, grâce à
  * l'empreinte factice. Un compte banni ne se dit tel qu'au bon mot de passe.
+ *
+ * UN COMPTE NON CONFIRMÉ N'OUVRE PAS DE SESSION : au bon mot de passe, il
+ * reçoit un nouveau lien de confirmation, et c'est tout.
  */
 
 declare(strict_types=1);
@@ -23,6 +26,11 @@ $methode = ouvrirApi(['POST', 'DELETE']);
 if ($methode === 'DELETE') {
     fermerSession();
     repondreOk('Vous êtes déconnecté.');
+}
+
+// Champ appât : un robot reçoit la réponse d'un mauvais mot de passe.
+if (texte('site') !== '') {
+    refuser(401, 'Adresse ou mot de passe incorrect.');
 }
 
 $courriel = normaliserCourriel(texte('courriel'));
@@ -42,7 +50,7 @@ if ((int) ($echecs['par_courriel'] ?? 0) >= ECHECS_PAR_COURRIEL || (int) ($echec
 }
 
 $membre = $courriel === '' ? null : ligne(
-    'SELECT id, mot_de_passe_hash, banni FROM membre WHERE courriel = :c',
+    'SELECT id, pseudo, mot_de_passe_hash, courriel_verifie, banni FROM membre WHERE courriel = :c',
     ['c' => $courriel],
 );
 
@@ -60,6 +68,18 @@ if (!$bon) {
 }
 if ((int) $membre['banni'] === 1) {
     refuser(403, 'Ce compte est suspendu.');
+}
+
+// Pas de session avant la confirmation. Le bon mot de passe d'un compte non
+// confirmé renvoie un lien, dans la limite de trois par heure.
+if ((int) $membre['courriel_verifie'] !== 1) {
+    if (jetonsRecents((int) $membre['id'], 'verification') >= LIENS_PAR_HEURE) {
+        refuser(429, 'Adresse pas encore confirmée, et trois liens déjà envoyés dans l\'heure. Regardez aussi les indésirables.');
+    }
+    if (!envoyerLienVerification((int) $membre['id'], (string) $membre['pseudo'], $courriel)) {
+        refuser(500, 'Adresse pas encore confirmée, et le nouveau lien n\'est pas parti. Réessayez dans un moment.');
+    }
+    refuser(403, 'Adresse pas encore confirmée. Un nouveau lien vient de partir, valable 24 heures.');
 }
 
 // L'algorithme par défaut de PHP évolue : l'empreinte suit à la connexion.

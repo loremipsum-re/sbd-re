@@ -3,6 +3,9 @@
  * Créer un compte. Le pseudo sert aussi d'adresse au profil public, d'où le
  * format Instagram : un membre y reprend son nom tel quel.
  *
+ * Le compte ne sert à rien avant le clic sur le lien reçu : pas de session à
+ * l'inscription, et un compte jamais confirmé s'efface au bout de 24 heures.
+ *
  * Page `prive` : ni indexée, ni mesurée, absente du plan de site et du menu
  * jusqu'à l'ouverture de la communauté (docs/comptes.md, phase 9).
  */
@@ -20,8 +23,8 @@ import '../../styles/compte.css';
       <header class="entete-page">
         <h1>Créer un compte</h1>
         <p class="chapeau">
-          Un pseudo, une adresse et un mot de passe suffisent. Votre pseudo devient
-          l'adresse de votre profil public.
+          Un pseudo, une adresse et un mot de passe suffisent. Le compte s'active
+          au clic sur le lien reçu par courriel.
         </p>
       </header>
 
@@ -95,6 +98,10 @@ import '../../styles/compte.css';
           <input id="site" name="site" type="text" tabindex="-1" autocomplete="off" />
         </div>
 
+        {/* Horodatage posé par le script à l'affichage, jamais à la génération :
+            le serveur refuse un envoi plus rapide que 3 secondes. */}
+        <input name="depuis" type="hidden" value="" data-depuis />
+
         <div class="actions">
           <button type="submit">Créer mon compte</button>
         </div>
@@ -113,7 +120,12 @@ import '../../styles/compte.css';
   import { api, brancher, champ } from '../../lib/api-compte';
 
   const form = document.querySelector<HTMLFormElement>('[data-inscription]')!;
+  const depuis = form.querySelector<HTMLInputElement>('[data-depuis]')!;
+  const horodater = () => (depuis.value = String(Math.floor(Date.now() / 1000)));
+  horodater();
 
+  // Pas de redirection : le compte n'est utilisable qu'après le clic sur le
+  // lien reçu. Le message reste affiché, le formulaire se vide.
   brancher(
     form,
     (donnees) =>
@@ -123,7 +135,11 @@ import '../../styles/compte.css';
         mot_de_passe: champ(donnees, 'mot_de_passe'),
         charte: donnees.get('charte') === 'on',
         site: champ(donnees, 'site'),
+        depuis: Number(champ(donnees, 'depuis')),
       }),
-    () => location.assign('/compte/'),
+    () => {
+      form.reset();
+      horodater();
+    },
   );
 </script>
