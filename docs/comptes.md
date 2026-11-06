@@ -184,6 +184,19 @@ et des liens.
 `~/sbd-re-prive/courriels-refuses.log`, avec le seul domaine du
 destinataire.
 
+**Gmail reçoit le lien de confirmation**, vérifié par l'auteur le 7 novembre
+2026.
+
+**Les adresses iCloud sont refusées à l'inscription**, choix de l'auteur du
+7 novembre 2026. Apple rejette nos courriels, « [HM08] », alors que DKIM,
+DMARC et SPF passent tous (relevé dans un courriel reçu à loremipsum.re) : il
+bloque les serveurs d'envoi partagés d'OVH. Un compte iCloud ne recevrait
+jamais son lien. L'inscription le dit et propose une autre adresse
+(`DOMAINES_INJOIGNABLES`, `lib/comptes.php`). Deux voies pour lever la
+restriction, écartées pour l'instant : écrire à icloudadmin@apple.com, ou
+passer les courriels de compte par un service d'envoi tiers (Brevo, Mailjet),
+à nommer alors comme sous-traitant dans `/confidentialite/`.
+
 ### 6.2 Profil public
 
 `/membres/<pseudo>/` est servie par PHP, parce que les profils changent entre
