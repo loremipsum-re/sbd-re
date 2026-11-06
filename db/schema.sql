@@ -61,7 +61,9 @@ CREATE TABLE IF NOT EXISTS membre (
   --   * au moins une lettre ou un chiffre, pour écarter « ... » ;
   --   * aucun tiret, ce qui réserve /membres/-gabarit/ au gabarit d'Astro.
   -- Le drapeau 'c' rend l'expression sensible à la casse : la collation
-  -- _ci de la colonne laisserait sinon passer « Jean ».
+  -- _ci de la colonne laisserait sinon passer « Jean ». La fin s'écrit
+  -- `\z`, doublé dans la chaîne SQL : `$` accepterait aussi un retour à la
+  -- ligne final, « abc » suivi d'un saut de ligne.
   pseudo          VARCHAR(30)     NOT NULL,
 
   -- Affiche le lien vers instagram.com/<pseudo> sur le profil.
@@ -94,7 +96,7 @@ CREATE TABLE IF NOT EXISTS membre (
   KEY ix_membre_ip (ip_inscription, date_inscription),
 
   CONSTRAINT ck_membre_pseudo CHECK (
-    REGEXP_LIKE(pseudo, '^[a-z0-9._]{3,30}$', 'c')
+    REGEXP_LIKE(pseudo, '^[a-z0-9._]{3,30}\\z', 'c')
     AND REGEXP_LIKE(pseudo, '[a-z0-9]', 'c')
   )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

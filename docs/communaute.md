@@ -136,6 +136,10 @@ des serveurs que le SPF autorise. Réglages dans `db/config.exemple.php`, sectio
 
 ### PHPMailer, première dépendance tierce du projet
 
+> **Retiré le 6 novembre 2026.** `mail()` passe depuis le site, prouvé en
+> production le 10 septembre. Voir [comptes.md](comptes.md), phase 2. Ce qui
+> suit reste comme trace de la décision de juillet.
+
 Choisie par l'auteur le 30 juillet 2026. C'est la bibliothèque que **WordPress
 emploie lui-même**, donc un terrain qu'il connaît, et elle est éprouvée par des
 millions de sites là où l'authentification et le chiffrement sont exactement le

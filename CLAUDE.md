@@ -452,11 +452,14 @@ faute de l'avoir fait.
 
 ```bash
 php -l <fichier>                    # contrôle de syntaxe
-php db/verifier-autorisation.php    # 39 règles d'autorisation, sans base
+php db/verifier-autorisation.php    # 67 règles d'autorisation, sans base
 ```
 
 MySQL, lui, n'est **pas** installé en local. Tout ce qui touche à la base
-s'éprouve sur le serveur OVH, par `php db/verifier.php` en SSH.
+s'éprouve sur le serveur OVH, par `php db/verifier.php` en SSH, **avec le
+login principal**, depuis `~/sbd-re-prive/`. L'autre login est enfermé dans
+le dossier public et son SSH tourne en PHP 5.4 : voir docs/comptes.md,
+phase 1.
 
 Sous Windows, si `node` ou `php` est introuvable, recharger le PATH :
 
@@ -567,7 +570,9 @@ communauté, qui repose entièrement sur un courriel de vérification. Le serveu
 poste avec `mail()`, sans SMTP authentifié, donc sans boîte à créer ni mot de
 passe à déposer. L'expéditeur est `no-reply@sbd.re`, une adresse du domaine, ce
 qu'exige le SPF. Testé le 10 septembre 2026 vers un domaine extérieur : le
-message arrive.
+message arrive. Tous les envois passent par `envoyerCourriel()` de
+`public/api/lib/courriel.php`, seule à écrire les en-têtes ; PHPMailer est
+retiré le 6 novembre 2026.
 
 `db/verifier-envoi.php` rejoue cet envoi. Il refuse de tourner sur une machine
 de développement, `mail()` demandant un serveur de courrier local, et le dit au

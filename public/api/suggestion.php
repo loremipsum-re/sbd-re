@@ -42,9 +42,9 @@ namespace SBDRE;
 /** Boîte de réception. Écrite en dur, jamais lue depuis la requête. */
 const DESTINATAIRE = 'hello@loremipsum.re';
 
-/** Expéditeur technique. Doit appartenir au domaine, pour le SPF. */
-const EXPEDITEUR = 'no-reply@sbd.re';
-const NOM_EXPEDITEUR = 'SBD.re';
+// L'expéditeur, les en-têtes et l'encodage vivent dans lib/courriel.php.
+define('SBDRE_API', true);
+require __DIR__ . '/lib/courriel.php';
 
 /** Natures proposées. Liste FERMÉE : rien d'autre n'entre dans l'en-tête. */
 const NATURES = [
@@ -180,27 +180,6 @@ $corps = implode("\n", [
     $message,
 ]);
 
-$listeEntetes = [
-    'From: ' . NOM_EXPEDITEUR . ' <' . EXPEDITEUR . '>',
-    'Content-Type: text/plain; charset=UTF-8',
-    'Content-Transfer-Encoding: quoted-printable',
-    'MIME-Version: 1.0',
-    'X-Mailer: sbd.re',
-];
-
-/*
- * Reply-To n'est posé QUE si une adresse valide a été donnée. Sur une
- * suggestion anonyme, l'en-tête est simplement absent : y mettre l'expéditeur
- * technique ferait croire à une réponse possible.
- */
-if ($courrielValide) {
-    array_splice($listeEntetes, 1, 0, 'Reply-To: ' . $courriel);
-}
-
-$entetes = implode("\r\n", $listeEntetes);
-$sujet = mb_encode_mimeheader('[sbd.re] ' . NATURES[$cleNature], 'UTF-8', 'B');
-$corps = quoted_printable_encode(preg_replace('/\r\n|\r|\n/', "\r\n", $corps) ?? $corps);
-
 /*
  * -----------------------------------------------------------------------------
  * CONSERVATION, AVANT L'ENVOI
@@ -243,7 +222,17 @@ if ($compteur !== false) {
     fclose($compteur);
 }
 
-$envoye = @mail(DESTINATAIRE, $sujet, $corps, $entetes, '-f' . EXPEDITEUR);
+/*
+ * Reply-To n'est posé QUE si une adresse valide a été donnée. Sur une
+ * suggestion anonyme, l'en-tête est absent : y mettre l'expéditeur technique
+ * ferait croire à une réponse possible.
+ */
+$envoye = envoyerCourriel(
+    DESTINATAIRE,
+    '[sbd.re] ' . NATURES[$cleNature],
+    $corps,
+    $courrielValide ? $courriel : '',
+);
 
 if (!$envoye) {
     /*

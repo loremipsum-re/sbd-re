@@ -45,9 +45,10 @@ namespace SBDRE;
  */
 const DESTINATAIRE = 'hello@loremipsum.re';
 
-/** Expéditeur technique. Doit appartenir au domaine, pour le SPF. */
-const EXPEDITEUR = 'no-reply@sbd.re';
-const NOM_EXPEDITEUR = 'SBD.re';
+// L'expéditeur, les en-têtes et l'encodage vivent dans lib/courriel.php,
+// partagés avec la boîte à suggestions et les comptes.
+define('SBDRE_API', true);
+require __DIR__ . '/lib/courriel.php';
 
 /** Sujets proposés. Une liste FERMÉE : rien d'autre n'entre dans l'en-tête. */
 const SUJETS = [
@@ -214,44 +215,14 @@ $corps = implode("\n", [
 ]);
 
 /*
- * Reply-To est le SEUL en-tête qui contient une donnée du visiteur, et elle a
- * passé FILTER_VALIDATE_EMAIL puis le nettoyage de `ligne()`. Le nom, lui,
- * n'entre pas dans l'en-tête : un nom est du texte libre, et du texte libre
- * dans un en-tête est une injection en attente.
- */
-$entetes = implode("\r\n", [
-    'From: ' . NOM_EXPEDITEUR . ' <' . EXPEDITEUR . '>',
-    'Reply-To: ' . $courriel,
-    'Content-Type: text/plain; charset=UTF-8',
-    'Content-Transfer-Encoding: quoted-printable',
-    'MIME-Version: 1.0',
-    'X-Mailer: sbd.re',
-]);
-
-/*
- * Un en-tête de courriel ne contient que de l'ASCII. Trois objets sur quatre
- * portent des accents, qui partaient en octets bruts : sujet illisible chez
- * certains destinataires, et point de spam en plus. mb_encode_mimeheader les
- * écrit sous la forme codée =?UTF-8?B?...?= que tout client décode.
- */
-$sujet = mb_encode_mimeheader('[sbd.re] ' . SUJETS[$cleSujet], 'UTF-8', 'B');
-
-/*
- * Le corps passe en quoted-printable, pour deux raisons mesurées.
+ * L'adresse du visiteur ne va qu'en Reply-To, après FILTER_VALIDATE_EMAIL et le
+ * nettoyage de `ligne()`. Le nom reste dans le corps : du texte libre dans un
+ * en-tête est une injection en attente.
  *
- * La norme plafonne une ligne à 998 octets. Un paragraphe tapé sans retour à
- * la ligne en faisait 1 619, que les serveurs de courriel coupent à leur façon.
- * Le quoted-printable replie à 76 caractères, et le client recolle les lignes.
- *
- * Les accents deviennent de l'ASCII (é devient =C3=A9), ce qui rend l'encodage
- * déclaré exact.
- *
- * PIÈGE : quoted_printable_encode ne reconnaît que CRLF comme fin de ligne. Un
- * \n seul est codé =0A, un codage que la norme réserve aux données binaires :
- * dans du texte, elle exige de vrais retours CRLF. Le corps est assemblé avec
- * \n et le textarea envoie du CRLF : on unifie avant.
+ * Le corps part en quoted-printable, replié à 76 caractères : un paragraphe
+ * tapé d'un bloc faisait 1 619 octets sur une ligne, au-delà des 998 que la
+ * norme admet. Le détail est dans lib/courriel.php.
  */
-$corps = quoted_printable_encode(preg_replace('/\r\n|\r|\n/', "\r\n", $corps) ?? $corps);
 
 /*
  * Le compteur monte AVANT l'envoi, et non après.
@@ -276,7 +247,7 @@ if ($compteur !== false) {
     fclose($compteur);
 }
 
-$envoye = @mail(DESTINATAIRE, $sujet, $corps, $entetes, '-f' . EXPEDITEUR);
+$envoye = envoyerCourriel(DESTINATAIRE, '[sbd.re] ' . SUJETS[$cleSujet], $corps, $courriel);
 
 if (!$envoye) {
     /*

@@ -49,6 +49,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 
 export const JOURNAL: readonly EntreeJournal[] = [
   {
+    date: '2026-11-06',
+    nature: 'correction',
+    version: '1.9.3',
+    titre: 'Un seul chemin pour les courriels du site',
+    texte:
+      "Les formulaires de partenariat et de suggestion envoient leurs messages par un même chemin, celui qui servira aussi aux futurs comptes. Une bibliothèque devenue inutile quitte le serveur.",
+  },
+  {
     date: '2026-11-05',
     nature: 'correction',
     version: '1.9.2',

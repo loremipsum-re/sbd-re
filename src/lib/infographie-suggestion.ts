@@ -17,14 +17,21 @@
  * PHP n'est exécuté.
  */
 import source from '../../public/api/suggestion.php?raw';
+/* L'expéditeur et les en-têtes vivent dans la bibliothèque partagée. */
+import sourceCourriel from '../../public/api/lib/courriel.php?raw';
 
 const FICHIER = 'public/api/suggestion.php';
 
-function trouver(motif: RegExp, quoi: string): RegExpMatchArray {
-  const trouve = source.match(motif);
+function trouver(
+  motif: RegExp,
+  quoi: string,
+  texte = source,
+  fichier = FICHIER,
+): RegExpMatchArray {
+  const trouve = texte.match(motif);
   if (!trouve) {
     throw new Error(
-      `Infographie « suggestion » : ${quoi} introuvable dans ${FICHIER}. ` +
+      `Infographie « suggestion » : ${quoi} introuvable dans ${fichier}. ` +
         `Mettre à jour src/lib/infographie-suggestion.ts.`,
     );
   }
@@ -138,10 +145,15 @@ export const REGLES_SUGGESTION = {
   delaiMin: entier('DELAI_MINIMAL'),
   delaiMax: entier('DELAI_MAXIMAL'),
   destinataire: chaine('DESTINATAIRE'),
-  expediteur: chaine('EXPEDITEUR'),
+  expediteur: trouver(
+    /^const EXPEDITEUR = '([^'\\]*)';/m,
+    "l'expéditeur",
+    sourceCourriel,
+    'public/api/lib/courriel.php',
+  )[1],
   /** Le début fixe de l'objet du courriel, avant la nature choisie. */
   prefixeObjet: trouver(
-    /mb_encode_mimeheader\('([^']*)'\s*\.\s*NATURES/,
+    /envoyerCourriel\(\s*DESTINATAIRE,\s*'([^']*)'\s*\.\s*NATURES/,
     "l'objet du courriel",
   )[1].trim(),
   /** Ce que le fichier des suggestions garde, dans l'ordre du serveur. */

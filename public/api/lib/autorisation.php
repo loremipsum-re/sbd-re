@@ -5,28 +5,25 @@
  * -----------------------------------------------------------------------------
  * LE FICHIER LE PLUS SENSIBLE DU PROJET
  * -----------------------------------------------------------------------------
- * Le plan initial reposait sur Supabase et ses politiques RLS : la base
- * refusait elle-même une écriture interdite, même si le code du navigateur
- * avait un bug, même si quelqu'un forgeait une requête à la main.
+ * MySQL n'a pas de sécurité par ligne : la base exécute ce qu'on lui demande.
+ * Le contrôle des droits vit donc ENTIÈREMENT ici, et c'est le seul endroit du
+ * projet où une erreur laisserait un inconnu publier, voter ou bannir à la
+ * place d'un autre. Les règles sont celles de docs/comptes.md, section 4.
  *
- * MySQL n'a pas d'équivalent. La base exécute ce qu'on lui demande. Le contrôle
- * des droits vit donc ENTIÈREMENT ici, et c'est le seul endroit du projet où
- * une erreur laisserait un inconnu trafiquer le classement.
- *
- * Trois règles ont guidé l'écriture, et il faut les tenir en modifiant :
+ * Trois règles d'écriture, à tenir en modifiant :
  *
  *   1. UN SEUL ENDROIT DÉCIDE. Aucun point d'entrée n'écrit sa propre
- *      vérification : il appelle une fonction d'ici. Une règle à revoir se
- *      revoit alors une fois.
+ *      vérification : il appelle une fonction d'ici.
  *
- *   2. LE REFUS EST LE DÉFAUT. Chaque fonction commence par refuser et
- *      n'autorise qu'ensuite. Écrite dans l'autre sens, un `if` oublié
- *      laisserait passer au lieu de bloquer, et la faille serait invisible à
- *      la lecture.
+ *   2. LE REFUS EST LE DÉFAUT. Chaque fonction rend false tant qu'une
+ *      condition n'est pas prouvée. Écrite dans l'autre sens, un `if` oublié
+ *      laisserait passer au lieu de bloquer.
  *
- *   3. RIEN DE SENSIBLE NE VIENT DU CLIENT. L'identité se lit dans la session,
- *      jamais dans le corps de la requête. Les champs modifiables sont
- *      énumérés un par un, jamais déduits de ce qui a été envoyé.
+ *   3. RIEN DE SENSIBLE NE VIENT DU CLIENT. L'identité se lit dans la session
+ *      (lib/session.php). Les champs modifiables sont énumérés un par un.
+ *
+ * Les décisions prennent des tableaux en argument au lieu de lire l'état
+ * courant : db/verifier-autorisation.php les éprouve toutes sans base.
  */
 
 declare(strict_types=1);
@@ -38,41 +35,56 @@ if (!defined('SBDRE_API')) {
     exit;
 }
 
-require_once __DIR__ . '/bdd.php';
+require_once __DIR__ . '/session.php';
+
+const ROLE_ADMIN = 'admin';
+
+/** Le badge communauté : 20 votes au moins, dont 60 % favorables. */
+const VOTES_MIN           = 20;
+const FAVORABLES_POURCENT = 60;
+
+/** L'ancienneté exigée pour voter, contre les comptes créés en série. */
+const ANCIENNETE_VOTE_JOURS = 30;
 
 /* =========================================================================
- * Rôles
+ * Qui est qui
  * ====================================================================== */
 
-const ROLE_MEMBRE     = 'membre';
-const ROLE_MODERATEUR = 'moderateur';
-const ROLE_ADMIN      = 'admin';
-
 /**
- * Un modérateur peut examiner la file d'attente et publier ou refuser.
+ * Un membre « actif » : adresse vérifiée et non banni. C'est le seuil de tout
+ * ce qui publie : profil, performance, vote, chat, signalement.
+ *
+ * Sans la vérification, n'importe qui inscrirait l'adresse d'un tiers pour
+ * publier en son nom.
  *
  * @param array<string, mixed>|null $membre
  */
-function estModerateur(?array $membre): bool
+function estActif(?array $membre): bool
 {
-    if ($membre === null) {
+    if ($membre === null || (int) ($membre['id'] ?? 0) <= 0) {
         return false;
     }
 
-    return in_array($membre['role'] ?? '', [ROLE_MODERATEUR, ROLE_ADMIN], true);
+    return (int) ($membre['courriel_verifie'] ?? 0) === 1
+        && (int) ($membre['banni'] ?? 1) === 0;
 }
 
-/** @param array<string, mixed>|null $membre */
+/**
+ * Un admin banni n'est plus admin. Le rôle se donne à la main en base, aucun
+ * point d'entrée ne l'écrit.
+ *
+ * @param array<string, mixed>|null $membre
+ */
 function estAdmin(?array $membre): bool
 {
-    return $membre !== null && ($membre['role'] ?? '') === ROLE_ADMIN;
+    return estActif($membre) && ($membre['role'] ?? '') === ROLE_ADMIN;
 }
 
 /**
  * Le membre est-il l'auteur de cette performance ?
  *
- * Comparaison sur des entiers : « 12 » et 12 doivent désigner la même personne,
- * et une comparaison relâchée ferait qu'une chaîne vide vaudrait 0.
+ * Comparaison sur des entiers : « 12 » et 12 désignent la même personne, et
+ * un identifiant nul n'appartient à personne.
  *
  * @param array<string, mixed>      $performance
  * @param array<string, mixed>|null $membre
@@ -83,161 +95,113 @@ function estAuteur(array $performance, ?array $membre): bool
         return false;
     }
 
-    return (int) ($performance['membre_id'] ?? 0) === (int) ($membre['id'] ?? -1)
-        && (int) ($membre['id'] ?? 0) > 0;
+    $id = (int) ($membre['id'] ?? 0);
+
+    return $id > 0 && (int) ($performance['membre_id'] ?? 0) === $id;
 }
 
 /* =========================================================================
- * Ce qu'on a le droit de LIRE
+ * Les gestes, un par ligne du tableau de la section 4
  * ====================================================================== */
 
 /**
- * Une performance publiée se lit par tout le monde, y compris sans compte :
- * c'est un classement public. Les autres ne se lisent que par leur auteur et
- * par les modérateurs.
+ * Modifier son profil, ajouter une performance, écrire dans le chat,
+ * signaler : le même seuil.
  *
- * Ce point n'est pas cosmétique : le lien vidéo montre et fait entendre la
- * personne. Il ne doit pas circuler tant que la performance n'est pas publiée.
+ * @param array<string, mixed>|null $membre
+ */
+function peutPublier(?array $membre): bool
+{
+    return estActif($membre);
+}
+
+/**
+ * Retirer une performance : son auteur, ou l'admin.
  *
  * @param array<string, mixed>      $performance
  * @param array<string, mixed>|null $membre
  */
-function peutVoirPerformance(array $performance, ?array $membre): bool
+function peutRetirerPerformance(array $performance, ?array $membre): bool
 {
-    if (($performance['etat'] ?? '') === 'publiee') {
-        return true;
-    }
-
-    return estAuteur($performance, $membre) || estModerateur($membre);
+    return (estActif($membre) && estAuteur($performance, $membre)) || estAdmin($membre);
 }
 
-/* =========================================================================
- * Ce qu'on a le droit d'ÉCRIRE
- * ====================================================================== */
-
 /**
- * Soumettre exige un compte ET une adresse vérifiée.
+ * Voter : actif, inscrit depuis 30 jours, jamais sur sa propre barre.
  *
- * Sans la vérification, n'importe qui inscrirait l'adresse d'un tiers pour
- * soumettre en son nom.
+ * shortcut: l'horloge de PHP est comparée à une date écrite par MySQL ; un
+ * écart de fuseau décale la règle de quelques heures sur 30 jours, à corriger
+ * si OVH sépare un jour les deux fuseaux.
  *
+ * @param array<string, mixed>      $performance
  * @param array<string, mixed>|null $membre
  */
-function peutSoumettre(?array $membre): bool
+function peutVoter(array $performance, ?array $membre, int $maintenant): bool
 {
-    if ($membre === null) {
+    if (!estActif($membre) || estAuteur($performance, $membre)) {
         return false;
     }
 
-    return (int) ($membre['courriel_verifie'] ?? 0) === 1;
-}
-
-/**
- * Seul l'auteur modifie sa performance. Un modérateur ne corrige pas le
- * contenu : il publie ou il refuse avec un motif. Confondre les deux
- * reviendrait à laisser un modérateur réécrire la performance de quelqu'un.
- *
- * La modification reste possible dans les trois états, y compris après un
- * refus : corriger une date mal saisie est précisément l'usage attendu.
- *
- * @param array<string, mixed>      $performance
- * @param array<string, mixed>|null $membre
- */
-function peutModifierPerformance(array $performance, ?array $membre): bool
-{
-    return estAuteur($performance, $membre);
-}
-
-/** @param array<string, mixed> $performance */
-function peutSupprimerPerformance(array $performance, ?array $membre): bool
-{
-    return estAuteur($performance, $membre);
-}
-
-/**
- * État d'une performance après modification par son auteur.
- *
- * TOUJOURS « en attente ». Sans cette règle, on publierait 150 kg avant de le
- * remplacer par 300 kg sans repasser devant personne.
- */
-function etatApresModification(): string
-{
-    return 'en_attente';
-}
-
-/* =========================================================================
- * Modération
- * ====================================================================== */
-
-/**
- * Publier ou refuser une performance.
- *
- * Un modérateur ne modère PAS la sienne : il la publierait sans qu'aucun regard
- * extérieur ne s'y pose, ce qui viderait la modération de son sens. L'exception
- * est l'administrateur, faute de quoi le seul modérateur du site ne pourrait
- * jamais publier ses propres barres.
- *
- * Cette exception est assumée et traçable : `performance.moderateur_id`
- * enregistre qui a décidé, et une décision prise sur soi-même se voit.
- *
- * @param array<string, mixed>      $performance
- * @param array<string, mixed>|null $membre
- */
-function peutModerer(array $performance, ?array $membre): bool
-{
-    if (!estModerateur($membre)) {
+    $inscription = strtotime((string) ($membre['date_inscription'] ?? ''));
+    if ($inscription === false) {
         return false;
     }
 
-    if (estAuteur($performance, $membre)) {
-        return estAdmin($membre);
-    }
+    return $inscription <= $maintenant - ANCIENNETE_VOTE_JOURS * 86400;
+}
 
-    return true;
+/**
+ * Poser le badge admin, masquer un message, bannir, traiter un signalement.
+ *
+ * @param array<string, mixed>|null $membre
+ */
+function peutModerer(?array $membre): bool
+{
+    return estAdmin($membre);
+}
+
+/**
+ * Le badge communauté, calculé et jamais stocké. En entiers : 12 sur 20 vaut
+ * exactement 60 %, sans arrondi de virgule flottante pour le faire tomber à
+ * 59,999.
+ */
+function badgeCommunaute(int $votes, int $favorables): bool
+{
+    return $votes >= VOTES_MIN
+        && $favorables >= 0
+        && $favorables <= $votes
+        && $favorables * 100 >= FAVORABLES_POURCENT * $votes;
 }
 
 /* =========================================================================
- * Champs modifiables : des listes fermées
+ * Champs acceptés depuis une requête : des listes fermées
  *
- * Recopier en base ce que le navigateur a envoyé est la faute la plus banale
- * et la plus coûteuse d'une API. Il suffirait d'ajouter « role: admin » ou
- * « etat: publiee » au formulaire pour se promouvoir ou se publier seul.
+ * Recopier en base ce que le navigateur envoie est la faute la plus banale
+ * d'une API : il suffirait d'ajouter « role: admin » au formulaire. D'où des
+ * listes de champs AUTORISÉS : une colonne ajoutée demain au schéma sera
+ * refusée par défaut.
  *
- * D'où des listes de champs AUTORISÉS, jamais de champs interdits : un champ
- * ajouté au schéma demain sera refusé par défaut, alors qu'une liste
- * d'interdits l'aurait laissé passer sans que personne n'y pense.
+ * Absents des deux listes, donc impossibles à écrire depuis une requête :
+ * `id`, `membre_id`, `courriel`, `mot_de_passe_hash`, `pseudo`, `role`,
+ * `courriel_verifie`, `banni`, `ip_inscription`, `admin_id`,
+ * `date_verif_admin` et toutes les dates. Le pseudo est l'adresse du profil :
+ * il ne change pas en version 1.
  * ====================================================================== */
 
-/** Ce qu'un membre peut changer sur lui-même. */
-const CHAMPS_PROFIL = [
-    'pseudo',
-    'nom_reel',
-    'afficher_nom_reel',
-    'tranche_taille',
-    'tranche_age',
-    'sexe',
-];
+/** Ce qu'un membre change sur son profil. */
+const CHAMPS_PROFIL = ['instagram_visible', 'bio', 'salle'];
 
-/** Ce qu'un auteur peut changer sur sa performance. */
+/** Ce qu'un membre saisit en ajoutant une performance. */
 const CHAMPS_PERFORMANCE = [
     'mouvement',
     'equipement',
     'charge_kg',
-    'tranche_poids',
-    'tranche_age',
+    'categorie',
     'date_performance',
-    'lieu',
     'lien_video',
 ];
 
 /**
- * Ne garde que les champs autorisés.
- *
- * Volontairement absents des deux listes, et donc impossibles à écrire depuis
- * une requête : `id`, `membre_id`, `role`, `courriel`, `courriel_verifie`,
- * `mot_de_passe_hash`, `google_sub`, `etat`, `motif_refus`, `moderateur_id`,
- * et toutes les colonnes de date.
- *
  * @param  array<string, mixed> $entree
  * @param  list<string>         $autorises
  * @return array<string, mixed>
@@ -250,61 +214,15 @@ function filtrerChamps(array $entree, array $autorises): array
 /* =========================================================================
  * Passerelles HTTP
  *
- * Elles traduisent les décisions ci-dessus en réponses, et s'arrêtent net en
- * cas de refus. Aucune ne rend la main quand elle refuse : impossible d'oublier
- * un `return` derrière un appel.
+ * Elles traduisent les décisions en réponses et s'arrêtent net en cas de
+ * refus. Chacune contrôle d'abord l'origine : un point d'entrée qui en
+ * appelle une est protégé, même s'il oublie `exigerOrigine()`.
  * ====================================================================== */
-
-/**
- * Refuse et met fin à la requête.
- */
-function refuser(int $code, string $message): never
-{
-    http_response_code($code);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['erreur' => $message], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-/**
- * Le membre connecté, ou null.
- *
- * L'identité vient de la SESSION, jamais du corps de la requête. Un champ
- * `membre_id` envoyé par le navigateur permettrait de soumettre au nom de
- * n'importe qui : il n'est lu nulle part.
- *
- * @return array<string, mixed>|null
- */
-function membreCourant(): ?array
-{
-    static $membre = null;
-    static $cherche = false;
-
-    if ($cherche) {
-        return $membre;
-    }
-    $cherche = true;
-
-    $id = $_SESSION['membre_id'] ?? null;
-
-    if (!is_int($id) || $id <= 0) {
-        return null;
-    }
-
-    $membre = ligne(
-        'SELECT id, courriel, pseudo, slug, nom_reel, afficher_nom_reel,
-                sexe, tranche_taille, role, courriel_verifie
-           FROM membre
-          WHERE id = :id',
-        ['id' => $id],
-    );
-
-    return $membre;
-}
 
 /** @return array<string, mixed> */
 function exigerMembre(): array
 {
+    exigerOrigine();
     $membre = membreCourant();
 
     if ($membre === null) {
@@ -315,11 +233,11 @@ function exigerMembre(): array
 }
 
 /** @return array<string, mixed> */
-function exigerVerifie(): array
+function exigerActif(): array
 {
     $membre = exigerMembre();
 
-    if (!peutSoumettre($membre)) {
+    if (!estActif($membre)) {
         refuser(403, 'Adresse de courriel non vérifiée.');
     }
 
@@ -327,31 +245,14 @@ function exigerVerifie(): array
 }
 
 /** @return array<string, mixed> */
-function exigerModerateur(): array
+function exigerAdmin(): array
 {
     $membre = exigerMembre();
 
-    if (!estModerateur($membre)) {
-        // 404 et non 403 : répondre « interdit » confirmerait l'existence de la
-        // file de modération à qui la cherche. Mieux vaut qu'elle n'existe pas
-        // pour ceux qui n'y ont pas droit.
+    if (!estAdmin($membre)) {
+        // 404 et non 403 : « interdit » confirmerait l'existence de la page
+        // d'administration à qui la cherche.
         refuser(404, 'Introuvable.');
-    }
-
-    return $membre;
-}
-
-/**
- * Exige que le membre connecté soit l'auteur de la performance.
- *
- * @param array<string, mixed> $performance
- */
-function exigerAuteur(array $performance): array
-{
-    $membre = exigerMembre();
-
-    if (!estAuteur($performance, $membre)) {
-        refuser(403, 'Cette performance ne vous appartient pas.');
     }
 
     return $membre;

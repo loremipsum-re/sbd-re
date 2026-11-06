@@ -3,36 +3,25 @@
  * Vérification des règles d'autorisation.
  *
  * Ce script n'a besoin NI de base de données NI de session : il éprouve les
- * décisions pures de `public/api/lib/autorisation.php` sur une table de
- * vérité. C'est possible parce que ces fonctions prennent des tableaux en
- * argument au lieu d'aller chercher l'état courant elles-mêmes, et ce n'est pas
- * un hasard : du code de sécurité qu'on ne peut pas éprouver est du code de
- * sécurité qu'on ne relit jamais.
+ * décisions pures de `public/api/lib/autorisation.php` et de `session.php` sur
+ * une table de vérité. C'est possible parce que ces fonctions prennent des
+ * tableaux en argument au lieu d'aller chercher l'état courant : du code de
+ * sécurité qu'on ne peut pas éprouver est du code qu'on ne relit jamais.
  *
- * Il couvre six des tentatives listées en section 8 de docs/communaute.md,
- * avant même qu'un seul point d'entrée existe :
- *
- *   - publier sa propre performance en envoyant etat=publiee
- *   - modifier la performance d'un autre membre
- *   - lire la file de modération avec un compte simple
- *   - se promouvoir modérateur en modifiant son profil
- *   - soumettre au nom d'un autre en envoyant membre_id
- *   - lire une performance en attente qui n'est pas la sienne
+ * Il couvre, avant qu'un seul point d'entrée existe, les refus de la section 9
+ * de docs/comptes.md qui ne demandent pas de base : voter sur sa barre, voter
+ * trop tôt, poser le badge admin sans l'être, retirer la barre d'un autre, se
+ * nommer admin, écrire depuis un autre site, publier sans adresse vérifiée,
+ * le badge à 19 votes ou à 11 sur 20.
  *
  * -----------------------------------------------------------------------------
  * USAGE
  * -----------------------------------------------------------------------------
- * Déposer ce fichier sur le serveur, ainsi que les trois bibliothèques
- * `configuration.php`, `bdd.php` et `autorisation.php` dans un même dossier.
- * Puis :
+ *   php db/verifier-autorisation.php
  *
- *   php verifier-autorisation.php /chemin/vers/autorisation.php
- *
- * Sans argument, le script suppose l'arborescence du dépôt.
- *
- * Aucune connexion à la base n'a lieu : `configuration.php` et `bdd.php` ne
- * font que DÉFINIR des fonctions, et aucune n'est appelée ici. Le fichier de
- * secrets n'a donc même pas besoin d'exister.
+ * Sans argument, il suppose l'arborescence du dépôt. Sinon, lui passer le
+ * chemin d'autorisation.php. Aucune connexion n'a lieu : les bibliothèques ne
+ * font que DÉFINIR des fonctions, et seules les décisions pures sont appelées.
  */
 
 declare(strict_types=1);
@@ -55,10 +44,6 @@ if (!is_file($chemin)) {
 }
 
 require_once $chemin;
-
-// Les fonctions sont appelées par leur nom complet, « \SBDRE\… », plutôt
-// qu'importées par `use function`. Un `use` placé après un `require` reste
-// légal mais déroute la lecture, et rien ici ne justifie cette économie.
 
 /* -------------------------------------------------------------------------
  * Affichage
@@ -86,171 +71,185 @@ function verifie(string $intitule, bool $obtenu, bool $attendu): void
     printf(
         "  [ECHEC]  %s (attendu %s, obtenu %s)\n",
         $intitule,
-        $attendu ? 'autorisé' : 'REFUSÉ',
-        $obtenu ? 'autorisé' : 'REFUSÉ',
+        $attendu ? 'oui' : 'NON',
+        $obtenu ? 'oui' : 'NON',
     );
 }
 
 /* -------------------------------------------------------------------------
  * Personnages
+ *
+ * Les dates sont calculées depuis une horloge fixe : le résultat ne dépend pas
+ * du jour où le script tourne.
  * ---------------------------------------------------------------------- */
 
+$maintenant = strtotime('2026-11-06 12:00:00');
+$ilYa = fn (int $jours, int $secondes = 0): string
+    => date('Y-m-d H:i:s', $maintenant - $jours * 86400 - $secondes);
+
+$personne = fn (int $id, array $champs = []): array => array_merge([
+    'id'               => $id,
+    'role'             => 'membre',
+    'courriel_verifie' => 1,
+    'banni'            => 0,
+    'date_inscription' => $ilYa(60),
+], $champs);
+
 $anonyme     = null;
-$alice       = ['id' => 1, 'role' => 'membre',     'courriel_verifie' => 1];
-$bob         = ['id' => 2, 'role' => 'membre',     'courriel_verifie' => 1];
-$nonVerifie  = ['id' => 3, 'role' => 'membre',     'courriel_verifie' => 0];
-$moderateur  = ['id' => 4, 'role' => 'moderateur', 'courriel_verifie' => 1];
-$admin       = ['id' => 5, 'role' => 'admin',      'courriel_verifie' => 1];
+$alice       = $personne(1);
+$bob         = $personne(2);
+$nonVerifie  = $personne(3, ['courriel_verifie' => 0]);
+$banni       = $personne(4, ['banni' => 1]);
+$admin       = $personne(5, ['role' => 'admin']);
+$adminBanni  = $personne(6, ['role' => 'admin', 'banni' => 1]);
+$recent      = $personne(7, ['date_inscription' => $ilYa(29)]);
+$pile30      = $personne(8, ['date_inscription' => $ilYa(30)]);
+$presque30   = $personne(9, ['date_inscription' => $ilYa(30, -1)]);
+$sansDate    = $personne(10, ['date_inscription' => '']);
+$sansBanni   = ['id' => 11, 'role' => 'membre', 'courriel_verifie' => 1];
 
-// Performances d'Alice, dans les trois états.
-$publiee   = ['id' => 10, 'membre_id' => 1, 'etat' => 'publiee'];
-$enAttente = ['id' => 11, 'membre_id' => 1, 'etat' => 'en_attente'];
-$refusee   = ['id' => 12, 'membre_id' => 1, 'etat' => 'refusee'];
-
-// Une performance du modérateur lui-même.
-$duModerateur = ['id' => 13, 'membre_id' => 4, 'etat' => 'en_attente'];
-$deLAdmin     = ['id' => 14, 'membre_id' => 5, 'etat' => 'en_attente'];
+$barreAlice  = ['id' => 100, 'membre_id' => 1];
+$barreBanni  = ['id' => 101, 'membre_id' => 4];
 
 echo "\nVérification des règles d'autorisation\n";
 echo "======================================\n";
 
 /* -------------------------------------------------------------------------
- * Rôles
+ * Qui est qui
  * ---------------------------------------------------------------------- */
 
-titre('Rôles');
+titre('Membre actif');
 
-verifie('Un visiteur anonyme n\'est pas modérateur',        \SBDRE\estModerateur($anonyme),    false);
-verifie('Un membre simple n\'est pas modérateur',           \SBDRE\estModerateur($alice),      false);
-verifie('Un modérateur est modérateur',                     \SBDRE\estModerateur($moderateur), true);
-verifie('Un administrateur est modérateur',                 \SBDRE\estModerateur($admin),      true);
-verifie('Un modérateur n\'est pas administrateur',          \SBDRE\estAdmin($moderateur),      false);
-verifie('Un administrateur est administrateur',             \SBDRE\estAdmin($admin),           true);
+verifie('Un anonyme n\'est pas actif',                          \SBDRE\estActif($anonyme),    false);
+verifie('Un membre vérifié est actif',                          \SBDRE\estActif($alice),      true);
+verifie('Une adresse non vérifiée n\'est pas active',           \SBDRE\estActif($nonVerifie), false);
+verifie('Un banni n\'est pas actif',                            \SBDRE\estActif($banni),      false);
+verifie('Sans champ « banni », le refus l\'emporte',            \SBDRE\estActif($sansBanni),  false);
+verifie('Un identifiant nul n\'ouvre aucun droit',
+    \SBDRE\estActif(['id' => 0, 'courriel_verifie' => 1, 'banni' => 0]), false);
 
-/* -------------------------------------------------------------------------
- * Propriété
- * ---------------------------------------------------------------------- */
+titre('Administrateur');
+
+verifie('Un membre n\'est pas admin',                           \SBDRE\estAdmin($alice),      false);
+verifie('Un admin est admin',                                   \SBDRE\estAdmin($admin),      true);
+verifie('Un admin banni n\'est plus admin',                     \SBDRE\estAdmin($adminBanni), false);
+verifie('L\'ancien rôle « moderateur » n\'ouvre rien',
+    \SBDRE\estAdmin($personne(12, ['role' => 'moderateur'])), false);
 
 titre('Propriété');
 
-verifie('Alice est l\'auteur de sa performance',            \SBDRE\estAuteur($publiee, $alice),   true);
-verifie('Bob n\'est pas l\'auteur de celle d\'Alice',       \SBDRE\estAuteur($publiee, $bob),     false);
-verifie('Un anonyme n\'est l\'auteur de rien',              \SBDRE\estAuteur($publiee, $anonyme), false);
-
-// Les identifiants transitent parfois en chaîne : « 1 » et 1 doivent désigner
-// la même personne, sans qu'une comparaison relâchée fasse valoir 0 à autre
-// chose qu'un identifiant nul.
+verifie('Alice est l\'auteur de sa barre',                      \SBDRE\estAuteur($barreAlice, $alice),   true);
+verifie('Bob n\'est pas l\'auteur de celle d\'Alice',           \SBDRE\estAuteur($barreAlice, $bob),     false);
+verifie('Un anonyme n\'est l\'auteur de rien',                  \SBDRE\estAuteur($barreAlice, $anonyme), false);
 verifie('Un identifiant en chaîne vaut le même en entier',
     \SBDRE\estAuteur(['membre_id' => '1'], ['id' => 1]), true);
-verifie('Un identifiant nul n\'ouvre aucun droit',
+verifie('Deux identifiants nuls ne font pas un auteur',
     \SBDRE\estAuteur(['membre_id' => 0], ['id' => 0]), false);
 
 /* -------------------------------------------------------------------------
- * Lecture
+ * Les gestes
  * ---------------------------------------------------------------------- */
 
-titre('Lecture d\'une performance');
+titre('Publier : profil, performance, chat, signalement');
 
-verifie('Une performance publiée se lit sans compte',
-    \SBDRE\peutVoirPerformance($publiee, $anonyme), true);
-verifie('Une performance en attente NE se lit PAS sans compte',
-    \SBDRE\peutVoirPerformance($enAttente, $anonyme), false);
-verifie('Une performance en attente NE se lit PAS par un autre membre',
-    \SBDRE\peutVoirPerformance($enAttente, $bob), false);
-verifie('Une performance refusée NE se lit PAS par un autre membre',
-    \SBDRE\peutVoirPerformance($refusee, $bob), false);
-verifie('Son auteur lit sa performance en attente',
-    \SBDRE\peutVoirPerformance($enAttente, $alice), true);
-verifie('Un modérateur lit une performance en attente',
-    \SBDRE\peutVoirPerformance($enAttente, $moderateur), true);
+verifie('Un anonyme ne publie pas',                             \SBDRE\peutPublier($anonyme),    false);
+verifie('Une adresse non vérifiée ne publie pas',               \SBDRE\peutPublier($nonVerifie), false);
+verifie('Un banni ne publie pas',                               \SBDRE\peutPublier($banni),      false);
+verifie('Un membre actif publie',                               \SBDRE\peutPublier($alice),      true);
+
+titre('Retirer une performance');
+
+verifie('Alice retire la sienne',                               \SBDRE\peutRetirerPerformance($barreAlice, $alice),   true);
+verifie('Bob NE retire PAS celle d\'Alice',                     \SBDRE\peutRetirerPerformance($barreAlice, $bob),     false);
+verifie('L\'admin retire celle d\'Alice',                       \SBDRE\peutRetirerPerformance($barreAlice, $admin),   true);
+verifie('Un anonyme ne retire rien',                            \SBDRE\peutRetirerPerformance($barreAlice, $anonyme), false);
+verifie('Un banni ne retire plus la sienne',                    \SBDRE\peutRetirerPerformance($barreBanni, $banni),   false);
+
+titre('Voter');
+
+verifie('Bob vote sur la barre d\'Alice',                       \SBDRE\peutVoter($barreAlice, $bob, $maintenant),        true);
+verifie('Alice NE vote PAS sur la sienne',                      \SBDRE\peutVoter($barreAlice, $alice, $maintenant),      false);
+verifie('Un compte de 29 jours NE vote PAS',                    \SBDRE\peutVoter($barreAlice, $recent, $maintenant),     false);
+verifie('Un compte de 30 jours pile vote',                      \SBDRE\peutVoter($barreAlice, $pile30, $maintenant),     true);
+verifie('Une seconde avant les 30 jours, NON',                  \SBDRE\peutVoter($barreAlice, $presque30, $maintenant),  false);
+verifie('Une date d\'inscription illisible, NON',               \SBDRE\peutVoter($barreAlice, $sansDate, $maintenant),   false);
+verifie('Une adresse non vérifiée NE vote PAS',                 \SBDRE\peutVoter($barreAlice, $nonVerifie, $maintenant), false);
+verifie('Un banni NE vote PAS',                                 \SBDRE\peutVoter($barreAlice, $banni, $maintenant),      false);
+verifie('Un anonyme NE vote PAS',                               \SBDRE\peutVoter($barreAlice, $anonyme, $maintenant),    false);
+
+titre('Modérer : badge admin, masquer, bannir');
+
+verifie('Un membre ne modère pas',                              \SBDRE\peutModerer($alice),      false);
+verifie('Un admin modère',                                      \SBDRE\peutModerer($admin),      true);
+verifie('Un admin banni ne modère plus',                        \SBDRE\peutModerer($adminBanni), false);
+verifie('Un anonyme ne modère pas',                             \SBDRE\peutModerer($anonyme),    false);
+
+titre('Badge communauté : 20 votes, 60 % favorables');
+
+verifie('19 votes favorables sur 19 : pas de badge',            \SBDRE\badgeCommunaute(19, 19), false);
+verifie('11 favorables sur 20 : pas de badge',                  \SBDRE\badgeCommunaute(20, 11), false);
+verifie('12 favorables sur 20 : badge',                         \SBDRE\badgeCommunaute(20, 12), true);
+verifie('15 sur 25, 60 % tout juste : badge',                   \SBDRE\badgeCommunaute(25, 15), true);
+verifie('14 sur 25 : pas de badge',                             \SBDRE\badgeCommunaute(25, 14), false);
+verifie('Aucun vote : pas de badge',                            \SBDRE\badgeCommunaute(0, 0),   false);
+verifie('Plus de favorables que de votes : refusé',             \SBDRE\badgeCommunaute(20, 40), false);
 
 /* -------------------------------------------------------------------------
- * Soumission
+ * Session
  * ---------------------------------------------------------------------- */
 
-titre('Soumission');
+titre('Origine des requêtes');
 
-verifie('Un anonyme ne peut pas soumettre',                 \SBDRE\peutSoumettre($anonyme),    false);
-verifie('Une adresse non vérifiée ne peut pas soumettre',   \SBDRE\peutSoumettre($nonVerifie), false);
-verifie('Un membre vérifié peut soumettre',                 \SBDRE\peutSoumettre($alice),      true);
+verifie('Une lecture passe sans origine',                       \SBDRE\origineAutorisee('GET', ''),                       true);
+verifie('Une écriture de sbd.re passe',                         \SBDRE\origineAutorisee('POST', 'https://sbd.re'),        true);
+verifie('Une écriture de www.sbd.re passe',                     \SBDRE\origineAutorisee('DELETE', 'https://www.sbd.re'),  true);
+verifie('Une écriture SANS origine est refusée',                \SBDRE\origineAutorisee('POST', ''),                      false);
+verifie('Une écriture d\'un autre site est refusée',            \SBDRE\origineAutorisee('POST', 'https://exemple.re'),    false);
+verifie('« sbd.re.exemple.com » n\'est pas sbd.re',             \SBDRE\origineAutorisee('PATCH', 'https://sbd.re.exemple.com'), false);
+verifie('sbd.re sans https est refusé',                         \SBDRE\origineAutorisee('POST', 'http://sbd.re'),         false);
+verifie('La méthode en minuscules ne contourne rien',           \SBDRE\origineAutorisee('post', 'https://exemple.re'),    false);
 
-/* -------------------------------------------------------------------------
- * Modification et suppression
- * ---------------------------------------------------------------------- */
+titre('Forme du cookie de session');
 
-titre('Modification et suppression');
-
-verifie('Alice modifie sa performance',
-    \SBDRE\peutModifierPerformance($publiee, $alice), true);
-verifie('Bob NE modifie PAS celle d\'Alice',
-    \SBDRE\peutModifierPerformance($publiee, $bob), false);
-verifie('Un modérateur NE modifie PAS le contenu d\'un autre',
-    \SBDRE\peutModifierPerformance($publiee, $moderateur), false);
-verifie('Un anonyme ne modifie rien',
-    \SBDRE\peutModifierPerformance($publiee, $anonyme), false);
-verifie('Bob NE supprime PAS la performance d\'Alice',
-    \SBDRE\peutSupprimerPerformance($publiee, $bob), false);
-verifie('Alice supprime la sienne',
-    \SBDRE\peutSupprimerPerformance($publiee, $alice), true);
+verifie('Un jeton émis ici est bien formé',                     \SBDRE\jetonBienForme(bin2hex(random_bytes(32))), true);
+verifie('Un jeton trop court est refusé',                       \SBDRE\jetonBienForme(str_repeat('a', 63)),       false);
+verifie('Un jeton à caractère non hexadécimal est refusé',      \SBDRE\jetonBienForme(str_repeat('a', 63) . 'z'), false);
+verifie('Un jeton suivi d\'un retour à la ligne est refusé',    \SBDRE\jetonBienForme(str_repeat('a', 64) . "\n"), false);
+verifie('Un cookie vide est refusé',                            \SBDRE\jetonBienForme(''),                        false);
 
 /* -------------------------------------------------------------------------
- * Modération
- * ---------------------------------------------------------------------- */
-
-titre('Modération');
-
-verifie('Un anonyme ne modère pas',
-    \SBDRE\peutModerer($enAttente, $anonyme), false);
-verifie('Un membre simple ne modère pas',
-    \SBDRE\peutModerer($enAttente, $bob), false);
-verifie('Un modérateur modère la performance d\'un autre',
-    \SBDRE\peutModerer($enAttente, $moderateur), true);
-verifie('Un modérateur NE modère PAS la sienne',
-    \SBDRE\peutModerer($duModerateur, $moderateur), false);
-verifie('Un administrateur modère la sienne (seul modérateur du site)',
-    \SBDRE\peutModerer($deLAdmin, $admin), true);
-
-/* -------------------------------------------------------------------------
- * Champs modifiables
- *
- * C'est la protection contre le geste le plus simple et le plus efficace :
- * ajouter un champ au formulaire pour écrire une colonne qui ne regarde pas
- * l'utilisateur.
+ * Champs acceptés depuis une requête
  * ---------------------------------------------------------------------- */
 
 titre('Champs acceptés depuis une requête');
 
 $profilEnvoye = \SBDRE\filtrerChamps([
-    'pseudo'           => 'nouveau',
-    'role'             => 'admin',      // tentative de promotion
-    'courriel_verifie' => 1,            // tentative d'auto-validation
+    'bio'              => 'Squat le lundi',
+    'role'             => 'admin',      // se nommer admin
+    'courriel_verifie' => 1,            // se valider seul
+    'banni'            => 0,            // se débannir
+    'pseudo'           => 'autre',      // changer d'adresse
     'id'               => 999,
 ], \SBDRE\CHAMPS_PROFIL);
 
-verifie('Le pseudo est accepté',
-    array_key_exists('pseudo', $profilEnvoye), true);
-verifie('Se promouvoir « admin » est ignoré',
-    array_key_exists('role', $profilEnvoye), false);
-verifie('Valider soi-même son courriel est ignoré',
-    array_key_exists('courriel_verifie', $profilEnvoye), false);
-verifie('Changer son identifiant est ignoré',
-    array_key_exists('id', $profilEnvoye), false);
+verifie('La présentation est acceptée',             array_key_exists('bio', $profilEnvoye),              true);
+verifie('Se nommer admin est ignoré',               array_key_exists('role', $profilEnvoye),             false);
+verifie('Valider soi-même son adresse est ignoré',  array_key_exists('courriel_verifie', $profilEnvoye), false);
+verifie('Se débannir est ignoré',                   array_key_exists('banni', $profilEnvoye),            false);
+verifie('Changer de pseudo est ignoré',             array_key_exists('pseudo', $profilEnvoye),           false);
+verifie('Changer d\'identifiant est ignoré',        array_key_exists('id', $profilEnvoye),               false);
 
 $perfEnvoyee = \SBDRE\filtrerChamps([
-    'charge_kg'     => 200,
-    'etat'          => 'publiee',   // tentative d'auto-publication
-    'membre_id'     => 2,           // tentative de soumission au nom d'un autre
-    'moderateur_id' => 4,
+    'charge_kg'        => 200,
+    'membre_id'        => 2,           // publier au nom d'un autre
+    'admin_id'         => 5,           // se poser le badge admin
+    'date_verif_admin' => '2026-11-06',
 ], \SBDRE\CHAMPS_PERFORMANCE);
 
-verifie('La charge est acceptée',
-    array_key_exists('charge_kg', $perfEnvoyee), true);
-verifie('Se publier soi-même est ignoré',
-    array_key_exists('etat', $perfEnvoyee), false);
-verifie('Soumettre au nom d\'un autre est ignoré',
-    array_key_exists('membre_id', $perfEnvoyee), false);
-verifie('Se désigner modérateur de sa performance est ignoré',
-    array_key_exists('moderateur_id', $perfEnvoyee), false);
+verifie('La charge est acceptée',                   array_key_exists('charge_kg', $perfEnvoyee),        true);
+verifie('Publier au nom d\'un autre est ignoré',    array_key_exists('membre_id', $perfEnvoyee),        false);
+verifie('Se poser le badge admin est ignoré',       array_key_exists('admin_id', $perfEnvoyee),         false);
+verifie('Dater soi-même le badge est ignoré',       array_key_exists('date_verif_admin', $perfEnvoyee), false);
 
 /* -------------------------------------------------------------------------
  * Bilan

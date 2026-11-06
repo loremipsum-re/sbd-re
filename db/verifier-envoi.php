@@ -32,15 +32,34 @@ declare(strict_types=1);
  * domaine qui n'écrit jamais atterrit souvent en indésirables. Regarder ce
  * dossier avant de conclure à une panne.
  *
- *   Usage : php db/verifier-envoi.php [adresse]
+ * Il appelle la fonction partagée de public/api/lib/courriel.php, celle des
+ * formulaires et des comptes : c'est la chaîne réelle qu'on éprouve, pas une
+ * copie. Il la cherche dans le dépôt, puis à côté de ~/sbd-re-prive/ chez OVH.
+ *
+ *   Usage : php verifier-envoi.php [adresse]
  */
+
+namespace SBDRE;
 
 const DESTINATAIRE_PAR_DEFAUT = 'nathan@loremipsum.re';
 
-// Repris à l'identique de public/api/contact.php : c'est la chaîne réelle qu'on
-// veut éprouver, pas une approximation.
-const EXPEDITEUR = 'no-reply@sbd.re';
-const NOM_EXPEDITEUR = 'SBD.re';
+$bibliotheque = null;
+foreach ([
+    dirname(__DIR__) . '/public/api/lib/courriel.php', // depuis le dépôt
+    dirname(__DIR__) . '/sbd-re/api/lib/courriel.php',  // depuis ~/sbd-re-prive
+] as $chemin) {
+    if (is_file($chemin)) {
+        $bibliotheque = $chemin;
+        break;
+    }
+}
+if ($bibliotheque === null) {
+    fwrite(STDERR, "lib/courriel.php introuvable, ni dans le dépôt ni dans ~/sbd-re/api/lib/.\n");
+    exit(1);
+}
+
+define('SBDRE_API', true);
+require $bibliotheque;
 
 $destinataire = $argv[1] ?? DESTINATAIRE_PAR_DEFAUT;
 
@@ -63,8 +82,8 @@ if (PHP_OS_FAMILY === 'Windows' || $sendmail === '') {
     echo "  `mail()` délègue l'envoi à un binaire système, absent sur une\n";
     echo "  machine de développement. Ce n'est pas une panne : ce script est\n";
     echo "  fait pour tourner sur l'hébergement.\n\n";
-    echo "  Sur OVH, en SSH, depuis la racine du site :\n";
-    echo "      php db/verifier-envoi.php {$destinataire}\n";
+    echo "  Sur OVH, en SSH avec le login principal, depuis ~/sbd-re-prive :\n";
+    echo "      php verifier-envoi.php {$destinataire}\n";
     exit(2);
 }
 
@@ -78,14 +97,7 @@ $corps = implode("\n", [
     'Serveur : ' . (gethostname() ?: 'inconnu'),
 ]);
 
-$entetes = implode("\r\n", [
-    'From: ' . NOM_EXPEDITEUR . ' <' . EXPEDITEUR . '>',
-    'Content-Type: text/plain; charset=UTF-8',
-    'MIME-Version: 1.0',
-    'X-Mailer: sbd.re',
-]);
-
-$envoye = mail($destinataire, '[sbd.re] Essai d\'envoi', $corps, $entetes, '-f' . EXPEDITEUR);
+$envoye = envoyerCourriel($destinataire, '[sbd.re] Essai d\'envoi, accentué', $corps);
 
 if ($envoye) {
     echo "ACCEPTÉ : le serveur a pris le message en charge.\n\n";

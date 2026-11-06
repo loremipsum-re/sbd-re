@@ -322,6 +322,7 @@ try {
     $refuse('Pseudo de 31 caractères', $sqlMembre, ["d-$s@exemple.re", $hash, str_repeat('a', 31), $ip]);
     $refuse('Pseudo de 2 caractères', $sqlMembre, ["e-$s@exemple.re", $hash, 'ab', $ip]);
     $refuse('Pseudo à espace', $sqlMembre, ["f-$s@exemple.re", $hash, "jean $s", $ip]);
+    $refuse('Pseudo suivi d\'un retour à la ligne', $sqlMembre, ["h-$s@exemple.re", $hash, "jean$s\n", $ip]);
     $refuse('Pseudo déjà pris', $sqlMembre, ["g-$s@exemple.re", $hash, "essai_$s", $ip]);
     $refuse('Courriel déjà pris', $sqlMembre, ["essai-$s@exemple.re", $hash, "neuf_$s", $ip]);
     $refuse('Présentation de 161 caractères',
