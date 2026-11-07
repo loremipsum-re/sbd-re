@@ -33,6 +33,7 @@ if ($methode === 'GET') {
     repondreOk('', lireChat($canal, $depuis === false ? 0 : $depuis, $membre !== null) + [
         'en_ligne'      => enLigne(),
         'connecte'      => $membre !== null,
+        'pseudo'        => (string) ($membre['pseudo'] ?? ''),
         'intervalle'    => $membre !== null ? CHAT_INTERVALLE_MEMBRE : CHAT_INTERVALLE_VISITEUR,
         'avertissement' => AVERTISSEMENT_DOPAGE,
     ]);
