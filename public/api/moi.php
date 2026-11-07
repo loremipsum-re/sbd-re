@@ -20,6 +20,7 @@ namespace SBDRE;
 
 define('SBDRE_API', true);
 require __DIR__ . '/lib/comptes.php';
+require __DIR__ . '/lib/forum.php';
 
 $methode = ouvrirApi(['GET', 'PATCH', 'DELETE']);
 
@@ -40,7 +41,8 @@ if ($methode === 'GET') {
     $compte['admin'] = estAdmin($membre);
     $compte['avatar'] = $avatar !== null ? '/avatars/' . $compte['pseudo'] . '.webp?v=' . (int) $avatar['v'] : '';
 
-    repondreOk('', ['compte' => $compte]);
+    // « Mes sujets » de /compte/ : ceux qu'il a ouverts.
+    repondreOk('', ['compte' => $compte, 'sujets' => sujetsDuMembre((int) $membre['id'])]);
 }
 
 if ($methode === 'DELETE') {

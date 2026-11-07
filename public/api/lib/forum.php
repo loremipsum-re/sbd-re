@@ -679,6 +679,34 @@ function messagesDuSujet(int $sujetId, int $page): array
     );
 }
 
+/**
+ * Les sujets qu'un membre a ouverts, les plus récemment actifs d'abord, pour
+ * « Mes sujets » de /compte/. Le lien mène à la dernière page.
+ *
+ * @return list<array{titre: string, forum: string, lien: string, reponses: int, dernier_pseudo: string, dernier: string}>
+ */
+function sujetsDuMembre(int $membreId): array
+{
+    return array_map(
+        static fn (array $s): array => [
+            'titre'          => (string) $s['titre'],
+            'forum'          => (string) $s['forum'],
+            'lien'           => lienSujet((string) $s['adresse'], (int) $s['id'], pageDuMessage((int) $s['reponses'])),
+            'reponses'       => (int) $s['reponses'],
+            'dernier_pseudo' => (string) $s['dernier_pseudo'],
+            'dernier'        => dateHeureFr((int) $s['dernier_ts']),
+        ],
+        lignes(
+            "SELECT s.id, s.titre, s.reponses, s.dernier_pseudo, UNIX_TIMESTAMP(s.date_dernier) AS dernier_ts,
+                    f.adresse, f.titre AS forum
+               FROM sujet s JOIN forum f ON f.id = s.forum_id
+              WHERE s.membre_id = :m AND f.etat <> 'masque'
+              ORDER BY s.date_dernier DESC, s.id DESC LIMIT 20",
+            ['m' => $membreId],
+        ),
+    );
+}
+
 /* --- Forums des membres (docs/forum.md, section 6) --------------------- */
 
 const CATEGORIE_MEMBRES = 9;
