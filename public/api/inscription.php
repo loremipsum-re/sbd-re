@@ -74,7 +74,8 @@ if ($existant !== null) {
         ? 'Cette adresse a déjà un compte. Connectez-vous, ou demandez un nouveau mot de passe.'
         : 'Cette adresse attend sa confirmation. Connectez-vous : un nouveau lien partira.');
 }
-if (ligne('SELECT 1 FROM membre WHERE pseudo = :p', ['p' => $pseudo]) !== null) {
+// Un ancien pseudo reste réservé à son membre : personne ne le reprend.
+if (ligne('SELECT 1 FROM membre WHERE pseudo = :p OR pseudo_precedent = :p2', ['p' => $pseudo, 'p2' => $pseudo]) !== null) {
     refuser(409, 'Ce pseudo est déjà pris.');
 }
 

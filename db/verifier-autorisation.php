@@ -229,7 +229,9 @@ $profilEnvoye = \SBDRE\filtrerChamps([
     'role'             => 'admin',      // se nommer admin
     'courriel_verifie' => 1,            // se valider seul
     'banni'            => 0,            // se débannir
-    'pseudo'           => 'autre',      // changer d'adresse
+    'pseudo'           => 'autre',      // passe, puis la règle d'un an
+    'pseudo_precedent' => 'vole',       // garder l'ancien pseudo d'un autre
+    'date_pseudo'      => null,         // effacer son délai
     'id'               => 999,
 ], \SBDRE\CHAMPS_PROFIL);
 
@@ -237,7 +239,9 @@ verifie('La présentation est acceptée',             array_key_exists('bio', $p
 verifie('Se nommer admin est ignoré',               array_key_exists('role', $profilEnvoye),             false);
 verifie('Valider soi-même son adresse est ignoré',  array_key_exists('courriel_verifie', $profilEnvoye), false);
 verifie('Se débannir est ignoré',                   array_key_exists('banni', $profilEnvoye),            false);
-verifie('Changer de pseudo est ignoré',             array_key_exists('pseudo', $profilEnvoye),           false);
+verifie('Le pseudo passe, pour la règle d\'un an',  array_key_exists('pseudo', $profilEnvoye),           true);
+verifie('Écrire son ancien pseudo est ignoré',      array_key_exists('pseudo_precedent', $profilEnvoye), false);
+verifie('Effacer son délai de pseudo est ignoré',   array_key_exists('date_pseudo', $profilEnvoye),      false);
 verifie('Changer d\'identifiant est ignoré',        array_key_exists('id', $profilEnvoye),               false);
 
 $perfEnvoyee = \SBDRE\filtrerChamps([
@@ -304,13 +308,25 @@ verifie('Tiret refusé',                               \SBDRE\instagramValide('j
 verifie('Points seuls refusés',                       \SBDRE\instagramValide('..'),                 false);
 verifie('31 caractères refusés',                      \SBDRE\instagramValide(str_repeat('a', 31)),  false);
 verifie('Retour à la ligne final refusé',             \SBDRE\instagramValide("jean\n"),             false);
-verifie('Premier nom : accepté tout de suite',        \SBDRE\prochainInstagram(null, $maintenant) === 0, true);
+$insta = \SBDRE\DELAI_INSTAGRAM_MOIS;
+verifie('Premier nom : accepté tout de suite',        \SBDRE\prochainChangement(null, $insta, $maintenant) === 0, true);
 verifie('Changé il y a 5 mois : refusé',
-    \SBDRE\prochainInstagram(date('Y-m-d H:i:s', strtotime('-5 months', $maintenant)), $maintenant) > 0, true);
+    \SBDRE\prochainChangement(date('Y-m-d H:i:s', strtotime('-5 months', $maintenant)), $insta, $maintenant) > 0, true);
 verifie('Changé il y a 6 mois pile : accepté',
-    \SBDRE\prochainInstagram(date('Y-m-d H:i:s', strtotime('-6 months', $maintenant)), $maintenant) === 0, true);
+    \SBDRE\prochainChangement(date('Y-m-d H:i:s', strtotime('-6 months', $maintenant)), $insta, $maintenant) === 0, true);
 verifie('Changé le 6 novembre : prochain le 6 mai',
-    \SBDRE\dateFr(\SBDRE\prochainInstagram('2026-11-06 12:00:00', $maintenant)) === '6 mai 2027', true);
+    \SBDRE\dateFr(\SBDRE\prochainChangement('2026-11-06 12:00:00', $insta, $maintenant)) === '6 mai 2027', true);
+
+titre('Pseudo, une fois par an');
+
+$an = \SBDRE\DELAI_PSEUDO_MOIS;
+verifie('Premier changement : libre, pour une faute de frappe', \SBDRE\prochainChangement(null, $an, $maintenant) === 0, true);
+verifie('Changé il y a 11 mois : refusé',
+    \SBDRE\prochainChangement(date('Y-m-d H:i:s', strtotime('-11 months', $maintenant)), $an, $maintenant) > 0, true);
+verifie('Changé il y a un an pile : accepté',
+    \SBDRE\prochainChangement(date('Y-m-d H:i:s', strtotime('-12 months', $maintenant)), $an, $maintenant) === 0, true);
+verifie('Changé le 6 novembre 2026 : prochain le 6 novembre 2027',
+    \SBDRE\dateFr(\SBDRE\prochainChangement('2026-11-06 12:00:00', $an, $maintenant)) === '6 novembre 2027', true);
 verifie('Le premier du mois s\'écrit « 1er »',        \SBDRE\dateFr(strtotime('2027-05-01 10:00:00')) === '1er mai 2027', true);
 verifie('Sans le jour : « novembre 2026 »',           \SBDRE\dateFr($maintenant, false) === 'novembre 2026', true);
 
