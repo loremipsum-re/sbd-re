@@ -576,13 +576,8 @@ avec ses questions, avant d'écrire une ligne.
   adresse renvoie en 301 vers le profil renommé. Pour une demande spéciale,
   en attendant la page d'admin de la phase 8 :
   `UPDATE membre SET date_pseudo = NULL WHERE pseudo = '…'` dans phpMyAdmin.
-- **Un forum « comme dans l'ancien temps »**, que le profil accompagnera :
-  catégories, sujets, réponses. Un premier forum dédié à l'haltéro, puis des
-  forums publics que les membres créent sur des sujets précis. À trancher
-  au moment de le planifier : « haltéro » désigne-t-il l'haltérophilie ou la
-  musculation en général ; le forum remplace-t-il le chat de la phase 7 ou
-  s'y ajoute-t-il ; qui peut créer un forum, et qui le modère.
-- **Un fil d'actualité** sur ce forum.
-- **Des avatars personnalisés, en 300 × 300**, fournis par chaque membre.
-  Plus tard : une image envoyée par un visiteur demande un contrôle de
-  format et de contenu, et sort du « texte seul » de la version 1.
+- **Le forum, le fil, les notifications et les avatars** ont leur propre
+  plan, [forum.md](forum.md), préparé le même jour : catégories proposées,
+  modèle de données, ordre de construction et huit questions. Le chat y est
+  revu (personnes en ligne, lecture des visiteurs) et sa phase 7 y est
+  reprise.
