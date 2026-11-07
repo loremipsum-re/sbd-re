@@ -73,8 +73,9 @@ Six tables de plus, sur le modèle de [comptes.md](comptes.md), section 3.
   compte effacé), texte, dates de création et de modification, masqué par,
   et `sensible`, posé quand un mot de la liste du dopage y figure (section
   5 bis). La table `message` du chat reçoit la même colonne.
-- **`abonnement`** : un membre suit un sujet. On suit d'office un sujet qu'on
-  ouvre ou auquel on répond.
+- **`abonnement`** : un membre suit un sujet. On suit d'office les sujets
+  qu'on ouvre, et on s'en désabonne d'un bouton (choix de l'auteur du
+  7 novembre). Les autres se suivent par un bouton « Suivre ce sujet ».
 - **`notification`** : membre, nature, lien, lue ou non, date.
 
 La présence en ligne n'a pas besoin de table : une colonne
@@ -96,18 +97,22 @@ natures pour commencer :
 - le badge communauté ou admin posé sur une de ses performances ;
 - un message masqué ou une performance retirée par la modération.
 
-**Un récapitulatif par courriel, deux fois par semaine**, choix de l'auteur
-du 7 novembre 2026 (« bi-hebdo », à confirmer : question 1). Jamais un
-courriel par réponse, qui ferait exploser le quota d'envoi de l'hébergement.
-Le récapitulatif reprend les notifications non lues depuis le précédent, et
-ne part pas s'il n'y a rien. Trois points :
+**Un récapitulatif par courriel, toutes les deux semaines, pour qui le
+demande**, choix de l'auteur du 7 novembre 2026. Jamais un courriel par
+réponse, qui ferait exploser le quota d'envoi de l'hébergement. Le
+récapitulatif reprend les notifications non lues depuis le précédent, et ne
+part pas s'il n'y a rien. Quatre points :
 
+- **Coupé par défaut.** Le membre l'active d'un bouton dans `/compte/`, et le
+  coupe par un lien dans chaque courriel ou par le même bouton. Deux
+  colonnes de plus sur `membre` : `recapitulatif` (0 ou 1) et la date du
+  dernier envoi.
+- **Les sujets qu'on ouvre notifient d'office**, et chacun se coupe d'un
+  bouton « Ne plus suivre » (section 3, `abonnement`).
 - **Il demande une tâche planifiée**, la première du projet : l'onglet
-  « Tâches planifiées (Cron) » de l'hébergement OVH lance un script PHP aux
-  jours choisis. Rien ne peut l'attendre d'une visite.
-- **Il se coupe en un clic**, par un lien dans chaque courriel et par une
-  case dans `/compte/`. Activé par défaut, puisqu'il ne parle que du compte
-  du membre (question 2).
+  « Tâches planifiées (Cron) » de l'hébergement OVH lance un script PHP
+  chaque semaine, qui n'écrit qu'aux membres dont le dernier récapitulatif
+  date de quatorze jours ou plus. Rien ne peut l'attendre d'une visite.
 - **Les adresses iCloud n'en reçoivent pas**, comme les autres courriels du
   site (comptes.md, section 6.1).
 
@@ -276,15 +281,11 @@ donnent au profil son contenu :
 - **Balises d'époque et emojis du téléphone.** Section 6 bis.
 - **Forums des membres publiés aussitôt, avec un espace de modération
   prêt.** Section 6.
-- **Notifications sur le site, et un récapitulatif par courriel.**
-  Section 4.
+- **Notifications sur le site, et un récapitulatif par courriel toutes les
+  deux semaines, coupé par défaut et activé par le membre.** Les sujets
+  qu'on ouvre notifient d'office, et se coupent. Section 4.
 - **Les personnes en ligne, visibles de tous.** Section 5.
 - **Le fil** : l'auteur ne sait pas encore. Proposition par défaut en
   section 6 ter.
 
-**Encore ouvertes :**
-
-1. **« Bi-hebdo »** : deux fois par semaine, ou une fois toutes les deux
-   semaines ? Le mot sert aux deux. Le plan suppose deux fois par semaine.
-2. **Le récapitulatif**, activé par défaut avec un lien pour le couper, ou
-   coupé par défaut et activé par le membre ?
+Aucune question ne reste ouverte. Le fil se revoit à l'usage.
