@@ -313,3 +313,75 @@
   font: inherit;
   cursor: pointer;
 }
+
+/* Le fil « À vérifier » : une carte par barre, ses deux boutons au pied. */
+.fil-verifier {
+  display: grid;
+  gap: var(--space-4);
+  margin: var(--space-6) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fil-verifier li {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.fil-verifier p {
+  margin: 0;
+}
+
+.fil-verifier .barre {
+  font-weight: 700;
+}
+
+.fil-verifier a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+}
+
+.choix-vote {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.fil-verifier button {
+  min-height: var(--cible-min);
+  padding: var(--space-2) var(--space-4);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fil-verifier button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* L'avis donné : l'aplat sous un filet d'accent, jamais l'aplat seul
+   (critère 1.4.11 en thème clair, voir ProgressChart.astro). */
+.fil-verifier button[aria-pressed='true'],
+.fil-verifier button[aria-pressed='true']:hover {
+  border-color: var(--accent);
+  background: var(--accent-fill);
+  color: var(--on-accent);
+}
+
+.fil-verifier button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fil-verifier button.secondaire {
+  justify-self: start;
+}

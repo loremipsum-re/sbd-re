@@ -51,6 +51,7 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
       <section data-compte hidden>
         <ul class="liens-compte">
           <li><a href="/compte/" data-lien-profil>Voir mon profil public</a></li>
+          <li><a href="/compte/a-verifier/">Vérifier les performances des autres</a></li>
         </ul>
 
         <h2>Mes performances</h2>
@@ -151,12 +152,16 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
     categorie: string | null;
     date_performance: string;
     lien_video: string;
-    date_verif_admin: string | null;
+    /** Calculé par badgeDe() de lib/performances.php, comme sur le profil. */
+    badge: '' | 'admin' | 'communaute';
+    votes: number | string;
   }
   type Records = Record<string, { barres: Partial<Record<Performance['mouvement'], Performance>>; total: number | null }>;
 
   const MOUVEMENTS = { squat: 'Squat', bench: 'Développé couché', deadlift: 'Soulevé de terre' };
   const EQUIPEMENTS: Record<string, string> = { raw: 'Raw', wraps: 'Bandes', equipped: 'Équipé' };
+  /** Les mêmes mots que LIBELLES_BADGE de lib/profil.php. */
+  const BADGES = { admin: 'Vérifiée par SBD.re', communaute: 'Vérifiée par la communauté', '': 'Non vérifiée' };
   /** Les catégories féminines actuelles : elles ne recoupent pas les masculines. */
   const FEMMES = new Set(['47', '52', '57', '63', '69', '76', '84', '84+']);
 
@@ -291,9 +296,11 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
           video.rel = 'ugc nofollow';
           marquerLienSortant(video);
 
+          // Sans badge, le nombre d'avis dit où en est la vérification.
+          const avis = Number(p.votes);
           const etat = Object.assign(document.createElement('span'), {
-            className: p.date_verif_admin ? 'verif verif-oui' : 'verif verif-non',
-            textContent: p.date_verif_admin ? 'Vérifiée par SBD.re' : 'Non vérifiée',
+            className: p.badge ? 'verif verif-oui' : 'verif verif-non',
+            textContent: p.badge || avis === 0 ? BADGES[p.badge] : `${BADGES['']}, ${avis} avis`,
           });
 
           const retirer = Object.assign(document.createElement('button'), {
