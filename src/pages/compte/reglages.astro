@@ -122,6 +122,25 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
           <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
         </form>
 
+        <h2>Avatar</h2>
+        <img class="avatar-reglages" data-avatar-apercu alt="Votre avatar actuel" width="96" height="96" hidden />
+        <form class="form-compte" data-avatar novalidate>
+          <div class="champ">
+            <label for="image-avatar">Image</label>
+            <input id="image-avatar" name="image" type="file" accept="image/jpeg,image/png,image/webp" required aria-describedby="aide-avatar" />
+            <p class="aide" id="aide-avatar">
+              JPEG, PNG ou WebP, 2 Mo au plus, 150 pixels de côté au moins. L'image
+              est recadrée au centre en carré de 300 × 300 pixels, et ses
+              métadonnées, comme la position GPS d'une photo, sont effacées.
+            </p>
+          </div>
+          <div class="actions">
+            <button type="submit">Enregistrer l'avatar</button>
+            <button type="button" class="secondaire" data-avatar-retirer hidden>Retirer l'avatar</button>
+          </div>
+          <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+        </form>
+
         <h2>Session</h2>
         <form class="form-compte" data-deconnexion novalidate>
           <div class="actions">
@@ -162,7 +181,42 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
 </BaseLayout>
 
 <script>
-  import { api, brancher, champ, confirmer } from '../../lib/api-compte';
+  import { afficher, api, brancher, champ, confirmer, type ReponseApi } from '../../lib/api-compte';
+
+  /* --- L'avatar : envoyé en multipart, réencodé par le serveur ------------ */
+
+  const apercu = document.querySelector<HTMLImageElement>('[data-avatar-apercu]')!;
+  const formAvatar = document.querySelector<HTMLFormElement>('[data-avatar]')!;
+  const retirerAvatar = formAvatar.querySelector<HTMLButtonElement>('[data-avatar-retirer]')!;
+  const montrerAvatar = (adresse: string) => {
+    apercu.hidden = adresse === '';
+    if (adresse !== '') apercu.src = adresse;
+    retirerAvatar.hidden = adresse === '';
+  };
+
+  // Un fichier ne passe pas en JSON : un envoi à part, sans api(), qui garde
+  // le même contrat de réponse.
+  brancher(
+    formAvatar,
+    async (donnees) => {
+      try {
+        const reponse = await fetch('/api/avatar.php', { method: 'POST', body: donnees, credentials: 'same-origin' });
+        const lu = (await reponse.json().catch(() => ({}))) as Partial<ReponseApi>;
+        return { ...lu, ok: lu.ok === true, message: lu.message ?? 'Réponse illisible du serveur.', statut: reponse.status } as ReponseApi;
+      } catch {
+        return { ok: false, message: 'Connexion impossible. Vérifiez votre réseau, puis réessayez.', statut: 0 };
+      }
+    },
+    (r) => {
+      montrerAvatar(String(r.adresse ?? ''));
+      formAvatar.reset();
+    },
+  );
+  retirerAvatar.addEventListener('click', async () => {
+    const r = await api('/api/avatar.php', 'DELETE');
+    afficher(formAvatar.querySelector<HTMLElement>('[data-etat]')!, r.message, r.ok);
+    if (r.ok) montrerAvatar('');
+  });
 
   const bonjour = document.querySelector<HTMLElement>('[data-bonjour]')!;
   const section = document.querySelector<HTMLElement>('[data-compte]')!;
@@ -231,6 +285,7 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
       }
 
       const compte = lecture.compte as Compte;
+      montrerAvatar(String((lecture.compte as { avatar?: string }).avatar ?? ''));
       bonjour.textContent = `Connecté en tant que ${compte.pseudo}, adresse ${compte.courriel}.`;
       section.hidden = false;
 

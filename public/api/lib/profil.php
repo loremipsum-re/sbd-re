@@ -24,6 +24,7 @@ if (!defined('SBDRE_API')) {
 
 require_once __DIR__ . '/comptes.php';
 require_once __DIR__ . '/performances.php';
+require_once __DIR__ . '/avatar.php';
 
 /** Le lien d'une vidéo : sortant, annoncé, et `ugc nofollow` puisqu'un membre l'a écrit. */
 function lienVideo(string $adresse): string
@@ -191,6 +192,11 @@ function rendreProfil(array $membre, string $gabarit, array $salles, array $perf
         '%%FICHE%%'        => $htmlFiche,
         '%%RECORDS%%'      => rendrePerformances($performances),
         '%%DONNEES%%'      => (string) $donnees,
+        // L'avatar, décoratif : le pseudo, en titre juste dessous, dit qui c'est.
+        '%%AVATAR%%'       => ($membre['avatar_v'] ?? null) !== null
+            ? '<img class="avatar-profil" src="' . e(adresseAvatar($pseudo, (int) $membre['avatar_v'])) . '" alt="" width="96" height="96">'
+            : '',
+        '%%MEMBRE%%'       => (string) (int) ($membre['id'] ?? 0),
         '/membres/-gabarit/' => '/membres/' . e($pseudo) . '/',
     ]);
 }

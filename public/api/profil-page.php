@@ -60,7 +60,8 @@ if ($pseudo !== $demande) {
 
 try {
     $membre = ligne(
-        'SELECT id, pseudo, bio, salle, instagram, instagram_visible, date_inscription
+        'SELECT id, pseudo, bio, salle, instagram, instagram_visible, date_inscription,
+                (SELECT UNIX_TIMESTAMP(a.date_maj) FROM avatar a WHERE a.membre_id = membre.id) AS avatar_v
            FROM membre
           WHERE pseudo = :p AND courriel_verifie = 1 AND banni = 0',
         ['p' => $pseudo],
