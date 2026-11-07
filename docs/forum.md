@@ -1,8 +1,8 @@
 # Le forum, le fil et les notifications
 
-Plan de travail préparé le 7 novembre 2026, à la demande de l'auteur. Rien
-n'est construit : ce document propose les catégories et l'organisation, et
-liste les questions à trancher avant d'écrire une ligne. Il s'appuie sur
+Plan de travail préparé le 7 novembre 2026, à la demande de l'auteur. Les
+étapes 1 à 5 de la section 8 sont construites le même jour, en essai : voir
+« Construit le 7 novembre », à la fin de cette section. Il s'appuie sur
 [comptes.md](comptes.md), dont il reprend les comptes, les profils, la
 modération et les smileys d'époque.
 
@@ -251,18 +251,58 @@ que le site recevrait une image d'un visiteur, d'où un chantier à part.
 Après les phases 5 (performances) et 6 (vérification) de comptes.md, qui
 donnent au profil son contenu :
 
-1. **Schéma** du forum, comme la phase 1 des comptes.
-2. **Lecture** : catégories, forums, sujets paginés, rendus par PHP depuis
+1. [x] **Schéma** du forum, comme la phase 1 des comptes.
+2. [x] **Lecture** : catégories, forums, sujets paginés, rendus par PHP depuis
    des gabarits d'Astro, comme les profils, et indexés par Google.
-3. **Écriture** : ouvrir un sujet, répondre, citer, smileys d'époque.
-4. **Notifications** : la cloche, la page, les abonnements.
-5. **Chat revu** : en ligne, lecture des visiteurs. Remplace la phase 7 des
+3. [x] **Écriture** : ouvrir un sujet, répondre, citer, smileys d'époque.
+4. [x] **Notifications** : la cloche, la page, les abonnements.
+5. [x] **Chat revu** : en ligne, lecture des visiteurs. Remplace la phase 7 des
    comptes.
 6. **Le fil.**
 7. **Forums des membres.**
 8. **Modération** : signalements et page d'admin, partagés avec les
    comptes, phase 8.
 9. **Avatars**, en dernier.
+
+**Cadence demandée par l'auteur le 7 novembre** : cinq étapes d'un trait,
+puis une seule série de tests en production.
+
+### Construit le 7 novembre, étapes 1 à 5
+
+- **Schéma** : `db/migration-2026-11-07-forum.sql` pour la base en place,
+  recopié à la fin de `schema.sql`. Six tables, trois colonnes sur `membre`
+  (présence, récapitulatif), `sensible` sur `message`, et les 19 forums de
+  départ de la section 2.
+- **Lecture** : `/forum/`, `/forum/<adresse>/`, `/forum/<adresse>/<sujet>/`,
+  paginés par `?page=N`, rendus par `api/forum-page.php` depuis
+  `/forum/-gabarit/`. **En `noindex` jusqu'à l'ouverture** (`FORUM_OUVERT`
+  de `lib/forum.php`) : un sujet d'essai n'entre pas dans Google. Un sujet
+  porte un JSON-LD `DiscussionForumPosting`.
+- **Écriture** : `api/forum.php`, actions `sujet`, `reponse`, `suivre`.
+  Balises `[b]`, `[i]`, `[quote=pseudo]`, `[url]` rendues sur le texte
+  échappé ; smileys d'époque, seize SVG contrôlés un à un dans
+  `public/smileys/`. Cinq sujets par jour, un message toutes les quinze
+  secondes, 5 000 caractères.
+- **Dopage** : `lib/moderation.php`, deux listes. Un mot sensible renvoie
+  d'abord un 409 avec l'avertissement, le second envoi confirme : l'auteur
+  est prévenu **avant** la publication sans que la liste quitte le serveur.
+- **Notifications** : `api/notifications.php`, `/compte/notifications/`, la
+  cloche de l'en-tête et le cookie lisible `sbdre-connecte`. Réponse dans
+  un sujet suivi, mention `@pseudo`, badge admin ou communauté.
+- **Chat** : `api/chat.php` et `/communaute/chat/`, page `prive` jusqu'à
+  l'ouverture, où il rejoindra `/communaute/`.
+- **Tests** : `php db/verifier-autorisation.php` (195 règles),
+  `node scripts/verifier-smileys.mjs` (7 cas), et la section 6 de
+  `php db/verifier.php`, qui rejoue forum, chat et notifications sur MySQL.
+
+**Écarts annoncés** :
+
+- **La cloche est une icône avec un nombre**, sans le mot : « Notifications »
+  ne tient pas à 375 px à côté du logo et du menu. Le mot est dit aux
+  lecteurs d'écran. C'est la seule icône du site sans libellé visible.
+- **Laissés pour plus tard** : le récapitulatif par courriel (ses colonnes
+  existent, il attend sa tâche planifiée), la modification d'un message, et
+  la notification de modération (phase 8).
 
 ---
 
