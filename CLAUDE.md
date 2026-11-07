@@ -82,12 +82,12 @@ la mention « à compléter » tant que l'auteur ne les a pas fournis.
 | `/competitions/` | Liste, puis `/competitions/<nom>/<date>/` et ses records battus ce jour-là |
 | `/exterieur/` | Résultats obtenus hors de La Réunion |
 | `/athlete/<slug>/` | Une fiche par athlète |
-| `/communaute/` | Page d'attente du classement communauté : son état en une phrase, trois actions, le fonctionnement prévu |
+| `/communaute/` | L'entrée de la communauté depuis l'ouverture du 7 novembre 2026 : le forum, le fil, les barres à vérifier, le compte, le fonctionnement, puis le chat (`components/Chat.astro`). `/communaute/chat/` y renvoie |
 | `/membres/<pseudo>/` | Profil public, rendu par `api/profil-page.php` depuis le gabarit `/membres/-gabarit/` (repères `%%NOM%%`), réécrit par le `.htaccess`. `noindex` tant que le profil n'a pas de performance. Plan des profils à `/sitemap-membres.xml` |
-| `/compte/`, `/compte/reglages/`, `/compte/a-verifier/`, `/compte/inscription/`, `/compte/connexion/`, `/compte/mot-de-passe/`, `/communaute/charte/` | Les comptes, servis par `public/api/*.php`. `/compte/` est l'accueil du membre (performances, position au classement d'après `/api/positions.json`), les réglages derrière l'engrenage, le fil des barres à vérifier à `/compte/a-verifier/`. Prop `prive` de `BaseLayout` : `noindex`, hors plan de site, jamais de Clarity. Hors du menu jusqu'à l'ouverture, phase 9 de docs/comptes.md |
-| `/forum/`, `/forum/<adresse>/`, `/forum/<adresse>/<sujet>/` | Le forum, rendu par `api/forum-page.php` depuis le gabarit `/forum/-gabarit/`, comme les profils. `noindex` jusqu'à l'ouverture (`FORUM_OUVERT` de `lib/forum.php`). Écritures par `api/forum.php`, plan dans docs/forum.md |
+| `/compte/`, `/compte/reglages/`, `/compte/a-verifier/`, `/compte/inscription/`, `/compte/connexion/`, `/compte/mot-de-passe/`, `/communaute/charte/` | Les comptes, servis par `public/api/*.php`. `/compte/` est l'accueil du membre (performances, position au classement d'après `/api/positions.json`), les réglages derrière l'engrenage, le fil des barres à vérifier à `/compte/a-verifier/`. Prop `prive` de `BaseLayout` : `noindex`, hors plan de site, jamais de Clarity. Hors du menu : on y entre par Communauté |
+| `/forum/`, `/forum/<adresse>/`, `/forum/<adresse>/<sujet>/` | Le forum, rendu par `api/forum-page.php` depuis le gabarit `/forum/-gabarit/`, comme les profils. Indexé depuis l'ouverture (`FORUM_OUVERT` de `lib/forum.php`), plan à `/sitemap-forum.xml`. Écritures par `api/forum.php`, plan dans docs/forum.md |
 | `/forum/fil/`, `/compte/admin/`, `/avatars/<pseudo>.webp` | Le fil d'activité (adresse réservée du forum), l'espace de modération (404 à qui n'est pas admin, `api/admin.php`), les avatars gardés en base et servis par `api/avatar.php` : le déploiement efface tout fichier absent du site généré |
-| `/communaute/chat/`, `/compte/notifications/` | Le chat (`api/chat.php`) et les notifications (`api/notifications.php`), pages `prive` jusqu'à l'ouverture. La cloche de l'en-tête ne paraît qu'avec le cookie lisible `sbdre-connecte`, posé à la connexion |
+| `/compte/notifications/` | Les notifications (`api/notifications.php`), page `prive`. Le chat (`api/chat.php`) vit dans `/communaute/`. La cloche de l'en-tête ne paraît qu'avec le cookie lisible `sbdre-connecte`, posé à la connexion |
 | `/suggestions/` | Boîte à suggestions anonyme, servie par `public/api/suggestion.php` |
 | `/mises-a-jour/` | Journal des changements : chiffres des données calculés, entrées du site écrites dans `src/lib/journal.ts` |
 | `/accessibilite/` | Audit d'accessibilité mené par la mesure, méthode, résultats et limites |
@@ -107,7 +107,8 @@ choix de l'auteur du 27 octobre 2026. Dès 48rem, la barre porte Classement,
 Records et Catégories (champ `barre`), puis le bouton Menu. Le panneau range
 les rubriques en trois familles, Classements, Outils et Le site, sur deux
 colonnes dès 22,5rem. `/exterieur/` s'y appelle « Hors de l'île ». Communauté
-porte l'étiquette « Bientôt » (champ `etiquette`). Mises à jour et pages
+et Forum ferment Le site depuis l'ouverture ; le champ `etiquette` reste
+pour une prochaine rubrique « Bientôt ». Mises à jour et pages
 légales vivent au pied de page seulement (`piedSeulement`), qui suit le même
 plan. Les identifiants de `FAMILLES` nomment des zones de grille dans
 `BaseLayout.astro` et `SiteFooter.astro` : une famille ajoutée demande sa zone
@@ -179,10 +180,11 @@ Points à ne pas casser :
 
 ## Infographies
 
-Vingt infographies, écrites en HTML et CSS dans `src/components/infographies/`,
+Dix-neuf infographies, écrites en HTML et CSS dans `src/components/infographies/`,
 autour d'un cadre commun, `Infographie.astro`. Une par page qui demande une
-explication : seules les mentions légales, la page 404 et la liste des
-actualités n'en ont pas.
+explication : les mentions légales, la page 404, la liste des actualités,
+`/communaute/` et les pages du forum n'en ont pas. Celle des tranches de la
+communauté est partie avec elles, à l'ouverture.
 
 - **Dans un article** : le champ `infographie` du frontmatter la pose entre le
   chapeau et le texte. Le catalogue `lib/infographies.ts` liste celles qu'un
