@@ -258,11 +258,11 @@ donnent au profil son contenu :
 4. [x] **Notifications** : la cloche, la page, les abonnements.
 5. [x] **Chat revu** : en ligne, lecture des visiteurs. Remplace la phase 7 des
    comptes.
-6. **Le fil.**
-7. **Forums des membres.**
-8. **Modération** : signalements et page d'admin, partagés avec les
+6. [x] **Le fil.**
+7. [x] **Forums des membres.**
+8. [x] **Modération** : signalements et page d'admin, partagés avec les
    comptes, phase 8.
-9. **Avatars**, en dernier.
+9. [x] **Avatars**, en dernier.
 
 **Cadence demandée par l'auteur le 7 novembre** : cinq étapes d'un trait,
 puis une seule série de tests en production.
@@ -301,8 +301,49 @@ puis une seule série de tests en production.
   ne tient pas à 375 px à côté du logo et du menu. Le mot est dit aux
   lecteurs d'écran. C'est la seule icône du site sans libellé visible.
 - **Laissés pour plus tard** : le récapitulatif par courriel (ses colonnes
-  existent, il attend sa tâche planifiée), la modification d'un message, et
-  la notification de modération (phase 8).
+  existent, il attend sa tâche planifiée) et la modification d'un message.
+
+### Revu le 7 novembre, à la demande de l'auteur
+
+- **Les smileys dans un petit panneau replié**, « Smileys », comme le cadre
+  de phpBB, et le jeu complet de phpBB : vingt-quatre, les huit derniers
+  contrôlés comme les autres. Boutons de 32 px, **cinquième exclusion** à la
+  règle des 44 px, notée dans `tokens.css` : au-dessus des 24 px du critère
+  2.5.8 des WCAG 2.2.
+- **La lecture, d'après l'index de phpBB et Reddit** : une barre par
+  catégorie qui nomme ses colonnes (Sujets, Messages, Dernier message), une
+  ligne par forum ou par sujet, cartes sur téléphone. Dans un sujet, l'auteur
+  en colonne, le numéro du message en lien permanent, « Auteur du sujet »
+  comme le OP de Reddit, et « Nouveau sujet » en tête de forum. Le forum
+  « ATOC » cité en exemple n'a pas été trouvé : le modèle est l'index d'un
+  phpBB classique.
+
+### Construit le 7 novembre, étapes 6 à 9
+
+- **Le fil** : `/forum/fil/`, adresse réservée, les nouveaux sujets, les
+  réponses et les performances vérifiées. Le badge communauté reçoit sa date,
+  `performance.date_verif_communaute`, posée par l'avis qui le fait tomber.
+- **Forums des membres** : « Créer un forum » sous la catégorie des membres.
+  Inscrit depuis 30 jours, un forum par mois, publié aussitôt ; le nom passe
+  le filtre strict, dopage compris, qui n'a pas de forum à lui. Le créateur
+  épingle et ferme dans son forum. Six mois sans message : archive, faite à
+  la lecture de l'accueil, sans tâche planifiée.
+- **Modération** : `api/signalements.php` (message du chat ou du forum,
+  profil, performance, forum ; dix par jour, un par cible), et `/compte/admin/`
+  sur `api/admin.php`, qui répond 404 à qui n'est pas admin. Masquer,
+  retirer, bannir, retirer un avatar, changer l'état d'un forum, classer.
+  L'auteur reçoit une notification « moderation ». Un admin ne se bannit pas.
+  **Pas de renommage de forum** : masquer suffit contre un nom abusif.
+- **Avatars** : `api/avatar.php`, servis à `/avatars/<pseudo>.webp`.
+  **Gardés en base, pas en fichier** : le déploiement (`mirror --delete`)
+  effacerait tout fichier déposé dans le dossier public. GD recadre, réduit à
+  300 × 300 et réencode en WebP, ce qui efface les métadonnées. JPEG, PNG,
+  WebP, de 150 à 4 000 pixels de côté, 2 Mo.
+- **La charte** reçoit le forum, les forums des membres, l'avatar et la règle
+  du dopage.
+- **Tests** : `php -d extension=gd db/verifier-autorisation.php` (215 règles,
+  210 sans GD), et `php db/verifier.php` sur le serveur, qui éprouve aussi
+  GD et WebP.
 
 ---
 

@@ -86,6 +86,7 @@ la mention « à compléter » tant que l'auteur ne les a pas fournis.
 | `/membres/<pseudo>/` | Profil public, rendu par `api/profil-page.php` depuis le gabarit `/membres/-gabarit/` (repères `%%NOM%%`), réécrit par le `.htaccess`. `noindex` tant que le profil n'a pas de performance. Plan des profils à `/sitemap-membres.xml` |
 | `/compte/`, `/compte/reglages/`, `/compte/a-verifier/`, `/compte/inscription/`, `/compte/connexion/`, `/compte/mot-de-passe/`, `/communaute/charte/` | Les comptes, servis par `public/api/*.php`. `/compte/` est l'accueil du membre (performances, position au classement d'après `/api/positions.json`), les réglages derrière l'engrenage, le fil des barres à vérifier à `/compte/a-verifier/`. Prop `prive` de `BaseLayout` : `noindex`, hors plan de site, jamais de Clarity. Hors du menu jusqu'à l'ouverture, phase 9 de docs/comptes.md |
 | `/forum/`, `/forum/<adresse>/`, `/forum/<adresse>/<sujet>/` | Le forum, rendu par `api/forum-page.php` depuis le gabarit `/forum/-gabarit/`, comme les profils. `noindex` jusqu'à l'ouverture (`FORUM_OUVERT` de `lib/forum.php`). Écritures par `api/forum.php`, plan dans docs/forum.md |
+| `/forum/fil/`, `/compte/admin/`, `/avatars/<pseudo>.webp` | Le fil d'activité (adresse réservée du forum), l'espace de modération (404 à qui n'est pas admin, `api/admin.php`), les avatars gardés en base et servis par `api/avatar.php` : le déploiement efface tout fichier absent du site généré |
 | `/communaute/chat/`, `/compte/notifications/` | Le chat (`api/chat.php`) et les notifications (`api/notifications.php`), pages `prive` jusqu'à l'ouverture. La cloche de l'en-tête ne paraît qu'avec le cookie lisible `sbdre-connecte`, posé à la connexion |
 | `/suggestions/` | Boîte à suggestions anonyme, servie par `public/api/suggestion.php` |
 | `/mises-a-jour/` | Journal des changements : chiffres des données calculés, entrées du site écrites dans `src/lib/journal.ts` |
@@ -269,7 +270,7 @@ pour un chiffre dans une colonne.
 **Tout contrôle fait au moins 44 px**, jeton `--cible-min`, règle globale dans
 `tokens.css`. Un nouveau bouton en hérite sans rien demander. Employer
 `min-height` et jamais `height` : le texte doit rester libre de grandir. Les
-quatre exclusions sont écrites dans `tokens.css`, ne pas en ajouter sans
+cinq exclusions sont écrites dans `tokens.css`, ne pas en ajouter sans
 mesurer. La quatrième est le terme souligné du lexique, une cible dans une
 phrase que le critère 2.5.8 des WCAG 2.2 exempte.
 
@@ -457,7 +458,7 @@ faute de l'avoir fait.
 
 ```bash
 php -l <fichier>                    # contrôle de syntaxe
-php db/verifier-autorisation.php    # règles d'autorisation et du forum, sans base
+php -d extension=gd db/verifier-autorisation.php  # règles sans base ; GD pour les avatars
 node scripts/verifier-smileys.mjs   # autotest des smileys d'époque du chat
 ```
 
