@@ -48,8 +48,10 @@ Quelques choix derrière ce tableau :
   compléments alimentaires et tout produit à avaler en sont exclus.
 - **« Blessures et récupération »** porte un avertissement en tête : rien n'y
   remplace un avis médical.
-- **Le dopage n'a pas de forum**, et la charte en interdit la promotion comme
-  la vente (question 8).
+- **« Haltéro » veut dire haltérophilie**, réponse de l'auteur du 7 novembre :
+  la catégorie reste telle que le tableau la décrit.
+- **Le dopage n'a pas de forum à lui, mais il se discute** partout où il a sa
+  place, sous avertissement automatique : voir la section 5 bis.
 
 ---
 
@@ -65,7 +67,9 @@ Six tables de plus, sur le modèle de [comptes.md](comptes.md), section 3.
   exception : la liste d'un forum les lit à chaque visite, et les recompter
   coûterait une requête par sujet.
 - **`message_forum`** : sujet, auteur, pseudo copié (comme le chat, pour un
-  compte effacé), texte, dates de création et de modification, masqué par.
+  compte effacé), texte, dates de création et de modification, masqué par,
+  et `sensible`, posé quand un mot de la liste du dopage y figure (section
+  5 bis). La table `message` du chat reçoit la même colonne.
 - **`abonnement`** : un membre suit un sujet. On suit d'office un sujet qu'on
   ouvre ou auquel on répond.
 - **`notification`** : membre, nature, lien, lue ou non, date.
@@ -120,8 +124,48 @@ Ce qui change par rapport à [comptes.md](comptes.md), section 6.4 :
   de 5 : un mutualisé tient mal des dizaines de visiteurs qui interrogent
   toutes les cinq secondes.
 
-Le chat devient donc **lisible par tout le monde**. Le ton « plus libre »
-prévu pour des membres entre eux est à revoir (question 6).
+Le chat devient donc **lisible par tout le monde**. **Son ton reste un peu
+plus libre que celui des profils, sans plus**, réponse de l'auteur du
+7 novembre. Concrètement, la charte telle qu'elle est : une grossièreté
+passe, jamais dirigée contre une personne ; le contenu sexuel, la haine, le
+harcèlement et les informations personnelles d'autrui sont refusés. Le
+filtre de mots du chat reste donc plus large que celui des profils, mais
+garde les insultes visant quelqu'un.
+
+---
+
+## 5 bis. Le dopage : on en parle, jamais on n'y pousse
+
+Décision de l'auteur du 7 novembre 2026. Le sujet n'est pas interdit : un
+athlète doit pouvoir poser une question, raconter un contrôle, discuter
+d'une affaire. Mais un message qui l'aborde porte un **avertissement
+visible**, et la charte interdit d'y **inciter** qui que ce soit.
+
+**Le repérage est automatique.** `moderation.php` tient deux listes : les
+mots qui **bloquent** un message (contenu sexuel, haine), et les mots
+**sensibles**, qui le laissent passer en lui posant `sensible = 1`. La liste
+du dopage vise des noms précis de produits et de pratiques, jamais des mots
+courants du métier : « stéroïde », « anabolisant », « testostérone »,
+« trenbolone », « nandrolone », « oxandrolone », « dianabol », « stanozolol »,
+« winstrol », « clenbutérol », « EPO », « SARM », « hormone de croissance »,
+« dopage ». « Cycle » ou « cure » en sont exclus, qui servent autant à la
+programmation qu'au dopage. La liste se complète à l'usage.
+
+**À l'écriture**, l'auteur voit avant d'envoyer : « Votre message aborde le
+dopage. Il paraîtra avec un avertissement. N'incitez jamais personne. »
+
+**À la lecture**, un bandeau précède le message, dans le forum comme dans le
+chat :
+
+> Ce message aborde le dopage. Les produits dopants mettent en danger la
+> santé de qui les prend, et leur usage hors prescription est interdit en
+> compétition. Rien ici n'est un conseil.
+
+**Ce qui reste interdit**, écrit dans la charte et tenu par la modération :
+pousser quelqu'un à se doper, donner des doses ou des protocoles, indiquer
+où s'en procurer, vendre ou acheter. Un tel message se signale et l'admin le
+masque. Le bandeau ne remplace pas la modération : il prévient le lecteur,
+il n'excuse pas l'auteur.
 
 ---
 
@@ -171,21 +215,27 @@ donnent au profil son contenu :
 
 ---
 
-## 9. Questions à trancher
+## 9. Questions
 
-1. **« Haltéro »** veut-il dire l'haltérophilie (arraché, épaulé-jeté), comme
-   dans le tableau, ou la musculation en général ?
-2. **Les catégories** de la section 2 : à garder, renommer, compléter ?
-3. **La mise en forme des messages** : texte et smileys seulement, ou les
+**Tranchées le 7 novembre 2026**, et reportées plus haut :
+
+- **« Haltéro » = haltérophilie.** Section 2.
+- **Le chat garde un peu plus de liberté que les profils, sans plus.**
+  Section 5.
+- **Le dopage se discute, sous avertissement automatique, sans jamais
+  inciter.** Section 5 bis. La charte `/communaute/charte/` recevra la règle
+  avec la phase d'écriture du forum, quand le sujet pourra apparaître.
+
+**Encore ouvertes :**
+
+1. **Les catégories** de la section 2 : à garder, renommer, compléter ?
+2. **La mise en forme des messages** : texte et smileys seulement, ou les
    balises d'époque `[b]`, `[i]`, `[quote]`, `[url]` ?
-4. **Un forum de membre** paraît-il tout de suite, ou après validation de
+3. **Un forum de membre** paraît-il tout de suite, ou après validation de
    l'admin ?
-5. **Les notifications** : sur le site seulement, ou aussi un courriel
+4. **Les notifications** : sur le site seulement, ou aussi un courriel
    récapitulatif quotidien, facultatif ?
-6. **Le chat lisible par tous** : garde-t-il un ton plus libre que les
-   profils ? Et la liste des personnes en ligne est-elle visible de tous, ou
-   des membres seulement ?
-7. **Le fil** : nouveaux sujets et réponses seulement, ou aussi les
+5. **La liste des personnes en ligne** : visible de tous, ou des membres
+   seulement ?
+6. **Le fil** : nouveaux sujets et réponses seulement, ou aussi les
    performances vérifiées et les nouveaux membres ?
-8. **Le dopage** : la charte interdit-elle d'en parler, ou seulement d'en
-   faire la promotion et le commerce ?
