@@ -6,6 +6,8 @@
  *   sujet    { forum, titre, texte, confirme? }  ouvrir un sujet
  *   reponse  { sujet_id, texte, confirme? }      répondre
  *   suivre   { sujet_id, suivre }                suivre un sujet, ou plus
+ *   modifier { message_id, texte, confirme? }    corriger son message, 24 heures
+ *   creer_forum, renommer_forum, epingler, verrouiller : les forums des membres
  *
  * Membre confirmé et non banni seulement (exigerActif). Un mot bloquant
  * refuse le message ; un mot du dopage le fait passer sous avertissement,
@@ -106,6 +108,32 @@ switch (texte('action')) {
         }
         $lien = dansUneTransaction(static fn (): string => ajouterReponse($membre, $sujet, (string) $sujet['adresse'], $texte, $sensible, ipVisiteur()));
         repondreOk('Réponse publiée.', ['lien' => $lien]);
+
+    case 'modifier':
+        $messageId = entree()['message_id'] ?? null;
+        if (!is_int($messageId) || $messageId <= 0) {
+            refuser(422, 'Message illisible.');
+        }
+        $message = ligne(
+            'SELECT mf.id, mf.membre_id, mf.masque_par, UNIX_TIMESTAMP(mf.date_creation) AS date_ts, s.verrouille, f.etat
+               FROM message_forum mf JOIN sujet s ON s.id = mf.sujet_id JOIN forum f ON f.id = s.forum_id
+              WHERE mf.id = :id',
+            ['id' => $messageId],
+        );
+        if ($message === null || $message['etat'] === 'masque') {
+            refuser(404, 'Ce message n\'existe plus.');
+        }
+        if ((int) $message['verrouille'] === 1 || $message['etat'] !== 'ouvert') {
+            refuser(403, 'Ce sujet est fermé : ses messages ne se modifient plus.');
+        }
+        if (!peutModifierMessage($membre, $message, time())) {
+            refuser(403, 'Un message se modifie par son auteur, dans les ' . MODIFICATION_HEURES . ' heures qui suivent sa publication.');
+        }
+        if (!texteForumValide($texte)) {
+            refuser(422, 'Le message tient en 1 à ' . MESSAGE_FORUM_MAX . ' caractères.');
+        }
+        modifierMessage($messageId, $texte, controlerTexte($texte));
+        repondreOk('Message modifié.');
 
     case 'suivre':
         $suivre = entree()['suivre'] ?? null;

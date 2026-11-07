@@ -40,6 +40,8 @@ const TITRE_SUJET_MAX = 120;
 const FREIN_FORUM_SECONDES = 15;
 const SUJETS_PAR_JOUR = 5;
 const MENTIONS_MAX = 5;
+/** Un message se corrige dans les 24 heures : au-delà, les réponses s'appuient sur lui. */
+const MODIFICATION_HEURES = 24;
 
 const MOIS_FR = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
     'août', 'septembre', 'octobre', 'novembre', 'décembre'];
@@ -410,7 +412,9 @@ function rendreSujet(array $forum, array $sujet, array $messages, int $page, int
             . (($m['inscription_ts'] ?? null) !== null ? '<span class="meta">Membre depuis ' . e(dateFr((int) $m['inscription_ts'], false)) . '</span>' : '')
             . '</div><div class="corps-message">'
             . '<header><a class="numero" href="#' . $ancre . '" aria-label="Lien vers le message ' . $numero . '">#' . $numero . '</a> '
-            . balisageDate((int) $m['date_ts']) . '</header>';
+            . balisageDate((int) $m['date_ts'])
+            . (($m['modif_ts'] ?? null) !== null ? ' <span class="modifie">modifié le ' . balisageDate((int) $m['modif_ts']) . '</span>' : '')
+            . '</header>';
 
         if ($m['masque_par'] !== null) {
             $html .= '<p class="aide">Message masqué par la modération.</p></div></article></li>';
@@ -420,9 +424,13 @@ function rendreSujet(array $forum, array $sujet, array $messages, int $page, int
             $html .= '<p class="avertissement" role="note">' . AVERTISSEMENT_DOPAGE . '</p>';
         }
         $html .= '<div class="texte">' . rendreTexte((string) $m['texte'], $smileys) . '</div>';
-        // Citer qui veut répondre ; signaler ce qu'un autre a écrit.
+        // Citer qui veut répondre ; modifier le sien, 24 heures ; signaler ce qu'un autre a écrit.
         $gestes = ($peutEcrire ? '<button type="button" class="bouton-citer" data-citer data-pseudo="' . e($pseudo)
                 . '" data-texte="' . e((string) $m['texte']) . '">Citer</button>' : '')
+            . ($peutEcrire && peutModifierMessage($membre, $m, time())
+                ? '<button type="button" class="bouton-citer" data-modifier data-message="' . (int) $m['id']
+                    . '" data-texte="' . e((string) $m['texte']) . '">Modifier</button>'
+                : '')
             . ($membre !== null && (int) ($m['membre_id'] ?? 0) !== (int) $membre['id']
                 ? '<button type="button" class="bouton-signaler" data-signaler data-type="message_forum" data-cible="'
                     . (int) $m['id'] . '">Signaler</button>'
@@ -558,6 +566,30 @@ function ajouterReponse(array $membre, array $sujet, string $adresse, string $te
     return $lien;
 }
 
+/**
+ * Son propre message, visible, dans les 24 heures. Le sujet fermé l'interdit
+ * aussi : l'appelant le contrôle, il connaît le sujet.
+ *
+ * @param array<string, mixed> $message membre_id, masque_par, date_ts
+ */
+function peutModifierMessage(?array $membre, array $message, int $maintenant): bool
+{
+    return estActif($membre)
+        && ($message['membre_id'] ?? null) !== null
+        && (int) $message['membre_id'] === (int) $membre['id']
+        && ($message['masque_par'] ?? null) === null
+        && $maintenant - (int) $message['date_ts'] < MODIFICATION_HEURES * 3600;
+}
+
+/** Le nouveau texte, son repérage du dopage refait, et la date qui le dit. Les cités ne sont pas prévenus à nouveau. */
+function modifierMessage(int $messageId, string $texte, bool $sensible): void
+{
+    executer(
+        'UPDATE message_forum SET texte = :t, sensible = :s, date_modification = NOW() WHERE id = :id',
+        ['t' => $texte, 's' => $sensible ? 1 : 0, 'id' => $messageId],
+    );
+}
+
 function suivreSujet(int $membreId, int $sujetId, bool $suivre): void
 {
     $suivre
@@ -617,7 +649,8 @@ function messagesDuSujet(int $sujetId, int $page): array
 {
     return lignes(
         'SELECT mf.id, mf.membre_id, mf.pseudo, mf.texte, mf.sensible, mf.masque_par,
-                UNIX_TIMESTAMP(mf.date_creation) AS date_ts, m.pseudo AS pseudo_actuel, m.banni,
+                UNIX_TIMESTAMP(mf.date_creation) AS date_ts, UNIX_TIMESTAMP(mf.date_modification) AS modif_ts,
+                m.pseudo AS pseudo_actuel, m.banni,
                 UNIX_TIMESTAMP(m.date_inscription) AS inscription_ts, UNIX_TIMESTAMP(a.date_maj) AS avatar_v
            FROM message_forum mf
            LEFT JOIN membre m ON m.id = mf.membre_id

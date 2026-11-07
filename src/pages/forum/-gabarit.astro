@@ -14,7 +14,8 @@
  * devient celle de la page, l'adresse canonique comprise.
  *
  * Le script branche les formulaires que PHP écrit : ouvrir un sujet,
- * répondre, citer, suivre, et la barre de smileys.
+ * répondre, citer, modifier son message, suivre, créer et renommer un forum,
+ * et la barre de smileys.
  */
 import FenetreConfirmation from '../../components/FenetreConfirmation.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
@@ -36,6 +37,21 @@ import '../../styles/communaute.css';
   </div>
 
   %%DONNEES%%
+
+  <!-- Le formulaire « Modifier », posé par le script sous le message choisi. -->
+  <template id="modele-modifier">
+    <form class="form-compte form-modifier" data-forum-modifier novalidate>
+      <div class="champ">
+        <label>Votre message</label>
+        <textarea name="texte" rows="6" required maxlength="5000"></textarea>
+      </div>
+      <div class="actions">
+        <button type="submit">Enregistrer</button>
+        <button type="button" class="secondaire" data-annuler>Annuler</button>
+      </div>
+      <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+    </form>
+  </template>
 
   <FenetreConfirmation />
 </BaseLayout>
@@ -94,6 +110,35 @@ import '../../styles/communaute.css';
         zone.setSelectionRange(zone.value.length, zone.value.length);
       });
     }
+  }
+
+  // Modifier son message, dans les 24 heures : le texte se change sur place.
+  const modele = document.querySelector<HTMLTemplateElement>('#modele-modifier')!;
+  for (const bouton of document.querySelectorAll<HTMLButtonElement>('[data-modifier]')) {
+    bouton.addEventListener('click', () => {
+      const article = bouton.closest('article')!;
+      const texte = article.querySelector<HTMLElement>('.texte')!;
+      const form = modele.content.firstElementChild!.cloneNode(true) as HTMLFormElement;
+      const zone = form.querySelector('textarea')!;
+      zone.id = `modifier-${bouton.dataset.message}`;
+      form.querySelector('label')!.htmlFor = zone.id;
+      zone.value = bouton.dataset.texte ?? '';
+      texte.hidden = true;
+      bouton.hidden = true;
+      texte.after(form);
+      zone.focus();
+      form.querySelector('[data-annuler]')!.addEventListener('click', () => {
+        form.remove();
+        texte.hidden = false;
+        bouton.hidden = false;
+        bouton.focus();
+      });
+      brancher(
+        form,
+        (d) => envoyer(form, { action: 'modifier', message_id: Number(bouton.dataset.message), texte: champ(d, 'texte') }),
+        () => aller(`${location.pathname}${location.search}#${article.id}`),
+      );
+    });
   }
 
   for (const bouton of document.querySelectorAll<HTMLButtonElement>('[data-suivre]')) {
