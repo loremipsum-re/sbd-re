@@ -134,6 +134,7 @@ function chatTropRapide(int $membreId): bool
 function ecrireChat(array $membre, string $canal, string $texte, bool $sensible, string $ip): int
 {
     executer('DELETE FROM message WHERE date_envoi < NOW() - INTERVAL 1 YEAR LIMIT 100');
+    oublierAdressesIp();
     executer(
         'INSERT INTO message (canal, membre_id, pseudo, texte, ip, sensible) VALUES (:c, :m, :p, :t, :ip, :s)',
         ['c' => $canal, 'm' => $membre['id'], 'p' => $membre['pseudo'], 't' => $texte, 'ip' => $ip, 's' => $sensible ? 1 : 0],

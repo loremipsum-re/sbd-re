@@ -34,8 +34,9 @@ import { nombreAthletes } from '../lib/data';
     */}
     <h2>Ce que le site fait sans votre accord</h2>
     <p>
-      <strong>Rien.</strong> Le site attend votre accord avant de déposer un
-      cookie ou de contacter un service tiers. Les polices de caractères sont
+      <strong>Rien, tant que vous n'ouvrez pas de compte.</strong> Le site
+      attend votre accord avant de contacter un service tiers. Il dépose un
+      cookie seulement à la connexion à un compte, détaillée plus bas. Les polices de caractères sont
       hébergées par le site lui-même, précisément pour éviter d'avertir un
       tiers de votre visite.
     </p>
@@ -205,6 +206,74 @@ import { nombreAthletes } from '../lib/data';
       d'autre.
     </p>
 
+    {/*
+      SECTION OBLIGATOIRE DEPUIS L'OUVERTURE DE LA COMMUNAUTÉ, le 7 novembre
+      2026 (docs/comptes.md, section 8). Chaque durée écrite ici est tenue
+      par le code : l'adresse IP s'efface au bout d'un an
+      (oublierAdressesIp, lib/bdd.php), les messages du chat aussi
+      (lib/chat.php), les notifications lues au bout de 90 jours
+      (lib/notifications.php). Changer une durée, c'est changer les deux.
+    */}
+    <h2>La communauté : compte, forum et chat</h2>
+    <p>
+      Les comptes sont facultatifs : tout le site se lit sans. Un compte sert à
+      publier ses performances, voter, écrire au forum et au chat.
+    </p>
+    <h3>Ce qui est public</h3>
+    <ul>
+      <li>Votre pseudo et la date de votre inscription.</li>
+      <li>
+        Ce que vous choisissez d'ajouter à votre profil : une présentation, une
+        salle, votre nom Instagram, un avatar.
+      </li>
+      <li>Vos performances, avec leur lien vidéo, et le nombre d'avis qu'elles reçoivent.</li>
+      <li>Vos messages au forum, et au chat pendant sept jours.</li>
+    </ul>
+    <h3>Ce qui reste privé</h3>
+    <ul>
+      <li>
+        Votre adresse électronique. Elle sert à confirmer le compte et à
+        changer le mot de passe, et n'est jamais affichée.
+      </li>
+      <li>
+        Votre mot de passe, gardé sous une forme qui ne permet pas de le
+        retrouver.
+      </li>
+      <li>
+        L'adresse IP de votre inscription et de chacun de vos messages. La loi
+        pour la confiance dans l'économie numérique demande de pouvoir
+        identifier l'auteur d'un contenu. Elle est effacée au bout d'un an.
+      </li>
+      <li>Le sens de vos votes, ainsi que vos signalements et vos notifications.</li>
+    </ul>
+    <h3>Combien de temps</h3>
+    <ul>
+      <li>Le compte et son profil : tant que vous les gardez.</li>
+      <li>Les messages du chat : lisibles sept jours, puis effacés au bout d'un an.</li>
+      <li>Les notifications lues : effacées au bout de 90 jours.</li>
+      <li>Un compte jamais confirmé : effacé au bout de 24 heures.</li>
+    </ul>
+    <h3>Les cookies du compte</h3>
+    <p>
+      Se connecter dépose deux cookies, et seulement à ce moment-là. Le premier
+      garde votre session pendant 30 jours, illisible par les scripts de la
+      page. Le second dit seulement que vous êtes connecté, pour afficher la
+      cloche des notifications. Ils servent au compte que vous avez demandé et
+      partent à la déconnexion. Aucun des deux ne sert à la mesure d'audience.
+    </p>
+    <h3>Effacer son compte</h3>
+    <p>
+      Les <a href="/compte/reglages/">réglages du compte</a> l'effacent d'un
+      geste : profil, avatar, performances, votes, abonnements et
+      notifications partent avec lui. Vos messages au forum restent dans leurs
+      sujets, signés de votre pseudo et détachés de tout compte, pour que les
+      discussions gardent leur sens. Ceux du chat suivent leur durée d'un an.
+    </p>
+    <p>
+      Base légale : l'exécution du service que vous demandez en ouvrant un
+      compte, et l'obligation légale pour la conservation de l'adresse IP.
+    </p>
+
     <h2>Ce que le site ne fait pas</h2>
     <ul>
       {/*
@@ -220,7 +289,7 @@ import { nombreAthletes } from '../lib/data';
       </li>
       <li>Aucune donnée vendue ou partagée à des fins commerciales.</li>
       <li>Aucun profilage, aucune décision automatisée.</li>
-      <li>Aucun compte utilisateur, aucun mot de passe, aucune newsletter.</li>
+      <li>Aucune newsletter. Les courriels du site servent au compte : confirmer l'adresse, changer le mot de passe.</li>
     </ul>
 
     <h2>Hébergement</h2>
