@@ -51,6 +51,14 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-07',
     nature: 'fonction',
+    version: '1.9.15',
+    titre: 'La vérification des performances, en essai',
+    texte:
+      "Les membres en essai jugent les barres des autres sur leur vidéo. Une barre reçoit le badge « Vérifiée par la communauté » à 20 avis, dont 60 % favorables, et le vote s'ouvre 30 jours après l'inscription.",
+  },
+  {
+    date: '2026-11-07',
+    nature: 'fonction',
     version: '1.9.14',
     titre: 'Un espace membre centré sur les performances',
     texte:
