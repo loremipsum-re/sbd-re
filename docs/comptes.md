@@ -615,12 +615,24 @@ ci-dessous restent le plan d'origine.
 
 ### Phase 9, l'ouverture
 
-- [ ] `/confidentialite/` et `/mentions-legales/` complétées.
-- [ ] `/communaute/` refaite : elle devient l'entrée, chat et fil à vérifier.
-      Retirer l'étiquette « Bientôt » du menu, et les tranches
-      `COMMUNITY_*_BRACKETS` devenues inutiles, avec l'infographie qui les lit.
-- [ ] Les tests de la section 9, passés en entier.
-- [ ] Version : nouvelle rubrique, donc le deuxième chiffre monte.
+- [x] `/confidentialite/` et `/mentions-legales/` complétées, le 7 novembre.
+      Chaque durée écrite est tenue par le code : l'adresse IP de
+      l'inscription et des messages du forum s'efface au bout d'un an
+      (`oublierAdressesIp`, `lib/bdd.php`, ajoutée pour l'occasion : elle
+      restait sans limite). Les mentions légales disent comment signaler un
+      contenu sans compte.
+- [x] `/communaute/` refaite : l'entrée, le forum, le fil, les barres à
+      vérifier, le compte, puis le chat (`components/Chat.astro`).
+      `/communaute/chat/` renvoie à `/communaute/#chat`. « Bientôt » retiré,
+      Forum entre au menu, les tranches `COMMUNITY_*_BRACKETS` et leur
+      infographie sont retirées. Les seuils affichés se lisent dans
+      `autorisation.php` (`src/lib/communaute.ts`).
+- [x] Le forum s'indexe (`FORUM_OUVERT`), avec son plan, `/sitemap-forum.xml`.
+- [ ] Les tests de la section 9 : la plupart passent par
+      `db/verifier-autorisation.php` et `db/verifier.php`. Restent à la
+      main, en production : `/api/lib/bdd.php` en HTTP, la connexion d'un
+      compte banni, le profil d'un compte effacé.
+- [x] Version 1.10.0 : nouvelle rubrique, le deuxième chiffre monte.
 
 ---
 

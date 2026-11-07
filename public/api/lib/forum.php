@@ -27,11 +27,10 @@ require_once __DIR__ . '/notifications.php';
 require_once __DIR__ . '/avatar.php';
 
 /**
- * Indexation : coupée jusqu'à l'ouverture de la communauté (comptes.md,
- * phase 9). Le forum s'éprouve d'ici là sans qu'un sujet d'essai n'entre
- * dans Google.
+ * Indexation : ouverte avec la communauté (comptes.md, phase 9). À false,
+ * toutes les pages du forum passent en noindex.
  */
-const FORUM_OUVERT = false;
+const FORUM_OUVERT = true;
 
 const SUJETS_PAR_PAGE = 30;
 const MESSAGES_PAR_PAGE = 20;
@@ -515,6 +514,7 @@ function sujetsDuJour(int $membreId): int
 /** Ouvre un sujet : le sujet, son premier message, l'abonnement de l'auteur. */
 function creerSujet(array $membre, int $forumId, string $titre, string $texte, bool $sensible, string $ip): int
 {
+    oublierAdressesIp();
     executer(
         'INSERT INTO sujet (forum_id, membre_id, pseudo, titre, dernier_pseudo) VALUES (:f, :m, :p, :t, :d)',
         ['f' => $forumId, 'm' => $membre['id'], 'p' => $membre['pseudo'], 't' => $titre, 'd' => $membre['pseudo']],
@@ -538,6 +538,7 @@ function creerSujet(array $membre, int $forumId, string $titre, string $texte, b
 function ajouterReponse(array $membre, array $sujet, string $adresse, string $texte, bool $sensible, string $ip): string
 {
     $sujetId = (int) $sujet['id'];
+    oublierAdressesIp();
     executer(
         'INSERT INTO message_forum (sujet_id, membre_id, pseudo, texte, ip, sensible) VALUES (:s, :m, :p, :t, :ip, :se)',
         ['s' => $sujetId, 'm' => $membre['id'], 'p' => $membre['pseudo'], 't' => $texte, 'ip' => $ip, 'se' => $sensible ? 1 : 0],

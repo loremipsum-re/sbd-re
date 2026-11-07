@@ -38,7 +38,8 @@ export type NomIcone =
   | 'manque'
   /* L'engrenage des réglages du compte, toujours accompagné du mot. */
   | 'reglages'
-  | 'cloche';
+  | 'cloche'
+  | 'forum';
 
 /**
  * LES TROIS FAMILLES DU SITE, dans l'ordre où le menu et le pied de page les
@@ -203,7 +204,12 @@ export const RUBRIQUES: readonly Rubrique[] = [
     label: 'Communauté',
     icone: 'communaute',
     famille: 'site',
-    etiquette: 'Bientôt',
+  },
+  {
+    href: '/forum/',
+    label: 'Forum',
+    icone: 'forum',
+    famille: 'site',
   },
 ];
 

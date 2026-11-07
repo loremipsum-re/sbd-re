@@ -746,6 +746,13 @@ if (!function_exists('SBDRE\creerSujet')) {
         } else {
             ko('GD ou WebP manque sur ce serveur : les avatars ne fonctionneront pas.');
         }
+
+        // La promesse de /confidentialite/ : l'adresse IP s'efface au bout d'un an.
+        $base->prepare('UPDATE message_forum SET date_creation = NOW() - INTERVAL 13 MONTH WHERE sujet_id = ?')->execute([$sujetId]);
+        \SBDRE\oublierAdressesIp();
+        $nombre("SELECT COUNT(*) AS n FROM message_forum WHERE sujet_id = :s AND ip <> ''", ['s' => $sujetId]) === 0
+            ? ok('L\'adresse IP d\'un message de plus d\'un an s\'efface.')
+            : ko('Une adresse IP de plus d\'un an reste en base.');
     } catch (Throwable $e) {
         ko('Essai interrompu par une erreur inattendue : ' . $e->getMessage());
     } finally {

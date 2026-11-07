@@ -1,130 +1,94 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Chat from '../../components/Chat.astro';
+import FenetreConfirmation from '../../components/FenetreConfirmation.astro';
 import Icone from '../../components/Icone.astro';
-import Repli from '../../components/Repli.astro';
-import InfographieCommunaute from '../../components/infographies/InfographieCommunaute.astro';
-import { COMMUNITY_AGE_BRACKETS, COMMUNITY_WEIGHT_BRACKETS } from '../../lib/categories';
+import { ANCIENNETE_VOTE_JOURS, FAVORABLES_POURCENT, VOTES_MIN } from '../../lib/communaute';
 
 /**
- * Page d'attente du classement communauté.
+ * L'entrée de la communauté, depuis l'ouverture (docs/comptes.md, phase 9).
+ * Elle remplace la page d'attente du classement communauté, ses tranches et
+ * son infographie : le classement par tranches n'est pas ce qui a été
+ * construit, les profils et la vérification par la communauté le sont.
  *
- * LES VISITEURS S'Y PERDAIENT, constat de l'auteur d'octobre 2026. Ils
- * trouvaient deux cartes, un paragraphe qui les répétait, vingt-deux tranches
- * dessinées comme des filtres qui ne filtraient rien, une infographie qui
- * reprenait les cartes, et une seule action, vers les records.
+ * LE PREMIER ÉCRAN DIT CE QU'ON TROUVE ICI ET Y MÈNE. Quatre actions : le
+ * forum en bouton plein, le fil, les barres à vérifier, et le compte. Puis
+ * le fonctionnement en une liste courte, et le chat en bas de page, qui se
+ * lit sans compte.
  *
- * LE PREMIER ÉCRAN RÉPOND SEUL. Deux phrases affirmatives disent que le
- * classement est en préparation, puis ce qu'il accueillera, dans les mots
- * de la description de la page. Les trois pages utiles dès
- * aujourd'hui suivent aussitôt : le classement officiel, « Me situer » pour
- * placer ses barres, et la boîte à suggestions pour donner son avis. Elle
- * retient d'elle-même la page d'où l'on vient, par l'adresse de provenance.
- * Mesuré à 375 × 812 : les trois actions tiennent entre 376 et 524 px, à
- * 44 px de haut. Avant, l'unique action était à 618 px et mesurait 39 px.
- *
- * LE FONCTIONNEMENT PRÉVU TIENT EN UNE LISTE COURTE. Chaque ligne vient de
- * l'ancienne page ou de docs/communaute.md : rien n'est promis au-delà. Les
- * tranches ne sont plus énumérées, une seule sert d'exemple. L'âge minimum
- * et l'exemple se lisent dans lib/categories.ts.
- *
- * L'INFOGRAPHIE PASSE SOUS UNE PASTILLE, comme sur /suggestions/. Dépliée,
- * elle mesurait 1 152 px à 375 px de large et reprenait la comparaison des
- * deux classements. Repliée, elle reste à un geste pour qui veut savoir
- * pourquoi une tranche suffit. La page passe de 4 800 à 2 704 px à 375 px de
- * large, et de 3 051 à 1 801 px à 1 280 px.
- *
- * LE TITRE S'ALIGNE SUR LE LOGO, comme sur vingt pages du site, dont
- * /suggestions/ et /simulateur/. L'ancienne colonne centrée le plaçait à
- * 224 px à 1 280 px de large, contre 96 px pour le logo.
+ * LES SEUILS SE LISENT DANS lib/communaute.ts, recopiés de
+ * public/api/lib/autorisation.php et contrôlés par db/verifier-autorisation.php :
+ * une page qui annoncerait 20 avis quand le serveur en demande 25 tromperait
+ * le visiteur.
  */
-
-/* L'âge d'entrée est la borne basse de la première tranche. */
-const ageMinimum = COMMUNITY_AGE_BRACKETS[0]?.min ?? null;
-
-/* La tranche du milieu sert d'exemple. Insécable d'un bout à l'autre : mesuré
-   à 1 280 px, « 80 à » finissait une ligne et « 90 kg » ouvrait la suivante. */
-const exemple = COMMUNITY_WEIGHT_BRACKETS[Math.floor(COMMUNITY_WEIGHT_BRACKETS.length / 2) - 1];
-const exempleTranche = exemple?.label.replace(/ /g, '\u00a0');
 ---
 
 <BaseLayout
-  titre="Classement communauté"
-  description="Le classement communauté de SBD.re est en préparation. Il accueillera les performances de force athlétique réalisées en salle et en compétition non homologuée."
+  titre="Communauté"
+  description="La communauté de force athlétique de La Réunion : le forum, le chat, et des performances de salle vérifiées sur vidéo par les membres."
 >
   <div class="wrap page">
     <header class="entete-page">
-      <p class="etiquette">Bientôt</p>
-      <h1>Classement communauté</h1>
+      <h1>Communauté</h1>
       <p class="chapeau">
-        Ce classement est en préparation. Il accueillera les performances
-        réalisées en salle et en compétition non homologuée.
+        Le forum, le chat, et les barres de salle des membres, vérifiées sur
+        vidéo par la communauté.
       </p>
     </header>
 
-    {/*
-      LES TROIS ACTIONS, dans le premier écran. Le classement officiel est le
-      bouton plein : c'est la réponse la plus proche de ce que le visiteur
-      venait chercher.
-    */}
     <ul class="actions">
       <li>
-        <a class="primaire" href="/classement/">
-          <Icone nom="classement" />
-          Voir le classement officiel
+        <a class="primaire" href="/forum/">
+          <Icone nom="forum" />
+          Le forum
         </a>
       </li>
       <li>
-        <a href="/simulateur/">
-          <Icone nom="simulateur" />
-          Me situer dans le classement
+        <a href="/forum/fil/">
+          <Icone nom="actualites" />
+          Le fil de l'activité
         </a>
       </li>
       <li>
-        <a href="/suggestions/">
-          <Icone nom="suggestions" />
-          Donner mon avis
+        <a href="/compte/a-verifier/">
+          <Icone nom="valide" />
+          Vérifier des barres
+        </a>
+      </li>
+      <li>
+        <a href="/compte/">
+          <Icone nom="reglages" />
+          Mon espace, ou créer un compte
         </a>
       </li>
     </ul>
 
-    <section class="prevu" aria-labelledby="fonctionnement-prevu">
-      <h2 id="fonctionnement-prevu">Le fonctionnement prévu</h2>
+    <section class="fonctionnement" aria-labelledby="titre-fonctionnement">
+      <h2 id="titre-fonctionnement">Le fonctionnement</h2>
       <ul class="principes">
+        <li>Un compte par personne, un pseudo, dès 18 ans. Le profil est public.</li>
+        <li>Chaque barre se publie avec la vidéo où on la voit en entier.</li>
         <li>
-          {ageMinimum !== null ? `Ouvert à tous dès ${ageMinimum}\u00a0ans, avec un compte.` : 'Ouvert à tous, avec un compte.'}
+          Une barre est vérifiée par la communauté à {VOTES_MIN} avis, dont {FAVORABLES_POURCENT}{' '}%
+          favorables, ou par SBD.re. On vote {ANCIENNETE_VOTE_JOURS} jours après son inscription.
         </li>
-        <li>Chaque barre se déclare avec un lien vers sa vidéo.</li>
-        <li>Un modérateur examine la vidéo avant publication.</li>
-        <li>
-          {exempleTranche
-            ? `L'âge, le poids de corps et la taille se déclarent par tranche, par exemple ${exempleTranche}.`
-            : "L'âge, le poids de corps et la taille se déclarent par tranche."}
-        </li>
-        <li>Un classement par mouvement et par sexe, trié à la charge soulevée.</li>
+        <li>Le forum se range par mouvement. Les membres y créent aussi leurs forums.</li>
         <li>Le classement officiel et les records restent réservés aux compétitions homologuées.</li>
       </ul>
-
-      <div class="rangee-replis">
-        <Repli titre="Pourquoi une tranche suffit">
-          <InfographieCommunaute />
-        </Repli>
-      </div>
+      <p>
+        Les règles tiennent sur une page : <a href="/communaute/charte/">la charte</a>.
+      </p>
     </section>
+
+    <Chat />
   </div>
+
+  <FenetreConfirmation />
 </BaseLayout>
 
 <style>
   .page {
     padding-bottom: var(--space-8);
-  }
-
-  .etiquette {
-    margin-bottom: var(--space-2);
-    font-size: var(--step--1);
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--accent);
   }
 
   /*
@@ -134,8 +98,8 @@ const exempleTranche = exemple?.label.replace(/ /g, '\u00a0');
    */
   .actions {
     display: grid;
-    gap: var(--space-2);
-    margin: 0 0 var(--space-12);
+    gap: var(--space-3);
+    margin: 0 0 var(--space-8);
     padding: 0;
     list-style: none;
   }
@@ -144,7 +108,6 @@ const exempleTranche = exemple?.label.replace(/ /g, '\u00a0');
     .actions {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--space-3);
     }
   }
 
@@ -182,21 +145,13 @@ const exempleTranche = exemple?.label.replace(/ /g, '\u00a0');
     color: var(--on-accent);
   }
 
-  /* LE FONCTIONNEMENT PRÉVU. Une ligne par fait, séparées d'un filet, à la
-     mesure du chapeau. */
+  /* Une ligne par fait, séparées d'un filet, à la mesure du chapeau. */
   .principes {
     max-width: 62ch;
-    margin: 0 0 var(--space-6);
+    margin: 0 0 var(--space-4);
     padding: 0;
     list-style: none;
     border-bottom: 1px solid var(--border);
-  }
-
-  /* Dépliée, l'infographie reprend la largeur qu'elle avait sur l'ancienne
-     page, 52rem : à la mesure de la liste, elle passait de 888 à 1 039 px de
-     haut à 1 280 px de large. */
-  .prevu .rangee-replis {
-    max-width: 52rem;
   }
 
   .principes li {
@@ -216,5 +171,9 @@ const exempleTranche = exemple?.label.replace(/ /g, '\u00a0');
     width: 6px;
     height: 6px;
     background: var(--accent);
+  }
+
+  .fonctionnement {
+    margin-bottom: var(--space-12);
   }
 </style>

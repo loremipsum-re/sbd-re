@@ -52,6 +52,9 @@ DirectoryIndex index.html
   RewriteRule ^membres/([^/]+)$ https://%{HTTP_HOST}/membres/$1/ [R=301,L]
   RewriteRule ^membres/([^/]+)/$ api/profil-page.php?pseudo=$1 [B,L]
   RewriteRule ^sitemap-membres\.xml$ api/sitemap-membres.php [L]
+  RewriteRule ^sitemap-forum\.xml$ api/sitemap-forum.php [L]
+  # Le chat a rejoint /communaute/ à l'ouverture. NE garde le # tel quel.
+  RewriteRule ^communaute/chat/?$ https://%{HTTP_HOST}/communaute/#chat [R=301,NE,L]
 
   # --- Forum, rendu par PHP comme les profils -----------------------------
   # /forum/, /forum/<adresse>/ et /forum/<adresse>/<sujet>/ : api/forum-page.php

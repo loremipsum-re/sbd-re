@@ -122,3 +122,16 @@ function executer(string $sql, array $params = []): int
 
     return $st->rowCount();
 }
+
+/**
+ * L'adresse IP gardée un an, pas plus (docs/comptes.md, section 8 ; page
+ * /confidentialite/) : celle de l'inscription et celle de chaque message du
+ * forum s'effacent passé ce délai. Le chat efface ses messages entiers
+ * (lib/chat.php). Cent lignes par appel, appelé à chaque écriture du chat et
+ * du forum : aucune tâche planifiée à configurer.
+ */
+function oublierAdressesIp(): void
+{
+    executer("UPDATE membre SET ip_inscription = '' WHERE ip_inscription <> '' AND date_inscription < NOW() - INTERVAL 1 YEAR LIMIT 100");
+    executer("UPDATE message_forum SET ip = '' WHERE ip <> '' AND date_creation < NOW() - INTERVAL 1 YEAR LIMIT 100");
+}

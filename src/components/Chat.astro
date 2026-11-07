@@ -1,19 +1,19 @@
 ---
 /**
- * Le chat (docs/forum.md, section 5), en essai jusqu'à l'ouverture : il
- * rejoindra /communaute/ à la phase 9 de docs/comptes.md. D'ici là, page
- * `prive` : ni indexée, ni mesurée, hors du menu.
+ * Le chat (docs/forum.md, section 5), posé dans /communaute/ depuis
+ * l'ouverture (docs/comptes.md, phase 9). La page qui l'accueille pose aussi
+ * <FenetreConfirmation />, qui sert à signaler.
  *
  * Cinq salons, lisibles de tous. Un membre connecté lit sept jours et écrit,
  * un visiteur voit arriver les nouveaux messages. Lecture par interrogation
  * (public/api/chat.php), à l'intervalle que le serveur donne, arrêtée quand
  * l'onglet est masqué. Chaque message s'écrit par `textContent`, les
  * smileys par `createElement('img')` : aucun HTML d'un membre n'est lu.
+ * Le champ porte `data-clarity-mask` : la mesure d'audience, si elle est
+ * acceptée, ne voit pas ce qu'on tape.
  */
-import FenetreConfirmation from '../../components/FenetreConfirmation.astro';
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import '../../styles/compte.css';
-import '../../styles/communaute.css';
+import '../styles/compte.css';
+import '../styles/communaute.css';
 
 const salons = [
   ['general', 'Général'],
@@ -24,47 +24,41 @@ const salons = [
 ] as const;
 ---
 
-<BaseLayout titre="Le chat" description="Le chat de la communauté de force athlétique de La Réunion." prive>
-  <div class="wrap page-chat">
-    <header class="entete-page">
-      <h1>Le chat</h1>
-      <p class="chapeau">
-        Cinq salons, un thème chacun, la charte partout. Les membres lisent les
-        sept derniers jours, les visiteurs voient arriver les nouveaux messages.
-      </p>
-    </header>
+<section class="chat" id="chat" aria-labelledby="titre-chat">
+  <h2 id="titre-chat">Le chat</h2>
+  <p class="aide">
+    Cinq salons, un thème chacun, la charte partout. Les membres lisent les
+    sept derniers jours, les visiteurs voient arriver les nouveaux messages.
+  </p>
 
-    <noscript><p class="aide">Le chat demande JavaScript.</p></noscript>
+  <noscript><p class="aide">Le chat demande JavaScript.</p></noscript>
 
-    <div class="salons" role="group" aria-label="Salons">
-      {salons.map(([id, nom], i) => <button type="button" data-salon={id} aria-pressed={i === 0 ? 'true' : 'false'}>{nom}</button>)}
-    </div>
-
-    <p class="en-ligne" data-en-ligne>Chargement…</p>
-
-    <ol class="fil-chat" role="log" aria-label="Messages du salon" data-fil></ol>
-    <p class="aide" data-vide hidden></p>
-
-    <form class="form-compte ecrire-chat" data-ecrire hidden novalidate>
-      <label for="texte-chat">Votre message</label>
-      <div class="ligne-envoi">
-        <input id="texte-chat" name="texte" maxlength="500" autocomplete="off" required />
-        <button type="submit">Envoyer</button>
-      </div>
-      <div class="barre-smileys" data-smileys></div>
-      <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
-    </form>
-    <p class="inviter" data-inviter hidden>
-      <a href="/compte/connexion/">Connectez-vous</a> pour écrire et lire les sept derniers jours.
-    </p>
+  <div class="salons" role="group" aria-label="Salons">
+    {salons.map(([id, nom], i) => <button type="button" data-salon={id} aria-pressed={i === 0 ? 'true' : 'false'}>{nom}</button>)}
   </div>
 
-  <FenetreConfirmation />
-</BaseLayout>
+  <p class="en-ligne" data-en-ligne>Chargement…</p>
+
+  <ol class="fil-chat" role="log" aria-label="Messages du salon" data-fil></ol>
+  <p class="aide" data-vide hidden></p>
+
+  <form class="form-compte ecrire-chat" data-ecrire hidden novalidate data-clarity-mask="true">
+    <label for="texte-chat">Votre message</label>
+    <div class="ligne-envoi">
+      <input id="texte-chat" name="texte" maxlength="500" autocomplete="off" required />
+      <button type="submit">Envoyer</button>
+    </div>
+    <div class="barre-smileys" data-smileys></div>
+    <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+  </form>
+  <p class="inviter" data-inviter hidden>
+    <a href="/compte/connexion/">Connectez-vous</a> pour écrire et lire les sept derniers jours.
+  </p>
+</section>
 
 <script>
-  import { afficher, api, confirmer } from '../../lib/api-compte';
-  import { brancherBarresSmileys, messageEnNoeuds } from '../../lib/barre-smileys';
+  import { afficher, api, confirmer } from '../lib/api-compte';
+  import { brancherBarresSmileys, messageEnNoeuds } from '../lib/barre-smileys';
 
   interface Message {
     id: number;
@@ -205,3 +199,4 @@ const salons = [
 
   void lire();
 </script>
+
