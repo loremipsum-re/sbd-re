@@ -24,32 +24,35 @@ modération et les smileys d'époque.
 
 ---
 
-## 2. Les catégories proposées
+## 2. Les catégories
 
 Trois niveaux, comme phpBB : une **catégorie** regroupe des **forums**, un
-forum contient des **sujets**, un sujet des **messages**. Les forums de
-l'équipe sont fixes ; ceux des membres vivent dans leur propre catégorie.
+forum contient des **sujets**, un sujet des **messages**.
+
+**Une catégorie par exercice, une générale, une pour la compétition, une
+hors sujet**, choix de l'auteur du 7 novembre 2026. « Haltéro » veut dire
+haltérophilie : l'arraché et l'épaulé-jeté sont deux exercices, donc deux
+catégories. La dernière accueille les forums que les membres créent.
 
 | Catégorie | Forums |
 |---|---|
-| **Force athlétique** | Squat · Développé couché · Soulevé de terre · Programmation et entraînement · Compétitions (calendrier, pesée, arbitrage, résultats) · Équipement (raw, wraps, équipé, ceinture, genouillères, chaussures) |
-| **Haltérophilie** | Arraché · Épaulé-jeté · Technique et mobilité · Compétitions d'haltéro |
-| **La Réunion** | Salles de l'île (relié à `/salles/`) · Partenaires d'entraînement et séances communes · Matériel d'occasion |
-| **Santé et récupération** | Nutrition · Blessures et récupération |
-| **La communauté** | Présentations des nouveaux membres · Forums des membres · Le site SBD.re (idées, défauts, annonces) |
+| **Squat** | Technique · Programmation |
+| **Développé couché** | Technique · Programmation |
+| **Soulevé de terre** | Technique · Programmation |
+| **Arraché** | Technique · Programmation |
+| **Épaulé-jeté** | Technique · Programmation |
+| **Général** | Présentations · Équipement · Santé et récupération · Salles de l'île (relié à `/salles/`) · Le site SBD.re |
+| **Compétitions** | Calendrier et inscriptions · Résultats · Règlement et arbitrage |
+| **Hors sujet** | Discussions libres |
+| **Forums des membres** | Créés par les membres, section 6 |
 
 Quelques choix derrière ce tableau :
 
-- **Les trois mouvements ont chacun leur forum**, comme les salons du chat :
-  c'est le vocabulaire du site, et la question la plus fréquente porte sur
-  un mouvement précis.
-- **« Matériel d'occasion »** et non « petites annonces » : un espace
-  d'échange de barres et de disques, pas une place de marché. Les
-  compléments alimentaires et tout produit à avaler en sont exclus.
-- **« Blessures et récupération »** porte un avertissement en tête : rien n'y
+- **Peu de forums au départ.** Un forum vide donne un forum mort : mieux
+  vaut en ouvrir un de plus quand un sujet déborde. Un forum se crée en une
+  ligne en base, rien n'est figé.
+- **« Santé et récupération »** porte un avertissement en tête : rien n'y
   remplace un avis médical.
-- **« Haltéro » veut dire haltérophilie**, réponse de l'auteur du 7 novembre :
-  la catégorie reste telle que le tableau la décrit.
 - **Le dopage n'a pas de forum à lui, mais il se discute** partout où il a sa
   place, sous avertissement automatique : voir la section 5 bis.
 
@@ -93,10 +96,20 @@ natures pour commencer :
 - le badge communauté ou admin posé sur une de ses performances ;
 - un message masqué ou une performance retirée par la modération.
 
-**Le courriel attend.** Un courriel par réponse ferait vite exploser le
-quota d'envoi de l'hébergement, et iCloud refuse aujourd'hui nos courriels
-(comptes.md, section 6.1). Un récapitulatif quotidien, facultatif, viendra
-s'il est demandé.
+**Un récapitulatif par courriel, deux fois par semaine**, choix de l'auteur
+du 7 novembre 2026 (« bi-hebdo », à confirmer : question 1). Jamais un
+courriel par réponse, qui ferait exploser le quota d'envoi de l'hébergement.
+Le récapitulatif reprend les notifications non lues depuis le précédent, et
+ne part pas s'il n'y a rien. Trois points :
+
+- **Il demande une tâche planifiée**, la première du projet : l'onglet
+  « Tâches planifiées (Cron) » de l'hébergement OVH lance un script PHP aux
+  jours choisis. Rien ne peut l'attendre d'une visite.
+- **Il se coupe en un clic**, par un lien dans chaque courriel et par une
+  case dans `/compte/`. Activé par défaut, puisqu'il ne parle que du compte
+  du membre (question 2).
+- **Les adresses iCloud n'en reçoivent pas**, comme les autres courriels du
+  site (comptes.md, section 6.1).
 
 **Un point technique à connaître.** Le cookie de session est `HttpOnly` :
 le JavaScript de la page ne peut pas savoir si le visiteur est connecté, et
@@ -112,7 +125,9 @@ par minute.
 Ce qui change par rapport à [comptes.md](comptes.md), section 6.4 :
 
 - **Qui est en ligne.** La liste des membres actifs dans les deux dernières
-  minutes, d'après `derniere_activite`.
+  minutes, d'après `derniere_activite`, **visible de tous**, visiteurs
+  compris (choix de l'auteur du 7 novembre). Les pseudos sont déjà publics
+  par les profils.
 - **Les visiteurs voient les nouveaux messages arriver**, sans historique.
   Leur première lecture ne rend que le numéro du dernier message ; les
   suivantes, ce qui est arrivé depuis. Le serveur refuse tout message de
@@ -176,12 +191,43 @@ programme, une compétition à préparer. Ce qu'il faut fixer :
 
 - **Qui peut en créer** : membre confirmé depuis 30 jours, comme pour voter,
   et un forum par mois au plus.
-- **Validation** : publication immédiate, ou après un regard de l'admin
-  (question 4).
-- **Modération** : le créateur peut épingler et verrouiller dans son forum ;
-  masquer et bannir restent à l'admin.
+- **Publication immédiate**, choix de l'auteur du 7 novembre : aucun forum
+  n'attend de validation.
+- **Un espace de modération prêt pour autant**, demande du même jour : la
+  page d'admin liste les forums des membres, les plus récents d'abord, avec
+  leurs signalements, et permet de renommer, verrouiller, archiver ou
+  masquer un forum en un clic. Le nom d'un forum passe le filtre strict des
+  profils, puisqu'il s'affiche à tous.
+- **Le créateur** peut épingler et verrouiller dans son forum ; masquer un
+  message et bannir restent à l'admin.
 - **Ménage** : un forum sans message depuis six mois passe en archive,
   lisible, fermé à l'écriture.
+
+---
+
+## 6 bis. La mise en forme des messages
+
+**Les balises d'époque**, choix de l'auteur du 7 novembre : `[b]gras[/b]`,
+`[i]italique[/i]`, `[quote=pseudo]…[/quote]` pour citer, `[url]…[/url]` pour
+un lien, plus les smileys d'époque de comptes.md, section 6.4. **Les emojis
+du téléphone passent aussi**, la base est en `utf8mb4`.
+
+La base garde le texte tel que tapé, balises comprises. Le rendu se fait à
+l'affichage, en PHP, à partir du texte **déjà échappé** : une balise inconnue
+reste du texte, et aucun HTML écrit par un membre ne peut s'exécuter. Un
+lien `[url]` n'accepte que `http` et `https`, s'ouvre dans un nouvel onglet,
+s'annonce comme les autres liens sortants, et porte `rel="ugc nofollow"`,
+qui dit à Google qu'un membre l'a écrit.
+
+---
+
+## 6 ter. Le fil d'actualité
+
+L'auteur n'a pas tranché. **Proposition par défaut**, à revoir à l'usage :
+les nouveaux sujets, les réponses, et les performances qui reçoivent un
+badge, mêlés par date. Les nouveaux membres n'y entrent pas : un pseudo qui
+arrive n'apprend rien au lecteur, et ouvrirait la porte aux comptes créés
+pour se montrer.
 
 ---
 
@@ -225,17 +271,20 @@ donnent au profil son contenu :
 - **Le dopage se discute, sous avertissement automatique, sans jamais
   inciter.** Section 5 bis. La charte `/communaute/charte/` recevra la règle
   avec la phase d'écriture du forum, quand le sujet pourra apparaître.
+- **Une catégorie par exercice, une générale, une compétition, une hors
+  sujet.** Section 2.
+- **Balises d'époque et emojis du téléphone.** Section 6 bis.
+- **Forums des membres publiés aussitôt, avec un espace de modération
+  prêt.** Section 6.
+- **Notifications sur le site, et un récapitulatif par courriel.**
+  Section 4.
+- **Les personnes en ligne, visibles de tous.** Section 5.
+- **Le fil** : l'auteur ne sait pas encore. Proposition par défaut en
+  section 6 ter.
 
 **Encore ouvertes :**
 
-1. **Les catégories** de la section 2 : à garder, renommer, compléter ?
-2. **La mise en forme des messages** : texte et smileys seulement, ou les
-   balises d'époque `[b]`, `[i]`, `[quote]`, `[url]` ?
-3. **Un forum de membre** paraît-il tout de suite, ou après validation de
-   l'admin ?
-4. **Les notifications** : sur le site seulement, ou aussi un courriel
-   récapitulatif quotidien, facultatif ?
-5. **La liste des personnes en ligne** : visible de tous, ou des membres
-   seulement ?
-6. **Le fil** : nouveaux sujets et réponses seulement, ou aussi les
-   performances vérifiées et les nouveaux membres ?
+1. **« Bi-hebdo »** : deux fois par semaine, ou une fois toutes les deux
+   semaines ? Le mot sert aux deux. Le plan suppose deux fois par semaine.
+2. **Le récapitulatif**, activé par défaut avec un lien pour le couper, ou
+   coupé par défaut et activé par le membre ?
