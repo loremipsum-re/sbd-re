@@ -52,6 +52,18 @@ DirectoryIndex index.html
   RewriteRule ^membres/([^/]+)$ https://%{HTTP_HOST}/membres/$1/ [R=301,L]
   RewriteRule ^membres/([^/]+)/$ api/profil-page.php?pseudo=$1 [B,L]
   RewriteRule ^sitemap-membres\.xml$ api/sitemap-membres.php [L]
+
+  # --- Forum, rendu par PHP comme les profils -----------------------------
+  # /forum/, /forum/<adresse>/ et /forum/<adresse>/<sujet>/ : api/forum-page.php
+  # les rend depuis le gabarit /forum/-gabarit/, qui répond 404. QSA garde
+  # « ?page=N ».
+  RewriteRule ^forum/-gabarit - [R=404,L]
+  RewriteRule ^forum$ https://%{HTTP_HOST}/forum/ [R=301,L]
+  RewriteRule ^forum/$ api/forum-page.php [QSA,L]
+  RewriteRule ^forum/([a-z0-9-]+)$ https://%{HTTP_HOST}/forum/$1/ [R=301,L]
+  RewriteRule ^forum/([a-z0-9-]+)/$ api/forum-page.php?forum=$1 [B,QSA,L]
+  RewriteRule ^forum/([a-z0-9-]+)/([0-9]+)$ https://%{HTTP_HOST}/forum/$1/$2/ [R=301,L]
+  RewriteRule ^forum/([a-z0-9-]+)/([0-9]+)/$ api/forum-page.php?forum=$1&sujet=$2 [B,QSA,L]
 </IfModule>
 
 ErrorDocument 404 /404.html

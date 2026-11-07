@@ -51,6 +51,14 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-07',
     nature: 'fonction',
+    version: '1.9.16',
+    titre: 'Le forum, le chat et les notifications, en essai',
+    texte:
+      "Les membres en essai ouvrent des sujets dans un forum à l'ancienne, une catégorie par mouvement, avec citations et smileys d'époque. Le chat s'ouvre en cinq salons, et une cloche prévient des réponses, des mentions et des badges.",
+  },
+  {
+    date: '2026-11-07',
+    nature: 'fonction',
     version: '1.9.15',
     titre: 'La vérification des performances, en essai',
     texte:

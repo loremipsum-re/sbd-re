@@ -289,6 +289,15 @@ const courant = (href: string) =>
           désormais ses 13 rubriques. Les mises à jour et les pages légales
           vivent au pied de page.
         */}
+        {/* La cloche des notifications, masquée sauf pour un membre connecté
+            (lib/cloche.ts). Une icône et un nombre : le mot complet ne tient
+            pas à 375 px à côté du logo et du menu, il est dit aux lecteurs
+            d'écran par `aria-label`. */}
+        <a class="cloche lien-nu" href="/compte/notifications/" aria-label="Notifications" data-cloche hidden>
+          <Icone nom="cloche" taille={22} />
+          <span class="compteur-cloche" data-compteur hidden></span>
+        </a>
+
         <details class="menu">
           <summary aria-label="Ouvrir le menu">
             <span class="barres-menu" aria-hidden="true"></span>
@@ -424,6 +433,11 @@ const courant = (href: string) =>
       sans ses commentaires. En `is:inline`, il pesait 4,9 Ko dans chacune des
       pages du site, 2,5 Mo en tout, dont la moitié de commentaires.
     */}
+    <script>
+      import { brancherCloche } from '../lib/cloche';
+      brancherCloche();
+    </script>
+
     <script>
       (() => {
         const menu = document.querySelector<HTMLDetailsElement>('details.menu');
@@ -602,6 +616,55 @@ const courant = (href: string) =>
      * ainsi occuper toute la largeur de la fenêtre.
      */
     margin-left: auto;
+  }
+
+  /* La cloche prend la marge automatique du menu quand elle paraît : sans
+     cela, deux marges automatiques la poseraient au milieu de la barre. */
+  .cloche {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--cible-min);
+    min-height: var(--cible-min);
+    margin-left: auto;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+  }
+
+  .cloche[hidden] {
+    display: none;
+  }
+
+  .cloche:not([hidden]) + .menu {
+    margin-left: 0;
+  }
+
+  .cloche:hover,
+  .cloche:focus-visible {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .compteur-cloche {
+    position: absolute;
+    top: -0.5rem;
+    right: -0.5rem;
+    min-width: 1.25rem;
+    padding: 0 0.25rem;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    background: var(--accent-fill);
+    color: var(--on-accent);
+    font-size: var(--step--1);
+    font-weight: 700;
+    line-height: 1.25rem;
+    text-align: center;
+  }
+
+  .compteur-cloche[hidden] {
+    display: none;
   }
 
   .menu summary {

@@ -19,6 +19,8 @@ namespace SBDRE;
 
 define('SBDRE_API', true);
 require __DIR__ . '/lib/comptes.php';
+require __DIR__ . '/lib/performances.php';
+require __DIR__ . '/lib/notifications.php';
 
 ouvrirApi(['POST']);
 $admin = exigerAdmin();
@@ -42,6 +44,12 @@ $touchees = $verifier
 
 if ($touchees === 0 && ligne('SELECT 1 FROM performance WHERE id = :id', ['id' => $id]) === null) {
     refuser(404, 'Cette performance n\'existe plus.');
+}
+
+if ($verifier && $touchees > 0) {
+    $perf = ligne('SELECT membre_id, mouvement, charge_kg FROM performance WHERE id = :id', ['id' => $id]);
+    notifier((int) $perf['membre_id'], 'badge', 'Votre performance au ' . mb_strtolower(MOUVEMENTS[$perf['mouvement']])
+        . ', ' . kgFr((float) $perf['charge_kg']) . ', est vérifiée par SBD.re.', '/compte/');
 }
 
 repondreOk($verifier ? 'Badge « Vérifiée par SBD.re » posé.' : 'Badge retiré.');

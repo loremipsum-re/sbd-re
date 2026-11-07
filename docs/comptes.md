@@ -579,24 +579,29 @@ forum (forum.md) ; les mouvements restent ceux de la force athlétique.
       badge ; le fil éprouvé contre une API simulée (avis donné puis changé,
       badge admin, compte de moins de 30 jours aux boutons grisés, cibles à
       44 px, filet d'accent sous l'aplat en clair).
-- [ ] `php verifier.php` sur le serveur : 65 réussites attendues, dont le
+- [x] `php verifier.php` sur le serveur : 65 réussites attendues, dont le
       vote de l'API qui remplace l'avis précédent et le membre banni écarté
       du compte. Il charge `~/sbd-re/api/lib/performances.php`, que le
       déploiement dépose : le site doit donc être en ligne avant.
-- [ ] **Fini quand** le calcul passe ses trois cas en local, qu'un vote
+- [x] **Fini quand** le calcul passe ses trois cas en local, qu'un vote
       compte en production, et qu'un compte de moins de 30 jours est refusé.
+      Validé par l'auteur le 7 novembre.
       Vingt comptes de test seraient de trop : la date d'inscription se
       recule à la main sur la base de test.
 
 ### Phase 7, le chat
 
-- [ ] `chat.php`, les cinq salons, la purge.
-- [ ] Copier les 16 SVG et la licence dans `public/smileys/`, contrôler
+**Reprise par l'étape 5 de [forum.md](forum.md)**, et construite le 7 novembre
+avec elle : voir « Construit le 7 novembre » dans ce document. Les cases
+ci-dessous restent le plan d'origine.
+
+- [x] `chat.php`, les cinq salons, la purge.
+- [x] Copier les 16 SVG et la licence dans `public/smileys/`, contrôler
       chaque fichier : ni `<script>`, ni `href` extérieur.
-- [ ] L'interface sur `/communaute/` : salons, messages, champ, barre de
+- [x] L'interface, sur `/communaute/chat/` jusqu'à l'ouverture : salons, messages, champ, barre de
       smileys. Le remplacement des codes garde un autotest : `:)` devient
       l'image `icon_e_smile`, « 5x8) » ne bouge pas, `<b>` reste du texte.
-- [ ] `moderation.php` et ses deux listes.
+- [x] `lib/moderation.php` et ses deux listes.
 - [ ] **Fini quand** deux navigateurs se parlent, qu'un terme interdit est
       refusé, et que le freinage mord.
 

@@ -186,7 +186,7 @@ export default defineConfig({
       // rendu par PHP et ajouté à l'index par `customSitemaps`.
       filter: (page) =>
         !/\/competitions\/\d{4}-\d{2}-\d{2}-/.test(page) &&
-        !/\/compte\/|\/communaute\/charte\/|\/membres\//.test(page),
+        !/\/compte\/|\/communaute\/(charte|chat)\/|\/membres\/|\/forum\//.test(page),
       customSitemaps: ['https://sbd.re/sitemap-membres.xml'],
 
       serialize(item) {

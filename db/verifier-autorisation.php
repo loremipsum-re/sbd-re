@@ -46,6 +46,8 @@ if (!is_file($chemin)) {
 require_once $chemin;
 require_once dirname($chemin) . '/comptes.php';
 require_once dirname($chemin) . '/performances.php';
+require_once dirname($chemin) . '/forum.php';
+require_once dirname($chemin) . '/chat.php';
 
 /* -------------------------------------------------------------------------
  * Affichage
@@ -407,6 +409,58 @@ verifie('L\'admin l\'emporte sur un vote contraire', \SBDRE\badgeDe(['date_verif
 verifie('12 favorables sur 20 : communauté',        \SBDRE\badgeDe(['date_verif_admin' => null, 'votes' => '20', 'favorables' => '12']) === 'communaute', true);
 verifie('11 favorables sur 20 : non vérifiée',      \SBDRE\badgeDe(['date_verif_admin' => null, 'votes' => '20', 'favorables' => '11']) === '', true);
 verifie('Sans colonne de votes : non vérifiée',     \SBDRE\badgeDe(['date_verif_admin' => null]) === '', true);
+
+titre('Forum : le texte d\'un message');
+
+$smileys = [['code' => ':)', 'fichier' => 'icon_e_smile', 'alt' => 'sourire'], ['code' => '8)', 'fichier' => 'icon_cool', 'alt' => 'cool']];
+$rendu = fn (string $t): string => \SBDRE\rendreTexte($t, $smileys);
+
+verifie('Un <script> reste du texte',            !str_contains($rendu('<script>alert(1)</script>'), '<script'), true);
+verifie('[url]javascript: ne fait pas de lien',   str_contains($rendu('[url]javascript:alert(1)[/url]'), '<a '), false);
+verifie('[url]https fait un lien ugc nofollow',   str_contains($rendu('[url]https://sbd.re/[/url]'), 'rel="ugc nofollow noopener"'), true);
+verifie('Un guillemet ne sort pas de l\'adresse', str_contains($rendu('[url]https://x.re" onmouseover="a[/url]'), 'onmouseover="'), false);
+verifie(':) seul devient une image',              str_contains($rendu('Salut :)'), 'icon_e_smile.svg'), true);
+verifie('« 5x8) » reste du texte',                str_contains($rendu('5x8)'), '<img'), false);
+verifie('[quote=pseudo] fait une citation',       str_contains($rendu('[quote=jean_93]oui[/quote]'), '<blockquote'), true);
+verifie('[quote=<b>] reste du texte',             str_contains($rendu('[quote=<b>]x[/quote]'), '<blockquote'), false);
+verifie('[b] non fermé reste du texte',           str_contains($rendu('[b]gras'), '<strong>'), false);
+verifie('Retour à la ligne en <br>',              str_contains($rendu("a\nb"), '<br>'), true);
+
+titre('Forum : formes');
+
+verifie('Titre de 4 caractères refusé',           \SBDRE\titreSujetValide('Abcd'), false);
+verifie('Titre de 5 caractères accepté',          \SBDRE\titreSujetValide('Abcde'), true);
+verifie('Titre de 121 caractères refusé',         \SBDRE\titreSujetValide(str_repeat('a', 121)), false);
+verifie('Titre à retour à la ligne refusé',       \SBDRE\titreSujetValide("Mon\ntitre"), false);
+verifie('Message vide refusé',                    \SBDRE\texteForumValide(''), false);
+verifie('Message de 5 001 caractères refusé',     \SBDRE\texteForumValide(str_repeat('é', 5001)), false);
+verifie('Message sur deux lignes accepté',        \SBDRE\texteForumValide("ligne\nligne"), true);
+verifie('Caractère de contrôle refusé',           \SBDRE\texteForumValide("bip\x07"), false);
+verifie('Adresse « squat-technique » valide',     \SBDRE\adresseForumValide('squat-technique'), true);
+verifie('Adresse « -gabarit » refusée',           \SBDRE\adresseForumValide('-gabarit'), false);
+verifie('Adresse en majuscules refusée',          \SBDRE\adresseForumValide('Squat'), false);
+verifie('@pseudo cité, courriel ignoré',          \SBDRE\mentionsDe('Salut @jean_93, écris à a@b.re') === ['jean_93'], true);
+verifie('Cinq mentions au plus',                  count(\SBDRE\mentionsDe('@aaa @bbb @ccc @ddd @eee @fff')) === 5, true);
+verifie('Message 20 en page 1, 21 en page 2',     \SBDRE\pageDuMessage(19) === 1 && \SBDRE\pageDuMessage(20) === 2, true);
+verifie('Lien de la page 2 d\'un sujet',          \SBDRE\lienSujet('squat-technique', 14, 2) === '/forum/squat-technique/14/?page=2', true);
+
+titre('Modération : les deux listes');
+
+verifie('« cycle » passe, mot du métier',         \SBDRE\analyserTexte('Je cherche un cycle de force') === 'ok', true);
+verifie('« stéroïdes » sous avertissement',       \SBDRE\analyserTexte('Il prend des stéroïdes') === 'sensible', true);
+verifie('« EPO » sous avertissement',             \SBDRE\analyserTexte('Contrôle EPO ?') === 'sensible', true);
+verifie('« hormone de croissance » aussi',        \SBDRE\analyserTexte('Hormone de croissance') === 'sensible', true);
+verifie('« épaule » passe',                       \SBDRE\analyserTexte('Mal à l\'épaule') === 'ok', true);
+verifie('Une insulte visant quelqu\'un bloque',   \SBDRE\analyserTexte('T\'es un enculé') === 'bloque', true);
+verifie('Une grossièreté seule passe',            \SBDRE\analyserTexte('Putain la barre') === 'ok', true);
+verifie('« dépôt » passe, « dope » non visé',     \SBDRE\analyserTexte('Un dépôt de plaques') === 'ok', true);
+
+titre('Chat : formes');
+
+verifie('Message court accepté',                  \SBDRE\texteChatValide('Salut :)'), true);
+verifie('501 caractères refusés',                 \SBDRE\texteChatValide(str_repeat('a', 501)), false);
+verifie('Retour à la ligne refusé',               \SBDRE\texteChatValide("a\nb"), false);
+verifie('Cinq salons',                            count(\SBDRE\SALONS) === 5, true);
 
 titre('Domaines qui refusent nos courriels');
 

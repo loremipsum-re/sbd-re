@@ -19,6 +19,7 @@ namespace SBDRE;
 define('SBDRE_API', true);
 require __DIR__ . '/lib/comptes.php';
 require __DIR__ . '/lib/performances.php';
+require __DIR__ . '/lib/notifications.php';
 
 $methode = ouvrirApi(['GET', 'POST']);
 $membre = exigerActif();
@@ -77,6 +78,14 @@ if (!peutVoter($performance, $membre, time())) {
     refuser(403, 'Le vote s\'ouvre ' . ANCIENNETE_VOTE_JOURS . ' jours après l\'inscription.');
 }
 
+// Le badge avant et après l'avis : celui qui le fait tomber prévient l'auteur.
+$badge = static fn (): string => badgeDe(performancesAvecVotes('p.id = :id', ['id' => $id])[0] ?? []);
+$avant = $badge();
 executer(SQL_VOTER, ['p' => $id, 'm' => $moi, 'ok' => $ok ? 1 : 0]);
+if ($avant === '' && $badge() === 'communaute') {
+    $perf = ligne('SELECT membre_id, mouvement, charge_kg FROM performance WHERE id = :id', ['id' => $id]);
+    notifier((int) $perf['membre_id'], 'badge', 'Votre performance au ' . mb_strtolower(MOUVEMENTS[$perf['mouvement']])
+        . ', ' . kgFr((float) $perf['charge_kg']) . ', est vérifiée par la communauté.', '/compte/');
+}
 
 repondreOk($ok ? 'Avis enregistré : valide.' : 'Avis enregistré : ne valide pas.');

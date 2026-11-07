@@ -85,6 +85,8 @@ la mention « à compléter » tant que l'auteur ne les a pas fournis.
 | `/communaute/` | Page d'attente du classement communauté : son état en une phrase, trois actions, le fonctionnement prévu |
 | `/membres/<pseudo>/` | Profil public, rendu par `api/profil-page.php` depuis le gabarit `/membres/-gabarit/` (repères `%%NOM%%`), réécrit par le `.htaccess`. `noindex` tant que le profil n'a pas de performance. Plan des profils à `/sitemap-membres.xml` |
 | `/compte/`, `/compte/reglages/`, `/compte/a-verifier/`, `/compte/inscription/`, `/compte/connexion/`, `/compte/mot-de-passe/`, `/communaute/charte/` | Les comptes, servis par `public/api/*.php`. `/compte/` est l'accueil du membre (performances, position au classement d'après `/api/positions.json`), les réglages derrière l'engrenage, le fil des barres à vérifier à `/compte/a-verifier/`. Prop `prive` de `BaseLayout` : `noindex`, hors plan de site, jamais de Clarity. Hors du menu jusqu'à l'ouverture, phase 9 de docs/comptes.md |
+| `/forum/`, `/forum/<adresse>/`, `/forum/<adresse>/<sujet>/` | Le forum, rendu par `api/forum-page.php` depuis le gabarit `/forum/-gabarit/`, comme les profils. `noindex` jusqu'à l'ouverture (`FORUM_OUVERT` de `lib/forum.php`). Écritures par `api/forum.php`, plan dans docs/forum.md |
+| `/communaute/chat/`, `/compte/notifications/` | Le chat (`api/chat.php`) et les notifications (`api/notifications.php`), pages `prive` jusqu'à l'ouverture. La cloche de l'en-tête ne paraît qu'avec le cookie lisible `sbdre-connecte`, posé à la connexion |
 | `/suggestions/` | Boîte à suggestions anonyme, servie par `public/api/suggestion.php` |
 | `/mises-a-jour/` | Journal des changements : chiffres des données calculés, entrées du site écrites dans `src/lib/journal.ts` |
 | `/accessibilite/` | Audit d'accessibilité mené par la mesure, méthode, résultats et limites |
@@ -455,7 +457,8 @@ faute de l'avoir fait.
 
 ```bash
 php -l <fichier>                    # contrôle de syntaxe
-php db/verifier-autorisation.php    # 67 règles d'autorisation, sans base
+php db/verifier-autorisation.php    # règles d'autorisation et du forum, sans base
+node scripts/verifier-smileys.mjs   # autotest des smileys d'époque du chat
 ```
 
 MySQL, lui, n'est **pas** installé en local. Tout ce qui touche à la base

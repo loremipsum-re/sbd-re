@@ -1,0 +1,321 @@
+/*
+ * Le forum, le chat et les notifications.
+ *
+ * GLOBAUX, comme ceux des profils : le HTML du forum est écrit par PHP
+ * (lib/forum.php) et ne porte pas l'attribut qu'Astro pose pour isoler les
+ * styles d'un fichier. Marque Modernist : bordures de 2 px, aplats francs,
+ * aucune ombre. Le jaune reste un accent de texte (--accent) ou un aplat
+ * sous --on-accent (--accent-fill), jamais l'inverse.
+ */
+
+.page-forum,
+.page-chat {
+  padding-block: var(--space-8) var(--space-16);
+}
+
+.page-forum h1,
+.page-forum .titre-sujet,
+.page-forum h3 {
+  overflow-wrap: anywhere;
+}
+
+/* --- Fil d'Ariane --------------------------------------------------- */
+
+.ariane ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+
+.ariane li + li::before {
+  content: '›';
+  margin-right: var(--space-2);
+}
+
+.ariane a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+}
+
+/* --- Accueil et forums ------------------------------------------------ */
+
+.categorie-forum {
+  margin-block: var(--space-8);
+}
+
+.liste-forums,
+.liste-sujets,
+.messages-forum,
+.liste-notifications {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.liste-forums li,
+.liste-sujets li,
+.message-forum,
+.liste-notifications li {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.liste-forums h3,
+.liste-forums p,
+.liste-sujets p,
+.message-forum p {
+  margin: 0;
+}
+
+.liste-forums h3 a,
+.titre-sujet a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  font-weight: 700;
+}
+
+.page-forum .meta,
+.meta-sujet {
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+
+.meta-sujet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.page-forum .etiquette {
+  padding: 0 var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: var(--step--1);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  margin-block: var(--space-6);
+}
+
+.pagination a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+}
+
+/* --- Messages --------------------------------------------------------- */
+
+.message-forum {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.message-forum header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+
+.message-forum .auteur {
+  font-size: var(--step-0);
+  color: var(--text);
+}
+
+.message-forum .auteur a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+}
+
+.message-forum .texte {
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+
+.citation {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-left: 3px solid var(--border);
+  color: var(--muted);
+}
+
+.citation .cite {
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+
+.smiley {
+  height: 1.25em;
+  width: auto;
+  vertical-align: -0.25em;
+}
+
+/* L'avertissement du dopage (docs/forum.md, section 5 bis) : il précède le
+   message, en ambre, et se lit avant lui. */
+.avertissement {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--alerte);
+  color: var(--alerte);
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+
+.ecrire {
+  margin-top: var(--space-12);
+  max-width: 44rem;
+}
+
+.etat-ferme,
+.inviter {
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.bouton-citer,
+.bouton-suivre,
+.bouton-smiley,
+.salons button {
+  min-height: var(--cible-min);
+  padding: var(--space-2) var(--space-4);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Un état choisi : l'aplat sous un filet d'accent, jamais l'aplat seul
+   (critère 1.4.11 en thème clair, CLAUDE.md). */
+.bouton-suivre[aria-pressed='true'],
+.salons button[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-fill);
+  color: var(--on-accent);
+}
+
+.barre-smileys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.bouton-smiley {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--cible-min);
+  padding: var(--space-1);
+  border-width: 1px;
+}
+
+.bouton-smiley img {
+  height: 1.5rem;
+  width: auto;
+}
+
+/* --- Chat ------------------------------------------------------------- */
+
+.salons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-block: var(--space-4);
+}
+
+.en-ligne {
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+
+.fil-chat {
+  display: grid;
+  gap: var(--space-2);
+  max-height: 60vh;
+  margin: var(--space-4) 0;
+  padding: var(--space-3);
+  overflow-y: auto;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  list-style: none;
+}
+
+.fil-chat li {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.fil-chat .entete-message {
+  margin: 0;
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+
+.fil-chat .entete-message a {
+  font-weight: 700;
+}
+
+.fil-chat .corps {
+  margin: 0;
+}
+
+.ecrire-chat {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ecrire-chat .ligne-envoi {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.ecrire-chat .ligne-envoi input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --- Notifications ---------------------------------------------------- */
+
+.liste-notifications li {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.liste-notifications a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+}
+
+.liste-notifications .non-lue {
+  border-color: var(--accent);
+}
+
+.liste-notifications .date {
+  font-size: var(--step--1);
+  color: var(--muted);
+}

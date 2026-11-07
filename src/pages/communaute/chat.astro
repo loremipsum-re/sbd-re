@@ -1,0 +1,185 @@
+---
+/**
+ * Le chat (docs/forum.md, section 5), en essai jusqu'à l'ouverture : il
+ * rejoindra /communaute/ à la phase 9 de docs/comptes.md. D'ici là, page
+ * `prive` : ni indexée, ni mesurée, hors du menu.
+ *
+ * Cinq salons, lisibles de tous. Un membre connecté lit sept jours et écrit,
+ * un visiteur voit arriver les nouveaux messages. Lecture par interrogation
+ * (public/api/chat.php), à l'intervalle que le serveur donne, arrêtée quand
+ * l'onglet est masqué. Chaque message s'écrit par `textContent`, les
+ * smileys par `createElement('img')` : aucun HTML d'un membre n'est lu.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/compte.css';
+import '../../styles/communaute.css';
+
+const salons = [
+  ['general', 'Général'],
+  ['squat', 'Squat'],
+  ['developpe-couche', 'Développé couché'],
+  ['souleve-de-terre', 'Soulevé de terre'],
+  ['competitions', 'Compétitions'],
+] as const;
+---
+
+<BaseLayout titre="Le chat" description="Le chat de la communauté de force athlétique de La Réunion." prive>
+  <div class="wrap page-chat">
+    <header class="entete-page">
+      <h1>Le chat</h1>
+      <p class="chapeau">
+        Cinq salons, un thème chacun, la charte partout. Les membres lisent les
+        sept derniers jours, les visiteurs voient arriver les nouveaux messages.
+      </p>
+    </header>
+
+    <noscript><p class="aide">Le chat demande JavaScript.</p></noscript>
+
+    <div class="salons" role="group" aria-label="Salons">
+      {salons.map(([id, nom], i) => <button type="button" data-salon={id} aria-pressed={i === 0 ? 'true' : 'false'}>{nom}</button>)}
+    </div>
+
+    <p class="en-ligne" data-en-ligne>Chargement…</p>
+
+    <ol class="fil-chat" role="log" aria-label="Messages du salon" data-fil></ol>
+    <p class="aide" data-vide hidden></p>
+
+    <form class="form-compte ecrire-chat" data-ecrire hidden novalidate>
+      <label for="texte-chat">Votre message</label>
+      <div class="ligne-envoi">
+        <input id="texte-chat" name="texte" maxlength="500" autocomplete="off" required />
+        <button type="submit">Envoyer</button>
+      </div>
+      <div class="barre-smileys" data-smileys></div>
+      <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+    </form>
+    <p class="inviter" data-inviter hidden>
+      <a href="/compte/connexion/">Connectez-vous</a> pour écrire et lire les sept derniers jours.
+    </p>
+  </div>
+</BaseLayout>
+
+<script>
+  import { afficher, api } from '../../lib/api-compte';
+  import { brancherBarresSmileys, messageEnNoeuds } from '../../lib/barre-smileys';
+
+  interface Message {
+    id: number;
+    pseudo: string;
+    texte: string;
+    sensible: boolean;
+    date: number;
+  }
+
+  const fil = document.querySelector<HTMLOListElement>('[data-fil]')!;
+  const vide = document.querySelector<HTMLElement>('[data-vide]')!;
+  const enLigne = document.querySelector<HTMLElement>('[data-en-ligne]')!;
+  const form = document.querySelector<HTMLFormElement>('[data-ecrire]')!;
+  const champ = form.querySelector<HTMLInputElement>('input')!;
+  const etat = form.querySelector<HTMLElement>('[data-etat]')!;
+  const inviter = document.querySelector<HTMLElement>('[data-inviter]')!;
+  const boutonsSalon = [...document.querySelectorAll<HTMLButtonElement>('[data-salon]')];
+
+  let salon = 'general';
+  let dernier = 0;
+  let intervalle = 15;
+  let minuterie = 0;
+  let avertissement = '';
+  let connecte = false;
+
+  brancherBarresSmileys(form);
+
+  const heure = (secondes: number) => {
+    const d = new Date(secondes * 1000);
+    const memeJour = d.toDateString() === new Date().toDateString();
+    return d.toLocaleString('fr-FR', memeJour
+      ? { hour: '2-digit', minute: '2-digit' }
+      : { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  };
+
+  const ligne = (m: Message) => {
+    const li = document.createElement('li');
+    const entete = Object.assign(document.createElement('p'), { className: 'entete-message' });
+    const auteur = Object.assign(document.createElement('a'), { href: `/membres/${m.pseudo}/`, textContent: m.pseudo });
+    const quand = Object.assign(document.createElement('time'), {
+      dateTime: new Date(m.date * 1000).toISOString(),
+      textContent: heure(m.date),
+    });
+    entete.append(auteur, ' · ', quand);
+    li.append(entete);
+    if (m.sensible) {
+      li.append(Object.assign(document.createElement('p'), { className: 'avertissement', textContent: avertissement }));
+    }
+    const corps = Object.assign(document.createElement('p'), { className: 'corps' });
+    corps.append(...messageEnNoeuds(m.texte));
+    li.append(corps);
+    return li;
+  };
+
+  let enCours = false;
+
+  const lire = async () => {
+    clearTimeout(minuterie);
+    // Une seule lecture à la fois : deux lectures parties du même numéro
+    // afficheraient deux fois les mêmes messages.
+    if (document.hidden || enCours) return;
+    enCours = true;
+    const pour = salon;
+    const r = await api(`/api/chat.php?canal=${pour}&depuis=${dernier}`, 'GET');
+    enCours = false;
+    // Salon changé pendant la lecture : sa réponse ne vaut plus.
+    if (pour !== salon) return void lire();
+    if (r.ok) {
+      const messages = r.messages as Message[];
+      avertissement = r.avertissement as string;
+      intervalle = Number(r.intervalle) || 15;
+      connecte = r.connecte === true;
+      form.hidden = !connecte;
+      inviter.hidden = connecte;
+
+      // Suivre le bas du fil seulement si le lecteur y était déjà.
+      const enBas = fil.scrollHeight - fil.scrollTop - fil.clientHeight < 40;
+      fil.append(...messages.map(ligne));
+      if (enBas || dernier === 0) fil.scrollTop = fil.scrollHeight;
+      dernier = Number(r.dernier) || dernier;
+
+      vide.hidden = fil.childElementCount > 0;
+      vide.textContent = connecte
+        ? 'Aucun message ces sept derniers jours. Lancez la conversation.'
+        : 'Les nouveaux messages s\'afficheront ici.';
+      const qui = r.en_ligne as string[];
+      enLigne.textContent = qui.length === 0 ? 'Personne en ligne pour l\'instant.' : `En ligne : ${qui.join(', ')}`;
+    }
+    minuterie = window.setTimeout(lire, intervalle * 1000);
+  };
+
+  for (const bouton of boutonsSalon) {
+    bouton.addEventListener('click', () => {
+      salon = bouton.dataset.salon!;
+      for (const b of boutonsSalon) b.setAttribute('aria-pressed', String(b === bouton));
+      fil.replaceChildren();
+      dernier = 0;
+      void lire();
+    });
+  }
+
+  document.addEventListener('visibilitychange', () => void lire());
+
+  form.addEventListener('submit', async (evenement) => {
+    evenement.preventDefault();
+    const texte = champ.value.trim();
+    if (texte === '') return;
+    const r = await api('/api/chat.php', 'POST', { canal: salon, texte, confirme: form.dataset.confirme === '1' });
+    if (r.statut === 409) form.dataset.confirme = '1';
+    if (!r.ok) {
+      afficher(etat, r.message, false);
+      return;
+    }
+    delete form.dataset.confirme;
+    afficher(etat, '', true);
+    champ.value = '';
+    void lire();
+  });
+
+  void lire();
+</script>
