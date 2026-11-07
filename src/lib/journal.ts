@@ -50,6 +50,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-07',
+    nature: 'fonction',
+    version: '1.9.13',
+    titre: 'Les performances des membres, en essai',
+    texte:
+      "Un membre en essai publie ses barres avec leur vidéo. Son profil affiche ses records par équipement, son total quand il a les trois mouvements, et toutes ses performances.",
+  },
+  {
+    date: '2026-11-07',
     nature: 'visuel',
     version: '1.9.12',
     titre: 'Pseudo et Instagram verrouillés par défaut',
