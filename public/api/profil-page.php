@@ -78,7 +78,12 @@ try {
         }
         introuvable();
     }
-    $compte = ligne('SELECT COUNT(*) AS n FROM performance WHERE membre_id = :id', ['id' => $membre['id']]);
+    $performances = lignes(
+        'SELECT mouvement, equipement, charge_kg, categorie, date_performance, lien_video, date_verif_admin
+           FROM performance WHERE membre_id = :id
+          ORDER BY date_performance DESC, id DESC',
+        ['id' => $membre['id']],
+    );
 } catch (\RuntimeException | \PDOException $e) {
     indisponible($e->getMessage());
 }
@@ -101,4 +106,4 @@ if ($methode === 'HEAD') {
     exit;
 }
 
-echo rendreProfil($membre, $gabarit, is_array($salles) ? $salles : [], (int) ($compte['n'] ?? 0));
+echo rendreProfil($membre, $gabarit, is_array($salles) ? $salles : [], $performances);

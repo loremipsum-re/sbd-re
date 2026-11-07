@@ -45,6 +45,7 @@ if (!is_file($chemin)) {
 
 require_once $chemin;
 require_once dirname($chemin) . '/comptes.php';
+require_once dirname($chemin) . '/performances.php';
 
 /* -------------------------------------------------------------------------
  * Affichage
@@ -329,6 +330,68 @@ verifie('Changé le 6 novembre 2026 : prochain le 6 novembre 2027',
     \SBDRE\dateFr(\SBDRE\prochainChangement('2026-11-06 12:00:00', $an, $maintenant)) === '6 novembre 2027', true);
 verifie('Le premier du mois s\'écrit « 1er »',        \SBDRE\dateFr(strtotime('2027-05-01 10:00:00')) === '1er mai 2027', true);
 verifie('Sans le jour : « novembre 2026 »',           \SBDRE\dateFr($maintenant, false) === 'novembre 2026', true);
+
+titre('Performance : lien de la vidéo');
+
+foreach ([
+    ['https://www.instagram.com/p/abc/', true, 'Instagram'],
+    ['https://youtu.be/abc', true, 'YouTube court'],
+    ['https://www.youtube.com/watch?v=abc', true, 'YouTube'],
+    ['https://www.tiktok.com/@jean/video/1', true, 'TikTok'],
+    ['http://www.instagram.com/p/abc/', false, 'http sans s'],
+    ['https://vimeo.com/123', false, 'un autre hébergeur'],
+    ['https://www.instagram.com/', false, 'la page d\'accueil seule'],
+    ['https://www.instagram.com@exemple.re/p/abc/', false, 'un faux hôte après un @'],
+    ['https://exemple.re/www.instagram.com/p/abc/', false, 'l\'hébergeur dans le chemin'],
+    ['https://www.instagram.com/p/abc/"><script>', false, 'un guillemet et une balise'],
+    ['javascript:alert(1)', false, 'javascript:'],
+] as [$lien, $attendu, $quoi]) {
+    verifie(ucfirst($quoi) . ($attendu ? ' : accepté' : ' : refusé'), \SBDRE\lienVideoValide($lien), $attendu);
+}
+
+titre('Performance : charge, date, catégorie');
+
+verifie('« 182,5 » vaut 182,5 kg',             \SBDRE\chargeValide('182,5') === 182.5, true);
+verifie('600 kg acceptés',                     \SBDRE\chargeValide(600) === 600.0, true);
+verifie('600,01 kg refusés',                   \SBDRE\chargeValide('600.01') === null, true);
+verifie('0 kg refusé',                         \SBDRE\chargeValide('0') === null, true);
+verifie('Charge négative refusée',             \SBDRE\chargeValide('-5') === null, true);
+verifie('Trois décimales refusées',            \SBDRE\chargeValide('182.555') === null, true);
+verifie('« 1e3 » refusé',                      \SBDRE\chargeValide('1e3') === null, true);
+verifie('Aujourd\'hui accepté',                \SBDRE\datePerformanceValide(date('Y-m-d', $maintenant), $maintenant), true);
+verifie('Demain refusé',                       \SBDRE\datePerformanceValide(date('Y-m-d', $maintenant + 86400), $maintenant), false);
+verifie('Un 30 février refusé',                \SBDRE\datePerformanceValide('2026-02-30', $maintenant), false);
+verifie('Avant 2000 refusé',                   \SBDRE\datePerformanceValide('1999-12-31', $maintenant), false);
+verifie('Catégorie vide acceptée',             \SBDRE\categorieValide(''), true);
+verifie('« 120+ » accepté',                    \SBDRE\categorieValide('120+'), true);
+verifie('« 93kg » refusé',                     \SBDRE\categorieValide('93kg'), false);
+verifie('« 250 » refusé',                      \SBDRE\categorieValide('250'), false);
+verifie('« 182,5 kg » s\'écrit à la française', \SBDRE\kgFr(182.5) === "182,5\u{00A0}kg", true);
+
+titre('Records du profil');
+
+$barre = fn (string $mv, string $eq, string $kg, string $date): array =>
+    ['mouvement' => $mv, 'equipement' => $eq, 'charge_kg' => $kg, 'date_performance' => $date];
+$records = \SBDRE\recordsDe([
+    $barre('squat', 'raw', '200.00', '2026-11-01'),
+    $barre('squat', 'raw', '200.00', '2026-10-01'),
+    $barre('squat', 'raw', '190.00', '2026-12-01'),
+    $barre('bench', 'raw', '142.50', '2026-10-15'),
+    $barre('deadlift', 'raw', '250.00', '2026-09-20'),
+    $barre('squat', 'wraps', '215.00', '2026-08-01'),
+]);
+verifie('Total raw de 592,5 kg',                 $records['raw']['total'] === 592.5, true);
+verifie('À charge égale, la plus ancienne garde le record',
+    $records['raw']['barres']['squat']['date_performance'] === '2026-10-01', true);
+verifie('Une barre plus légère ne bat pas le record', $records['raw']['barres']['squat']['charge_kg'] === '200.00', true);
+verifie('Pas de total avec une seule barre',     $records['wraps']['total'] === null, true);
+verifie('Raw avant bandes, dans l\'ordre du site', array_keys($records) === ['raw', 'wraps'], true);
+$verifiee = \SBDRE\recordsDe([
+    $barre('squat', 'raw', '200.00', '2026-10-01'),
+    $barre('squat', 'raw', '200.00', '2026-11-01') + ['date_verif_admin' => '2026-11-02 10:00:00'],
+]);
+verifie('À charge égale, la barre vérifiée l\'emporte',
+    $verifiee['raw']['barres']['squat']['date_performance'] === '2026-11-01', true);
 
 titre('Domaines qui refusent nos courriels');
 

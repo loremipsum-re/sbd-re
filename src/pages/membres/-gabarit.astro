@@ -101,4 +101,84 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   .page-membre .records-membre h2 {
     margin-bottom: var(--space-3);
   }
+
+  .page-membre .records-membre h3 {
+    margin: var(--space-6) 0 var(--space-3);
+    font-size: var(--step-0);
+  }
+
+  /* Les records d'un équipement : une case par mouvement, puis le total. */
+  .page-membre .records {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+    gap: var(--space-3);
+    margin: 0;
+  }
+
+  .page-membre .records div {
+    min-width: 0;
+    padding: var(--space-3) var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  /* Le total, état dans la donnée : l'aplat sous le filet, jamais seul. */
+  .page-membre .records .total {
+    border-color: var(--accent);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+  }
+
+  .page-membre .records .total dt {
+    color: inherit;
+  }
+
+  .page-membre .records dt {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .page-membre .records dd {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-3);
+    margin: var(--space-1) 0 0;
+  }
+
+  .page-membre .charge {
+    font-size: var(--step-2);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .page-membre .verif {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .page-membre .verif-admin {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .page-membre .liste-perfs {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .page-membre .liste-perfs li {
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Le lien de la vidéo, dans une case ou une ligne, reste une cible de 44 px. */
+  .page-membre .records-membre a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+  }
 </style>

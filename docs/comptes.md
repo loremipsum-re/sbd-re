@@ -508,10 +508,26 @@ les six mois. Le retirer reste libre, sans remettre l'horloge à zéro.
 
 ### Phase 5, les performances
 
-- [ ] `performances.php`, ajout et retrait depuis `/compte/`.
-- [ ] Records et liste sur le profil.
+- [x] `performances.php` (lister, ajouter, retirer) sur `lib/performances.php`,
+      dont les formes sont pures : lien Instagram, YouTube ou TikTok en
+      https, charge de 600 kg au plus et deux décimales, date réelle depuis
+      2000 et jamais future, catégorie facultative au format « 93 » ou
+      « 120+ », dix ajouts par jour.
+- [x] Records et liste sur le profil : par équipement, la meilleure barre de
+      chaque mouvement, à charge égale la vérifiée puis la plus ancienne, et
+      le total quand les trois existent. Le profil s'indexe dès sa première
+      barre, et sa description dit ses records quand il n'a pas de
+      présentation.
+- [x] Dans `/compte/`, le formulaire et la liste, « Retirer » passant par la
+      fenêtre de confirmation.
+- [x] En local, le 7 novembre : 152 règles sur 152, 26 contrôles sur deux
+      profils rendus avec le vrai gabarit, la page de compte éprouvée contre
+      une API simulée (envoi, liste, retrait confirmé, cibles à 44 px).
 - [ ] **Fini quand** une performance apparaît sur le profil et disparaît
-      quand on la retire.
+      quand on la retire, en production.
+
+**Laissé de côté** : l'haltérophilie n'a pas de performances, seulement son
+forum (forum.md) ; les mouvements restent ceux de la force athlétique.
 
 ### Phase 6, la vérification
 
