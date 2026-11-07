@@ -47,7 +47,9 @@ DirectoryIndex index.html
   # fait partout (`trailingSlash: 'always'`).
   RewriteRule ^membres/-gabarit - [R=404,L]
   RewriteRule ^membres/?$ - [R=404,L]
-  RewriteRule ^membres/([^/]+)$ /membres/$1/ [R=301,L]
+  # Adresse complète, comme pour HTTPS : un chemin seul faisait rediriger vers
+  # « https://sbd.re:443/… », port compris, mesuré le 7 novembre 2026.
+  RewriteRule ^membres/([^/]+)$ https://%{HTTP_HOST}/membres/$1/ [R=301,L]
   RewriteRule ^membres/([^/]+)/$ api/profil-page.php?pseudo=$1 [B,L]
   RewriteRule ^sitemap-membres\.xml$ api/sitemap-membres.php [L]
 </IfModule>

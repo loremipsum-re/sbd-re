@@ -41,6 +41,26 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
         </ul>
         <form class="form-compte" data-profil novalidate>
           <div class="champ">
+            <label for="pseudo">Pseudo</label>
+            <input
+              id="pseudo"
+              name="pseudo"
+              type="text"
+              required
+              minlength="3"
+              maxlength="30"
+              autocomplete="username"
+              autocapitalize="none"
+              spellcheck="false"
+              aria-describedby="aide-pseudo"
+            />
+            <p class="aide" id="aide-pseudo" data-aide-pseudo>
+              Il se change une fois par an. L'ancienne adresse de votre profil
+              renvoie vers la nouvelle.
+            </p>
+          </div>
+
+          <div class="champ">
             <label for="bio">Présentation <span class="aide">facultatif</span></label>
             <textarea id="bio" name="bio" rows="3" maxlength="160" aria-describedby="aide-bio"
             ></textarea>
@@ -132,6 +152,8 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
 
   interface Compte {
     pseudo: string;
+    /** « 6 novembre 2027 », ou '' quand un nouveau pseudo est déjà accepté. */
+    pseudo_prochain: string;
     courriel: string;
     instagram: string | null;
     /** « 7 mai 2027 », ou '' quand un nouveau nom est déjà accepté. */
@@ -141,8 +163,10 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
     salle: string | null;
   }
 
-  // Pas d'`await` au premier niveau : la cible de compilation ne l'admet pas.
-  void api('/api/moi.php', 'GET').then((lecture) => {
+  // Relue après chaque enregistrement : un pseudo changé change aussi le lien
+  // du profil et la date du prochain changement. Pas d'`await` au premier
+  // niveau : la cible de compilation ne l'admet pas.
+  const charger = () => void api('/api/moi.php', 'GET').then((lecture) => {
     if (lecture.statut === 401) {
       location.replace('/compte/connexion/');
       return;
@@ -156,6 +180,11 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
     bonjour.textContent = `Connecté en tant que ${compte.pseudo}, adresse ${compte.courriel}.`;
     section.hidden = false;
 
+    profil.querySelector<HTMLInputElement>('[name="pseudo"]')!.value = compte.pseudo;
+    if (compte.pseudo_prochain !== '') {
+      document.querySelector('[data-aide-pseudo]')!.textContent =
+        `Prochain changement possible le ${compte.pseudo_prochain}. L'ancienne adresse de votre profil renvoie vers la nouvelle.`;
+    }
     profil.querySelector<HTMLTextAreaElement>('[name="bio"]')!.value = compte.bio ?? '';
     profil.querySelector<HTMLSelectElement>('[name="salle"]')!.value = compte.salle ?? '';
     profil.querySelector<HTMLInputElement>('[name="instagram"]')!.value = compte.instagram ?? '';
@@ -168,14 +197,19 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
         `Distinct de votre pseudo. Prochain changement possible le ${compte.instagram_prochain}. Il se retire à tout moment.`;
     }
   });
+  charger();
 
-  brancher(profil, (donnees) =>
-    api('/api/moi.php', 'PATCH', {
-      bio: champ(donnees, 'bio'),
-      salle: champ(donnees, 'salle'),
-      instagram: champ(donnees, 'instagram'),
-      instagram_visible: donnees.get('instagram_visible') === 'on',
-    }),
+  brancher(
+    profil,
+    (donnees) =>
+      api('/api/moi.php', 'PATCH', {
+        pseudo: champ(donnees, 'pseudo'),
+        bio: champ(donnees, 'bio'),
+        salle: champ(donnees, 'salle'),
+        instagram: champ(donnees, 'instagram'),
+        instagram_visible: donnees.get('instagram_visible') === 'on',
+      }),
+    charger,
   );
 
   brancher(

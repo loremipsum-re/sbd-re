@@ -564,9 +564,12 @@ Notées telles que l'auteur les a formulées. Chacune se planifie à part,
 avec ses questions, avant d'écrire une ligne.
 
 - **Le pseudo se change une fois par an, sauf demande spéciale à l'admin.**
-  Les colonnes `pseudo_precedent` et `date_pseudo` sont déjà dans
-  `db/migration-2026-11-07.sql`. Reste la règle, et le renvoi de l'ancienne
-  adresse de profil vers la nouvelle. Prochaine PR.
+  Fait le 7 novembre, dans `/compte/`. Le premier changement est libre, pour
+  rattraper une faute de frappe, puis `DELAI_PSEUDO_MOIS` s'applique.
+  L'ancien pseudo reste réservé au membre (`pseudo_precedent`) et son
+  adresse renvoie en 301 vers le profil renommé. Pour une demande spéciale,
+  en attendant la page d'admin de la phase 8 :
+  `UPDATE membre SET date_pseudo = NULL WHERE pseudo = '…'` dans phpMyAdmin.
 - **Un forum « comme dans l'ancien temps »**, que le profil accompagnera :
   catégories, sujets, réponses. Un premier forum dédié à l'haltéro, puis des
   forums publics que les membres créent sur des sujets précis. À trancher

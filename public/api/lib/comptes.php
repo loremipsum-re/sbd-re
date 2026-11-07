@@ -139,6 +139,19 @@ function delaiHumain(int $affiche, int $maintenant): bool
 
 const DELAI_INSTAGRAM_MOIS = 6;
 
+/**
+ * Le pseudo, lui, se change une fois par an, demande de l'auteur du même
+ * jour. Le premier changement est libre, pour rattraper une faute de frappe
+ * à l'inscription. Au-delà, l'admin peut en accorder un plus tôt sur
+ * demande : `UPDATE membre SET date_pseudo = NULL WHERE pseudo = '…'`.
+ *
+ * L'ancien pseudo reste réservé au membre, et son adresse de profil renvoie
+ * vers la nouvelle : un lien partagé ne meurt pas, et personne ne reprend un
+ * pseudo qu'on vient de quitter pour se faire passer pour son ancien
+ * titulaire.
+ */
+const DELAI_PSEUDO_MOIS = 12;
+
 /** Ce que le membre a tapé, ramené à un nom : « @Jean », une adresse instagram.com/jean/. */
 function normaliserInstagram(string $saisie): string
 {
@@ -157,13 +170,16 @@ function instagramValide(string $nom): bool
         && preg_match('/[a-z0-9]/', $nom) === 1;
 }
 
-/** Le moment où un nouveau nom sera accepté, 0 si c'est déjà le cas. */
-function prochainInstagram(?string $dernierChangement, int $maintenant): int
+/**
+ * Le moment où un nouveau nom sera accepté, 0 si c'est déjà le cas : pour
+ * Instagram avec DELAI_INSTAGRAM_MOIS, pour le pseudo avec DELAI_PSEUDO_MOIS.
+ */
+function prochainChangement(?string $dernierChangement, int $mois, int $maintenant): int
 {
     if ($dernierChangement === null || $dernierChangement === '') {
         return 0;
     }
-    $possible = strtotime($dernierChangement . ' +' . DELAI_INSTAGRAM_MOIS . ' months');
+    $possible = strtotime($dernierChangement . ' +' . $mois . ' months');
 
     return $possible !== false && $possible > $maintenant ? $possible : 0;
 }

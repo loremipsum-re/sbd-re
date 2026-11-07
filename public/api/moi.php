@@ -26,14 +26,16 @@ $methode = ouvrirApi(['GET', 'PATCH', 'DELETE']);
 if ($methode === 'GET') {
     $membre = exigerMembre();
     $compte = ligne(
-        'SELECT pseudo, courriel, instagram, date_instagram, instagram_visible, bio, salle, date_inscription
+        'SELECT pseudo, date_pseudo, courriel, instagram, date_instagram, instagram_visible, bio, salle, date_inscription
            FROM membre WHERE id = :id',
         ['id' => $membre['id']],
     );
-    // La date du prochain changement de nom Instagram, écrite pour l'œil.
-    $prochain = prochainInstagram($compte['date_instagram'] ?? null, time());
+    // Les dates des prochains changements, écrites pour l'œil, '' si libre.
+    $prochain = prochainChangement($compte['date_instagram'] ?? null, DELAI_INSTAGRAM_MOIS, time());
     $compte['instagram_prochain'] = $prochain > 0 ? dateFr($prochain) : '';
-    unset($compte['date_instagram']);
+    $prochain = prochainChangement($compte['date_pseudo'] ?? null, DELAI_PSEUDO_MOIS, time());
+    $compte['pseudo_prochain'] = $prochain > 0 ? dateFr($prochain) : '';
+    unset($compte['date_instagram'], $compte['date_pseudo']);
 
     repondreOk('', ['compte' => $compte]);
 }
@@ -95,7 +97,7 @@ if (array_key_exists('instagram', $recu)) {
             // bouge pas : sinon on contournerait le délai en deux gestes.
             $valeurs['instagram'] = null;
         } else {
-            $prochain = prochainInstagram($actuel['date_instagram'] ?? null, time());
+            $prochain = prochainChangement($actuel['date_instagram'] ?? null, DELAI_INSTAGRAM_MOIS, time());
             if ($prochain > 0) {
                 refuser(422, 'Le nom Instagram se change une fois tous les six mois. Prochain changement possible le ' . dateFr($prochain) . '.');
             }
@@ -103,6 +105,34 @@ if (array_key_exists('instagram', $recu)) {
             // Posée par le serveur, jamais lue dans la requête.
             $valeurs['date_instagram'] = date('Y-m-d H:i:s');
         }
+    }
+}
+
+if (array_key_exists('pseudo', $recu)) {
+    $nouveau = is_string($recu['pseudo']) ? mb_strtolower(trim($recu['pseudo'])) : '';
+    $actuel = ligne('SELECT pseudo, pseudo_precedent, date_pseudo FROM membre WHERE id = :id', ['id' => $membre['id']]);
+
+    if ($nouveau !== (string) $actuel['pseudo']) {
+        if (!pseudoValide($nouveau)) {
+            refuser(422, 'Pseudo de 3 à 30 caractères : lettres sans accent, chiffres, point ou tiret bas.');
+        }
+        $prochain = prochainChangement($actuel['date_pseudo'] ?? null, DELAI_PSEUDO_MOIS, time());
+        if ($prochain > 0) {
+            refuser(422, 'Le pseudo se change une fois par an. Prochain changement possible le ' . dateFr($prochain)
+                . '. Pour une raison sérieuse, écrivez à moderation@sbd.re.');
+        }
+        // Pris par un autre, comme pseudo ou comme ancien pseudo encore réservé.
+        // Revenir à son propre ancien pseudo reste permis.
+        if (ligne(
+            'SELECT 1 FROM membre WHERE (pseudo = :p OR pseudo_precedent = :p2) AND id <> :id',
+            ['p' => $nouveau, 'p2' => $nouveau, 'id' => $membre['id']],
+        ) !== null) {
+            refuser(409, 'Ce pseudo est déjà pris.');
+        }
+
+        $valeurs['pseudo_precedent'] = $actuel['pseudo'];
+        $valeurs['pseudo'] = $nouveau;
+        $valeurs['date_pseudo'] = date('Y-m-d H:i:s');
     }
 }
 
@@ -118,7 +148,8 @@ try {
     executer("UPDATE membre SET $affectations WHERE id = :id", $valeurs + ['id' => $membre['id']]);
 } catch (\PDOException $e) {
     if ($e->getCode() === '23000') {
-        refuser(409, 'Ce nom Instagram est déjà relié à un autre profil. S\'il est le vôtre, écrivez à moderation@sbd.re.');
+        // Deux enregistrements simultanés : la clé unique tranche.
+        refuser(409, 'Ce pseudo ou ce nom Instagram est déjà pris. S\'il est le vôtre, écrivez à moderation@sbd.re.');
     }
     throw $e;
 }

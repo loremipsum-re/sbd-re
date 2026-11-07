@@ -66,6 +66,16 @@ try {
         ['p' => $pseudo],
     );
     if ($membre === null) {
+        // Un ancien pseudo renvoie vers le profil sous son nouveau nom : un
+        // lien partagé avant le changement continue de mener quelque part.
+        $renomme = ligne(
+            'SELECT pseudo FROM membre WHERE pseudo_precedent = :p AND courriel_verifie = 1 AND banni = 0',
+            ['p' => $pseudo],
+        );
+        if ($renomme !== null) {
+            header('Location: /membres/' . $renomme['pseudo'] . '/', true, 301);
+            exit;
+        }
         introuvable();
     }
     $compte = ligne('SELECT COUNT(*) AS n FROM performance WHERE membre_id = :id', ['id' => $membre['id']]);

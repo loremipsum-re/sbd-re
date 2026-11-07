@@ -182,18 +182,17 @@ function badgeCommunaute(int $votes, int $favorables): bool
  * refusée par défaut.
  *
  * Absents des deux listes, donc impossibles à écrire depuis une requête :
- * `id`, `membre_id`, `courriel`, `mot_de_passe_hash`, `pseudo`, `role`,
- * `courriel_verifie`, `banni`, `ip_inscription`, `admin_id`,
- * `date_verif_admin` et toutes les dates. Le pseudo est l'adresse du profil :
- * il ne change pas en version 1.
+ * `id`, `membre_id`, `courriel`, `mot_de_passe_hash`, `pseudo_precedent`,
+ * `role`, `courriel_verifie`, `banni`, `ip_inscription`, `admin_id`,
+ * `date_verif_admin` et toutes les dates.
  * ====================================================================== */
 
 /**
- * Ce qu'un membre change sur son profil. `instagram` passe en plus par la
- * règle des six mois, dans moi.php : sa date de changement ne vient jamais
- * de la requête.
+ * Ce qu'un membre change sur son profil. `pseudo` et `instagram` passent en
+ * plus par leur délai, un an et six mois, dans moi.php : leurs dates de
+ * changement et l'ancien pseudo ne viennent jamais de la requête.
  */
-const CHAMPS_PROFIL = ['instagram', 'instagram_visible', 'bio', 'salle'];
+const CHAMPS_PROFIL = ['pseudo', 'instagram', 'instagram_visible', 'bio', 'salle'];
 
 /** Ce qu'un membre saisit en ajoutant une performance. */
 const CHAMPS_PERFORMANCE = [
