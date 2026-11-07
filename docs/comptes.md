@@ -529,6 +529,30 @@ les six mois. Le retirer reste libre, sans remettre l'horloge à zéro.
 **Laissé de côté** : l'haltérophilie n'a pas de performances, seulement son
 forum (forum.md) ; les mouvements restent ceux de la force athlétique.
 
+**L'espace du membre, revu le 7 novembre**, à la demande de l'auteur :
+
+- **`/compte/` est l'accueil du membre** : ses performances d'abord, le
+  formulaire replié dessous (ouvert d'office tant qu'il n'y en a aucune),
+  puis « Ma position ». Les sujets du forum s'y ajouteront.
+- **Les réglages passent derrière un engrenage**, `/compte/reglages/` :
+  profil, session, effacement. L'icône est l'`outline/settings` de Tabler,
+  accompagnée du mot « Réglages ».
+- **« Ma position »** dit où chaque record placerait le membre au
+  classement officiel de La Réunion, dans sa catégorie et son équipement :
+  le total quand ses trois barres partagent une catégorie, puis chaque
+  mouvement. Les marques officielles viennent de `/api/positions.json`,
+  généré avec le site sur le découpage de `/simulateur/` (le total du full
+  power seul), des nombres sans noms. Le sexe se déduit de la catégorie,
+  les catégories féminines et masculines ne se recoupant pas. Recompté par
+  un script indépendant le 7 novembre : 26 catégories, aucun écart.
+- **Vérifiée en vert (`--succes`), non vérifiée en ambre (`--alerte`)**, en
+  pastille au filet de sa couleur, le mot toujours écrit : 5,9:1 en clair,
+  9 à 10,4:1 en sombre. Jamais de rouge, que le noir du thème sombre
+  rapprocherait du duo interdit.
+- La fenêtre de confirmation devient un composant,
+  `FenetreConfirmation.astro`, ouvert par `confirmer()` de
+  `lib/api-compte.ts`.
+
 ### Phase 6, la vérification
 
 - [ ] `votes.php` et le calcul du badge communauté, écrit en fonction pure
