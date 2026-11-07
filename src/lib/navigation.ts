@@ -37,7 +37,8 @@ export type NomIcone =
   | 'valide'
   | 'manque'
   /* L'engrenage des réglages du compte, toujours accompagné du mot. */
-  | 'reglages';
+  | 'reglages'
+  | 'cloche';
 
 /**
  * LES TROIS FAMILLES DU SITE, dans l'ordre où le menu et le pied de page les

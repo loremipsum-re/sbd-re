@@ -46,6 +46,7 @@ if (!defined('SBDRE_API')) {
 require_once __DIR__ . '/bdd.php';
 
 const COOKIE_SESSION      = '__Host-sbdre';
+const COOKIE_CONNECTE     = 'sbdre-connecte';
 const DUREE_SESSION_JOURS = 30;
 
 /** Les seules origines admises pour une écriture. */
@@ -280,6 +281,16 @@ function poserCookie(string $valeur, int $expiration): void
         'path'     => '/',
         'secure'   => true,
         'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    // Le second cookie, lisible et sans secret, dit seulement « connecté » :
+    // la cloche de l'en-tête n'interroge le serveur qu'en sa présence
+    // (docs/forum.md, section 4). Il n'ouvre rien, la session reste l'autre.
+    setcookie(COOKIE_CONNECTE, $valeur === '' ? '' : '1', [
+        'expires'  => $expiration,
+        'path'     => '/',
+        'secure'   => true,
+        'httponly' => false,
         'samesite' => 'Lax',
     ]);
 }

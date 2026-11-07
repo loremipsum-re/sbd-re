@@ -1,0 +1,84 @@
+---
+/**
+ * Les notifications du membre (docs/forum.md, section 4) : les cinquante
+ * dernières, les non lues marquées. L'ouverture de la page les marque toutes
+ * comme lues, la cloche de l'en-tête retombe à zéro.
+ *
+ * Page `prive` : ni indexée, ni mesurée.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/compte.css';
+import '../../styles/communaute.css';
+---
+
+<BaseLayout titre="Notifications" description="Les notifications du membre." prive>
+  <div class="wrap page-compte">
+    <div class="colonne">
+      <header class="entete-page">
+        <h1>Notifications</h1>
+        <p class="chapeau">
+          Les réponses dans les sujets que vous suivez, les mentions de votre
+          pseudo et les badges posés sur vos performances.
+        </p>
+      </header>
+
+      <noscript><p class="aide">Cette page demande JavaScript.</p></noscript>
+
+      <ol class="liste-notifications" data-liste></ol>
+      <p class="aide" data-vide hidden>Aucune notification pour l'instant.</p>
+      <ul class="liens-compte">
+        <li><a href="/compte/">Retour à mon espace</a></li>
+      </ul>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { api } from '../../lib/api-compte';
+
+  interface Notification {
+    texte: string;
+    lien: string;
+    lue: boolean;
+    date: number;
+  }
+
+  const liste = document.querySelector<HTMLOListElement>('[data-liste]')!;
+  const vide = document.querySelector<HTMLElement>('[data-vide]')!;
+
+  void api('/api/notifications.php', 'GET').then((lecture) => {
+    if (lecture.statut === 401) {
+      location.replace('/compte/connexion/');
+      return;
+    }
+    if (!lecture.ok) return;
+    const notifications = lecture.notifications as Notification[];
+    vide.hidden = notifications.length > 0;
+
+    liste.replaceChildren(
+      ...notifications.map((n) => {
+        const li = Object.assign(document.createElement('li'), { className: n.lue ? '' : 'non-lue' });
+        // Le lien vient de la base, toujours une adresse du site (contrainte
+        // ck_notification_lien) : il reste relatif.
+        const lien = Object.assign(document.createElement('a'), { href: n.lien, textContent: n.texte });
+        const date = Object.assign(document.createElement('p'), {
+          className: 'date',
+          textContent: `${n.lue ? '' : 'Nouveau · '}${new Date(n.date * 1000).toLocaleString('fr-FR', {
+            day: 'numeric',
+            month: 'long',
+            hour: '2-digit',
+            minute: '2-digit',
+          })}`,
+        });
+        li.append(lien, date);
+        return li;
+      }),
+    );
+
+    if (Number(lecture.non_lues) > 0) {
+      void api('/api/notifications.php', 'POST').then(() => {
+        document.querySelector<HTMLElement>('[data-cloche] [data-compteur]')?.setAttribute('hidden', '');
+      });
+    }
+  });
+</script>
