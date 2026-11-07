@@ -555,10 +555,32 @@ forum (forum.md) ; les mouvements restent ceux de la force athlétique.
 
 ### Phase 6, la vérification
 
-- [ ] `votes.php` et le calcul du badge communauté, écrit en fonction pure
-      pour être testé sans base : 19 votes, 11 sur 20, 12 sur 20.
-- [ ] Un fil « À vérifier » sur `/communaute/`, les plus récentes d'abord.
-- [ ] Le clic admin dans `admin.php`.
+- [x] Le badge se calcule à la lecture, jamais stocké : `badgeDe()` de
+      `lib/performances.php` rend « admin » si l'admin a vérifié, sinon
+      « communaute » à 20 avis dont 60 % favorables (`badgeCommunaute()`),
+      sinon rien. Une seule requête, `SQL_PERFORMANCES_VOTES`, compte les
+      avis pour le profil, l'espace membre et le fil, et écarte ceux des
+      membres bannis.
+- [x] `votes.php` : le fil (GET) et l'avis (POST, `SQL_VOTER`), qui se change
+      tant que la barre attend. Vote ouvert 30 jours après l'inscription,
+      jamais sur sa propre barre (`peutVoter()`).
+- [x] Le fil « À vérifier » vit à `/compte/a-verifier/` et non sur
+      `/communaute/`, comme prévu d'abord : voter demande une session, et
+      `/communaute/` reste la page d'attente publique jusqu'à la phase 9.
+      Les cinquante barres non vérifiées les plus récentes des autres membres.
+- [x] Le clic admin dans `admin.php`, qui garde `admin_id`. Un compte non
+      admin y reçoit 404. Devenir admin se fait en base :
+      `UPDATE membre SET role = 'admin' WHERE pseudo = '…';`
+- [x] À charge égale, une barre vérifiée par la communauté garde le record
+      comme une barre vérifiée par l'admin.
+- [x] En local, le 7 novembre : 158 règles sur 158, dont les trois cas du
+      badge ; le fil éprouvé contre une API simulée (avis donné puis changé,
+      badge admin, compte de moins de 30 jours aux boutons grisés, cibles à
+      44 px, filet d'accent sous l'aplat en clair).
+- [ ] `php verifier.php` sur le serveur : 65 réussites attendues, dont le
+      vote de l'API qui remplace l'avis précédent et le membre banni écarté
+      du compte. Il charge `~/sbd-re/api/lib/performances.php`, que le
+      déploiement dépose : le site doit donc être en ligne avant.
 - [ ] **Fini quand** le calcul passe ses trois cas en local, qu'un vote
       compte en production, et qu'un compte de moins de 30 jours est refusé.
       Vingt comptes de test seraient de trop : la date d'inscription se
