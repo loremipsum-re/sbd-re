@@ -114,7 +114,7 @@ try {
         } else {
             /* --- Un sujet ------------------------------------------------- */
             $sujet = ligne(
-                'SELECT id, titre, verrouille, reponses FROM sujet WHERE id = :s AND forum_id = :f',
+                'SELECT id, membre_id, titre, verrouille, reponses FROM sujet WHERE id = :s AND forum_id = :f',
                 ['s' => $sujetDemande, 'f' => $forum['id']],
             );
             if ($sujet === null) {
