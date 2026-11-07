@@ -1,0 +1,58 @@
+---
+/**
+ * Couper le récapitulatif par courriel, depuis le lien du courriel, sans se
+ * connecter (docs/forum.md, section 4).
+ *
+ * LE JETON VOYAGE APRÈS LE « # », comme pour le mot de passe oublié : il ne
+ * part jamais au serveur avec la page, ne s'écrit pas dans ses journaux, et
+ * le script l'efface de la barre d'adresse. Le bouton l'envoie à
+ * `POST /api/recapitulatif.php`.
+ *
+ * Page `prive` : ni indexée, ni mesurée.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/compte.css';
+---
+
+<BaseLayout titre="Couper le récapitulatif" description="Couper le récapitulatif par courriel de SBD.re." prive>
+  <div class="wrap page-compte">
+    <div class="colonne">
+      <header class="entete-page">
+        <h1>Couper le récapitulatif</h1>
+        <p class="chapeau">
+          Le courriel de la quinzaine, qui reprend vos notifications non lues,
+          ne partira plus. Il se rallume dans les
+          <a href="/compte/reglages/">réglages du compte</a>.
+        </p>
+      </header>
+
+      <noscript>
+        <p class="aide">Cette page demande JavaScript. Le récapitulatif se coupe aussi dans les réglages du compte.</p>
+      </noscript>
+
+      <form class="form-compte" data-couper novalidate>
+        <div class="actions">
+          <button type="submit">Couper le récapitulatif</button>
+        </div>
+        <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+      </form>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { api, brancher } from '../../lib/api-compte';
+
+  const jeton = new URLSearchParams(location.hash.slice(1)).get('jeton') ?? '';
+  // Effacé tout de suite : ni l'historique ni un partage d'écran ne le gardent.
+  if (jeton !== '') history.replaceState(null, '', location.pathname);
+
+  const form = document.querySelector<HTMLFormElement>('[data-couper]')!;
+  brancher(
+    form,
+    () => api('/api/recapitulatif.php', 'POST', { jeton }),
+    () => {
+      form.querySelector('button')!.hidden = true;
+    },
+  );
+</script>

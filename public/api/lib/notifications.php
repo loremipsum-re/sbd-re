@@ -5,7 +5,7 @@
  * La nature « moderation » attend la phase 8.
  *
  * Aucun courriel par notification : le récapitulatif de quinzaine, coupé par
- * défaut, viendra avec sa tâche planifiée. Les fonctions écrivent sans ouvrir
+ * défaut, les reprend (lib/recapitulatif.php). Les fonctions écrivent sans ouvrir
  * de transaction : l'appelant l'ouvre, et db/verifier.php les éprouve dans
  * la sienne.
  */

@@ -190,9 +190,10 @@ function badgeCommunaute(int $votes, int $favorables): bool
 /**
  * Ce qu'un membre change sur son profil. `pseudo` et `instagram` passent en
  * plus par leur délai, un an et six mois, dans moi.php : leurs dates de
- * changement et l'ancien pseudo ne viennent jamais de la requête.
+ * changement et l'ancien pseudo ne viennent jamais de la requête, la date du
+ * dernier récapitulatif non plus.
  */
-const CHAMPS_PROFIL = ['pseudo', 'instagram', 'instagram_visible', 'bio', 'salle'];
+const CHAMPS_PROFIL = ['pseudo', 'instagram', 'instagram_visible', 'bio', 'salle', 'recapitulatif'];
 
 /** Ce qu'un membre saisit en ajoutant une performance. */
 const CHAMPS_PERFORMANCE = [
