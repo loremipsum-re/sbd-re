@@ -15,11 +15,23 @@
  */
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { EQUIPMENT_GROUPS, LIFTS, compareWeightClass, parseWeightClass } from '../../lib/categories';
 import '../../styles/compte.css';
 
 const salles = (await getCollection('salles', (s) => s.data.actif))
   .map((s) => ({ id: s.id, libelle: `${s.data.nom}, ${s.data.commune}` }))
   .sort((a, b) => a.libelle.localeCompare(b.libelle, 'fr'));
+
+/*
+ * Les catégories de poids actuelles de la fédération, femmes et hommes
+ * mêlées : le compte ne connaît pas le sexe du membre. Le serveur n'en
+ * contrôle que la forme (lib/performances.php), comme le site lit les
+ * catégories dans les données sans les figer.
+ */
+const categories = ['47', '52', '57', '63', '69', '76', '84', '84+', '59', '66', '74', '83', '93', '105', '120', '120+']
+  .map((c) => parseWeightClass(c)!)
+  .sort(compareWeightClass);
+const mouvements = LIFTS.filter((l) => l.id !== 'total');
 ---
 
 <BaseLayout titre="Mon compte" description="Gérer son compte SBD.re." prive>
@@ -120,6 +132,67 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
           <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
         </form>
 
+        <h2>Mes performances</h2>
+        <form class="form-compte" data-perf novalidate>
+          <div class="champ">
+            <label for="mouvement">Mouvement</label>
+            <select id="mouvement" name="mouvement" required>
+              {mouvements.map((m) => <option value={m.id}>{m.label}</option>)}
+            </select>
+          </div>
+
+          <div class="champ">
+            <label for="equipement">Équipement</label>
+            <select id="equipement" name="equipement" required>
+              {EQUIPMENT_GROUPS.map((e) => <option value={e.id}>{e.label}, {e.hint.toLowerCase()}</option>)}
+            </select>
+          </div>
+
+          <div class="champ">
+            <label for="charge">Charge, en kilos</label>
+            <input id="charge" name="charge_kg" type="text" inputmode="decimal" required maxlength="6" />
+          </div>
+
+          <div class="champ">
+            <label for="date-perf">Date</label>
+            <input id="date-perf" name="date_performance" type="date" required min="2000-01-01" data-date-max />
+          </div>
+
+          <div class="champ">
+            <label for="categorie">Catégorie de poids <span class="aide">facultatif</span></label>
+            <select id="categorie" name="categorie">
+              <option value="">Non précisée</option>
+              {categories.map((c) => <option value={c.id}>{c.label}</option>)}
+            </select>
+          </div>
+
+          <div class="champ">
+            <label for="video">Lien de la vidéo</label>
+            <input
+              id="video"
+              name="lien_video"
+              type="url"
+              required
+              maxlength="500"
+              autocomplete="off"
+              aria-describedby="aide-video"
+            />
+            <p class="aide" id="aide-video">
+              Instagram, YouTube ou TikTok, et la barre en entier à l'image. Une
+              performance ne se modifie pas : pour la corriger, retirez-la et
+              publiez-la de nouveau.
+            </p>
+          </div>
+
+          <div class="actions">
+            <button type="submit">Publier la performance</button>
+          </div>
+          <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+        </form>
+
+        <ul class="liste-perfs-compte" data-liste-perfs></ul>
+        <p class="etat-compte" data-etat-perfs role="status" aria-live="polite" hidden></p>
+
         <h2>Session</h2>
         <form class="form-compte" data-deconnexion novalidate>
           <div class="actions">
@@ -172,7 +245,8 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
 </BaseLayout>
 
 <script>
-  import { api, brancher, champ } from '../../lib/api-compte';
+  import { afficher, api, brancher, champ } from '../../lib/api-compte';
+  import { marquerLienSortant } from '../../lib/liens-sortants';
 
   const bonjour = document.querySelector<HTMLElement>('[data-bonjour]')!;
   const section = document.querySelector<HTMLElement>('[data-compte]')!;
@@ -230,8 +304,9 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
   const fenetre = document.querySelector<HTMLDialogElement>('[data-confirmation]')!;
 
   /** Ouvre la fenêtre et rend true si la personne confirme. Échap ou Annuler rendent false. */
-  const confirmer = (lignes: string[]) =>
+  const confirmer = (lignes: string[], titre = 'Confirmer le changement') =>
     new Promise<boolean>((resoudre) => {
+      fenetre.querySelector('h2')!.textContent = titre;
       fenetre.querySelector('[data-lignes]')!.replaceChildren(
         ...lignes.map((texte) => Object.assign(document.createElement('li'), { textContent: texte })),
       );
@@ -282,6 +357,106 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
     caseDe('pseudo').disabled = compte.pseudo_prochain !== '';
   });
   charger();
+
+  /* --- Mes performances ------------------------------------------------- */
+
+  interface Performance {
+    id: number;
+    mouvement: 'squat' | 'bench' | 'deadlift';
+    equipement: 'raw' | 'wraps' | 'equipped';
+    charge_kg: string;
+    categorie: string | null;
+    date_performance: string;
+    lien_video: string;
+    date_verif_admin: string | null;
+  }
+
+  const MOUVEMENTS = { squat: 'Squat', bench: 'Développé couché', deadlift: 'Soulevé de terre' };
+  const EQUIPEMENTS = { raw: 'Raw', wraps: 'Bandes', equipped: 'Équipé' };
+
+  const formPerf = document.querySelector<HTMLFormElement>('[data-perf]')!;
+  const listePerfs = document.querySelector<HTMLUListElement>('[data-liste-perfs]')!;
+  const etatPerfs = document.querySelector<HTMLElement>('[data-etat-perfs]')!;
+
+  // La date du jour, posée par le script et non à la génération, qui la
+  // figerait au jour du build.
+  const aujourdhui = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  formPerf.querySelector<HTMLInputElement>('[data-date-max]')!.max = aujourdhui;
+
+  /** « 1 novembre 2026 · Squat · Raw · 200 kg », écrit en texte, jamais en HTML. */
+  const decrire = (p: Performance) =>
+    [
+      new Date(`${p.date_performance}T12:00:00`).toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }),
+      MOUVEMENTS[p.mouvement],
+      EQUIPEMENTS[p.equipement],
+      `${Number(p.charge_kg).toLocaleString('fr-FR')} kg`,
+    ].join(' · ');
+
+  const chargerPerfs = () =>
+    void api('/api/performances.php', 'GET').then((lecture) => {
+      if (!lecture.ok) return;
+      const perfs = lecture.performances as Performance[];
+
+      listePerfs.replaceChildren(
+        ...perfs.map((p) => {
+          const ligne = document.createElement('li');
+          const texte = Object.assign(document.createElement('span'), { textContent: decrire(p) });
+
+          // Lien fabriqué en JavaScript : il échappe au middleware, d'où
+          // marquerLienSortant, comme la carte des salles.
+          const video = Object.assign(document.createElement('a'), { href: p.lien_video, textContent: 'Vidéo' });
+          video.rel = 'ugc nofollow';
+          marquerLienSortant(video);
+
+          const etat = Object.assign(document.createElement('span'), {
+            className: 'verif',
+            textContent: p.date_verif_admin ? 'Vérifiée par SBD.re' : 'Non vérifiée',
+          });
+
+          const retirer = Object.assign(document.createElement('button'), {
+            type: 'button',
+            className: 'secondaire',
+            textContent: 'Retirer',
+          });
+          retirer.addEventListener('click', async () => {
+            const oui = await confirmer(
+              [`${decrire(p)}.`, 'Elle disparaît du profil, et les votes reçus avec elle.'],
+              'Retirer cette performance',
+            );
+            if (!oui) return;
+            const reponse = await api('/api/performances.php', 'DELETE', { id: p.id });
+            afficher(etatPerfs, reponse.message, reponse.ok);
+            if (reponse.ok) chargerPerfs();
+          });
+
+          ligne.append(texte, ' ', video, ' ', etat, ' ', retirer);
+          return ligne;
+        }),
+      );
+    });
+  chargerPerfs();
+
+  brancher(
+    formPerf,
+    (donnees) =>
+      api('/api/performances.php', 'POST', {
+        mouvement: champ(donnees, 'mouvement'),
+        equipement: champ(donnees, 'equipement'),
+        charge_kg: champ(donnees, 'charge_kg'),
+        date_performance: champ(donnees, 'date_performance'),
+        categorie: champ(donnees, 'categorie'),
+        lien_video: champ(donnees, 'lien_video'),
+      }),
+    () => {
+      formPerf.querySelector<HTMLInputElement>('[name="charge_kg"]')!.value = '';
+      formPerf.querySelector<HTMLInputElement>('[name="lien_video"]')!.value = '';
+      chargerPerfs();
+    },
+  );
 
   brancher(
     profil,
