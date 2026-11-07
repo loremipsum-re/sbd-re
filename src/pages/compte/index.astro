@@ -52,18 +52,20 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
               autocomplete="username"
               autocapitalize="none"
               spellcheck="false"
+              readonly
               aria-describedby="aide-pseudo"
             />
             <p class="aide" id="aide-pseudo" data-aide-pseudo>
               Il se change une fois par an. L'ancienne adresse de votre profil
               renvoie vers la nouvelle.
             </p>
-            {/* Apparaît dès que le pseudo diffère de l'actuel, demande de
+            {/* Le champ est grisé, et cette case le débloque, demande de
                 l'auteur du 7 novembre 2026 : un changement qui engage pour un
-                an se confirme. Le serveur l'exige aussi. */}
-            <label class="case" data-confirmer="pseudo" hidden>
-              <input name="confirmer_pseudo" type="checkbox" />
-              <span>Je confirme ce nouveau pseudo. Je ne pourrai plus en changer avant un an.</span>
+                an ne se fait pas d'une faute de frappe. La fenêtre de
+                confirmation suit, à l'enregistrement. */}
+            <label class="case">
+              <input type="checkbox" data-debloquer="pseudo" aria-controls="pseudo" />
+              <span>Modifier mon pseudo</span>
             </label>
           </div>
 
@@ -94,15 +96,16 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
               autocomplete="off"
               autocapitalize="none"
               spellcheck="false"
+              readonly
               aria-describedby="aide-instagram"
             />
             <p class="aide" id="aide-instagram" data-aide-instagram>
               Distinct de votre pseudo. Il se change une fois tous les six mois,
               et se retire à tout moment.
             </p>
-            <label class="case" data-confirmer="instagram" hidden>
-              <input name="confirmer_instagram" type="checkbox" />
-              <span>Je confirme ce nom Instagram. Je ne pourrai plus en changer avant six mois.</span>
+            <label class="case">
+              <input type="checkbox" data-debloquer="instagram" aria-controls="instagram" />
+              <span>Modifier mon nom Instagram</span>
             </label>
           </div>
 
@@ -152,6 +155,20 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
       </section>
     </div>
   </div>
+
+  {/* La confirmation, à l'enregistrement d'un nouveau pseudo ou d'un nouveau
+      nom Instagram. Un `<dialog>` natif, comme celui de « Proposer » : le
+      navigateur gère le fond, Échap et le retour du focus. */}
+  <dialog class="fenetre-confirmation" data-confirmation aria-labelledby="titre-confirmation">
+    <form method="dialog">
+      <h2 id="titre-confirmation">Confirmer le changement</h2>
+      <ul data-lignes></ul>
+      <div class="actions">
+        <button type="submit" value="oui">Confirmer</button>
+        <button type="submit" value="non" class="secondaire">Annuler</button>
+      </div>
+    </form>
+  </dialog>
 </BaseLayout>
 
 <script>
@@ -175,22 +192,53 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
   }
 
   /*
-   * La case de confirmation d'un champ apparaît dès que sa valeur diffère de
-   * celle enregistrée, et se décoche quand elle disparaît. Pour Instagram,
-   * retirer le nom n'engage à rien : la case reste cachée.
+   * PSEUDO ET INSTAGRAM, EN TROIS TEMPS (demande de l'auteur du 7 novembre
+   * 2026) : le champ est grisé, une case le débloque, et l'enregistrement
+   * d'une nouvelle valeur ouvre une fenêtre de confirmation. Le champ est en
+   * `readonly` et non `disabled` : un champ désactivé ne part pas avec le
+   * formulaire, et le serveur lirait un pseudo vide.
    */
   const enregistre: Record<string, string> = { pseudo: '', instagram: '' };
   const nettoyer = (valeur: string) => valeur.trim().toLowerCase().replace(/^@/, '');
+  const champDe = (nom: string) => profil.querySelector<HTMLInputElement>(`[name="${nom}"]`)!;
+  const caseDe = (nom: string) => profil.querySelector<HTMLInputElement>(`[data-debloquer="${nom}"]`)!;
 
-  const majConfirmations = () => {
-    for (const nom of ['pseudo', 'instagram']) {
-      const saisi = nettoyer(profil.querySelector<HTMLInputElement>(`[name="${nom}"]`)!.value);
-      const boite = profil.querySelector<HTMLElement>(`[data-confirmer="${nom}"]`)!;
-      boite.hidden = saisi === '' || saisi === enregistre[nom];
-      if (boite.hidden) boite.querySelector('input')!.checked = false;
-    }
+  /** Regrise le champ et lui rend sa valeur enregistrée. */
+  const verrouiller = (nom: string) => {
+    champDe(nom).readOnly = true;
+    champDe(nom).value = enregistre[nom];
+    caseDe(nom).checked = false;
   };
-  profil.addEventListener('input', majConfirmations);
+
+  for (const nom of ['pseudo', 'instagram']) {
+    caseDe(nom).addEventListener('change', () => {
+      if (caseDe(nom).checked) {
+        champDe(nom).readOnly = false;
+        champDe(nom).focus();
+      } else {
+        verrouiller(nom);
+      }
+    });
+  }
+
+  /** Une nouvelle valeur, qui engage pour un an ou six mois ? Retirer son nom Instagram n'engage à rien. */
+  const change = (nom: string) => {
+    const saisi = nettoyer(champDe(nom).value);
+    return saisi !== '' && saisi !== enregistre[nom];
+  };
+
+  const fenetre = document.querySelector<HTMLDialogElement>('[data-confirmation]')!;
+
+  /** Ouvre la fenêtre et rend true si la personne confirme. Échap ou Annuler rendent false. */
+  const confirmer = (lignes: string[]) =>
+    new Promise<boolean>((resoudre) => {
+      fenetre.querySelector('[data-lignes]')!.replaceChildren(
+        ...lignes.map((texte) => Object.assign(document.createElement('li'), { textContent: texte })),
+      );
+      fenetre.returnValue = '';
+      fenetre.addEventListener('close', () => resoudre(fenetre.returnValue === 'oui'), { once: true });
+      fenetre.showModal();
+    });
 
   // Relue après chaque enregistrement : un pseudo changé change aussi le lien
   // du profil et la date du prochain changement. Pas d'`await` au premier
@@ -227,22 +275,48 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
     }
     enregistre.pseudo = compte.pseudo;
     enregistre.instagram = compte.instagram ?? '';
-    majConfirmations();
+    verrouiller('pseudo');
+    verrouiller('instagram');
+    // Pendant le délai d'un an, le pseudo ne se débloque même pas : la date
+    // du prochain changement est écrite juste au-dessus.
+    caseDe('pseudo').disabled = compte.pseudo_prochain !== '';
   });
   charger();
 
   brancher(
     profil,
-    (donnees) =>
-      api('/api/moi.php', 'PATCH', {
+    async (donnees) => {
+      const pseudo = change('pseudo');
+      const instagram = change('instagram');
+
+      if (pseudo || instagram) {
+        const lignes = [];
+        if (pseudo) {
+          lignes.push(
+            `Nouveau pseudo : ${nettoyer(champ(donnees, 'pseudo'))}. Vous ne pourrez plus en changer avant un an.`,
+          );
+        }
+        if (instagram) {
+          lignes.push(
+            `Nouveau nom Instagram : ${nettoyer(champ(donnees, 'instagram'))}. Vous ne pourrez plus en changer avant six mois.`,
+          );
+        }
+        if (!(await confirmer(lignes))) {
+          return { ok: false, message: 'Changement annulé : rien n\'est enregistré.', statut: 0 };
+        }
+      }
+
+      return api('/api/moi.php', 'PATCH', {
         pseudo: champ(donnees, 'pseudo'),
         bio: champ(donnees, 'bio'),
         salle: champ(donnees, 'salle'),
         instagram: champ(donnees, 'instagram'),
         instagram_visible: donnees.get('instagram_visible') === 'on',
-        confirmer_pseudo: donnees.get('confirmer_pseudo') === 'on',
-        confirmer_instagram: donnees.get('confirmer_instagram') === 'on',
-      }),
+        // N'arrivent à true qu'après la fenêtre : le serveur les exige.
+        confirmer_pseudo: pseudo,
+        confirmer_instagram: instagram,
+      });
+    },
     charger,
   );
 
