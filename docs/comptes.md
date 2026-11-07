@@ -578,6 +578,6 @@ avec ses questions, avant d'écrire une ligne.
   `UPDATE membre SET date_pseudo = NULL WHERE pseudo = '…'` dans phpMyAdmin.
 - **Le forum, le fil, les notifications et les avatars** ont leur propre
   plan, [forum.md](forum.md), préparé le même jour : catégories proposées,
-  modèle de données, ordre de construction et huit questions. Le chat y est
+  modèle de données, ordre de construction et questions ouvertes. Le chat y est
   revu (personnes en ligne, lecture des visiteurs) et sa phase 7 y est
   reprise.
