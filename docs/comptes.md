@@ -535,7 +535,7 @@ forum (forum.md) ; les mouvements restent ceux de la force athlétique.
 
 - **`/compte/` est l'accueil du membre** : ses performances d'abord, le
   formulaire replié dessous (ouvert d'office tant qu'il n'y en a aucune),
-  puis « Ma position ». Les sujets du forum s'y ajouteront.
+  puis « Ma position », puis « Mes sujets », ajoutés le 8 novembre.
 - **Les réglages passent derrière un engrenage**, `/compte/reglages/` :
   profil, session, effacement. L'icône est l'`outline/settings` de Tabler,
   accompagnée du mot « Réglages ».
@@ -628,10 +628,11 @@ ci-dessous restent le plan d'origine.
       infographie sont retirées. Les seuils affichés se lisent dans
       `autorisation.php` (`src/lib/communaute.ts`).
 - [x] Le forum s'indexe (`FORUM_OUVERT`), avec son plan, `/sitemap-forum.xml`.
-- [ ] Les tests de la section 9 : la plupart passent par
-      `db/verifier-autorisation.php` et `db/verifier.php`. Restent à la
-      main, en production : `/api/lib/bdd.php` en HTTP, la connexion d'un
-      compte banni, le profil d'un compte effacé.
+- [x] Les tests de la section 9 : la plupart passent par
+      `db/verifier-autorisation.php` et `db/verifier.php` (91 réussites).
+      À la main, en production : `/api/lib/bdd.php` en HTTP, la connexion
+      d'un compte banni, le profil d'un compte effacé. Validés par l'auteur
+      le 8 novembre.
 - [x] Version 1.10.0 : nouvelle rubrique, le deuxième chiffre monte.
 
 ---

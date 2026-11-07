@@ -109,10 +109,12 @@ part pas s'il n'y a rien. Quatre points :
   dernier envoi.
 - **Les sujets qu'on ouvre notifient d'office**, et chacun se coupe d'un
   bouton « Ne plus suivre » (section 3, `abonnement`).
-- **Il demande une tâche planifiée**, la première du projet : l'onglet
-  « Tâches planifiées (Cron) » de l'hébergement OVH lance un script PHP
-  chaque semaine, qui n'écrit qu'aux membres dont le dernier récapitulatif
-  date de quatorze jours ou plus. Rien ne peut l'attendre d'une visite.
+- **Il part du site, sans tâche planifiée**, revu le 8 novembre. Le plan en
+  prévoyait une, mais l'hébergement refuse `mail()` en ligne de commande
+  (communaute.md, section 1) et OVH bride le réseau sortant de ses tâches
+  planifiées. La cloche, qu'un membre connecté interroge chaque minute, fait
+  partir au plus deux récapitulatifs dus par passage : quatorze jours passés
+  et au moins une notification non lue depuis le précédent.
 - **Les adresses iCloud n'en reçoivent pas**, comme les autres courriels du
   site (comptes.md, section 6.1).
 
@@ -300,8 +302,8 @@ puis une seule série de tests en production.
 - **La cloche est une icône avec un nombre**, sans le mot : « Notifications »
   ne tient pas à 375 px à côté du logo et du menu. Le mot est dit aux
   lecteurs d'écran. C'est la seule icône du site sans libellé visible.
-- **Laissés pour plus tard** : le récapitulatif par courriel (ses colonnes
-  existent, il attend sa tâche planifiée) et la modification d'un message.
+- **Laissés pour plus tard** : le récapitulatif par courriel et la
+  modification d'un message, construits le 8 novembre (plus bas).
 
 ### Revu le 7 novembre, à la demande de l'auteur
 
@@ -333,7 +335,7 @@ puis une seule série de tests en production.
   sur `api/admin.php`, qui répond 404 à qui n'est pas admin. Masquer,
   retirer, bannir, retirer un avatar, changer l'état d'un forum, classer.
   L'auteur reçoit une notification « moderation ». Un admin ne se bannit pas.
-  **Pas de renommage de forum** : masquer suffit contre un nom abusif.
+  Le renommage d'un forum est venu le 8 novembre (plus bas).
 - **Avatars** : `api/avatar.php`, servis à `/avatars/<pseudo>.webp`.
   **Gardés en base, pas en fichier** : le déploiement (`mirror --delete`)
   effacerait tout fichier déposé dans le dossier public. GD recadre, réduit à
@@ -344,6 +346,31 @@ puis une seule série de tests en production.
 - **Tests** : `php -d extension=gd db/verifier-autorisation.php` (215 règles,
   210 sans GD), et `php db/verifier.php` sur le serveur, qui éprouve aussi
   GD et WebP.
+
+### Construit le 8 novembre, la suite
+
+Le reste du plan, demandé par l'auteur le 8 novembre, en un lot de cinq.
+
+- **Modifier un message** : son auteur, dans les 24 heures
+  (`MODIFICATION_HEURES`), tant que le sujet est ouvert. Le texte se change
+  sur place, repasse le filtre et le repérage du dopage, et le message dit
+  « modifié le … ». Les membres cités ne sont pas prévenus une seconde fois.
+  Le titre d'un sujet ne se modifie pas.
+- **Renommer un forum** : le créateur d'un forum de membre, et l'admin pour
+  tous, depuis « Renommer le forum » au pied du forum. Le nom passe le même
+  filtre qu'à la création (`erreurForum`). **L'adresse ne change pas**, pour
+  qu'aucun lien déjà partagé ne casse.
+- **« Mes sujets »** ferme `/compte/` : les vingt sujets ouverts par le
+  membre, les plus récemment actifs d'abord, rendus par `GET /api/moi.php`.
+- **Le récapitulatif par courriel** : `lib/recapitulatif.php`, envoyé par la
+  cloche (section 4). Demandé dans `/compte/reglages/`, coupé par défaut ;
+  l'allumer remet l'horloge à zéro. Un membre est réservé par une écriture
+  conditionnelle avant l'envoi : deux cloches simultanées ne lui écrivent
+  pas deux fois. Chaque courriel porte le lien `/compte/recapitulatif/#jeton=…`,
+  qui coupe sans connexion, une fois, en POST. Le jeton est un nouveau type
+  de `jeton` : `db/migration-2026-11-08-recapitulatif.sql`.
+- **Tests** : 239 règles (`php -d extension=gd db/verifier-autorisation.php`),
+  et sept essais de plus dans `php db/verifier.php`.
 
 ---
 
