@@ -273,6 +273,8 @@ foreach ([
     if (is_file($bibliotheque)) {
         define('SBDRE_API', true);
         require $bibliotheque;
+        require_once dirname($bibliotheque) . '/forum.php';
+        require_once dirname($bibliotheque) . '/chat.php';
         break;
     }
 }
@@ -541,6 +543,145 @@ try {
     // telle qu'elle est entrée.
     $bdd->rollBack();
     info('Transaction annulée : rien n\'a été conservé.');
+}
+
+/* -------------------------------------------------------------------------
+ * 6. Forum, chat et notifications
+ *
+ * Les fonctions mêmes de l'API (lib/forum.php, lib/chat.php,
+ * lib/notifications.php), sur sa connexion à elle, sql_mode compris, dans
+ * une transaction annulée à la fin.
+ * ---------------------------------------------------------------------- */
+
+titre('6. Forum, chat et notifications');
+
+if (!function_exists('SBDRE\creerSujet')) {
+    ko('lib/forum.php introuvable : forum, chat et notifications ne seront pas éprouvés.');
+} else {
+    $base = \SBDRE\bdd();
+    $base->beginTransaction();
+    try {
+        $s2 = bin2hex(random_bytes(3));
+        $ip2 = '203.0.113.1';
+        $nouveau = function (string $nom) use ($base, $s2, $ip2): array {
+            $base->prepare('INSERT INTO membre (courriel, mot_de_passe_hash, pseudo, ip_inscription, courriel_verifie)
+                            VALUES (?, ?, ?, ?, 1)')->execute(["$nom-$s2@exemple.re", 'x', "{$nom}_$s2", $ip2]);
+            return ['id' => (int) $base->lastInsertId(), 'pseudo' => "{$nom}_$s2"];
+        };
+        $nombre = fn (string $sql, array $v = []): int => (int) (\SBDRE\ligne($sql, $v)['n'] ?? -1);
+
+        $auteur = $nouveau('auteur');
+        $lecteur = $nouveau('lecteur');
+        $cite = $nouveau('cite');
+
+        info('Forum');
+
+        $forum = \SBDRE\ligne("SELECT id, adresse FROM forum WHERE adresse = 'squat-technique'");
+        if ($forum === null) {
+            throw new RuntimeException('le forum « squat-technique » manque : la migration du forum n\'est pas importée.');
+        }
+        $nombre('SELECT COUNT(*) AS n FROM forum') >= 19
+            ? ok('Les 19 forums de départ sont en place.')
+            : ko('Il manque des forums de départ.');
+
+        $sujetId = \SBDRE\creerSujet($auteur, (int) $forum['id'], 'Essai de sujet', 'Premier message :)', false, $ip2);
+        $nombre('SELECT COUNT(*) AS n FROM abonnement WHERE sujet_id = :s AND membre_id = :m', ['s' => $sujetId, 'm' => $auteur['id']]) === 1
+            ? ok('Un sujet s\'ouvre, et son auteur le suit d\'office.')
+            : ko('L\'auteur ne suit pas le sujet qu\'il a ouvert.');
+
+        \SBDRE\suivreSujet($lecteur['id'], $sujetId, true);
+        \SBDRE\suivreSujet($lecteur['id'], $sujetId, true);
+        $nombre('SELECT COUNT(*) AS n FROM abonnement WHERE sujet_id = :s AND membre_id = :m', ['s' => $sujetId, 'm' => $lecteur['id']]) === 1
+            ? ok('Suivre deux fois ne double rien.')
+            : ko('Suivre deux fois a doublé l\'abonnement.');
+
+        $sujet = \SBDRE\ligne('SELECT id, titre, reponses FROM sujet WHERE id = :s', ['s' => $sujetId]);
+        $lien = \SBDRE\ajouterReponse($lecteur, $sujet, (string) $forum['adresse'],
+            "Bravo @{$cite['pseudo']} et @{$auteur['pseudo']}", false, $ip2);
+        $apres = \SBDRE\ligne('SELECT reponses, dernier_pseudo FROM sujet WHERE id = :s', ['s' => $sujetId]);
+        ((int) $apres['reponses'] === 1 && $apres['dernier_pseudo'] === $lecteur['pseudo'] && str_contains($lien, '#message-'))
+            ? ok('Une réponse met le sujet à jour et rend le lien du message.')
+            : ko('La réponse n\'a pas mis le sujet à jour : ' . json_encode($apres));
+
+        // L'auteur suit le sujet et il est cité : une seule notification.
+        $nAuteur = $nombre('SELECT COUNT(*) AS n FROM notification WHERE membre_id = :m', ['m' => $auteur['id']]);
+        $nCite = $nombre("SELECT COUNT(*) AS n FROM notification WHERE membre_id = :m AND nature = 'mention'", ['m' => $cite['id']]);
+        $nLecteur = $nombre('SELECT COUNT(*) AS n FROM notification WHERE membre_id = :m', ['m' => $lecteur['id']]);
+        ($nAuteur === 1 && $nCite === 1 && $nLecteur === 0)
+            ? ok('Abonné et cité prévenus une fois chacun, l\'auteur de la réponse jamais.')
+            : ko("Notifications fausses : auteur $nAuteur, cité $nCite, lecteur $nLecteur.");
+
+        $nonLues = \SBDRE\compterNonLues($auteur['id']);
+        \SBDRE\marquerLues($auteur['id']);
+        ($nonLues === 1 && \SBDRE\compterNonLues($auteur['id']) === 0 && count(\SBDRE\listerNotifications($auteur['id'])) === 1)
+            ? ok('Les notifications se comptent, se listent et se marquent lues.')
+            : ko('Le compte ou la lecture des notifications est faux.');
+
+        $accueil = \SBDRE\forumsDeLAccueil();
+        $liste = \SBDRE\sujetsDuForum((int) $forum['id'], 1);
+        $messages = \SBDRE\messagesDuSujet($sujetId, 1);
+        (count($accueil) >= 19 && in_array($sujetId, array_map('intval', array_column($liste, 'id')), true) && count($messages) === 2)
+            ? ok('Les trois lectures du forum passent en mode strict.')
+            : ko('Une lecture du forum rend un résultat faux.');
+
+        (\SBDRE\forumTropRapide($lecteur['id']) && \SBDRE\sujetsDuJour($auteur['id']) === 1)
+            ? ok('Le freinage du forum et le compte des sujets du jour mordent.')
+            : ko('Le freinage du forum ne mord pas.');
+
+        // Sur la même connexion : l'autre ne voit pas les membres de cette
+        // transaction, et attendrait leur verrou au lieu de refuser.
+        $refuseIci = function (string $intitule, string $sql, array $valeurs) use ($base): void {
+            try {
+                $base->prepare($sql)->execute($valeurs);
+                ko($intitule . ' : ACCEPTÉ alors qu\'il devait être refusé.');
+            } catch (PDOException $e) {
+                ok($intitule . ' : refusé. (' . $e->getCode() . ')');
+            }
+        };
+        $refuseIci('Sujet de 4 caractères', 'INSERT INTO sujet (forum_id, pseudo, titre, dernier_pseudo) VALUES (?, ?, ?, ?)',
+            [$forum['id'], 'x', 'Abcd', 'x']);
+        $refuseIci('Notification vers un autre site', "INSERT INTO notification (membre_id, nature, texte, lien) VALUES (?, 'badge', 'x', ?)",
+            [$cite['id'], '//exemple.re/']);
+
+        $base->prepare('DELETE FROM membre WHERE id = ?')->execute([$auteur['id']]);
+        $garde = \SBDRE\ligne('SELECT membre_id, pseudo FROM sujet WHERE id = :s', ['s' => $sujetId]);
+        ($garde !== null && $garde['membre_id'] === null && $garde['pseudo'] === $auteur['pseudo']
+            && $nombre('SELECT COUNT(*) AS n FROM notification WHERE membre_id = :m', ['m' => $auteur['id']]) === 0)
+            ? ok('Un compte effacé laisse ses sujets signés de son pseudo, ses notifications partent.')
+            : ko('L\'effacement d\'un compte a mal traité le forum.');
+
+        info('Chat');
+
+        $id = \SBDRE\ecrireChat($lecteur, 'general', 'Salut :)', false, $ip2);
+        $premiere = \SBDRE\lireChat('general', 0, false);
+        ($premiere['messages'] === [] && $premiere['dernier'] >= $id)
+            ? ok('Un visiteur ne reçoit d\'abord que le numéro du dernier message.')
+            : ko('La première lecture d\'un visiteur rend des messages.');
+
+        $base->prepare("INSERT INTO message (canal, membre_id, pseudo, texte, ip, date_envoi)
+                        VALUES ('general', ?, ?, 'Vieux message', ?, NOW() - INTERVAL 10 MINUTE)")
+             ->execute([$lecteur['id'], $lecteur['pseudo'], $ip2]);
+        $vieux = (int) $base->lastInsertId();
+        $vuVisiteur = array_column(\SBDRE\lireChat('general', $id - 1, false)['messages'], 'id');
+        $vuMembre = array_column(\SBDRE\lireChat('general', $id - 1, true)['messages'], 'id');
+        (in_array($id, $vuVisiteur, true) && !in_array($vieux, $vuVisiteur, true) && in_array($vieux, $vuMembre, true))
+            ? ok('Un visiteur ne remonte pas au-delà de cinq minutes, un membre lit sept jours.')
+            : ko('La lecture du chat rend trop ou trop peu : visiteur ' . json_encode($vuVisiteur) . ', membre ' . json_encode($vuMembre));
+
+        $base->prepare('UPDATE message SET masque_par = ? WHERE id = ?')->execute([$lecteur['id'], $id]);
+        !in_array($id, array_column(\SBDRE\lireChat('general', $id - 1, true)['messages'], 'id'), true)
+            ? ok('Un message masqué ne se lit plus.')
+            : ko('Un message masqué se lit encore.');
+
+        (\SBDRE\chatTropRapide($lecteur['id']) && in_array($lecteur['pseudo'], \SBDRE\enLigne(), true))
+            ? ok('Le freinage du chat mord, et qui écrit paraît en ligne.')
+            : ko('Freinage ou présence en ligne en défaut.');
+    } catch (Throwable $e) {
+        ko('Essai interrompu par une erreur inattendue : ' . $e->getMessage());
+    } finally {
+        $base->rollBack();
+        info('Transaction annulée : rien n\'a été conservé.');
+    }
 }
 
 /* -------------------------------------------------------------------------
