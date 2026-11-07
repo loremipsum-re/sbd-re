@@ -492,10 +492,14 @@ Choix faits en écrivant, à connaître :
       des profils servi), et le test des résultats enrichis de Google accepte
       un vrai profil, vérifié par l'auteur.
 
-**Un changement de pseudo ou de nom Instagram se confirme**, demande de
-l'auteur du 7 novembre : une case apparaît sous le champ dès que la valeur
-diffère de celle enregistrée, et `moi.php` refuse le changement sans elle.
-Retirer son nom Instagram n'en demande pas.
+**Un changement de pseudo ou de nom Instagram se fait en trois temps**,
+demande de l'auteur du 7 novembre : le champ est grisé (`readonly`, qui part
+quand même avec le formulaire, à la différence de `disabled`), une case le
+débloque, et l'enregistrement d'une nouvelle valeur ouvre une fenêtre de
+confirmation, un `<dialog>` natif comme celui de « Proposer ». `moi.php`
+refuse le changement sans la confirmation. Pendant le délai d'un an, la case
+du pseudo est désactivée. Retirer son nom Instagram n'engage à rien et ne
+demande pas de confirmation.
 
 **Le nom Instagram est distinct du pseudo**, demande de l'auteur du
 7 novembre : il se pose dans `/compte/`, unique, et se change une fois tous
