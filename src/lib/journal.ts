@@ -51,6 +51,14 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-07',
     nature: 'fonction',
+    version: '1.10.0',
+    titre: 'La communauté ouvre',
+    texte:
+      "La page Communauté devient l'entrée : le forum, le fil de l'activité, les barres à vérifier et le chat. Le forum entre au menu et dans les moteurs de recherche, et la page de confidentialité dit ce que deviennent les données d'un compte.",
+  },
+  {
+    date: '2026-11-07',
+    nature: 'fonction',
     version: '1.9.17',
     titre: 'Le fil, les forums des membres et les avatars, en essai',
     texte:
