@@ -78,12 +78,7 @@ try {
         }
         introuvable();
     }
-    $performances = lignes(
-        'SELECT mouvement, equipement, charge_kg, categorie, date_performance, lien_video, date_verif_admin
-           FROM performance WHERE membre_id = :id
-          ORDER BY date_performance DESC, id DESC',
-        ['id' => $membre['id']],
-    );
+    $performances = performancesAvecVotes('p.membre_id = :id', ['id' => $membre['id']]);
 } catch (\RuntimeException | \PDOException $e) {
     indisponible($e->getMessage());
 }

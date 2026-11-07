@@ -21,6 +21,62 @@ if (!defined('SBDRE_API')) {
     exit;
 }
 
+require_once __DIR__ . '/autorisation.php';
+
+/**
+ * Les performances avec leurs votes, pour le profil, l'espace membre et le
+ * fil « À vérifier ». `%1$s` reçoit la condition, `%2$s` la fin (tri,
+ * limite), écrites par le code, jamais par la requête.
+ *
+ * Les votes d'un membre banni ne comptent pas (docs/comptes.md, section 4) :
+ * la jointure sur `mv` les écarte, et COUNT(mv.id) ne compte que les autres.
+ * Le texte est une constante pour que db/verifier.php l'éprouve tel quel
+ * sur MySQL, en mode strict, dans sa transaction.
+ */
+const SQL_PERFORMANCES_VOTES = 'SELECT p.id, p.membre_id, p.mouvement, p.equipement, p.charge_kg, p.categorie,
+        p.date_performance, p.lien_video, p.date_verif_admin, p.date_creation, m.pseudo,
+        COUNT(mv.id) AS votes,
+        COALESCE(SUM(CASE WHEN mv.id IS NOT NULL THEN v.ok END), 0) AS favorables
+   FROM performance p
+   JOIN membre m ON m.id = p.membre_id
+   LEFT JOIN vote v ON v.performance_id = p.id
+   LEFT JOIN membre mv ON mv.id = v.membre_id AND mv.banni = 0
+  WHERE %1$s
+  GROUP BY p.id, m.pseudo
+  %2$s';
+
+/**
+ * Donner ou changer son avis : un avis par membre et par performance (clé
+ * unique de `vote`), le second remplace le premier. La forme `AS nouveau`
+ * remplace VALUES(), déprécié depuis MySQL 8.0.20.
+ */
+const SQL_VOTER = 'INSERT INTO vote (performance_id, membre_id, ok) VALUES (:p, :m, :ok) AS nouveau
+     ON DUPLICATE KEY UPDATE ok = nouveau.ok';
+
+/**
+ * @param  array<string, mixed> $params
+ * @return list<array<string, mixed>>
+ */
+function performancesAvecVotes(string $condition, array $params, string $fin = 'ORDER BY p.date_performance DESC, p.id DESC'): array
+{
+    return lignes(sprintf(SQL_PERFORMANCES_VOTES, $condition, $fin), $params);
+}
+
+/**
+ * Le badge d'une performance : « admin » si l'admin l'a vérifiée,
+ * « communaute » si 20 avis au moins, dont 60 % favorables, sinon ''.
+ */
+function badgeDe(array $performance): string
+{
+    if (($performance['date_verif_admin'] ?? null) !== null) {
+        return 'admin';
+    }
+
+    return badgeCommunaute((int) ($performance['votes'] ?? 0), (int) ($performance['favorables'] ?? 0))
+        ? 'communaute'
+        : '';
+}
+
 const MOUVEMENTS = ['squat' => 'Squat', 'bench' => 'Développé couché', 'deadlift' => 'Soulevé de terre'];
 const EQUIPEMENTS = ['raw' => 'Raw', 'wraps' => 'Bandes', 'equipped' => 'Équipé'];
 
@@ -139,7 +195,7 @@ function recordsDe(array $performances): array
         // ancienneté. Comparer deux tableaux en PHP compare case par case.
         $cle = static fn (array $b): array => [
             (float) $b['charge_kg'],
-            ($b['date_verif_admin'] ?? null) !== null ? 1 : 0,
+            badgeDe($b) !== '' ? 1 : 0,
             -(int) str_replace('-', '', (string) $b['date_performance']),
         ];
         if ($actuel === null || $cle($p) > $cle($actuel)) {
