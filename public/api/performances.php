@@ -23,12 +23,15 @@ $methode = ouvrirApi(['GET', 'POST', 'DELETE']);
 
 if ($methode === 'GET') {
     $membre = exigerMembre();
-    repondreOk('', ['performances' => lignes(
+    $performances = lignes(
         'SELECT id, mouvement, equipement, charge_kg, categorie, date_performance, lien_video, date_verif_admin
            FROM performance WHERE membre_id = :id
           ORDER BY date_performance DESC, id DESC',
         ['id' => $membre['id']],
-    )]);
+    );
+    // Les records, calculés ici comme sur le profil : une seule règle, celle
+    // de recordsDe(). L'accueil du membre s'en sert pour le situer.
+    repondreOk('', ['performances' => $performances, 'records' => recordsDe($performances)]);
 }
 
 if ($methode === 'DELETE') {

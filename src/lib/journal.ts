@@ -51,6 +51,14 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-07',
     nature: 'fonction',
+    version: '1.9.14',
+    titre: 'Un espace membre centré sur les performances',
+    texte:
+      "L'espace d'un membre en essai s'ouvre sur ses performances et lui dit où ses records le placeraient au classement officiel. Les réglages passent derrière un engrenage, et une performance vérifiée s'affiche en vert, une non vérifiée en ambre.",
+  },
+  {
+    date: '2026-11-07',
+    nature: 'fonction',
     version: '1.9.13',
     titre: 'Les performances des membres, en essai',
     texte:

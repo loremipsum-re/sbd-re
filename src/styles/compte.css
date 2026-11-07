@@ -240,9 +240,66 @@
   min-height: var(--cible-min);
 }
 
+/* Vérifiée en vert, non vérifiée en ambre, le mot toujours écrit. Mêmes
+   règles sur le profil public (pages/membres/-gabarit.astro). */
 .liste-perfs-compte .verif {
+  padding: 0 var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: 999px;
   font-size: var(--step--1);
-  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.liste-perfs-compte .verif-oui {
+  color: var(--succes);
+}
+
+.liste-perfs-compte .verif-non {
+  color: var(--alerte);
+}
+
+/* L'en-tête de l'espace membre : le titre à gauche, l'engrenage à droite. */
+.entete-espace {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.lien-reglages {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--cible-min);
+  padding: var(--space-2) var(--space-4);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.lien-reglages:hover,
+.lien-reglages:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.positions {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+  padding-left: var(--space-6);
+}
+
+.publier {
+  margin: var(--space-4) 0 var(--space-8);
+}
+
+.fil-compte {
+  margin-bottom: var(--space-4);
 }
 
 .liste-perfs-compte button {

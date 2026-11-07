@@ -152,14 +152,24 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     font-variant-numeric: tabular-nums;
   }
 
+  /* Vérifiée en vert, non vérifiée en ambre : une pastille au filet de sa
+     couleur, le mot toujours écrit. Mêmes règles dans styles/compte.css. */
   .page-membre .verif {
+    display: inline-block;
+    padding: 0 var(--space-2);
+    border: 1px solid currentColor;
+    border-radius: 999px;
     font-size: var(--step--1);
-    color: var(--muted);
+    font-weight: 600;
+    white-space: nowrap;
   }
 
-  .page-membre .verif-admin {
-    color: var(--accent);
-    font-weight: 600;
+  .page-membre .verif-oui {
+    color: var(--succes);
+  }
+
+  .page-membre .verif-non {
+    color: var(--alerte);
   }
 
   .page-membre .liste-perfs {

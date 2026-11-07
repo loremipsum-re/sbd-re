@@ -1,0 +1,21 @@
+---
+/**
+ * La fenêtre de confirmation des pages de compte : nouveau pseudo, nouveau
+ * nom Instagram, performance à retirer. Un `<dialog>` natif, comme celui de
+ * « Proposer » : le navigateur gère le fond, Échap et le retour du focus.
+ *
+ * Une seule par page, ouverte par `confirmer()` de lib/api-compte.ts, qui
+ * écrit le titre et les lignes, puis rend la réponse.
+ */
+---
+
+<dialog class="fenetre-confirmation" data-confirmation aria-labelledby="titre-confirmation">
+  <form method="dialog">
+    <h2 id="titre-confirmation">Confirmer</h2>
+    <ul data-lignes></ul>
+    <div class="actions">
+      <button type="submit" value="oui">Confirmer</button>
+      <button type="submit" value="non" class="secondaire">Annuler</button>
+    </div>
+  </form>
+</dialog>
