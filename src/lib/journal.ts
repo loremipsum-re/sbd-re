@@ -50,6 +50,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-07',
+    nature: 'correction',
+    version: '1.9.11',
+    titre: 'Un changement de pseudo se confirme',
+    texte:
+      "Changer de pseudo ou de nom Instagram demande de cocher une case de confirmation, puisque le nouveau nom reste en place un an ou six mois.",
+  },
+  {
+    date: '2026-11-07',
     nature: 'fonction',
     version: '1.9.10',
     titre: 'Un pseudo modifiable une fois par an',
