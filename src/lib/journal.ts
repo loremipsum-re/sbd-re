@@ -50,6 +50,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-07',
+    nature: 'visuel',
+    version: '1.9.12',
+    titre: 'Pseudo et Instagram verrouillés par défaut',
+    texte:
+      "Le pseudo et le nom Instagram s'affichent grisés. Une case les débloque, et une fenêtre demande confirmation au moment d'enregistrer un nouveau nom.",
+  },
+  {
+    date: '2026-11-07',
     nature: 'correction',
     version: '1.9.11',
     titre: 'Un changement de pseudo se confirme',
