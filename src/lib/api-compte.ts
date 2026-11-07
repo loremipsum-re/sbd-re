@@ -78,6 +78,25 @@ export function brancher(
   });
 }
 
+/**
+ * Ouvre la fenêtre de FenetreConfirmation.astro et rend true si la personne
+ * confirme. Échap ou Annuler rendent false. Les lignes s'écrivent en texte,
+ * jamais en HTML.
+ */
+export function confirmer(lignes: string[], titre: string): Promise<boolean> {
+  const fenetre = document.querySelector<HTMLDialogElement>('[data-confirmation]')!;
+
+  return new Promise((resoudre) => {
+    fenetre.querySelector('h2')!.textContent = titre;
+    fenetre.querySelector('[data-lignes]')!.replaceChildren(
+      ...lignes.map((texte) => Object.assign(document.createElement('li'), { textContent: texte })),
+    );
+    fenetre.returnValue = '';
+    fenetre.addEventListener('close', () => resoudre(fenetre.returnValue === 'oui'), { once: true });
+    fenetre.showModal();
+  });
+}
+
 /** La valeur texte d'un champ, '' s'il manque. */
 export function champ(donnees: FormData, nom: string): string {
   const valeur = donnees.get(nom);

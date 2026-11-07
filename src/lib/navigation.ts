@@ -35,7 +35,9 @@ export type NomIcone =
   /* Deux icônes d'état, pour les infographies : un essai validé, un essai
      manqué. Toujours accompagnées du mot. */
   | 'valide'
-  | 'manque';
+  | 'manque'
+  /* L'engrenage des réglages du compte, toujours accompagné du mot. */
+  | 'reglages';
 
 /**
  * LES TROIS FAMILLES DU SITE, dans l'ordre où le menu et le pied de page les
