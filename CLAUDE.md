@@ -19,6 +19,7 @@ par GitHub Actions.
 - [docs/parcours.md](docs/parcours.md) : **pourquoi** il est ce qu'il est. Décisions, découvertes et pièges rencontrés. C'est le document qui fait gagner le plus de temps.
 - [docs/communaute.md](docs/communaute.md) : la conception de la partie communauté, à lire avant d'y toucher. Architecture, et surtout le modèle de sécurité qui remplace les politiques RLS.
 - [docs/comptes.md](docs/comptes.md) : le plan de travail des comptes, profils et chat, arrêté le 6 novembre 2026. Modèle de données, règles d'accès, parcours, phases pas à pas. Il remplace une partie de communaute.md.
+- [docs/forum.md](docs/forum.md) : le plan du forum, du fil, des notifications et du chat revu, préparé le 7 novembre 2026. Catégories proposées et questions ouvertes, rien de construit.
 - [docs/architecture.md](docs/architecture.md) : la forme d'ensemble du système, ses points fragiles classés, et les signaux qui imposeront de la revoir.
 
 ## Attentes de travail
