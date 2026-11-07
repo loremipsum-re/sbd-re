@@ -487,9 +487,15 @@ Choix faits en écrivant, à connaître :
       JSON-LD lisible, adresse canonique, `noindex` sans performance,
       Instagram selon la case, salle disparue ignorée), mesurés à 375 et
       1 280 px dans les deux thèmes, liens de la fiche à 44 px.
-- [ ] **Fini quand** un profil s'affiche au dessin du site, en clair et en
-      sombre, et que le validateur de données structurées de Google l'accepte.
-      Le `.htaccess` modifié s'éprouve en ligne juste après le déploiement.
+- [x] **Fini le 7 novembre 2026.** Le `.htaccess` éprouvé en ligne dès le
+      déploiement (404 du gabarit et de `/membres/`, 301 en minuscules, plan
+      des profils servi), et le test des résultats enrichis de Google accepte
+      un vrai profil, vérifié par l'auteur.
+
+**Un changement de pseudo ou de nom Instagram se confirme**, demande de
+l'auteur du 7 novembre : une case apparaît sous le champ dès que la valeur
+diffère de celle enregistrée, et `moi.php` refuse le changement sans elle.
+Retirer son nom Instagram n'en demande pas.
 
 **Le nom Instagram est distinct du pseudo**, demande de l'auteur du
 7 novembre : il se pose dans `/compte/`, unique, et se change une fois tous

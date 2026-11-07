@@ -101,6 +101,12 @@ if (array_key_exists('instagram', $recu)) {
             if ($prochain > 0) {
                 refuser(422, 'Le nom Instagram se change une fois tous les six mois. Prochain changement possible le ' . dateFr($prochain) . '.');
             }
+            // Un changement qui engage pour six mois se confirme, case cochée
+            // (demande de l'auteur du 7 novembre 2026). Exigé ici aussi, pas
+            // seulement dans la page : le serveur fait foi.
+            if ((entree()['confirmer_instagram'] ?? false) !== true) {
+                refuser(422, 'Cochez la case pour confirmer le nouveau nom Instagram.');
+            }
             $valeurs['instagram'] = $nom;
             // Posée par le serveur, jamais lue dans la requête.
             $valeurs['date_instagram'] = date('Y-m-d H:i:s');
@@ -128,6 +134,9 @@ if (array_key_exists('pseudo', $recu)) {
             ['p' => $nouveau, 'p2' => $nouveau, 'id' => $membre['id']],
         ) !== null) {
             refuser(409, 'Ce pseudo est déjà pris.');
+        }
+        if ((entree()['confirmer_pseudo'] ?? false) !== true) {
+            refuser(422, 'Cochez la case pour confirmer le nouveau pseudo.');
         }
 
         $valeurs['pseudo_precedent'] = $actuel['pseudo'];
