@@ -118,6 +118,55 @@ switch (texte('action')) {
         suivreSujet($membreId, $sujetId, $suivre);
         repondreOk($suivre ? 'Vous suivez ce sujet.' : 'Vous ne suivez plus ce sujet.');
 
+    case 'creer_forum':
+        // Les forums des membres (docs/forum.md, section 6).
+        if (!peutCreerForum($membre, time())) {
+            refuser(403, 'Un forum se crée ' . ANCIENNETE_FORUM_JOURS . ' jours après l\'inscription.');
+        }
+        $titre = texte('titre');
+        $description = texte('description');
+        $n = mb_strlen($titre);
+        if ($n < TITRE_FORUM_MIN || $n > TITRE_FORUM_MAX || preg_match('/[\x00-\x1F\x7F]/', $titre . $description) === 1
+            || mb_strlen($description) > DESCRIPTION_FORUM_MAX) {
+            refuser(422, 'Le nom tient en ' . TITRE_FORUM_MIN . ' à ' . TITRE_FORUM_MAX . ' caractères, la description en '
+                . DESCRIPTION_FORUM_MAX . '.');
+        }
+        // Le nom s'affiche à tous : le filtre strict, sans le passe du dopage,
+        // qui n'a pas de forum à lui (docs/forum.md, section 2).
+        if (analyserTexte($titre . ' ' . $description) !== 'ok') {
+            refuser(422, 'Ce nom ou cette description contient un terme refusé pour un forum.');
+        }
+        if (forumsCreesCeMois($membreId) >= FORUMS_PAR_MOIS) {
+            refuser(429, 'Un forum par mois au plus. Le prochain pourra se créer dans quelques jours.');
+        }
+        $adresse = creerForumMembre($membre, $titre, $description);
+        repondreOk('Forum créé.', ['lien' => '/forum/' . $adresse . '/']);
+
+    case 'epingler':
+    case 'verrouiller':
+        $valeur = entree()['valeur'] ?? null;
+        if (!is_int($sujetId) || $sujetId <= 0 || !is_bool($valeur)) {
+            refuser(422, 'Demande illisible.');
+        }
+        $cible = ligne(
+            'SELECT s.id, f.createur_id FROM sujet s JOIN forum f ON f.id = s.forum_id WHERE s.id = :s',
+            ['s' => $sujetId],
+        );
+        if ($cible === null) {
+            refuser(404, 'Ce sujet n\'existe plus.');
+        }
+        if (!peutGererForum($membre, $cible)) {
+            refuser(403, 'Seuls le créateur du forum et l\'admin le peuvent.');
+        }
+        $epingler = texte('action') === 'epingler';
+        marquerSujet($sujetId, $epingler ? 'epingle' : 'verrouille', $valeur);
+        repondreOk(match (true) {
+            $epingler && $valeur => 'Sujet épinglé.',
+            $epingler => 'Sujet désépinglé.',
+            $valeur => 'Sujet fermé.',
+            default => 'Sujet rouvert.',
+        });
+
     default:
         refuser(422, 'Action inconnue.');
 }

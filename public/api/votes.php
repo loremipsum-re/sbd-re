@@ -83,6 +83,8 @@ $badge = static fn (): string => badgeDe(performancesAvecVotes('p.id = :id', ['i
 $avant = $badge();
 executer(SQL_VOTER, ['p' => $id, 'm' => $moi, 'ok' => $ok ? 1 : 0]);
 if ($avant === '' && $badge() === 'communaute') {
+    // La date du badge, pour le fil : posée une fois, à l'avis qui le fait tomber.
+    executer('UPDATE performance SET date_verif_communaute = NOW() WHERE id = :id AND date_verif_communaute IS NULL', ['id' => $id]);
     $perf = ligne('SELECT membre_id, mouvement, charge_kg FROM performance WHERE id = :id', ['id' => $id]);
     notifier((int) $perf['membre_id'], 'badge', 'Votre performance au ' . mb_strtolower(MOUVEMENTS[$perf['mouvement']])
         . ', ' . kgFr((float) $perf['charge_kg']) . ', est vérifiée par la communauté.', '/compte/');

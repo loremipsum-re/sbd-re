@@ -66,24 +66,39 @@ $smileys = is_array($smileys) ? $smileys : [];
 try {
     $membre = membreCourant();
 
-    if ($adresse === null) {
+    if ($adresse === 'fil') {
+        /* --- Le fil, adresse réservée (ADRESSES_RESERVEES) ----------------- */
+        $chemin = '/forum/fil/';
+        $page = 1;
+        $reperes = [
+            'TITRE'        => 'Le fil',
+            'TITRE_ONGLET' => 'Le fil du forum | SBD.re',
+            'DESCRIPTION'  => e('Les nouveaux sujets, les réponses et les performances vérifiées de la communauté SBD.re.'),
+            'ARIANE'       => ariane([['Forum', '/forum/'], ['Le fil', null]]),
+            'CHAPEAU'      => '<p class="chapeau">Les nouveaux sujets, les réponses et les performances vérifiées, du plus récent au plus ancien.</p>',
+            'CONTENU'      => rendreFil(filActualite()),
+            'DONNEES'      => '',
+        ];
+    } elseif ($adresse === null) {
         /* --- L'accueil ---------------------------------------------------- */
+        archiverForumsInactifs();
         $categories = lignes('SELECT id, titre FROM forum_categorie ORDER BY ordre, id');
         $forums = forumsDeLAccueil();
         $chemin = '/forum/';
         $page = 1;
         $reperes = [
             'TITRE'        => 'Forum',
-            'TITRE_ONGLET' => 'Forum de force athlétique et d\'haltérophilie | SBD.re',
-            'DESCRIPTION'  => 'Le forum de la force athlétique et de l\'haltérophilie à La Réunion : technique, programmation, compétitions.',
+            'TITRE_ONGLET' => e('Forum de force athlétique et d\'haltérophilie | SBD.re'),
+            'DESCRIPTION'  => e("Le forum de la force athlétique et de l'haltérophilie à La Réunion : technique, programmation, compétitions."),
             'ARIANE'       => '',
             'CHAPEAU'      => '<p class="chapeau">Technique, programmation, compétitions : une catégorie par mouvement, à la manière des forums d\'autrefois.</p>',
-            'CONTENU'      => rendreIndexForum($categories, $forums),
+            'CONTENU'      => '<p class="actions-forum"><a class="bouton-nouveau" href="/forum/fil/">Le fil de l\'activité</a></p>'
+                . rendreIndexForum($categories, $forums, $membre),
             'DONNEES'      => '',
         ];
     } else {
         $forum = ligne(
-            "SELECT f.id, f.adresse, f.titre, f.description, f.etat, c.titre AS categorie
+            "SELECT f.id, f.adresse, f.titre, f.description, f.etat, f.createur_id, c.titre AS categorie
                FROM forum f JOIN forum_categorie c ON c.id = f.categorie_id
               WHERE f.adresse = :a AND f.etat <> 'masque'",
             ['a' => $adresse],
@@ -114,7 +129,7 @@ try {
         } else {
             /* --- Un sujet ------------------------------------------------- */
             $sujet = ligne(
-                'SELECT id, membre_id, titre, verrouille, reponses FROM sujet WHERE id = :s AND forum_id = :f',
+                'SELECT id, membre_id, titre, epingle, verrouille, reponses FROM sujet WHERE id = :s AND forum_id = :f',
                 ['s' => $sujetDemande, 'f' => $forum['id']],
             );
             if ($sujet === null) {

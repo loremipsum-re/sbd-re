@@ -592,3 +592,70 @@
   font-size: var(--step--1);
   color: var(--muted);
 }
+
+/* --- Avatars, signalements, fil, forums des membres ------------------- */
+
+.auteur-message .avatar {
+  width: 4rem;
+  height: 4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.corps-message footer {
+  gap: var(--space-2);
+}
+
+/* Signaler reste discret : un geste rare, qui ne doit pas tenter. */
+.bouton-signaler {
+  min-height: var(--cible-min);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--step--1);
+  cursor: pointer;
+}
+
+.bouton-signaler:hover,
+.bouton-signaler:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.fil-actualite {
+  display: grid;
+  margin: var(--space-6) 0;
+  padding: 0;
+  list-style: none;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.fil-actualite .evenement {
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+}
+
+.fil-actualite .evenement + .evenement {
+  border-top: 1px solid var(--border);
+}
+
+.fil-actualite p {
+  margin: 0;
+}
+
+.creer-forum {
+  border-top: 1px solid var(--border);
+}
+
+.creer-forum > summary {
+  padding: 0 var(--space-4);
+}
+
+.creer-forum .form-compte {
+  margin: 0;
+  padding: 0 var(--space-4) var(--space-4);
+}
