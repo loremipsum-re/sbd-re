@@ -37,6 +37,16 @@ export const SMILEYS: readonly Smiley[] = [
   { code: ':roll:', fichier: 'icon_rolleyes', alt: 'lève les yeux au ciel' },
   { code: ':mrgreen:', fichier: 'icon_mrgreen', alt: 'rire vert' },
   { code: ':idea:', fichier: 'icon_idea', alt: 'idée' },
+  // Les huit autres du jeu de phpBB, ajoutés le 7 novembre à la demande de
+  // l'auteur : le jeu complet, vingt-quatre smileys.
+  { code: ':|', fichier: 'icon_neutral', alt: 'neutre' },
+  { code: ':evil:', fichier: 'icon_evil', alt: 'diabolique' },
+  { code: ':twisted:', fichier: 'icon_twisted', alt: 'diablotin' },
+  { code: ':geek:', fichier: 'icon_e_geek', alt: 'geek' },
+  { code: ':ugeek:', fichier: 'icon_e_ugeek', alt: 'super geek' },
+  { code: ':!:', fichier: 'icon_exclaim', alt: 'exclamation' },
+  { code: ':?:', fichier: 'icon_question', alt: 'question' },
+  { code: ':arrow:', fichier: 'icon_arrow', alt: 'flèche' },
 ];
 
 export type Morceau = { texte: string } | { smiley: Smiley };

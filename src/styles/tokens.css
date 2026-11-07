@@ -548,6 +548,11 @@ svg {
  * Les boutons d'en-tête de tableau sont exclus aussi : ils occupent toute la
  * cellule, qui donne déjà la hauteur, et 44 px de plus creuseraient un trou
  * dans la ligne d'en-tête.
+ *
+ * Cinquième exclusion, le 7 novembre 2026 à la demande de l'auteur : les
+ * boutons du panneau de smileys (communaute.css, `.grille-smileys`), à 32 px.
+ * Au-dessus des 24 px du critère 2.5.8 des WCAG 2.2 ; le titre qui ouvre le
+ * panneau garde ses 44 px.
  */
 button,
 select,
