@@ -412,8 +412,10 @@ commande : il ne fait que déplacer des fichiers, en clair.
 que `$`, en fin d'expression, accepte aussi un retour à la ligne final, en PHP
 comme dans MySQL. La contrainte du pseudo laissait donc passer « abc » suivi
 d'un saut de ligne. Elle finit désormais par `\z`, et `verifier.php` l'essaie :
-44 essais, 57 réussites attendues. **À recharger sur la base de test** avant la
-phase 3 (supprimer les tables, importer le schéma, relancer le script).
+44 essais, 57 réussites attendues. La base de production n'a jamais été
+rechargée : le 7 novembre, `verifier.php` y trouvait encore l'ancienne
+contrainte. `db/migration-2026-11-07-pseudo.sql` la remplace sans toucher aux
+comptes.
 
 ### Phase 2, le socle PHP
 
