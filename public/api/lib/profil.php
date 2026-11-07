@@ -35,9 +35,12 @@ function lienVideo(string $adresse): string
 /** L'état de vérification d'une barre. Le badge communauté viendra avec la phase 6. */
 function etatVerification(array $performance): string
 {
+    // Deux couleurs, demande de l'auteur du 7 novembre 2026 : --succes pour
+    // vérifiée, --alerte pour non vérifiée. Le mot reste écrit : la couleur
+    // seule ne porterait pas le sens.
     return ($performance['date_verif_admin'] ?? null) !== null
-        ? '<span class="verif verif-admin">Vérifiée par SBD.re</span>'
-        : '<span class="verif">Non vérifiée</span>';
+        ? '<span class="verif verif-oui">Vérifiée par SBD.re</span>'
+        : '<span class="verif verif-non">Non vérifiée</span>';
 }
 
 /**
