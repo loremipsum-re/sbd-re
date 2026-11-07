@@ -141,6 +141,22 @@ import '../../styles/communaute.css';
     });
   }
 
+  // Renommer un forum de membre : son créateur, ou l'admin. L'adresse reste.
+  const formRenommer = document.querySelector<HTMLFormElement>('[data-forum-renommer]');
+  if (formRenommer) {
+    brancher(
+      formRenommer,
+      (d) =>
+        api('/api/forum.php', 'POST', {
+          action: 'renommer_forum',
+          forum: formRenommer.dataset.forum,
+          titre: champ(d, 'titre'),
+          description: champ(d, 'description'),
+        }),
+      () => location.reload(),
+    );
+  }
+
   for (const bouton of document.querySelectorAll<HTMLButtonElement>('[data-suivre]')) {
     bouton.addEventListener('click', async () => {
       const suivre = bouton.getAttribute('aria-pressed') !== 'true';

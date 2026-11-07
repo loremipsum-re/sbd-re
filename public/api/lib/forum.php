@@ -351,8 +351,25 @@ function rendreForum(array $forum, array $sujets, int $page, int $pages, ?array 
             . '<div class="actions"><button type="submit">Publier le sujet</button></div>'
             . '<p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p></form>';
     }
+    $html .= '</section>';
 
-    return $html . '</section>';
+    // Renommer : le créateur d'un forum de membre, et l'admin. L'adresse ne
+    // change pas, pour qu'aucun lien déjà partagé ne casse.
+    if (peutGererForum($membre, $forum)) {
+        $html .= '<details class="repli gerer-forum"><summary>Renommer le forum</summary>'
+            . '<form class="form-compte" data-forum-renommer data-forum="' . e($adresse) . '" novalidate>'
+            . '<p class="aide">Le nom et la description changent, l\'adresse de la page reste la même.</p>'
+            . '<div class="champ"><label for="renommer-titre">Nom du forum</label>'
+            . '<input id="renommer-titre" name="titre" required minlength="' . TITRE_FORUM_MIN . '" maxlength="' . TITRE_FORUM_MAX
+            . '" value="' . e((string) ($forum['titre'] ?? '')) . '" /></div>'
+            . '<div class="champ"><label for="renommer-description">Description</label>'
+            . '<input id="renommer-description" name="description" maxlength="' . DESCRIPTION_FORUM_MAX
+            . '" value="' . e((string) ($forum['description'] ?? '')) . '" /></div>'
+            . '<div class="actions"><button type="submit">Renommer</button></div>'
+            . '<p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p></form></details>';
+    }
+
+    return $html;
 }
 
 /**
@@ -711,6 +728,31 @@ function forumsCreesCeMois(int $membreId): int
         'SELECT COUNT(*) AS n FROM forum WHERE createur_id = :m AND date_creation > NOW() - INTERVAL 30 DAY',
         ['m' => $membreId],
     )['n'] ?? 0);
+}
+
+/**
+ * '' si le nom et la description d'un forum passent, la raison sinon. Ils
+ * s'affichent à tous : le filtre strict, sans le passe du dopage, qui n'a pas
+ * de forum à lui (docs/forum.md, section 2).
+ */
+function erreurForum(string $titre, string $description): string
+{
+    $n = mb_strlen($titre);
+    if ($n < TITRE_FORUM_MIN || $n > TITRE_FORUM_MAX || mb_strlen($description) > DESCRIPTION_FORUM_MAX
+        || preg_match('/[\x00-\x1F\x7F]/', $titre . $description) === 1) {
+        return 'Le nom tient en ' . TITRE_FORUM_MIN . ' à ' . TITRE_FORUM_MAX . ' caractères, la description en '
+            . DESCRIPTION_FORUM_MAX . '.';
+    }
+
+    return analyserTexte($titre . ' ' . $description) !== 'ok'
+        ? 'Ce nom ou cette description contient un terme refusé pour un forum.'
+        : '';
+}
+
+/** Le nom et la description, jamais l'adresse. */
+function renommerForum(int $forumId, string $titre, string $description): void
+{
+    executer('UPDATE forum SET titre = :t, description = :d WHERE id = :f', ['t' => $titre, 'd' => $description, 'f' => $forumId]);
 }
 
 /** Crée le forum, publié aussitôt (choix de l'auteur du 7 novembre). Rend son adresse. */

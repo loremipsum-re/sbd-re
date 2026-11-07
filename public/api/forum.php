@@ -153,22 +153,32 @@ switch (texte('action')) {
         }
         $titre = texte('titre');
         $description = texte('description');
-        $n = mb_strlen($titre);
-        if ($n < TITRE_FORUM_MIN || $n > TITRE_FORUM_MAX || preg_match('/[\x00-\x1F\x7F]/', $titre . $description) === 1
-            || mb_strlen($description) > DESCRIPTION_FORUM_MAX) {
-            refuser(422, 'Le nom tient en ' . TITRE_FORUM_MIN . ' à ' . TITRE_FORUM_MAX . ' caractères, la description en '
-                . DESCRIPTION_FORUM_MAX . '.');
-        }
-        // Le nom s'affiche à tous : le filtre strict, sans le passe du dopage,
-        // qui n'a pas de forum à lui (docs/forum.md, section 2).
-        if (analyserTexte($titre . ' ' . $description) !== 'ok') {
-            refuser(422, 'Ce nom ou cette description contient un terme refusé pour un forum.');
+        $erreur = erreurForum($titre, $description);
+        if ($erreur !== '') {
+            refuser(422, $erreur);
         }
         if (forumsCreesCeMois($membreId) >= FORUMS_PAR_MOIS) {
             refuser(429, 'Un forum par mois au plus. Le prochain pourra se créer dans quelques jours.');
         }
         $adresse = creerForumMembre($membre, $titre, $description);
         repondreOk('Forum créé.', ['lien' => '/forum/' . $adresse . '/']);
+
+    case 'renommer_forum':
+        $forum = ligne('SELECT id, createur_id, etat FROM forum WHERE adresse = :a', ['a' => texte('forum')]);
+        if ($forum === null || $forum['etat'] === 'masque') {
+            refuser(404, 'Ce forum n\'existe pas.');
+        }
+        if (!peutGererForum($membre, $forum)) {
+            refuser(403, 'Seuls le créateur du forum et l\'admin le peuvent.');
+        }
+        $titre = texte('titre');
+        $description = texte('description');
+        $erreur = erreurForum($titre, $description);
+        if ($erreur !== '') {
+            refuser(422, $erreur);
+        }
+        renommerForum((int) $forum['id'], $titre, $description);
+        repondreOk('Forum renommé. Son adresse ne change pas.');
 
     case 'epingler':
     case 'verrouiller':
