@@ -1,0 +1,108 @@
+---
+/**
+ * Le gabarit des pages du forum, que public/api/forum-page.php remplit.
+ * Même principe que /membres/-gabarit/ : Astro produit la page au dessin du
+ * site, PHP remplace les repères « %%NOM%% » par des valeurs déjà échappées.
+ *
+ * L'adresse `/forum/-gabarit/` ne peut appartenir à aucun forum (une adresse
+ * de forum commence par une lettre ou un chiffre). Le .htaccess la renvoie
+ * en 404, et elle sort du plan de site (astro.config.mjs).
+ *
+ * Repères : TITRE, TITRE_ONGLET, DESCRIPTION, ROBOTS (noindex jusqu'à
+ * l'ouverture, FORUM_OUVERT de lib/forum.php), ARIANE, CHAPEAU, CONTENU,
+ * DONNEES (le JSON-LD d'un sujet, ou rien). Toute adresse `/forum/-gabarit/`
+ * devient celle de la page, l'adresse canonique comprise.
+ *
+ * Le script branche les formulaires que PHP écrit : ouvrir un sujet,
+ * répondre, citer, suivre, et la barre de smileys.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/compte.css';
+import '../../styles/communaute.css';
+---
+
+<BaseLayout titre="%%TITRE%%" titreOnglet="%%TITRE_ONGLET%%" description="%%DESCRIPTION%%">
+  <meta slot="tete" name="robots" content="%%ROBOTS%%" />
+
+  <div class="wrap page-forum">
+    %%ARIANE%%
+    <header class="entete-page">
+      <h1>%%TITRE%%</h1>
+      %%CHAPEAU%%
+    </header>
+
+    %%CONTENU%%
+  </div>
+
+  %%DONNEES%%
+</BaseLayout>
+
+<script>
+  import { afficher, api, brancher, champ, type ReponseApi } from '../../lib/api-compte';
+  import { brancherBarresSmileys } from '../../lib/barre-smileys';
+
+  brancherBarresSmileys();
+
+  /** Va au message publié. Même page, autre ancre : il faut recharger. */
+  const aller = (lien: string) => {
+    const cible = new URL(lien, location.href);
+    if (cible.pathname === location.pathname && cible.search === location.search) {
+      history.replaceState(null, '', cible);
+      location.reload();
+    } else {
+      location.assign(cible);
+    }
+  };
+
+  /**
+   * Un message qui aborde le dopage revient en 409 avec l'avertissement : le
+   * second envoi le confirme (docs/forum.md, section 5 bis).
+   */
+  const envoyer = (form: HTMLFormElement, corps: Record<string, unknown>) =>
+    api('/api/forum.php', 'POST', { ...corps, confirme: form.dataset.confirme === '1' }).then((r: ReponseApi) => {
+      if (r.statut === 409) form.dataset.confirme = '1';
+      return r;
+    });
+
+  const formSujet = document.querySelector<HTMLFormElement>('[data-forum-sujet]');
+  if (formSujet) {
+    brancher(
+      formSujet,
+      (d) => envoyer(formSujet, { action: 'sujet', forum: formSujet.dataset.forum, titre: champ(d, 'titre'), texte: champ(d, 'texte') }),
+      (r) => aller(r.lien as string),
+    );
+  }
+
+  const formReponse = document.querySelector<HTMLFormElement>('[data-forum-reponse]');
+  if (formReponse) {
+    brancher(
+      formReponse,
+      (d) => envoyer(formReponse, { action: 'reponse', sujet_id: Number(formReponse.dataset.sujet), texte: champ(d, 'texte') }),
+      (r) => aller(r.lien as string),
+    );
+
+    // Citer : le message entier, entre [quote=pseudo], au bout de la réponse.
+    const zone = formReponse.querySelector<HTMLTextAreaElement>('textarea')!;
+    for (const bouton of document.querySelectorAll<HTMLButtonElement>('[data-citer]')) {
+      bouton.addEventListener('click', () => {
+        const citation = `[quote=${bouton.dataset.pseudo}]${bouton.dataset.texte}[/quote]\n`;
+        zone.value = zone.value === '' ? citation : `${zone.value.replace(/\s*$/, '')}\n${citation}`;
+        zone.focus();
+        zone.setSelectionRange(zone.value.length, zone.value.length);
+      });
+    }
+  }
+
+  for (const bouton of document.querySelectorAll<HTMLButtonElement>('[data-suivre]')) {
+    bouton.addEventListener('click', async () => {
+      const suivre = bouton.getAttribute('aria-pressed') !== 'true';
+      bouton.disabled = true;
+      const r = await api('/api/forum.php', 'POST', { action: 'suivre', sujet_id: Number(bouton.dataset.sujet), suivre });
+      bouton.disabled = false;
+      if (r.ok) bouton.setAttribute('aria-pressed', String(suivre));
+      // Le message dit l'état, pour qui ne voit pas l'aplat.
+      const etat = document.querySelector<HTMLElement>('[data-forum-reponse] [data-etat]');
+      if (etat) afficher(etat, r.message, r.ok);
+    });
+  }
+</script>
