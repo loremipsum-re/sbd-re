@@ -659,3 +659,15 @@
   margin: 0;
   padding: 0 var(--space-4) var(--space-4);
 }
+
+/* `display: grid` d'un formulaire l'emporterait sur l'attribut `hidden` : le
+   champ du chat restait visible d'un visiteur, hors de .page-compte qui
+   portait seule cette règle. */
+.chat [hidden],
+.page-forum [hidden] {
+  display: none;
+}
+
+.chat {
+  margin-top: var(--space-8);
+}
