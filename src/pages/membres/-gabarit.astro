@@ -28,6 +28,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
   <div class="wrap page-membre">
     <header class="entete-page">
+      %%AVATAR%%
       <p class="surtitre">Membre de la communauté</p>
       <h1>%%PSEUDO%%</h1>
       %%PRESENTATION%%
@@ -39,10 +40,33 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       <h2 id="titre-records">Records</h2>
       %%RECORDS%%
     </section>
+
+    {/* Signaler ce profil, avatar compris : pour un membre connecté seulement,
+        d'après le cookie lisible de la connexion (lib/cloche.ts). */}
+    <p class="signaler-profil" data-signaler-profil data-membre="%%MEMBRE%%" hidden>
+      <button type="button" class="bouton-signaler">Signaler ce profil</button>
+      <span class="etat-signalement" role="status" aria-live="polite"></span>
+    </p>
   </div>
 
   <script type="application/ld+json" is:inline>%%DONNEES%%</script>
 </BaseLayout>
+
+<script>
+  import { api } from '../../lib/api-compte';
+
+  const zone = document.querySelector<HTMLElement>('[data-signaler-profil]');
+  if (zone && document.cookie.split('; ').includes('sbdre-connecte=1')) {
+    zone.hidden = false;
+    const bouton = zone.querySelector('button')!;
+    bouton.addEventListener('click', async () => {
+      if (!confirm('Signaler ce profil à l\'admin ?')) return;
+      bouton.disabled = true;
+      const r = await api('/api/signalements.php', 'POST', { type: 'membre', cible_id: Number(zone.dataset.membre) });
+      zone.querySelector('[role="status"]')!.textContent = r.message;
+    });
+  }
+</script>
 
 <style is:global>
   .page-membre {
@@ -190,5 +214,38 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     display: inline-flex;
     align-items: center;
     min-height: var(--cible-min);
+  }
+
+  .page-membre .avatar-profil {
+    display: block;
+    width: 6rem;
+    height: 6rem;
+    margin-bottom: var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .page-membre .signaler-profil {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    margin-top: var(--space-12);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .page-membre .signaler-profil[hidden] {
+    display: none;
+  }
+
+  .page-membre .bouton-signaler {
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    cursor: pointer;
   }
 </style>

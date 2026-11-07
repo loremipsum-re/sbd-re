@@ -275,6 +275,7 @@ foreach ([
         require $bibliotheque;
         require_once dirname($bibliotheque) . '/forum.php';
         require_once dirname($bibliotheque) . '/chat.php';
+        require_once dirname($bibliotheque) . '/signalements.php';
         break;
     }
 }
@@ -676,6 +677,75 @@ if (!function_exists('SBDRE\creerSujet')) {
         (\SBDRE\chatTropRapide($lecteur['id']) && in_array($lecteur['pseudo'], \SBDRE\enLigne(), true))
             ? ok('Le freinage du chat mord, et qui écrit paraît en ligne.')
             : ko('Freinage ou présence en ligne en défaut.');
+
+        info('Fil, forums des membres, modération, avatars');
+
+        $fil = \SBDRE\filActualite();
+        $sujetsDuFil = array_map('intval', array_column(array_filter($fil, fn (array $e): bool => $e['nature'] === 'sujet'), 'sujet_id'));
+        in_array($sujetId, $sujetsDuFil, true)
+            ? ok('Le fil passe en mode strict et montre le nouveau sujet.')
+            : ko('Le fil ne montre pas le sujet ouvert.');
+
+        $adresse1 = \SBDRE\creerForumMembre($lecteur, 'Forum d\'essai', 'Une description');
+        $adresse2 = \SBDRE\creerForumMembre($cite, 'Forum d\'essai', '');
+        ($adresse2 === $adresse1 . '-2' && \SBDRE\forumsCreesCeMois($lecteur['id']) === 1)
+            ? ok('Deux forums du même nom reçoivent deux adresses, comptés par créateur.')
+            : ko("Adresses des forums de membres : $adresse1, $adresse2.");
+
+        $base->prepare('UPDATE forum SET date_creation = NOW() - INTERVAL 7 MONTH WHERE adresse = ?')->execute([$adresse1]);
+        \SBDRE\archiverForumsInactifs();
+        (\SBDRE\ligne('SELECT etat FROM forum WHERE adresse = :a', ['a' => $adresse1])['etat'] ?? '') === 'archive'
+            ? ok('Un forum de membre sans message depuis six mois passe en archive.')
+            : ko('Le forum inactif n\'est pas archivé.');
+
+        $aSignaler = \SBDRE\ecrireChat($lecteur, 'squat', 'À signaler', false, $ip2);
+        $premier = \SBDRE\signaler($cite['id'], 'message', $aSignaler, 'spam');
+        $second = \SBDRE\signaler($cite['id'], 'message', $aSignaler, 'encore');
+        ($premier && !$second && \SBDRE\cibleExiste('message', $aSignaler) && \SBDRE\signalementsDuJour($cite['id']) === 1)
+            ? ok('Un signalement par membre et par cible, compté pour la journée.')
+            : ko('Le signalement se double ou ne se compte pas.');
+
+        $enFile = array_values(array_filter(\SBDRE\fileModeration(), fn (array $s): bool => $s['type'] === 'message' && $s['cible_id'] === $aSignaler));
+        ($enFile !== [] && $enFile[0]['auteur'] === $lecteur['pseudo'] && $enFile[0]['apercu'] === 'À signaler')
+            ? ok('La file de modération montre le contenu signalé et son auteur.')
+            : ko('La file de modération est fausse : ' . json_encode($enFile));
+
+        $aPrevenir = \SBDRE\masquerMessage('message', $aSignaler, $cite['id']);
+        \SBDRE\classer('message', $aSignaler);
+        $resteEnFile = array_filter(\SBDRE\fileModeration(), fn (array $s): bool => $s['type'] === 'message' && $s['cible_id'] === $aSignaler);
+        ($aPrevenir === $lecteur['id'] && !\SBDRE\cibleExiste('message', $aSignaler) && $resteEnFile === [])
+            ? ok('Masquer rend l\'auteur à prévenir, classer vide la file.')
+            : ko('Masquer ou classer ne fait pas ce qu\'il annonce.');
+
+        count(\SBDRE\forumsDesMembres()) >= 2
+            ? ok('Les forums des membres se listent pour l\'admin.')
+            : ko('Les forums des membres manquent à la liste de l\'admin.');
+
+        $base->prepare("INSERT INTO jeton (membre_id, type, jeton_hash, date_expiration) VALUES (?, 'session', ?, NOW() + INTERVAL 1 DAY)")
+             ->execute([$cite['id'], hash('sha256', random_bytes(16))]);
+        (\SBDRE\bannir($cite['id']) && $nombre('SELECT COUNT(*) AS n FROM jeton WHERE membre_id = :m', ['m' => $cite['id']]) === 0)
+            ? ok('Bannir ferme aussitôt les sessions du membre.')
+            : ko('Le membre banni garde une session.');
+
+        $base->prepare("UPDATE membre SET role = 'admin' WHERE id = ?")->execute([$lecteur['id']]);
+        !\SBDRE\bannir($lecteur['id'])
+            ? ok('Un admin ne se bannit pas.')
+            : ko('Un admin a été banni.');
+
+        if (function_exists('imagewebp')) {
+            $carre = imagecreatetruecolor(400, 400);
+            ob_start();
+            imagepng($carre);
+            $webp = (string) \SBDRE\preparerAvatar((string) ob_get_clean());
+            \SBDRE\enregistrerAvatar($lecteur['id'], $webp);
+            \SBDRE\enregistrerAvatar($lecteur['id'], $webp);
+            $relu = \SBDRE\lireAvatar($lecteur['pseudo']);
+            ($webp !== '' && $relu !== null && $relu['image'] === $webp)
+                ? ok('Un avatar s\'enregistre, se remplace et se relit à l\'octet près.')
+                : ko('L\'avatar relu diffère de l\'avatar enregistré.');
+        } else {
+            ko('GD ou WebP manque sur ce serveur : les avatars ne fonctionneront pas.');
+        }
     } catch (Throwable $e) {
         ko('Essai interrompu par une erreur inattendue : ' . $e->getMessage());
     } finally {

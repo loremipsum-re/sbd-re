@@ -24,6 +24,7 @@ if (!defined('SBDRE_API')) {
 require_once __DIR__ . '/profil.php';
 require_once __DIR__ . '/moderation.php';
 require_once __DIR__ . '/notifications.php';
+require_once __DIR__ . '/avatar.php';
 
 /**
  * Indexation : coupée jusqu'à l'ouverture de la communauté (comptes.md,
@@ -212,66 +213,131 @@ function pasDeFormulaire(?array $membre, string $geste, bool $ferme, string $rai
 }
 
 /**
- * L'accueil du forum : les catégories et leurs forums.
+ * Un nombre et son unité. L'unité se lit sur téléphone, où les nombres
+ * s'alignent sur une ligne ; sur écran large, l'en-tête de colonne la dit,
+ * et elle reste pour les lecteurs d'écran.
+ */
+function nombreColonne(int $n, string $singulier, string $pluriel): string
+{
+    return '<span class="nombre">' . $n . '</span><span class="libelle"> ' . ($n > 1 ? $pluriel : $singulier) . '</span>';
+}
+
+/**
+ * La barre d'un tableau du forum, à la manière de phpBB : son titre, puis le
+ * nom des colonnes. Les colonnes sont dites aux yeux seulement, chaque
+ * cellule porte son propre libellé pour les lecteurs d'écran.
+ *
+ * @param list<string> $colonnes
+ */
+function barreTableau(string $titre, string $id, array $colonnes): string
+{
+    $html = '<div class="barre-tableau"><h2 id="' . $id . '">' . $titre . '</h2>';
+    foreach ($colonnes as $colonne) {
+        $html .= '<span class="colonne" aria-hidden="true">' . $colonne . '</span>';
+    }
+
+    return $html . '</div>';
+}
+
+/** La cellule « Dernier message » : le sujet sur l'accueil, la date ailleurs, menant à la dernière page. */
+function celluleDernier(?string $titre, string $lien, string $pseudo, int $moment): string
+{
+    $html = '<div class="dernier"><span class="libelle">Dernier message</span>';
+    if ($titre !== null) {
+        return $html . '<a href="' . e($lien) . '">' . e($titre) . '</a>'
+            . '<span class="meta">par ' . e($pseudo) . ', ' . balisageDate($moment) . '</span></div>';
+    }
+
+    return $html . '<span class="meta">par ' . e($pseudo) . '</span>'
+        . '<a href="' . e($lien) . '">' . balisageDate($moment) . '</a></div>';
+}
+
+/**
+ * L'accueil du forum : une barre par catégorie, une ligne par forum, comme
+ * l'index d'un phpBB. Colonnes sur écran large, cartes sur téléphone.
  *
  * @param list<array<string, mixed>> $categories id, titre
- * @param list<array<string, mixed>> $forums     categorie_id, adresse, titre, description, sujets, messages, dernier_ts
+ * @param list<array<string, mixed>> $forums     categorie_id, adresse, titre, description, sujets, messages,
+ *                                               dernier_id, dernier_titre, dernier_pseudo, dernier_reponses, dernier_ts
  */
-function rendreIndexForum(array $categories, array $forums): string
+function rendreIndexForum(array $categories, array $forums, ?array $membre = null): string
 {
     $html = '';
     foreach ($categories as $c) {
+        $id = 'categorie-' . (int) $c['id'];
         $dans = array_filter($forums, static fn (array $f): bool => (int) $f['categorie_id'] === (int) $c['id']);
-        $html .= '<section class="categorie-forum" aria-labelledby="categorie-' . (int) $c['id'] . '">'
-            . '<h2 id="categorie-' . (int) $c['id'] . '">' . e((string) $c['titre']) . '</h2>';
+        // La catégorie des membres porte, sous ses forums, de quoi en créer un.
+        $pied = (int) $c['id'] === CATEGORIE_MEMBRES ? formulaireCreerForum($membre) : '';
+        $html .= '<section class="tableau-forum" aria-labelledby="' . $id . '">'
+            . barreTableau(e((string) $c['titre']), $id, $dans === [] ? [] : ['Sujets', 'Messages', 'Dernier message']);
         if ($dans === []) {
-            $html .= '<p class="aide">Aucun forum pour l\'instant.</p></section>';
+            $html .= '<p class="ligne-vide">Aucun forum pour l\'instant.</p>' . $pied . '</section>';
             continue;
         }
-        $html .= '<ul class="liste-forums">';
+        $html .= '<ul class="lignes-forum">';
         foreach ($dans as $f) {
-            $meta = [compte((int) $f['sujets'], 'sujet', 'sujets'), compte((int) $f['messages'], 'message', 'messages')];
-            if ($f['dernier_ts'] !== null) {
-                $meta[] = 'dernier message le ' . balisageDate((int) $f['dernier_ts']);
-            }
-            $html .= '<li><h3><a href="/forum/' . e((string) $f['adresse']) . '/">' . e((string) $f['titre']) . '</a></h3>'
-                . ($f['description'] !== '' ? '<p>' . e((string) $f['description']) . '</p>' : '')
-                . '<p class="meta">' . implode(' · ', $meta) . '</p></li>';
+            $adresse = (string) $f['adresse'];
+            $dernier = $f['dernier_id'] !== null
+                ? celluleDernier(
+                    (string) $f['dernier_titre'],
+                    lienSujet($adresse, (int) $f['dernier_id'], pageDuMessage((int) $f['dernier_reponses'])),
+                    (string) $f['dernier_pseudo'],
+                    (int) $f['dernier_ts'],
+                )
+                : '<div class="dernier"><span class="meta">Aucun message</span></div>';
+            $html .= '<li class="ligne-forum"><div class="intitule">'
+                . '<h3><a href="/forum/' . e($adresse) . '/">' . e((string) $f['titre']) . '</a></h3>'
+                . ($f['description'] !== '' ? '<p class="description">' . e((string) $f['description']) . '</p>' : '')
+                . '</div>'
+                . '<p class="compte">' . nombreColonne((int) $f['sujets'], 'sujet', 'sujets') . '</p>'
+                . '<p class="compte">' . nombreColonne((int) $f['messages'], 'message', 'messages') . '</p>'
+                . $dernier . '</li>';
         }
-        $html .= '</ul></section>';
+        $html .= '</ul>' . $pied . '</section>';
     }
 
     return $html;
 }
 
 /**
- * Un forum : ses sujets, épinglés d'abord, puis le formulaire.
+ * Un forum : le bouton « Nouveau sujet » en tête, comme sur phpBB et Reddit,
+ * ses sujets en lignes, épinglés d'abord, puis le formulaire.
  *
  * @param array<string, mixed>       $forum  adresse, etat
- * @param list<array<string, mixed>> $sujets id, pseudo, titre, epingle, verrouille, reponses, dernier_pseudo, dernier_ts
+ * @param list<array<string, mixed>> $sujets id, pseudo, titre, epingle, verrouille, reponses, dernier_pseudo,
+ *                                           dernier_ts, creation_ts
  */
 function rendreForum(array $forum, array $sujets, int $page, int $pages, ?array $membre): string
 {
     $adresse = (string) $forum['adresse'];
+    $ferme = $forum['etat'] !== 'ouvert';
+
+    $html = $membre !== null && !$ferme
+        ? '<p class="actions-forum"><a class="bouton-nouveau" href="#titre-ecrire">Nouveau sujet</a></p>'
+        : '';
+    $html .= '<section class="tableau-forum tableau-sujets" aria-labelledby="titre-sujets">'
+        . barreTableau('Sujets', 'titre-sujets', ['Réponses', 'Dernier message']);
 
     if ($sujets === []) {
-        $html = '<p class="aide">Aucun sujet pour l\'instant. Ouvrez le premier.</p>';
+        $html .= '<p class="ligne-vide">Aucun sujet pour l\'instant. Ouvrez le premier.</p>';
     } else {
-        $html = '<ul class="liste-sujets">';
+        $html .= '<ul class="lignes-forum">';
         foreach ($sujets as $s) {
-            $etiquettes = ((int) $s['epingle'] === 1 ? '<span class="etiquette">Épinglé</span> ' : '')
+            $id = (int) $s['id'];
+            $epingle = (int) $s['epingle'] === 1;
+            $etiquettes = ($epingle ? '<span class="etiquette">Épinglé</span> ' : '')
                 . ((int) $s['verrouille'] === 1 ? '<span class="etiquette">Fermé</span> ' : '');
-            $html .= '<li><p class="titre-sujet">' . $etiquettes
-                . '<a href="' . e(lienSujet($adresse, (int) $s['id'])) . '">' . e((string) $s['titre']) . '</a></p>'
-                . '<p class="meta">par ' . e((string) $s['pseudo']) . ' · ' . compte((int) $s['reponses'], 'réponse', 'réponses')
-                . ' · dernier message de ' . e((string) $s['dernier_pseudo']) . ' le ' . balisageDate((int) $s['dernier_ts'])
-                . '</p></li>';
+            $html .= '<li class="ligne-forum' . ($epingle ? ' epingle' : '') . '"><div class="intitule">'
+                . '<p class="titre-sujet">' . $etiquettes . '<a href="' . e(lienSujet($adresse, $id)) . '">' . e((string) $s['titre']) . '</a></p>'
+                . '<p class="meta">par ' . e((string) $s['pseudo']) . ', ' . balisageDate((int) $s['creation_ts']) . '</p></div>'
+                . '<p class="compte">' . nombreColonne((int) $s['reponses'], 'réponse', 'réponses') . '</p>'
+                . celluleDernier(null, lienSujet($adresse, $id, pageDuMessage((int) $s['reponses'])), (string) $s['dernier_pseudo'], (int) $s['dernier_ts'])
+                . '</li>';
         }
         $html .= '</ul>';
     }
-    $html .= pagination('/forum/' . $adresse . '/', $page, $pages);
+    $html .= '</section>' . pagination('/forum/' . $adresse . '/', $page, $pages);
 
-    $ferme = $forum['etat'] !== 'ouvert';
     $html .= '<section class="ecrire" aria-labelledby="titre-ecrire"><h2 id="titre-ecrire">Ouvrir un sujet</h2>'
         . pasDeFormulaire($membre, 'ouvrir un sujet', $ferme, 'Ce forum est fermé à l\'écriture.');
     if ($membre !== null && !$ferme) {
@@ -280,7 +346,7 @@ function rendreForum(array $forum, array $sujets, int $page, int $pages, ?array 
             . '<input id="titre-sujet" name="titre" required minlength="' . TITRE_SUJET_MIN . '" maxlength="' . TITRE_SUJET_MAX . '" /></div>'
             . '<div class="champ"><label for="texte-sujet">Message</label>'
             . '<textarea id="texte-sujet" name="texte" rows="8" required maxlength="' . MESSAGE_FORUM_MAX . '" aria-describedby="aide-sujet"></textarea>'
-            . aideBalises('aide-sujet') . barreSmileys() . '</div>'
+            . barreSmileys() . aideBalises('aide-sujet') . '</div>'
             . '<div class="actions"><button type="submit">Publier le sujet</button></div>'
             . '<p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p></form>';
     }
@@ -289,11 +355,14 @@ function rendreForum(array $forum, array $sujets, int $page, int $pages, ?array 
 }
 
 /**
- * Un sujet : ses messages, puis la réponse.
+ * Un sujet : chaque message avec son auteur en colonne, comme un phpBB, son
+ * numéro en lien permanent, et « Auteur du sujet » sur les messages de qui
+ * l'a ouvert, comme le OP de Reddit. Puis la réponse.
  *
  * @param array<string, mixed>       $forum    adresse, etat
- * @param array<string, mixed>       $sujet    id, titre, verrouille, reponses
- * @param list<array<string, mixed>> $messages id, pseudo, pseudo_actuel, banni, texte, sensible, masque_par, date_ts
+ * @param array<string, mixed>       $sujet    id, membre_id, titre, verrouille, reponses
+ * @param list<array<string, mixed>> $messages id, membre_id, pseudo, pseudo_actuel, banni, inscription_ts,
+ *                                             texte, sensible, masque_par, date_ts
  * @param list<array{code: string, fichier: string, alt: string}> $smileys
  */
 function rendreSujet(array $forum, array $sujet, array $messages, int $page, int $pages, ?array $membre, bool $abonne, array $smileys): string
@@ -301,36 +370,68 @@ function rendreSujet(array $forum, array $sujet, array $messages, int $page, int
     $sujetId = (int) $sujet['id'];
     $ferme = (int) $sujet['verrouille'] === 1 || $forum['etat'] !== 'ouvert';
     $peutEcrire = $membre !== null && !$ferme;
+    $auteurSujet = $sujet['membre_id'] ?? null;
 
     $html = '<p class="meta-sujet">' . compte((int) $sujet['reponses'], 'réponse', 'réponses');
+    if ($peutEcrire) {
+        $html .= ' <a class="bouton-nouveau" href="#titre-ecrire">Répondre</a>';
+    }
     if ($membre !== null) {
         $html .= ' <button type="button" class="bouton-suivre" data-suivre data-sujet="' . $sujetId . '"'
             . ' aria-pressed="' . ($abonne ? 'true' : 'false') . '">Suivre ce sujet</button>';
     }
-    $html .= '</p><ol class="messages-forum" start="' . (($page - 1) * MESSAGES_PAR_PAGE + 1) . '">';
+    // Le créateur d'un forum de membre, et l'admin, épinglent et ferment.
+    if (peutGererForum($membre, $forum)) {
+        $epingle = (int) ($sujet['epingle'] ?? 0) === 1;
+        $html .= ' <button type="button" class="bouton-citer" data-gerer="epingler" data-sujet="' . $sujetId . '" data-valeur="'
+            . ($epingle ? '0' : '1') . '">' . ($epingle ? 'Désépingler' : 'Épingler') . '</button>'
+            . ' <button type="button" class="bouton-citer" data-gerer="verrouiller" data-sujet="' . $sujetId . '" data-valeur="'
+            . ((int) $sujet['verrouille'] === 1 ? '0' : '1') . '">' . ((int) $sujet['verrouille'] === 1 ? 'Rouvrir' : 'Fermer') . '</button>';
+    }
+    $html .= '</p><ol class="messages-forum">';
 
-    foreach ($messages as $m) {
+    foreach (array_values($messages) as $i => $m) {
+        $numero = ($page - 1) * MESSAGES_PAR_PAGE + $i + 1;
+        $ancre = 'message-' . (int) $m['id'];
         $pseudo = (string) ($m['pseudo_actuel'] ?? $m['pseudo']);
         // Un compte effacé ou banni n'a plus de profil : son nom reste, sans lien.
         $auteur = ($m['pseudo_actuel'] ?? null) !== null && (int) $m['banni'] === 0
             ? '<a href="/membres/' . e($pseudo) . '/">' . e($pseudo) . '</a>'
             : e($pseudo);
-        $html .= '<li><article class="message-forum" id="message-' . (int) $m['id'] . '">'
-            . '<header><strong class="auteur">' . $auteur . '</strong> ' . balisageDate((int) $m['date_ts']) . '</header>';
+        $op = $auteurSujet !== null && (int) ($m['membre_id'] ?? 0) === (int) $auteurSujet;
+        $visible = ($m['pseudo_actuel'] ?? null) !== null && (int) $m['banni'] === 0;
+        // L'avatar est décoratif : le pseudo, juste à côté, dit qui écrit.
+        $avatar = $visible && ($m['avatar_v'] ?? null) !== null
+            ? '<img class="avatar" src="' . e(adresseAvatar($pseudo, (int) $m['avatar_v'])) . '" alt="" width="64" height="64" loading="lazy">'
+            : '';
+
+        $html .= '<li><article class="message-forum" id="' . $ancre . '">'
+            . '<div class="auteur-message">' . $avatar . '<strong class="auteur">' . $auteur . '</strong>'
+            . ($op ? '<span class="etiquette etiquette-op">Auteur du sujet</span>' : '')
+            . (($m['inscription_ts'] ?? null) !== null ? '<span class="meta">Membre depuis ' . e(dateFr((int) $m['inscription_ts'], false)) . '</span>' : '')
+            . '</div><div class="corps-message">'
+            . '<header><a class="numero" href="#' . $ancre . '" aria-label="Lien vers le message ' . $numero . '">#' . $numero . '</a> '
+            . balisageDate((int) $m['date_ts']) . '</header>';
 
         if ($m['masque_par'] !== null) {
-            $html .= '<p class="aide">Message masqué par la modération.</p></article></li>';
+            $html .= '<p class="aide">Message masqué par la modération.</p></div></article></li>';
             continue;
         }
         if ((int) $m['sensible'] === 1) {
             $html .= '<p class="avertissement" role="note">' . AVERTISSEMENT_DOPAGE . '</p>';
         }
         $html .= '<div class="texte">' . rendreTexte((string) $m['texte'], $smileys) . '</div>';
-        if ($peutEcrire) {
-            $html .= '<footer><button type="button" class="bouton-citer" data-citer data-pseudo="' . e($pseudo)
-                . '" data-texte="' . e((string) $m['texte']) . '">Citer</button></footer>';
+        // Citer qui veut répondre ; signaler ce qu'un autre a écrit.
+        $gestes = ($peutEcrire ? '<button type="button" class="bouton-citer" data-citer data-pseudo="' . e($pseudo)
+                . '" data-texte="' . e((string) $m['texte']) . '">Citer</button>' : '')
+            . ($membre !== null && (int) ($m['membre_id'] ?? 0) !== (int) $membre['id']
+                ? '<button type="button" class="bouton-signaler" data-signaler data-type="message_forum" data-cible="'
+                    . (int) $m['id'] . '">Signaler</button>'
+                : '');
+        if ($gestes !== '') {
+            $html .= '<footer>' . $gestes . '</footer>';
         }
-        $html .= '</article></li>';
+        $html .= '</div></article></li>';
     }
     $html .= '</ol>' . pagination(lienSujet((string) $forum['adresse'], $sujetId), $page, $pages);
 
@@ -340,7 +441,7 @@ function rendreSujet(array $forum, array $sujet, array $messages, int $page, int
         $html .= '<form class="form-compte" data-forum-reponse data-sujet="' . $sujetId . '" novalidate>'
             . '<div class="champ"><label for="texte-reponse">Votre réponse</label>'
             . '<textarea id="texte-reponse" name="texte" rows="6" required maxlength="' . MESSAGE_FORUM_MAX . '" aria-describedby="aide-reponse"></textarea>'
-            . aideBalises('aide-reponse') . barreSmileys() . '</div>'
+            . barreSmileys() . aideBalises('aide-reponse') . '</div>'
             . '<div class="actions"><button type="submit">Publier la réponse</button></div>'
             . '<p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p></form>';
     }
@@ -468,16 +569,29 @@ function suivreSujet(int $membreId, int $sujetId, bool $suivre): void
 
 /* --- Lectures, partagées par forum-page.php et db/verifier.php --------- */
 
-/** Les forums visibles, avec leur nombre de sujets et de messages. */
+/**
+ * Les forums visibles, leur nombre de sujets et de messages, et leur sujet
+ * le plus récemment actif, pour la colonne « Dernier message ». `d` en tient
+ * une ligne au plus par forum : les comptes ne sont pas multipliés.
+ * ANY_VALUE : ses colonnes ne dépendent pas de `f.id` aux yeux de MySQL en
+ * mode ONLY_FULL_GROUP_BY, bien qu'elles n'aient qu'une valeur.
+ */
 function forumsDeLAccueil(): array
 {
     return lignes(
         "SELECT f.categorie_id, f.adresse, f.titre, f.description,
                 COUNT(s.id) AS sujets,
                 COALESCE(SUM(s.reponses + 1), 0) AS messages,
-                UNIX_TIMESTAMP(MAX(s.date_dernier)) AS dernier_ts
+                ANY_VALUE(d.id) AS dernier_id,
+                ANY_VALUE(d.titre) AS dernier_titre,
+                ANY_VALUE(d.dernier_pseudo) AS dernier_pseudo,
+                ANY_VALUE(d.reponses) AS dernier_reponses,
+                UNIX_TIMESTAMP(ANY_VALUE(d.date_dernier)) AS dernier_ts
            FROM forum f
            LEFT JOIN sujet s ON s.forum_id = f.id
+           LEFT JOIN sujet d ON d.id = (
+                SELECT s2.id FROM sujet s2 WHERE s2.forum_id = f.id
+                 ORDER BY s2.date_dernier DESC, s2.id DESC LIMIT 1)
           WHERE f.etat <> 'masque'
           GROUP BY f.id
           ORDER BY f.ordre, f.id",
@@ -489,7 +603,7 @@ function sujetsDuForum(int $forumId, int $page): array
 {
     return lignes(
         'SELECT id, pseudo, titre, epingle, verrouille, reponses, dernier_pseudo,
-                UNIX_TIMESTAMP(date_dernier) AS dernier_ts
+                UNIX_TIMESTAMP(date_dernier) AS dernier_ts, UNIX_TIMESTAMP(date_creation) AS creation_ts
            FROM sujet WHERE forum_id = :f
           ORDER BY epingle DESC, date_dernier DESC, id DESC
           LIMIT ' . SUJETS_PAR_PAGE . ' OFFSET ' . (($page - 1) * SUJETS_PAR_PAGE),
@@ -501,13 +615,194 @@ function sujetsDuForum(int $forumId, int $page): array
 function messagesDuSujet(int $sujetId, int $page): array
 {
     return lignes(
-        'SELECT mf.id, mf.pseudo, mf.texte, mf.sensible, mf.masque_par,
-                UNIX_TIMESTAMP(mf.date_creation) AS date_ts, m.pseudo AS pseudo_actuel, m.banni
+        'SELECT mf.id, mf.membre_id, mf.pseudo, mf.texte, mf.sensible, mf.masque_par,
+                UNIX_TIMESTAMP(mf.date_creation) AS date_ts, m.pseudo AS pseudo_actuel, m.banni,
+                UNIX_TIMESTAMP(m.date_inscription) AS inscription_ts, UNIX_TIMESTAMP(a.date_maj) AS avatar_v
            FROM message_forum mf
            LEFT JOIN membre m ON m.id = mf.membre_id
+           LEFT JOIN avatar a ON a.membre_id = mf.membre_id
           WHERE mf.sujet_id = :s
           ORDER BY mf.id
           LIMIT ' . MESSAGES_PAR_PAGE . ' OFFSET ' . (($page - 1) * MESSAGES_PAR_PAGE),
         ['s' => $sujetId],
     );
+}
+
+/* --- Forums des membres (docs/forum.md, section 6) --------------------- */
+
+const CATEGORIE_MEMBRES = 9;
+const FORUMS_PAR_MOIS = 1;
+const ANCIENNETE_FORUM_JOURS = 30;
+const TITRE_FORUM_MIN = 3;
+const TITRE_FORUM_MAX = 80;
+const DESCRIPTION_FORUM_MAX = 200;
+/** Des adresses que le site emploie déjà sous /forum/. */
+const ADRESSES_RESERVEES = ['fil', 'gabarit'];
+
+/** Membre confirmé depuis 30 jours, comme pour voter. */
+function peutCreerForum(?array $membre, int $maintenant): bool
+{
+    if (!estActif($membre)) {
+        return false;
+    }
+    $inscription = strtotime((string) ($membre['date_inscription'] ?? ''));
+
+    return $inscription !== false && $maintenant - $inscription >= ANCIENNETE_FORUM_JOURS * 86400;
+}
+
+/** Épingler et fermer : le créateur dans son forum, l'admin partout. */
+function peutGererForum(?array $membre, array $forum): bool
+{
+    return estActif($membre)
+        && (estAdmin($membre)
+            || (($forum['createur_id'] ?? null) !== null && (int) $forum['createur_id'] === (int) $membre['id']));
+}
+
+/** « Préparation au championnat de France » devient « preparation-au-championnat-de-france ». */
+function adresseDepuisTitre(string $titre): string
+{
+    $adresse = trim(str_replace(' ', '-', trim(normaliserMots($titre))), '-');
+    $adresse = rtrim(substr($adresse, 0, 50), '-');
+
+    return match (true) {
+        $adresse === '' => 'forum',
+        in_array($adresse, ADRESSES_RESERVEES, true) => 'forum-' . $adresse,
+        default => $adresse,
+    };
+}
+
+function forumsCreesCeMois(int $membreId): int
+{
+    return (int) (ligne(
+        'SELECT COUNT(*) AS n FROM forum WHERE createur_id = :m AND date_creation > NOW() - INTERVAL 30 DAY',
+        ['m' => $membreId],
+    )['n'] ?? 0);
+}
+
+/** Crée le forum, publié aussitôt (choix de l'auteur du 7 novembre). Rend son adresse. */
+function creerForumMembre(array $membre, string $titre, string $description): string
+{
+    $base = adresseDepuisTitre($titre);
+    $adresse = $base;
+    for ($n = 2; ligne('SELECT 1 AS n FROM forum WHERE adresse = :a', ['a' => $adresse]) !== null; $n++) {
+        $adresse = $base . '-' . $n;
+    }
+    executer(
+        'INSERT INTO forum (categorie_id, adresse, titre, description, createur_id) VALUES (:c, :a, :t, :d, :m)',
+        ['c' => CATEGORIE_MEMBRES, 'a' => $adresse, 't' => $titre, 'd' => $description, 'm' => $membre['id']],
+    );
+
+    return $adresse;
+}
+
+/**
+ * Un forum de membre sans message depuis six mois passe en archive, lisible
+ * et fermé à l'écriture. Fait à la lecture de l'accueil : aucune tâche
+ * planifiée à configurer. Rend le nombre de forums archivés.
+ */
+function archiverForumsInactifs(): int
+{
+    return executer(
+        "UPDATE forum f SET f.etat = 'archive'
+          WHERE f.createur_id IS NOT NULL AND f.etat = 'ouvert'
+            AND f.date_creation < NOW() - INTERVAL 6 MONTH
+            AND NOT EXISTS (SELECT 1 FROM sujet s WHERE s.forum_id = f.id AND s.date_dernier > NOW() - INTERVAL 6 MONTH)",
+    );
+}
+
+/** Épingle ou ferme un sujet. `$champ` vient du code, jamais de la requête. */
+function marquerSujet(int $sujetId, string $champ, bool $valeur): void
+{
+    if (!in_array($champ, ['epingle', 'verrouille'], true)) {
+        return;
+    }
+    executer("UPDATE sujet SET $champ = :v WHERE id = :s", ['v' => $valeur ? 1 : 0, 's' => $sujetId]);
+}
+
+/* --- Le fil (docs/forum.md, section 6 ter) ------------------------------ */
+
+/**
+ * Les nouveaux sujets, les réponses et les performances vérifiées, mêlés par
+ * date. Les nouveaux membres n'y entrent pas : un pseudo qui arrive n'apprend
+ * rien au lecteur.
+ *
+ * @return list<array<string, mixed>>
+ */
+function filActualite(): array
+{
+    return lignes(
+        "SELECT * FROM (
+            (SELECT 'sujet' AS nature, s.id AS sujet_id, NULL AS message_id, s.titre, s.pseudo, f.adresse,
+                    CONCAT(c.titre, ', ', f.titre) AS forum, 0 AS position, NULL AS mouvement, NULL AS charge_kg,
+                    UNIX_TIMESTAMP(s.date_creation) AS date_ts
+               FROM sujet s JOIN forum f ON f.id = s.forum_id JOIN forum_categorie c ON c.id = f.categorie_id
+              WHERE f.etat <> 'masque'
+              ORDER BY s.date_creation DESC LIMIT 30)
+            UNION ALL
+            (SELECT 'reponse', s.id, mf.id, s.titre, mf.pseudo, f.adresse, CONCAT(c.titre, ', ', f.titre),
+                    (SELECT COUNT(*) FROM message_forum m2 WHERE m2.sujet_id = mf.sujet_id AND m2.id < mf.id),
+                    NULL, NULL, UNIX_TIMESTAMP(mf.date_creation)
+               FROM message_forum mf JOIN sujet s ON s.id = mf.sujet_id
+               JOIN forum f ON f.id = s.forum_id JOIN forum_categorie c ON c.id = f.categorie_id
+              WHERE f.etat <> 'masque' AND mf.masque_par IS NULL
+                AND mf.id <> (SELECT MIN(m3.id) FROM message_forum m3 WHERE m3.sujet_id = mf.sujet_id)
+              ORDER BY mf.id DESC LIMIT 30)
+            UNION ALL
+            (SELECT CASE WHEN p.date_verif_admin IS NOT NULL THEN 'badge_admin' ELSE 'badge_communaute' END,
+                    NULL, NULL, NULL, m.pseudo, NULL, NULL, 0, p.mouvement, p.charge_kg,
+                    UNIX_TIMESTAMP(COALESCE(p.date_verif_admin, p.date_verif_communaute))
+               FROM performance p JOIN membre m ON m.id = p.membre_id
+              WHERE (p.date_verif_admin IS NOT NULL OR p.date_verif_communaute IS NOT NULL) AND m.banni = 0
+              ORDER BY COALESCE(p.date_verif_admin, p.date_verif_communaute) DESC LIMIT 30)
+         ) AS fil
+         ORDER BY date_ts DESC
+         LIMIT 50",
+    );
+}
+
+/** Le fil en HTML, une ligne par évènement, à la manière d'un fil Reddit. */
+function rendreFil(array $evenements): string
+{
+    if ($evenements === []) {
+        return '<p class="aide">Rien pour l\'instant. Le fil se remplit des sujets, des réponses et des performances vérifiées.</p>';
+    }
+    $html = '<ol class="fil-actualite">';
+    foreach ($evenements as $ev) {
+        $quand = balisageDate((int) $ev['date_ts']);
+        $pseudo = e((string) $ev['pseudo']);
+        $html .= '<li class="evenement">' . match ($ev['nature']) {
+            'sujet' => '<p class="meta">Nouveau sujet · ' . e((string) $ev['forum']) . '</p>'
+                . '<p class="titre-sujet"><a href="' . e(lienSujet((string) $ev['adresse'], (int) $ev['sujet_id'])) . '">'
+                . e((string) $ev['titre']) . '</a></p><p class="meta">par ' . $pseudo . ', ' . $quand . '</p>',
+            'reponse' => '<p class="meta">Réponse · ' . e((string) $ev['forum']) . '</p>'
+                . '<p class="titre-sujet"><a href="' . e(lienSujet((string) $ev['adresse'], (int) $ev['sujet_id'], pageDuMessage((int) $ev['position']))
+                    . '#message-' . (int) $ev['message_id']) . '">' . e((string) $ev['titre']) . '</a></p>'
+                . '<p class="meta">par ' . $pseudo . ', ' . $quand . '</p>',
+            default => '<p class="meta">Performance vérifiée ' . ($ev['nature'] === 'badge_admin' ? 'par SBD.re' : 'par la communauté') . '</p>'
+                . '<p class="titre-sujet"><a href="/membres/' . $pseudo . '/">' . $pseudo . ', '
+                . e(mb_strtolower(MOUVEMENTS[(string) $ev['mouvement']] ?? '')) . ' ' . kgFr((float) $ev['charge_kg']) . '</a></p>'
+                . '<p class="meta">' . $quand . '</p>',
+        } . '</li>';
+    }
+
+    return $html . '</ol>';
+}
+
+/** Le formulaire « Créer un forum », sous la catégorie des membres. */
+function formulaireCreerForum(?array $membre): string
+{
+    if ($membre === null) {
+        return '<p class="ligne-vide creer-forum"><a href="/compte/connexion/">Connectez-vous</a> pour créer un forum.</p>';
+    }
+
+    return '<details class="repli creer-forum"><summary>Créer un forum</summary>'
+        . '<form class="form-compte" data-forum-creer novalidate>'
+        . '<p class="aide">Un forum public sur un sujet précis : une salle, un programme, une compétition à préparer. '
+        . 'Il paraît aussitôt. Membre depuis ' . ANCIENNETE_FORUM_JOURS . ' jours, un forum par mois.</p>'
+        . '<div class="champ"><label for="titre-forum">Nom du forum</label>'
+        . '<input id="titre-forum" name="titre" required minlength="' . TITRE_FORUM_MIN . '" maxlength="' . TITRE_FORUM_MAX . '" /></div>'
+        . '<div class="champ"><label for="description-forum">Description</label>'
+        . '<input id="description-forum" name="description" maxlength="' . DESCRIPTION_FORUM_MAX . '" /></div>'
+        . '<div class="actions"><button type="submit">Créer le forum</button></div>'
+        . '<p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p></form></details>';
 }

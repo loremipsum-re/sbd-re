@@ -5,20 +5,30 @@
  */
 import { SMILEYS, decouper } from './smileys';
 
-/** Pose une barre dans chaque `[data-smileys]`, reliée au champ de son formulaire. */
+/**
+ * Pose, dans chaque `[data-smileys]`, un petit panneau replié « Smileys »,
+ * à la manière des forums phpBB, relié au champ de son formulaire. Demande
+ * de l'auteur du 7 novembre : les smileys ne s'affichent pas en gros.
+ */
 export function brancherBarresSmileys(racine: ParentNode = document): void {
-  for (const barre of racine.querySelectorAll<HTMLElement>('[data-smileys]')) {
-    const champ = barre.closest('form')?.querySelector<HTMLTextAreaElement | HTMLInputElement>('textarea, input[name="texte"]');
+  for (const zone of racine.querySelectorAll<HTMLElement>('[data-smileys]')) {
+    const champ = zone.closest('form')?.querySelector<HTMLTextAreaElement | HTMLInputElement>('textarea, input[name="texte"]');
     if (!champ) continue;
-    barre.replaceChildren(
+
+    const panneau = Object.assign(document.createElement('details'), { className: 'panneau-smileys' });
+    const titre = Object.assign(document.createElement('summary'), { textContent: 'Smileys' });
+    const grille = Object.assign(document.createElement('div'), { className: 'grille-smileys' });
+    grille.append(
       ...SMILEYS.map((s) => {
-        const bouton = Object.assign(document.createElement('button'), { type: 'button', className: 'bouton-smiley' });
+        const bouton = Object.assign(document.createElement('button'), { type: 'button', title: s.code });
         bouton.setAttribute('aria-label', `Insérer ${s.code}, ${s.alt}`);
         bouton.append(Object.assign(document.createElement('img'), { src: `/smileys/${s.fichier}.svg`, alt: '' }));
         bouton.addEventListener('click', () => inserer(champ, s.code));
         return bouton;
       }),
     );
+    panneau.append(titre, grille);
+    zone.replaceChildren(panneau);
   }
 }
 

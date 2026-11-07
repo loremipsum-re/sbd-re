@@ -57,6 +57,8 @@ DirectoryIndex index.html
   # /forum/, /forum/<adresse>/ et /forum/<adresse>/<sujet>/ : api/forum-page.php
   # les rend depuis le gabarit /forum/-gabarit/, qui répond 404. QSA garde
   # « ?page=N ».
+  # Les avatars, gardés en base et servis par api/avatar.php.
+  RewriteRule ^avatars/([a-z0-9._]+)\.webp$ api/avatar.php?pseudo=$1 [B,QSA,L]
   RewriteRule ^forum/-gabarit - [R=404,L]
   RewriteRule ^forum$ https://%{HTTP_HOST}/forum/ [R=301,L]
   RewriteRule ^forum/$ api/forum-page.php [QSA,L]

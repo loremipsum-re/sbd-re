@@ -36,6 +36,9 @@ if ($methode === 'GET') {
     $prochain = prochainChangement($compte['date_pseudo'] ?? null, DELAI_PSEUDO_MOIS, time());
     $compte['pseudo_prochain'] = $prochain > 0 ? dateFr($prochain) : '';
     unset($compte['date_instagram'], $compte['date_pseudo']);
+    $avatar = ligne('SELECT UNIX_TIMESTAMP(date_maj) AS v FROM avatar WHERE membre_id = :id', ['id' => $membre['id']]);
+    $compte['admin'] = estAdmin($membre);
+    $compte['avatar'] = $avatar !== null ? '/avatars/' . $compte['pseudo'] . '.webp?v=' . (int) $avatar['v'] : '';
 
     repondreOk('', ['compte' => $compte]);
 }

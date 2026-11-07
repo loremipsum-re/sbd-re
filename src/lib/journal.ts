@@ -51,6 +51,14 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-07',
     nature: 'fonction',
+    version: '1.9.17',
+    titre: 'Le fil, les forums des membres et les avatars, en essai',
+    texte:
+      "Le forum se lit comme un phpBB, une catégorie par barre et les colonnes nommées. Les membres en essai y créent leurs forums, suivent le fil de l'activité, signalent ce qui enfreint la charte et choisissent un avatar.",
+  },
+  {
+    date: '2026-11-07',
+    nature: 'fonction',
     version: '1.9.16',
     titre: 'Le forum, le chat et les notifications, en essai',
     texte:

@@ -143,6 +143,17 @@ import '../../styles/compte.css';
     choix.append(oui, non);
     ligne.append(tete, quoi, avis, choix);
 
+    // Une vidéo qui ne montre pas la barre, ou celle d'un autre : la file de l'admin.
+    const signaler = Object.assign(document.createElement('button'), { type: 'button', className: 'secondaire', textContent: 'Signaler' });
+    signaler.addEventListener('click', async () => {
+      if (!confirm("Signaler cette performance à l'admin ?")) return;
+      signaler.disabled = true;
+      const r = await api('/api/signalements.php', 'POST', { type: 'performance', cible_id: b.id });
+      afficher(etat, r.message, r.ok);
+      if (!r.ok) signaler.disabled = false;
+    });
+    ligne.append(signaler);
+
     if (admin) {
       const badge = bouton('Poser le badge SBD.re');
       badge.className = 'secondaire';

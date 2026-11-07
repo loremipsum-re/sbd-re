@@ -173,6 +173,10 @@ CREATE TABLE IF NOT EXISTS performance (
   admin_id        BIGINT UNSIGNED NULL     DEFAULT NULL,
   date_verif_admin DATETIME       NULL     DEFAULT NULL,
 
+  -- Le jour où l'avis qui fait franchir le seuil du badge communauté est
+  -- donné (votes.php) : le fil d'actualité date ainsi la vérification.
+  date_verif_communaute DATETIME  NULL     DEFAULT NULL,
+
   date_creation   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   PRIMARY KEY (id),
@@ -278,7 +282,7 @@ CREATE TABLE IF NOT EXISTS message (
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS signalement (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  type            ENUM('message','membre','performance','message_forum') NOT NULL,
+  type            ENUM('message','membre','performance','message_forum','forum') NOT NULL,
   cible_id        BIGINT UNSIGNED NOT NULL,
 
   -- NULL si l'auteur efface son compte : le signalement reste à traiter.
@@ -529,3 +533,26 @@ INSERT IGNORE INTO forum (categorie_id, adresse, titre, description, ordre) VALU
   (7, 'resultats', 'Résultats', 'Les compétitions passées et leurs barres.', 20),
   (7, 'reglement', 'Règlement et arbitrage', 'Règles techniques, tenue, pesée.', 30),
   (8, 'discussions-libres', 'Discussions libres', 'Tout ce qui n''a pas sa place ailleurs.', 10);
+
+
+-- -----------------------------------------------------------------------------
+-- avatar
+--
+-- EN BASE ET NON EN FICHIER : le déploiement efface du serveur tout fichier
+-- absent du site généré (`mirror --delete`, .github/workflows/deploy.yml). Un
+-- avatar déposé dans le dossier public partirait au déploiement suivant.
+-- L'image est réencodée en WebP 300 × 300 par GD avant d'entrer ici, ce qui
+-- efface ses métadonnées (la position GPS d'une photo, par exemple), et pèse
+-- quelques dizaines de kilo-octets. api/avatar.php la sert.
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS avatar (
+  membre_id       BIGINT UNSIGNED NOT NULL,
+  image           MEDIUMBLOB      NOT NULL,
+  date_maj        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (membre_id),
+
+  CONSTRAINT fk_avatar_membre FOREIGN KEY (membre_id) REFERENCES membre (id)
+    ON DELETE CASCADE,
+  CONSTRAINT ck_avatar_taille CHECK (LENGTH(image) BETWEEN 1 AND 200000)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

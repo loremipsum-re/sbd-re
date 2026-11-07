@@ -16,6 +16,7 @@
  * Le script branche les formulaires que PHP écrit : ouvrir un sujet,
  * répondre, citer, suivre, et la barre de smileys.
  */
+import FenetreConfirmation from '../../components/FenetreConfirmation.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import '../../styles/compte.css';
 import '../../styles/communaute.css';
@@ -35,10 +36,12 @@ import '../../styles/communaute.css';
   </div>
 
   %%DONNEES%%
+
+  <FenetreConfirmation />
 </BaseLayout>
 
 <script>
-  import { afficher, api, brancher, champ, type ReponseApi } from '../../lib/api-compte';
+  import { afficher, api, brancher, champ, confirmer, type ReponseApi } from '../../lib/api-compte';
   import { brancherBarresSmileys } from '../../lib/barre-smileys';
 
   brancherBarresSmileys();
@@ -103,6 +106,46 @@ import '../../styles/communaute.css';
       // Le message dit l'état, pour qui ne voit pas l'aplat.
       const etat = document.querySelector<HTMLElement>('[data-forum-reponse] [data-etat]');
       if (etat) afficher(etat, r.message, r.ok);
+    });
+  }
+
+  // Créer un forum de membre (docs/forum.md, section 6) : publié aussitôt.
+  const formForum = document.querySelector<HTMLFormElement>('[data-forum-creer]');
+  if (formForum) {
+    brancher(
+      formForum,
+      (d) => api('/api/forum.php', 'POST', { action: 'creer_forum', titre: champ(d, 'titre'), description: champ(d, 'description') }),
+      (r) => aller(r.lien as string),
+    );
+  }
+
+  // Épingler, fermer : le créateur du forum et l'admin. La page se recharge
+  // pour montrer le nouvel état partout où il compte.
+  for (const bouton of document.querySelectorAll<HTMLButtonElement>('[data-gerer]')) {
+    bouton.addEventListener('click', async () => {
+      bouton.disabled = true;
+      const r = await api('/api/forum.php', 'POST', {
+        action: bouton.dataset.gerer,
+        sujet_id: Number(bouton.dataset.sujet),
+        valeur: bouton.dataset.valeur === '1',
+      });
+      if (r.ok) location.reload();
+      else bouton.disabled = false;
+    });
+  }
+
+  // Signaler un message : il part dans la file de l'admin.
+  for (const bouton of document.querySelectorAll<HTMLButtonElement>('[data-signaler]')) {
+    bouton.addEventListener('click', async () => {
+      const oui = await confirmer(
+        ["Le message part dans la file de l'admin, qui juge d'après la charte.", "Son auteur ne sait pas qui l'a signalé."],
+        'Signaler ce message',
+      );
+      if (!oui) return;
+      bouton.disabled = true;
+      const r = await api('/api/signalements.php', 'POST', { type: bouton.dataset.type, cible_id: Number(bouton.dataset.cible) });
+      bouton.textContent = r.ok ? 'Signalé' : 'Réessayer';
+      bouton.disabled = r.ok;
     });
   }
 </script>

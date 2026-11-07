@@ -6,6 +6,11 @@
  * styles d'un fichier. Marque Modernist : bordures de 2 px, aplats francs,
  * aucune ombre. Le jaune reste un accent de texte (--accent) ou un aplat
  * sous --on-accent (--accent-fill), jamais l'inverse.
+ *
+ * LA LECTURE, revue le 7 novembre à la demande de l'auteur, d'après l'index
+ * d'un phpBB et Reddit : une barre par catégorie qui nomme les colonnes,
+ * une ligne par forum ou par sujet, le titre en gras, le reste en petit et
+ * en retrait. Colonnes dès 48rem, cartes en dessous.
  */
 
 .page-forum,
@@ -14,9 +19,20 @@
 }
 
 .page-forum h1,
-.page-forum .titre-sujet,
-.page-forum h3 {
+.page-forum h3,
+.titre-sujet {
   overflow-wrap: anywhere;
+}
+
+.page-forum .meta,
+.meta-sujet {
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+
+/* Le libellé d'une cellule, lu sur téléphone et par les lecteurs d'écran. */
+.libelle {
+  color: var(--muted);
 }
 
 /* --- Fil d'Ariane --------------------------------------------------- */
@@ -24,8 +40,8 @@
 .ariane ol {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  margin: 0 0 var(--space-4);
+  gap: 0 var(--space-2);
+  margin: 0 0 var(--space-2);
   padding: 0;
   list-style: none;
   font-size: var(--step--1);
@@ -43,41 +59,69 @@
   min-height: var(--cible-min);
 }
 
-/* --- Accueil et forums ------------------------------------------------ */
+/* --- Tableaux : accueil et liste des sujets --------------------------- */
 
-.categorie-forum {
-  margin-block: var(--space-8);
-}
-
-.liste-forums,
-.liste-sujets,
-.messages-forum,
-.liste-notifications {
-  display: grid;
-  gap: var(--space-3);
-  margin: var(--space-4) 0;
-  padding: 0;
-  list-style: none;
-}
-
-.liste-forums li,
-.liste-sujets li,
-.message-forum,
-.liste-notifications li {
-  min-width: 0;
-  padding: var(--space-4);
+.tableau-forum {
+  margin-block: var(--space-6);
   border: 2px solid var(--border);
   border-radius: var(--radius);
 }
 
-.liste-forums h3,
-.liste-forums p,
-.liste-sujets p,
-.message-forum p {
+.barre-tableau {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 2px solid var(--border);
+  background: var(--surface);
+}
+
+.barre-tableau h2 {
+  margin: 0;
+  font-size: var(--step-1);
+}
+
+.barre-tableau .colonne {
+  display: none;
+}
+
+.lignes-forum {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Sur téléphone, une carte : le titre, puis les comptes sur une ligne, puis
+   le dernier message. */
+.ligne-forum {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+}
+
+.ligne-forum + .ligne-forum {
+  border-top: 1px solid var(--border);
+}
+
+.ligne-forum.epingle {
+  background: var(--surface);
+}
+
+.ligne-forum .intitule,
+.ligne-forum .dernier {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.ligne-forum h3,
+.ligne-forum p {
   margin: 0;
 }
 
-.liste-forums h3 a,
+.ligne-forum h3 {
+  font-size: var(--step-0);
+}
+
+.ligne-forum h3 a,
 .titre-sujet a {
   display: inline-flex;
   align-items: center;
@@ -85,17 +129,99 @@
   font-weight: 700;
 }
 
-.page-forum .meta,
-.meta-sujet {
+.ligne-forum .description {
   font-size: var(--step--1);
   color: var(--muted);
 }
 
-.meta-sujet {
+.ligne-forum .compte {
+  font-size: var(--step--1);
+}
+
+.ligne-forum .nombre {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ligne-forum .dernier {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-3);
+  gap: 0 var(--space-2);
+  font-size: var(--step--1);
+}
+
+.ligne-forum .dernier a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  overflow-wrap: anywhere;
+}
+
+/* Une date ou une heure ne se coupe pas : « 21 h » d'un côté, « 20 » de l'autre. */
+.page-forum time {
+  white-space: nowrap;
+}
+
+.ligne-vide {
+  margin: 0;
+  padding: var(--space-4);
+  color: var(--muted);
+}
+
+@media (min-width: 48rem) {
+  /* Quatre colonnes sur l'accueil, trois dans un forum. La dernière garde une
+     largeur stable, le titre prend le reste. */
+  .barre-tableau,
+  .ligne-forum {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 6rem 6rem minmax(12rem, 15rem);
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .tableau-sujets .barre-tableau,
+  .tableau-sujets .ligne-forum {
+    grid-template-columns: minmax(0, 1fr) 6rem minmax(12rem, 15rem);
+  }
+
+  .barre-tableau .colonne {
+    display: block;
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .barre-tableau .colonne:last-child {
+    text-align: left;
+  }
+
+  .ligne-forum .compte {
+    text-align: center;
+    font-size: var(--step-0);
+  }
+
+  .ligne-forum .dernier {
+    display: grid;
+    gap: 0;
+  }
+
+  .ligne-forum .dernier a {
+    min-height: 0;
+    padding-block: var(--space-1);
+  }
+
+  /* L'en-tête de colonne dit l'unité : la cellule la garde pour les
+     lecteurs d'écran seulement. */
+  .ligne-forum .libelle {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 .page-forum .etiquette {
@@ -105,6 +231,35 @@
   font-size: var(--step--1);
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* « Auteur du sujet », le OP de Reddit : un accent de texte, jamais un aplat
+   sous du texte jaune. */
+.page-forum .etiquette-op {
+  color: var(--accent);
+}
+
+.actions-forum {
+  margin: var(--space-4) 0 0;
+}
+
+/* L'action principale de la page : l'aplat jaune sous --on-accent. */
+.bouton-nouveau {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  padding: var(--space-2) var(--space-6);
+  border: 2px solid var(--accent-fill);
+  border-radius: var(--radius);
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.bouton-nouveau:hover,
+.bouton-nouveau:focus-visible {
+  border-color: var(--accent);
 }
 
 .pagination {
@@ -121,31 +276,98 @@
   min-height: var(--cible-min);
 }
 
-/* --- Messages --------------------------------------------------------- */
+/* --- Messages d'un sujet ---------------------------------------------- */
 
-.message-forum {
-  display: grid;
+.meta-sujet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-3);
 }
 
-.message-forum header {
+.messages-forum {
+  display: grid;
+  gap: var(--space-4);
+  margin: var(--space-4) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.message-forum {
+  min-width: 0;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.auteur-message {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-2) var(--space-3);
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.auteur-message .auteur a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+}
+
+.auteur-message .meta {
   font-size: var(--step--1);
   color: var(--muted);
 }
 
-.message-forum .auteur {
-  font-size: var(--step-0);
-  color: var(--text);
+.corps-message {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-3) var(--space-4) var(--space-4);
 }
 
-.message-forum .auteur a {
+.corps-message header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+
+.corps-message .numero {
   display: inline-flex;
   align-items: center;
   min-height: var(--cible-min);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* « Suivre » se range à droite : à côté de « Répondre », deux aplats jaunes
+   se confondraient. */
+.meta-sujet .bouton-suivre {
+  margin-left: auto;
+}
+
+.corps-message footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (min-width: 48rem) {
+  /* L'auteur en colonne, à gauche du message, comme un phpBB. */
+  .message-forum {
+    display: grid;
+    grid-template-columns: 11rem minmax(0, 1fr);
+  }
+
+  .auteur-message {
+    flex-direction: column;
+    align-items: flex-start;
+    border-bottom: 0;
+    border-right: 1px solid var(--border);
+  }
 }
 
 .message-forum .texte {
@@ -161,14 +383,16 @@
 }
 
 .citation .cite {
+  margin: 0;
   font-size: var(--step--1);
   font-weight: 600;
 }
 
+/* Dans le texte, à la taille d'un mot, comme les GIF de phpBB. */
 .smiley {
-  height: 1.25em;
+  height: 1.15em;
   width: auto;
-  vertical-align: -0.25em;
+  vertical-align: -0.2em;
 }
 
 /* L'avertissement du dopage (docs/forum.md, section 5 bis) : il précède le
@@ -196,7 +420,6 @@
 
 .bouton-citer,
 .bouton-suivre,
-.bouton-smiley,
 .salons button {
   min-height: var(--cible-min);
   padding: var(--space-2) var(--space-4);
@@ -218,23 +441,60 @@
   color: var(--on-accent);
 }
 
-.barre-smileys {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
+/* --- Le panneau des smileys ------------------------------------------- */
+
+/*
+ * Replié par défaut, petit, à la manière du cadre « Smileys » de phpBB :
+ * demande de l'auteur du 7 novembre. Ses boutons font 32 px, CINQUIÈME
+ * EXCLUSION à la règle des 44 px (tokens.css) : vingt-quatre images d'un mot
+ * de haut ne tiennent pas en 44 px sans redevenir la grosse barre écartée.
+ * 32 px dépassent les 24 px du critère 2.5.8 des WCAG 2.2, et le titre
+ * « Smileys », qui ouvre le panneau, garde ses 44 px.
+ */
+.panneau-smileys {
+  max-width: 22rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 
-.bouton-smiley {
+.panneau-smileys summary {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-3);
+  font-size: var(--step--1);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.grille-smileys {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 2rem);
+  gap: var(--space-1);
+  max-height: 8.5rem;
+  padding: 0 var(--space-3) var(--space-3);
+  overflow-y: auto;
+}
+
+.grille-smileys button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--cible-min);
-  padding: var(--space-1);
-  border-width: 1px;
+  width: 2rem;
+  min-height: 2rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: pointer;
 }
 
-.bouton-smiley img {
-  height: 1.5rem;
+.grille-smileys button:hover,
+.grille-smileys button:focus-visible {
+  border-color: var(--accent);
+}
+
+.grille-smileys img {
+  height: 1.25rem;
   width: auto;
 }
 
@@ -300,9 +560,21 @@
 
 /* --- Notifications ---------------------------------------------------- */
 
+.liste-notifications {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+  padding: 0;
+  list-style: none;
+}
+
 .liste-notifications li {
   display: grid;
   gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
 }
 
 .liste-notifications a {
@@ -316,6 +588,74 @@
 }
 
 .liste-notifications .date {
+  margin: 0;
   font-size: var(--step--1);
   color: var(--muted);
+}
+
+/* --- Avatars, signalements, fil, forums des membres ------------------- */
+
+.auteur-message .avatar {
+  width: 4rem;
+  height: 4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.corps-message footer {
+  gap: var(--space-2);
+}
+
+/* Signaler reste discret : un geste rare, qui ne doit pas tenter. */
+.bouton-signaler {
+  min-height: var(--cible-min);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--step--1);
+  cursor: pointer;
+}
+
+.bouton-signaler:hover,
+.bouton-signaler:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.fil-actualite {
+  display: grid;
+  margin: var(--space-6) 0;
+  padding: 0;
+  list-style: none;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.fil-actualite .evenement {
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+}
+
+.fil-actualite .evenement + .evenement {
+  border-top: 1px solid var(--border);
+}
+
+.fil-actualite p {
+  margin: 0;
+}
+
+.creer-forum {
+  border-top: 1px solid var(--border);
+}
+
+.creer-forum > summary {
+  padding: 0 var(--space-4);
+}
+
+.creer-forum .form-compte {
+  margin: 0;
+  padding: 0 var(--space-4) var(--space-4);
 }

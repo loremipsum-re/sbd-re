@@ -1,13 +1,19 @@
 <?php
 /**
- * Les gestes de l'admin. Pour l'instant un seul, phase 6 de docs/comptes.md :
- * poser ou retirer le badge « Vérifiée par SBD.re » d'un clic.
+ * Les gestes de l'admin (docs/comptes.md, phase 8 ; docs/forum.md, étape 8).
  *
- *   POST { performance_id, verifier: true|false }
+ *   GET   la file des signalements et les forums des membres
+ *   POST  { performance_id, verifier }    poser ou retirer le badge SBD.re
+ *   POST  { action: 'masquer', type, id } masquer un message du chat ou du forum
+ *         { action: 'retirer_performance', id }
+ *         { action: 'bannir', membre_id }
+ *         { action: 'retirer_avatar', membre_id }
+ *         { action: 'forum', forum_id, etat }  ouvert, verrouille, archive, masque
+ *         { action: 'classer', type, id }      sans suite
  *
- * La file des signalements, le masquage et le bannissement arriveront ici
- * avec la phase 8. Un compte non admin reçoit 404 (exigerAdmin) : la page ne
- * confirme pas son existence à qui la cherche.
+ * Masquer, retirer et bannir classent aussi les signalements de la cible,
+ * et préviennent l'auteur. Un compte non admin reçoit 404 (exigerAdmin) : la
+ * page ne confirme pas son existence à qui la cherche.
  *
  * Devenir admin se fait à la main, en base :
  *   UPDATE membre SET role = 'admin' WHERE pseudo = '…';
@@ -21,35 +27,107 @@ define('SBDRE_API', true);
 require __DIR__ . '/lib/comptes.php';
 require __DIR__ . '/lib/performances.php';
 require __DIR__ . '/lib/notifications.php';
+require __DIR__ . '/lib/signalements.php';
+require __DIR__ . '/lib/avatar.php';
 
-ouvrirApi(['POST']);
+$methode = ouvrirApi(['GET', 'POST']);
 $admin = exigerAdmin();
 
-$id = entree()['performance_id'] ?? null;
-$verifier = entree()['verifier'] ?? null;
-if (!is_int($id) || $id <= 0 || !is_bool($verifier)) {
-    refuser(422, 'Demande illisible.');
+if ($methode === 'GET') {
+    repondreOk('', ['file' => fileModeration(), 'forums' => forumsDesMembres()]);
 }
 
-// admin_id garde qui a vérifié : une vérification se retrace.
-$touchees = $verifier
-    ? executer(
-        'UPDATE performance SET admin_id = :admin, date_verif_admin = NOW() WHERE id = :id',
-        ['admin' => $admin['id'], 'id' => $id],
-    )
-    : executer(
-        'UPDATE performance SET admin_id = NULL, date_verif_admin = NULL WHERE id = :id',
-        ['id' => $id],
-    );
+/** Un entier strictement positif lu dans la requête, ou le refus. */
+function identifiant(string $cle): int
+{
+    $valeur = entree()[$cle] ?? null;
+    if (!is_int($valeur) || $valeur <= 0) {
+        refuser(422, 'Demande illisible.');
+    }
 
-if ($touchees === 0 && ligne('SELECT 1 FROM performance WHERE id = :id', ['id' => $id]) === null) {
-    refuser(404, 'Cette performance n\'existe plus.');
+    return $valeur;
 }
 
-if ($verifier && $touchees > 0) {
-    $perf = ligne('SELECT membre_id, mouvement, charge_kg FROM performance WHERE id = :id', ['id' => $id]);
-    notifier((int) $perf['membre_id'], 'badge', 'Votre performance au ' . mb_strtolower(MOUVEMENTS[$perf['mouvement']])
-        . ', ' . kgFr((float) $perf['charge_kg']) . ', est vérifiée par SBD.re.', '/compte/');
-}
+const LIEN_CHARTE = '/communaute/charte/';
 
-repondreOk($verifier ? 'Badge « Vérifiée par SBD.re » posé.' : 'Badge retiré.');
+switch (texte('action')) {
+    case '':
+        // Le badge « Vérifiée par SBD.re », phase 6, appelé par /compte/a-verifier/.
+        $id = identifiant('performance_id');
+        $verifier = entree()['verifier'] ?? null;
+        if (!is_bool($verifier)) {
+            refuser(422, 'Demande illisible.');
+        }
+        // admin_id garde qui a vérifié : une vérification se retrace.
+        $touchees = $verifier
+            ? executer('UPDATE performance SET admin_id = :admin, date_verif_admin = NOW() WHERE id = :id', ['admin' => $admin['id'], 'id' => $id])
+            : executer('UPDATE performance SET admin_id = NULL, date_verif_admin = NULL WHERE id = :id', ['id' => $id]);
+        if ($touchees === 0 && ligne('SELECT 1 AS n FROM performance WHERE id = :id', ['id' => $id]) === null) {
+            refuser(404, 'Cette performance n\'existe plus.');
+        }
+        if ($verifier && $touchees > 0) {
+            $perf = ligne('SELECT membre_id, mouvement, charge_kg FROM performance WHERE id = :id', ['id' => $id]);
+            notifier((int) $perf['membre_id'], 'badge', 'Votre performance au ' . mb_strtolower(MOUVEMENTS[$perf['mouvement']])
+                . ', ' . kgFr((float) $perf['charge_kg']) . ', est vérifiée par SBD.re.', '/compte/');
+        }
+        repondreOk($verifier ? 'Badge « Vérifiée par SBD.re » posé.' : 'Badge retiré.');
+
+    case 'masquer':
+        $type = texte('type');
+        if (!in_array($type, ['message', 'message_forum'], true)) {
+            refuser(422, 'Demande illisible.');
+        }
+        $id = identifiant('id');
+        $auteur = masquerMessage($type, $id, (int) $admin['id']);
+        classer($type, $id);
+        if ($auteur !== null) {
+            notifier($auteur, 'moderation', 'Un de vos messages a été masqué par la modération.', LIEN_CHARTE);
+        }
+        repondreOk('Message masqué.');
+
+    case 'retirer_performance':
+        $id = identifiant('id');
+        $auteur = retirerPerformance($id);
+        classer('performance', $id);
+        if ($auteur !== null) {
+            notifier($auteur, 'moderation', 'Une de vos performances a été retirée par la modération.', LIEN_CHARTE);
+        }
+        repondreOk('Performance retirée.');
+
+    case 'bannir':
+        $id = identifiant('membre_id');
+        if (!bannir($id)) {
+            refuser(422, 'Ce compte ne peut pas être banni : il n\'existe pas, ou c\'est un admin.');
+        }
+        classer('membre', $id);
+        repondreOk('Membre banni. Ses sessions sont fermées.');
+
+    case 'retirer_avatar':
+        $id = identifiant('membre_id');
+        supprimerAvatar($id);
+        notifier($id, 'moderation', 'Votre avatar a été retiré par la modération.', LIEN_CHARTE);
+        repondreOk('Avatar retiré.');
+
+    case 'forum':
+        $id = identifiant('forum_id');
+        $etat = texte('etat');
+        if (!in_array($etat, ETATS_FORUM, true)) {
+            refuser(422, 'État inconnu.');
+        }
+        changerEtatForum($id, $etat);
+        if ($etat !== 'ouvert') {
+            classer('forum', $id);
+        }
+        repondreOk('Forum passé à l\'état « ' . $etat . ' ».');
+
+    case 'classer':
+        $type = texte('type');
+        if (!in_array($type, TYPES_SIGNALEMENT, true)) {
+            refuser(422, 'Demande illisible.');
+        }
+        classer($type, identifiant('id'));
+        repondreOk('Signalements classés sans suite.');
+
+    default:
+        refuser(422, 'Action inconnue.');
+}

@@ -607,8 +607,9 @@ ci-dessous restent le plan d'origine.
 
 ### Phase 8, la modération
 
-- [ ] `signalements.php`, boutons sur message, profil et performance.
-- [ ] `admin.php` et sa page, masquée du menu et protégée par le rôle.
+- [x] `signalements.php`, boutons sur message, profil et performance.
+- [x] `admin.php` et sa page, `/compte/admin/`, masquée du menu et protégée
+      par le rôle. Construits le 7 novembre avec l'étape 8 de forum.md.
 - [ ] **Fini quand** un signalement arrive dans la file et qu'un bannissement
       coupe la session.
 

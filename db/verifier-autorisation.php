@@ -462,6 +462,59 @@ verifie('501 caractères refusés',                 \SBDRE\texteChatValide(str_r
 verifie('Retour à la ligne refusé',               \SBDRE\texteChatValide("a\nb"), false);
 verifie('Cinq salons',                            count(\SBDRE\SALONS) === 5, true);
 
+titre('Forums des membres');
+
+$ancien = ['id' => 5, 'role' => 'membre', 'courriel_verifie' => 1, 'banni' => 0, 'date_inscription' => '2026-09-01 10:00:00'];
+$recent = ['id' => 6, 'role' => 'membre', 'courriel_verifie' => 1, 'banni' => 0, 'date_inscription' => '2026-11-01 10:00:00'];
+$adminF = ['id' => 1, 'role' => 'admin', 'courriel_verifie' => 1, 'banni' => 0, 'date_inscription' => '2026-11-06 10:00:00'];
+$le7 = strtotime('2026-11-07 12:00:00');
+verifie('Membre de plus de 30 jours : crée un forum',  \SBDRE\peutCreerForum($ancien, $le7), true);
+verifie('Membre de 6 jours : pas encore',             \SBDRE\peutCreerForum($recent, $le7), false);
+verifie('Visiteur : non',                             \SBDRE\peutCreerForum(null, $le7), false);
+verifie('Le créateur gère son forum',                 \SBDRE\peutGererForum($ancien, ['createur_id' => 5]), true);
+verifie('Un autre membre non',                        \SBDRE\peutGererForum($recent, ['createur_id' => 5]), false);
+verifie('L\'admin gère tous les forums',              \SBDRE\peutGererForum($adminF, ['createur_id' => 5]), true);
+verifie('Forum de l\'équipe : l\'admin seul',          \SBDRE\peutGererForum($ancien, ['createur_id' => null]), false);
+verifie('Adresse tirée du nom, sans accent',          \SBDRE\adresseDepuisTitre('Préparation au Championnat !') === 'preparation-au-championnat', true);
+verifie('« Fil » ne prend pas l\'adresse du fil',     \SBDRE\adresseDepuisTitre('Fil') === 'forum-fil', true);
+verifie('Un nom sans lettre donne « forum »',         \SBDRE\adresseDepuisTitre('!!!') === 'forum', true);
+verifie('Toute adresse tirée est valide',             \SBDRE\adresseForumValide(\SBDRE\adresseDepuisTitre('Salle Saint-Pierre — Le Tampon')), true);
+
+titre('Le fil');
+
+$fil = \SBDRE\rendreFil([
+    ['nature' => 'sujet', 'sujet_id' => 3, 'message_id' => null, 'titre' => '<b>Titre</b>', 'pseudo' => 'jean_93', 'adresse' => 'squat-technique', 'forum' => 'Squat, Technique', 'position' => 0, 'mouvement' => null, 'charge_kg' => null, 'date_ts' => $le7],
+    ['nature' => 'reponse', 'sujet_id' => 3, 'message_id' => 44, 'titre' => 'Titre', 'pseudo' => 'marie', 'adresse' => 'squat-technique', 'forum' => 'Squat, Technique', 'position' => 25, 'mouvement' => null, 'charge_kg' => null, 'date_ts' => $le7],
+    ['nature' => 'badge_communaute', 'sujet_id' => null, 'message_id' => null, 'titre' => null, 'pseudo' => 'paul_120', 'adresse' => null, 'forum' => null, 'position' => 0, 'mouvement' => 'squat', 'charge_kg' => '200.00', 'date_ts' => $le7],
+]);
+verifie('Un titre de sujet reste échappé',            str_contains($fil, '&lt;b&gt;Titre'), true);
+verifie('Une réponse mène à sa page et son ancre',    str_contains($fil, '/forum/squat-technique/3/?page=2#message-44'), true);
+verifie('Une barre vérifiée mène au profil',          str_contains($fil, '/membres/paul_120/') && str_contains($fil, 'par la communauté'), true);
+verifie('Fil vide : une phrase, pas une liste',        str_contains(\SBDRE\rendreFil([]), '<ol'), false);
+
+titre('Avatars');
+
+if (!function_exists('imagewebp')) {
+    echo "  [--]     GD absent ici : lancer avec « php -d extension=gd », le serveur l'a.\n";
+} else {
+    $image = imagecreatetruecolor(800, 600);
+    ob_start();
+    imagejpeg($image);
+    $jpeg = (string) ob_get_clean();
+    $webp = \SBDRE\preparerAvatar($jpeg);
+    $taille = $webp !== null ? getimagesizefromstring($webp) : false;
+    verifie('JPEG 800 × 600 : WebP 300 × 300',        $taille !== false && $taille[0] === 300 && $taille[1] === 300 && $taille['mime'] === 'image/webp', true);
+    ob_start();
+    imagegif($image);
+    verifie('GIF refusé',                             \SBDRE\preparerAvatar((string) ob_get_clean()) === null, true);
+    $petite = imagecreatetruecolor(100, 100);
+    ob_start();
+    imagepng($petite);
+    verifie('PNG de 100 px refusé, trop petit',       \SBDRE\preparerAvatar((string) ob_get_clean()) === null, true);
+    verifie('Un script déguisé est refusé',           \SBDRE\preparerAvatar("\xFF\xD8\xFF<?php system('id'); ?>") === null, true);
+    verifie('Rien envoyé : refusé',                   \SBDRE\preparerAvatar('') === null, true);
+}
+
 titre('Domaines qui refusent nos courriels');
 
 verifie('icloud.com injoignable',          \SBDRE\adresseInjoignable(\SBDRE\normaliserCourriel('Jean@iCloud.com')), true);

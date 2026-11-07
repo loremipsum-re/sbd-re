@@ -1,0 +1,173 @@
+---
+/**
+ * L'espace de modération (docs/comptes.md, phase 8 ; docs/forum.md, étape 8).
+ *
+ * La file des signalements, une ligne par contenu signalé, les plus signalés
+ * d'abord, avec l'aperçu, l'auteur et les gestes qui conviennent. Puis les
+ * forums des membres, les plus récents d'abord. Tout passe par
+ * public/api/admin.php, qui répond 404 à qui n'est pas admin : la page dit
+ * alors seulement qu'elle n'existe pas.
+ *
+ * Page `prive` : ni indexée, ni mesurée, hors du menu.
+ */
+import FenetreConfirmation from '../../components/FenetreConfirmation.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/compte.css';
+import '../../styles/communaute.css';
+---
+
+<BaseLayout titre="Modération" description="L'espace de modération." prive>
+  <div class="wrap page-compte">
+    <header class="entete-page">
+      <h1>Modération</h1>
+      <p class="chapeau" data-intro>Chargement…</p>
+    </header>
+
+    <noscript><p class="aide">Cette page demande JavaScript.</p></noscript>
+
+    <section data-admin hidden>
+      <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+
+      <h2>Signalements</h2>
+      <ol class="liste-notifications" data-file></ol>
+      <p class="aide" data-file-vide hidden>Aucun signalement en attente.</p>
+
+      <h2>Forums des membres</h2>
+      <ol class="liste-notifications" data-forums></ol>
+      <p class="aide" data-forums-vide hidden>Aucun forum de membre pour l'instant.</p>
+    </section>
+  </div>
+
+  <FenetreConfirmation />
+</BaseLayout>
+
+<script>
+  import { afficher, api, confirmer } from '../../lib/api-compte';
+
+  interface Signalement {
+    type: 'message' | 'message_forum' | 'membre' | 'performance' | 'forum';
+    cible_id: number;
+    nombre: number;
+    motifs: string;
+    auteur: string;
+    auteur_id: number | null;
+    apercu: string;
+    lien: string;
+  }
+  interface ForumMembre {
+    id: number;
+    adresse: string;
+    titre: string;
+    etat: string;
+    createur: string;
+    signalements: number | string;
+  }
+
+  const NATURES = {
+    message: 'Message du chat',
+    message_forum: 'Message du forum',
+    membre: 'Profil',
+    performance: 'Performance',
+    forum: 'Forum de membre',
+  };
+
+  const intro = document.querySelector<HTMLElement>('[data-intro]')!;
+  const section = document.querySelector<HTMLElement>('[data-admin]')!;
+  const etat = document.querySelector<HTMLElement>('[data-etat]')!;
+  const listeFile = document.querySelector<HTMLOListElement>('[data-file]')!;
+  const listeForums = document.querySelector<HTMLOListElement>('[data-forums]')!;
+
+  const el = <K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLElementTagNameMap[K]> = {}) =>
+    Object.assign(document.createElement(tag), props);
+
+  /** Un geste : confirmé s'il pèse, envoyé, puis la file rechargée. */
+  const geste = (libelle: string, corps: Record<string, unknown>, avertir?: string) => {
+    const bouton = el('button', { type: 'button', className: 'secondaire', textContent: libelle });
+    bouton.addEventListener('click', async () => {
+      if (avertir && !(await confirmer([avertir], libelle))) return;
+      bouton.disabled = true;
+      const r = await api('/api/admin.php', 'POST', corps);
+      afficher(etat, r.message, r.ok);
+      if (r.ok) charger();
+      else bouton.disabled = false;
+    });
+    return bouton;
+  };
+
+  const ligneSignalement = (s: Signalement) => {
+    const li = el('li');
+    const titre = el('p', { textContent: `${NATURES[s.type]} · ${s.nombre} signalement${s.nombre > 1 ? 's' : ''}${s.auteur ? ` · ${s.auteur}` : ''}` });
+    titre.style.fontWeight = '700';
+    // Écrit en texte, jamais en HTML : c'est le contenu signalé lui-même.
+    const apercu = el('p', { textContent: s.apercu });
+    li.append(titre, apercu);
+    if (s.motifs) li.append(el('p', { className: 'date', textContent: `Motifs : ${s.motifs}` }));
+    if (s.lien) li.append(el('a', { href: s.lien, textContent: 'Voir en place' }));
+
+    const gestes = el('div', { className: 'actions' });
+    gestes.style.display = 'flex';
+    gestes.style.flexWrap = 'wrap';
+    gestes.style.gap = '0.5rem';
+    if (s.type === 'message' || s.type === 'message_forum') {
+      gestes.append(geste('Masquer', { action: 'masquer', type: s.type, id: s.cible_id }));
+    }
+    if (s.type === 'performance') {
+      gestes.append(geste('Retirer la performance', { action: 'retirer_performance', id: s.cible_id }, 'La performance et ses votes sont effacés.'));
+    }
+    if (s.type === 'membre') {
+      gestes.append(geste('Retirer l\'avatar', { action: 'retirer_avatar', membre_id: s.cible_id }));
+    }
+    if (s.type === 'forum') {
+      gestes.append(geste('Verrouiller', { action: 'forum', forum_id: s.cible_id, etat: 'verrouille' }));
+      gestes.append(geste('Masquer le forum', { action: 'forum', forum_id: s.cible_id, etat: 'masque' }));
+    }
+    if (s.auteur_id !== null) {
+      gestes.append(
+        geste(`Bannir ${s.auteur || 'l\'auteur'}`, { action: 'bannir', membre_id: s.auteur_id },
+          'Ses sessions tombent aussitôt, son profil sort du site. Ses messages restent au journal d\'un an.'),
+      );
+    }
+    gestes.append(geste('Classer sans suite', { action: 'classer', type: s.type, id: s.cible_id }));
+    li.append(gestes);
+    return li;
+  };
+
+  const ligneForum = (f: ForumMembre) => {
+    const li = el('li');
+    li.append(
+      el('a', { href: `/forum/${f.adresse}/`, textContent: f.titre }),
+      el('p', { className: 'date', textContent: `par ${f.createur || 'compte effacé'} · ${f.etat} · ${f.signalements} signalement(s) en attente` }),
+    );
+    const gestes = el('div', { className: 'actions' });
+    gestes.style.display = 'flex';
+    gestes.style.flexWrap = 'wrap';
+    gestes.style.gap = '0.5rem';
+    for (const [libelle, valeur] of [['Ouvrir', 'ouvert'], ['Verrouiller', 'verrouille'], ['Archiver', 'archive'], ['Masquer', 'masque']]) {
+      if (valeur !== f.etat) gestes.append(geste(libelle, { action: 'forum', forum_id: f.id, etat: valeur }));
+    }
+    li.append(gestes);
+    return li;
+  };
+
+  const charger = () =>
+    void api('/api/admin.php', 'GET').then((r) => {
+      if (r.statut === 401) {
+        location.replace('/compte/connexion/');
+        return;
+      }
+      if (!r.ok) {
+        intro.textContent = 'Cette page n\'existe pas.';
+        return;
+      }
+      intro.textContent = 'Les signalements en attente, les plus signalés d\'abord, puis les forums des membres.';
+      section.hidden = false;
+      const file = r.file as Signalement[];
+      const forums = r.forums as ForumMembre[];
+      listeFile.replaceChildren(...file.map(ligneSignalement));
+      listeForums.replaceChildren(...forums.map(ligneForum));
+      document.querySelector<HTMLElement>('[data-file-vide]')!.hidden = file.length > 0;
+      document.querySelector<HTMLElement>('[data-forums-vide]')!.hidden = forums.length > 0;
+    });
+
+  charger();
+</script>
