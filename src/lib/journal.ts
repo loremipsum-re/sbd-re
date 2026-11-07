@@ -51,6 +51,14 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-07',
     nature: 'fonction',
+    version: '1.9.10',
+    titre: 'Un pseudo modifiable une fois par an',
+    texte:
+      "Un membre peut changer de pseudo une fois par an. L'ancienne adresse de son profil mène vers la nouvelle, et personne d'autre ne peut reprendre l'ancien pseudo.",
+  },
+  {
+    date: '2026-11-07',
+    nature: 'fonction',
     version: '1.9.9',
     titre: 'Les profils de membres, en essai',
     texte:
