@@ -392,6 +392,21 @@ $verifiee = \SBDRE\recordsDe([
 ]);
 verifie('À charge égale, la barre vérifiée l\'emporte',
     $verifiee['raw']['barres']['squat']['date_performance'] === '2026-11-01', true);
+$communaute = \SBDRE\recordsDe([
+    $barre('squat', 'raw', '200.00', '2026-10-01') + ['votes' => '20', 'favorables' => '11'],
+    $barre('squat', 'raw', '200.00', '2026-11-01') + ['votes' => '20', 'favorables' => '12'],
+]);
+verifie('À charge égale, le badge communauté l\'emporte aussi',
+    $communaute['raw']['barres']['squat']['date_performance'] === '2026-11-01', true);
+
+titre('Badge d\'une performance');
+
+// Les nombres arrivent de MySQL en texte : badgeDe() les lit comme tels.
+verifie('Vérifiée par l\'admin, sans aucun vote',  \SBDRE\badgeDe(['date_verif_admin' => '2026-11-07 10:00:00', 'votes' => '0', 'favorables' => '0']) === 'admin', true);
+verifie('L\'admin l\'emporte sur un vote contraire', \SBDRE\badgeDe(['date_verif_admin' => '2026-11-07 10:00:00', 'votes' => '20', 'favorables' => '0']) === 'admin', true);
+verifie('12 favorables sur 20 : communauté',        \SBDRE\badgeDe(['date_verif_admin' => null, 'votes' => '20', 'favorables' => '12']) === 'communaute', true);
+verifie('11 favorables sur 20 : non vérifiée',      \SBDRE\badgeDe(['date_verif_admin' => null, 'votes' => '20', 'favorables' => '11']) === '', true);
+verifie('Sans colonne de votes : non vérifiée',     \SBDRE\badgeDe(['date_verif_admin' => null]) === '', true);
 
 titre('Domaines qui refusent nos courriels');
 

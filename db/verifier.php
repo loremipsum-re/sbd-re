@@ -263,6 +263,23 @@ if ($echecs > 0) {
 
 titre('5. Essais');
 
+// Les requêtes de l'API, éprouvées telles qu'elles sont écrites : depuis le
+// dépôt, ou depuis ~/sbd-re-prive comme db/dkim.php. Le fichier ne fait que
+// déclarer, il ne se connecte à rien en se chargeant.
+foreach ([
+    dirname(__DIR__) . '/public/api/lib/performances.php',
+    dirname(__DIR__) . '/sbd-re/api/lib/performances.php',
+] as $bibliotheque) {
+    if (is_file($bibliotheque)) {
+        define('SBDRE_API', true);
+        require $bibliotheque;
+        break;
+    }
+}
+if (!defined('SBDRE\SQL_PERFORMANCES_VOTES')) {
+    ko('lib/performances.php introuvable : les requêtes des votes ne seront pas éprouvées.');
+}
+
 /** Un essai qui doit passer. Rend l'identifiant créé, 0 en cas de refus. */
 $accepte = function (string $intitule, string $sql, array $valeurs) use ($bdd): int {
     try {
@@ -395,6 +412,40 @@ try {
         $avis === 0 ? ok('Changer d\'avis : accepté, une seule ligne.') : ko('Changer d\'avis n\'a rien changé.');
     } catch (PDOException $e) {
         ko('Changer d\'avis : REFUSÉ. ' . $e->getMessage());
+    }
+
+    if (defined('SBDRE\SQL_PERFORMANCES_VOTES')) {
+        // Un troisième membre, qui finira banni. Il vote sur la barre du second :
+        // le premier y vote déjà plus bas, dans l'effacement.
+        $banniId = $accepte('Troisième membre, qui sera banni', $sqlMembre, ["banni-$s@exemple.re", $hash, "banni_$s", $ip]);
+
+        // Le vote de l'API, deux fois de suite : la seconde remplace la première.
+        $voter = fn (int $p, int $m, int $avis) => $bdd->prepare(\SBDRE\SQL_VOTER)->execute(['p' => $p, 'm' => $m, 'ok' => $avis]);
+        try {
+            $voter($perf2Id, $banniId, 0);
+            $voter($perf2Id, $banniId, 1);
+            $compter('SELECT COUNT(*) FROM vote WHERE performance_id = ? AND membre_id = ? AND ok = 1', [$perf2Id, $banniId]) === 1
+                ? ok('Le vote de l\'API remplace l\'avis précédent, une seule ligne.')
+                : ko('Le vote de l\'API n\'a pas remplacé l\'avis précédent.');
+        } catch (PDOException $e) {
+            ko('Le vote de l\'API est REFUSÉ par MySQL. ' . $e->getMessage());
+        }
+
+        // Banni, il vote pour la barre du premier : son avis ne compte pas.
+        $bdd->prepare('UPDATE membre SET banni = 1 WHERE id = ?')->execute([$banniId]);
+        $bdd->prepare($sqlVote)->execute([$perfId, $banniId, 1]);
+
+        try {
+            $requete = $bdd->prepare(sprintf(\SBDRE\SQL_PERFORMANCES_VOTES, 'p.id = :id', ''));
+            $requete->execute(['id' => $perfId]);
+            $lue = $requete->fetch(PDO::FETCH_ASSOC);
+            // Sur $perfId : l'avis défavorable du second membre, celui du banni écarté.
+            ($lue !== false && (int) $lue['votes'] === 1 && (int) $lue['favorables'] === 0)
+                ? ok('Le compte des votes écarte le membre banni : 1 avis, 0 favorable.')
+                : ko('Le compte des votes est faux : ' . json_encode($lue));
+        } catch (PDOException $e) {
+            ko('La requête des votes est REFUSÉE par MySQL. ' . $e->getMessage());
+        }
     }
 
     /* --- Messages ----------------------------------------------------- */

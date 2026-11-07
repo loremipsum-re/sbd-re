@@ -23,12 +23,12 @@ $methode = ouvrirApi(['GET', 'POST', 'DELETE']);
 
 if ($methode === 'GET') {
     $membre = exigerMembre();
-    $performances = lignes(
-        'SELECT id, mouvement, equipement, charge_kg, categorie, date_performance, lien_video, date_verif_admin
-           FROM performance WHERE membre_id = :id
-          ORDER BY date_performance DESC, id DESC',
-        ['id' => $membre['id']],
-    );
+    $performances = performancesAvecVotes('p.membre_id = :id', ['id' => $membre['id']]);
+    // Le badge, calculé ici, pour que la page n'ait pas à refaire la règle.
+    foreach ($performances as &$p) {
+        $p['badge'] = badgeDe($p);
+    }
+    unset($p);
     // Les records, calculés ici comme sur le profil : une seule règle, celle
     // de recordsDe(). L'accueil du membre s'en sert pour le situer.
     repondreOk('', ['performances' => $performances, 'records' => recordsDe($performances)]);

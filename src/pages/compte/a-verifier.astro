@@ -1,0 +1,188 @@
+---
+/**
+ * Le fil « À vérifier » : les performances récentes des autres membres, pas
+ * encore vérifiées, et deux boutons par barre. Phase 6 de docs/comptes.md.
+ *
+ * Le badge communauté tombe à 20 avis dont 60 % favorables. Le vote s'ouvre
+ * 30 jours après l'inscription, jamais sur sa propre barre : tout se contrôle
+ * côté serveur (peutVoter de lib/autorisation.php), la page ne fait que le
+ * dire. Les seuils s'affichent depuis la réponse, jamais recopiés ici.
+ *
+ * L'admin voit en plus un bouton qui pose le badge « Vérifiée par SBD.re ».
+ *
+ * Page `prive` : ni indexée, ni mesurée.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/compte.css';
+---
+
+<BaseLayout titre="À vérifier" description="Les performances des membres à vérifier." prive>
+  <div class="wrap page-compte">
+    <div class="colonne">
+      <header class="entete-page">
+        <h1>À vérifier</h1>
+        <p class="chapeau">
+          Regardez la vidéo, puis jugez la barre comme un arbitre : profondeur
+          au squat, barre posée sur la poitrine au développé couché, verrouillage
+          au soulevé de terre.
+        </p>
+      </header>
+
+      <noscript>
+        <p class="aide">Cette page demande JavaScript.</p>
+      </noscript>
+
+      <section data-fil hidden>
+        <p class="aide" data-seuil></p>
+        <p class="etat-compte" data-attente hidden></p>
+        <ul class="fil-verifier" data-liste></ul>
+        <p class="aide" data-vide hidden>Rien à vérifier pour l'instant. Revenez après les prochaines séances.</p>
+        <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+        <ul class="liens-compte">
+          <li><a href="/compte/">Retour à mon espace</a></li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { afficher, api } from '../../lib/api-compte';
+  import { marquerLienSortant } from '../../lib/liens-sortants';
+
+  interface Barre {
+    id: number;
+    pseudo: string;
+    mouvement: 'squat' | 'bench' | 'deadlift';
+    equipement: 'raw' | 'wraps' | 'equipped';
+    charge_kg: string;
+    date_performance: string;
+    lien_video: string;
+    votes: number | string;
+    favorables: number | string;
+    mon_vote: 0 | 1 | null;
+  }
+
+  const MOUVEMENTS = { squat: 'Squat', bench: 'Développé couché', deadlift: 'Soulevé de terre' };
+  const EQUIPEMENTS = { raw: 'Raw', wraps: 'Bandes', equipped: 'Équipé' };
+
+  const section = document.querySelector<HTMLElement>('[data-fil]')!;
+  const liste = document.querySelector<HTMLUListElement>('[data-liste]')!;
+  const vide = document.querySelector<HTMLElement>('[data-vide]')!;
+  const seuil = document.querySelector<HTMLElement>('[data-seuil]')!;
+  const attente = document.querySelector<HTMLElement>('[data-attente]')!;
+  const etat = document.querySelector<HTMLElement>('[data-etat]')!;
+
+  const bouton = (texte: string) =>
+    Object.assign(document.createElement('button'), { type: 'button', textContent: texte });
+
+  /** « 12 avis, 9 favorables », recalculé à chaque vote sans recharger la page. */
+  const compte = (b: Barre) => `${b.votes} avis, ${b.favorables} favorable${Number(b.favorables) > 1 ? 's' : ''}`;
+
+  const rendre = (b: Barre, peutVoter: boolean, admin: boolean) => {
+    const ligne = document.createElement('li');
+
+    // Écrit en texte, jamais en HTML : le pseudo vient d'un membre.
+    const qui = Object.assign(document.createElement('a'), { href: `/membres/${b.pseudo}/`, textContent: b.pseudo });
+    const quoi = Object.assign(document.createElement('p'), {
+      className: 'barre',
+      textContent: [
+        MOUVEMENTS[b.mouvement],
+        EQUIPEMENTS[b.equipement],
+        `${Number(b.charge_kg).toLocaleString('fr-FR')} kg`,
+        new Date(`${b.date_performance}T12:00:00`).toLocaleDateString('fr-FR', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }),
+      ].join(' · '),
+    });
+    const video = Object.assign(document.createElement('a'), { href: b.lien_video, textContent: 'Voir la vidéo' });
+    video.rel = 'ugc nofollow';
+    marquerLienSortant(video);
+    const avis = Object.assign(document.createElement('p'), { className: 'aide', textContent: compte(b) });
+
+    const tete = document.createElement('p');
+    tete.append(qui, ' · ', video);
+
+    const choix = document.createElement('div');
+    choix.className = 'choix-vote';
+    choix.setAttribute('role', 'group');
+    choix.setAttribute('aria-label', `Votre avis sur la barre de ${b.pseudo}`);
+    const oui = bouton('Valide');
+    const non = bouton('Ne valide pas');
+
+    const marquer = () => {
+      oui.setAttribute('aria-pressed', String(b.mon_vote === 1));
+      non.setAttribute('aria-pressed', String(b.mon_vote === 0));
+    };
+    marquer();
+
+    for (const [btn, ok] of [
+      [oui, true],
+      [non, false],
+    ] as const) {
+      btn.disabled = !peutVoter;
+      btn.addEventListener('click', async () => {
+        oui.disabled = non.disabled = true;
+        const reponse = await api('/api/votes.php', 'POST', { performance_id: b.id, ok });
+        oui.disabled = non.disabled = false;
+        afficher(etat, reponse.message, reponse.ok);
+        if (!reponse.ok) return;
+
+        // Le compte suit l'avis donné : un premier avis ajoute une voix, un
+        // avis changé déplace une voix favorable.
+        const avant = b.mon_vote;
+        b.votes = Number(b.votes) + (avant === null ? 1 : 0);
+        b.favorables = Number(b.favorables) + (ok ? 1 : 0) - (avant === 1 ? 1 : 0);
+        b.mon_vote = ok ? 1 : 0;
+        marquer();
+        avis.textContent = compte(b);
+      });
+    }
+    choix.append(oui, non);
+    ligne.append(tete, quoi, avis, choix);
+
+    if (admin) {
+      const badge = bouton('Poser le badge SBD.re');
+      badge.className = 'secondaire';
+      badge.addEventListener('click', async () => {
+        badge.disabled = true;
+        const reponse = await api('/api/admin.php', 'POST', { performance_id: b.id, verifier: true });
+        afficher(etat, reponse.message, reponse.ok);
+        // Vérifiée, la barre quitte le fil.
+        if (reponse.ok) ligne.remove();
+        else badge.disabled = false;
+        vide.hidden = liste.childElementCount > 0;
+      });
+      ligne.append(badge);
+    }
+
+    return ligne;
+  };
+
+  void api('/api/votes.php', 'GET').then((lecture) => {
+    if (lecture.statut === 401) {
+      location.replace('/compte/connexion/');
+      return;
+    }
+    section.hidden = false;
+    if (!lecture.ok) {
+      afficher(etat, lecture.message, false);
+      return;
+    }
+
+    const { votes, pourcent, jours } = lecture.seuil as { votes: number; pourcent: number; jours: number };
+    seuil.textContent = `Une barre reçoit le badge « Vérifiée par la communauté » à ${votes} avis, dont ${pourcent} % favorables. Votre avis se change tant que la barre est ici.`;
+
+    const peutVoter = lecture.peut_voter === true;
+    if (!peutVoter) {
+      attente.textContent = `Le vote s'ouvre le ${lecture.vote_possible_le}, ${jours} jours après votre inscription. Les vidéos se regardent déjà.`;
+      attente.hidden = false;
+    }
+
+    const fil = lecture.fil as Barre[];
+    vide.hidden = fil.length > 0;
+    liste.replaceChildren(...fil.map((b) => rendre(b, peutVoter, lecture.admin === true)));
+  });
+</script>
