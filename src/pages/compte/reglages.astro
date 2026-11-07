@@ -1,0 +1,307 @@
+---
+/**
+ * Les réglages du compte, derrière l'engrenage de /compte/ : profil,
+ * session, effacement. Demande de l'auteur du 7 novembre 2026 : l'accueil du
+ * membre montre d'abord ses performances, les réglages se rangent à part.
+ *
+ * La page est statique et se remplit par `GET /api/moi.php`. Sans session,
+ * elle renvoie vers la connexion. La liste des salles vient de la collection
+ * de /salles/ à la génération : le serveur ne contrôle que la forme de
+ * l'identifiant, et le menu ne propose que des fiches existantes.
+ *
+ * PSEUDO ET INSTAGRAM EN TROIS TEMPS : grisés, débloqués par une case,
+ * confirmés à l'enregistrement d'une nouvelle valeur (docs/comptes.md).
+ *
+ * L'EFFACEMENT DEMANDE LE MOT DE PASSE et se range sous une pastille fermée :
+ * un geste sans retour ne doit pas se trouver à un clic d'« Enregistrer ».
+ *
+ * Page `prive` : ni indexée, ni mesurée.
+ */
+import { getCollection } from 'astro:content';
+import FenetreConfirmation from '../../components/FenetreConfirmation.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/compte.css';
+
+const salles = (await getCollection('salles', (s) => s.data.actif))
+  .map((s) => ({ id: s.id, libelle: `${s.data.nom}, ${s.data.commune}` }))
+  .sort((a, b) => a.libelle.localeCompare(b.libelle, 'fr'));
+---
+
+<BaseLayout titre="Réglages du compte" description="Régler son compte SBD.re." prive>
+  <div class="wrap page-compte">
+    <div class="colonne">
+      <ul class="liens-compte fil-compte">
+        <li><a href="/compte/">Retour à mon espace</a></li>
+      </ul>
+
+      <header class="entete-page">
+        <h1>Réglages</h1>
+        <p class="chapeau" data-bonjour>Chargement du compte…</p>
+      </header>
+
+      <noscript>
+        <p class="aide">Cette page demande JavaScript.</p>
+      </noscript>
+
+      <section data-compte hidden>
+        <h2>Profil</h2>
+        <form class="form-compte" data-profil novalidate>
+          <div class="champ">
+            <label for="pseudo">Pseudo</label>
+            <input
+              id="pseudo"
+              name="pseudo"
+              type="text"
+              required
+              minlength="3"
+              maxlength="30"
+              autocomplete="username"
+              autocapitalize="none"
+              spellcheck="false"
+              readonly
+              aria-describedby="aide-pseudo"
+            />
+            <p class="aide" id="aide-pseudo" data-aide-pseudo>
+              Il se change une fois par an. L'ancienne adresse de votre profil
+              renvoie vers la nouvelle.
+            </p>
+            <label class="case">
+              <input type="checkbox" data-debloquer="pseudo" aria-controls="pseudo" />
+              <span>Modifier mon pseudo</span>
+            </label>
+          </div>
+
+          <div class="champ">
+            <label for="bio">Présentation <span class="aide">facultatif</span></label>
+            <textarea id="bio" name="bio" rows="3" maxlength="160" aria-describedby="aide-bio"
+            ></textarea>
+            <p class="aide" id="aide-bio">
+              160 caractères, visibles de tous. Le profil reste tout public.
+            </p>
+          </div>
+
+          <div class="champ">
+            <label for="salle">Salle <span class="aide">facultatif</span></label>
+            <select id="salle" name="salle">
+              <option value="">Aucune</option>
+              {salles.map((s) => <option value={s.id}>{s.libelle}</option>)}
+            </select>
+          </div>
+
+          <div class="champ">
+            <label for="instagram">Nom Instagram <span class="aide">facultatif</span></label>
+            <input
+              id="instagram"
+              name="instagram"
+              type="text"
+              maxlength="60"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              readonly
+              aria-describedby="aide-instagram"
+            />
+            <p class="aide" id="aide-instagram" data-aide-instagram>
+              Distinct de votre pseudo. Il se change une fois tous les six mois,
+              et se retire à tout moment.
+            </p>
+            <label class="case">
+              <input type="checkbox" data-debloquer="instagram" aria-controls="instagram" />
+              <span>Modifier mon nom Instagram</span>
+            </label>
+          </div>
+
+          <label class="case">
+            <input name="instagram_visible" type="checkbox" />
+            <span>Afficher le lien vers mon Instagram sur mon profil</span>
+          </label>
+
+          <div class="actions">
+            <button type="submit">Enregistrer</button>
+          </div>
+          <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+        </form>
+
+        <h2>Session</h2>
+        <form class="form-compte" data-deconnexion novalidate>
+          <div class="actions">
+            <button type="submit" class="secondaire">Se déconnecter</button>
+          </div>
+          <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+        </form>
+
+        <details class="repli">
+          <summary>Effacer mon compte</summary>
+          <form class="form-compte" data-effacement novalidate>
+            <p>
+              Le profil, les performances et les votes disparaissent aussitôt.
+              Vos messages quittent le chat et restent au journal un an,
+              signés de votre pseudo.
+            </p>
+            <div class="champ">
+              <label for="mot-de-passe">Mot de passe, pour confirmer</label>
+              <input
+                id="mot-de-passe"
+                name="mot_de_passe"
+                type="password"
+                required
+                autocomplete="current-password"
+              />
+            </div>
+            <div class="actions">
+              <button type="submit" class="secondaire">Effacer définitivement</button>
+            </div>
+            <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+          </form>
+        </details>
+      </section>
+    </div>
+  </div>
+
+  <FenetreConfirmation />
+</BaseLayout>
+
+<script>
+  import { api, brancher, champ, confirmer } from '../../lib/api-compte';
+
+  const bonjour = document.querySelector<HTMLElement>('[data-bonjour]')!;
+  const section = document.querySelector<HTMLElement>('[data-compte]')!;
+  const profil = document.querySelector<HTMLFormElement>('[data-profil]')!;
+
+  interface Compte {
+    pseudo: string;
+    /** « 6 novembre 2027 », ou '' quand un nouveau pseudo est déjà accepté. */
+    pseudo_prochain: string;
+    courriel: string;
+    instagram: string | null;
+    /** « 7 mai 2027 », ou '' quand un nouveau nom est déjà accepté. */
+    instagram_prochain: string;
+    instagram_visible: number;
+    bio: string | null;
+    salle: string | null;
+  }
+
+  /*
+   * PSEUDO ET INSTAGRAM, EN TROIS TEMPS : le champ est grisé, une case le
+   * débloque, et l'enregistrement d'une nouvelle valeur ouvre la fenêtre de
+   * confirmation. `readonly` et non `disabled` : un champ désactivé ne part
+   * pas avec le formulaire, et le serveur lirait un pseudo vide.
+   */
+  const enregistre: Record<string, string> = { pseudo: '', instagram: '' };
+  const nettoyer = (valeur: string) => valeur.trim().toLowerCase().replace(/^@/, '');
+  const champDe = (nom: string) => profil.querySelector<HTMLInputElement>(`[name="${nom}"]`)!;
+  const caseDe = (nom: string) => profil.querySelector<HTMLInputElement>(`[data-debloquer="${nom}"]`)!;
+
+  /** Regrise le champ et lui rend sa valeur enregistrée. */
+  const verrouiller = (nom: string) => {
+    champDe(nom).readOnly = true;
+    champDe(nom).value = enregistre[nom];
+    caseDe(nom).checked = false;
+  };
+
+  for (const nom of ['pseudo', 'instagram']) {
+    caseDe(nom).addEventListener('change', () => {
+      if (caseDe(nom).checked) {
+        champDe(nom).readOnly = false;
+        champDe(nom).focus();
+      } else {
+        verrouiller(nom);
+      }
+    });
+  }
+
+  /** Une nouvelle valeur, qui engage pour un an ou six mois ? Retirer son nom Instagram n'engage à rien. */
+  const change = (nom: string) => {
+    const saisi = nettoyer(champDe(nom).value);
+    return saisi !== '' && saisi !== enregistre[nom];
+  };
+
+  // Relue après chaque enregistrement : un pseudo changé change aussi la
+  // date du prochain changement. Pas d'`await` au premier niveau : la cible
+  // de compilation ne l'admet pas.
+  const charger = () =>
+    void api('/api/moi.php', 'GET').then((lecture) => {
+      if (lecture.statut === 401) {
+        location.replace('/compte/connexion/');
+        return;
+      }
+      if (!lecture.ok) {
+        bonjour.textContent = lecture.message;
+        return;
+      }
+
+      const compte = lecture.compte as Compte;
+      bonjour.textContent = `Connecté en tant que ${compte.pseudo}, adresse ${compte.courriel}.`;
+      section.hidden = false;
+
+      if (compte.pseudo_prochain !== '') {
+        document.querySelector('[data-aide-pseudo]')!.textContent =
+          `Prochain changement possible le ${compte.pseudo_prochain}. L'ancienne adresse de votre profil renvoie vers la nouvelle.`;
+      }
+      if (compte.instagram_prochain !== '') {
+        document.querySelector('[data-aide-instagram]')!.textContent =
+          `Distinct de votre pseudo. Prochain changement possible le ${compte.instagram_prochain}. Il se retire à tout moment.`;
+      }
+      profil.querySelector<HTMLTextAreaElement>('[name="bio"]')!.value = compte.bio ?? '';
+      profil.querySelector<HTMLSelectElement>('[name="salle"]')!.value = compte.salle ?? '';
+      profil.querySelector<HTMLInputElement>('[name="instagram_visible"]')!.checked =
+        compte.instagram_visible === 1;
+
+      enregistre.pseudo = compte.pseudo;
+      enregistre.instagram = compte.instagram ?? '';
+      verrouiller('pseudo');
+      verrouiller('instagram');
+      // Pendant le délai d'un an, le pseudo ne se débloque même pas.
+      caseDe('pseudo').disabled = compte.pseudo_prochain !== '';
+    });
+  charger();
+
+  brancher(
+    profil,
+    async (donnees) => {
+      const pseudo = change('pseudo');
+      const instagram = change('instagram');
+
+      if (pseudo || instagram) {
+        const lignes = [];
+        if (pseudo) {
+          lignes.push(
+            `Nouveau pseudo : ${nettoyer(champ(donnees, 'pseudo'))}. Vous ne pourrez plus en changer avant un an.`,
+          );
+        }
+        if (instagram) {
+          lignes.push(
+            `Nouveau nom Instagram : ${nettoyer(champ(donnees, 'instagram'))}. Vous ne pourrez plus en changer avant six mois.`,
+          );
+        }
+        if (!(await confirmer(lignes, 'Confirmer le changement'))) {
+          return { ok: false, message: 'Changement annulé : rien n\'est enregistré.', statut: 0 };
+        }
+      }
+
+      return api('/api/moi.php', 'PATCH', {
+        pseudo: champ(donnees, 'pseudo'),
+        bio: champ(donnees, 'bio'),
+        salle: champ(donnees, 'salle'),
+        instagram: champ(donnees, 'instagram'),
+        instagram_visible: donnees.get('instagram_visible') === 'on',
+        // N'arrivent à true qu'après la fenêtre : le serveur les exige.
+        confirmer_pseudo: pseudo,
+        confirmer_instagram: instagram,
+      });
+    },
+    charger,
+  );
+
+  brancher(
+    document.querySelector<HTMLFormElement>('[data-deconnexion]')!,
+    () => api('/api/connexion.php', 'DELETE'),
+    () => location.assign('/compte/connexion/'),
+  );
+
+  brancher(
+    document.querySelector<HTMLFormElement>('[data-effacement]')!,
+    (donnees) => api('/api/moi.php', 'DELETE', { mot_de_passe: champ(donnees, 'mot_de_passe') }),
+    () => location.assign('/'),
+  );
+</script>
