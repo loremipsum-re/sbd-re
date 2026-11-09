@@ -303,6 +303,188 @@
   color: var(--accent);
 }
 
+/* --- Le tableau de bord de /compte/, demande du 10 novembre 2026 ------- */
+
+.page-espace .entete-espace {
+  align-items: center;
+}
+
+.identite-espace {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.identite-espace h1 {
+  margin: 0;
+}
+
+.identite-espace .chapeau {
+  margin: var(--space-1) 0 0;
+  overflow-wrap: anywhere;
+}
+
+.avatar-espace {
+  flex: none;
+  width: 4rem;
+  height: 4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  object-fit: cover;
+}
+
+.gestes-espace {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Quatre chiffres d'un coup d'œil, le nombre au-dessus de son libellé. */
+.chiffres-espace {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
+  gap: var(--space-3);
+  margin: var(--space-6) 0 var(--space-4);
+}
+
+.chiffres-espace div {
+  display: flex;
+  flex-direction: column-reverse;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.chiffres-espace dd {
+  margin: 0;
+  font-size: var(--step-3);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.chiffres-espace dt {
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
+.chiffres-espace .chiffre-verifie dd {
+  color: var(--succes);
+}
+
+/* Les raccourcis en tuiles : l'icône, le mot, et la pastille d'un compte.
+   `auto-fit` : quatre tuiles, cinq pour l'admin, tiennent sur une rangée
+   d'ordinateur et s'étirent. Le chat a son bouton sur chaque page. */
+.tuiles-espace ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+  gap: var(--space-2);
+  margin: 0 0 var(--space-8);
+  padding: 0;
+  list-style: none;
+}
+
+.tuiles-espace a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--cible-min);
+  padding: var(--space-3);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tuiles-espace a:hover,
+.tuiles-espace a:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tuiles-espace svg {
+  flex: none;
+}
+
+/* Sur téléphone, côte à côte à leur largeur : empilées, cinq tuiles
+   poussaient les performances sous le pli (797 px mesurés à 375 px). */
+@media (max-width: 39.99rem) {
+  .tuiles-espace ul {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .tuiles-espace a {
+    width: auto;
+    padding: var(--space-2) var(--space-3);
+  }
+}
+
+.tuiles-espace .pastille {
+  min-width: 1.5rem;
+  margin-left: auto;
+  padding: 0 var(--space-2);
+  border-radius: 999px;
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  font-size: var(--step--1);
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Deux colonnes dès 56rem : les performances, puis le reste à côté. */
+.tableau-espace {
+  display: grid;
+  gap: var(--space-8);
+}
+
+@media (min-width: 56rem) {
+  .tableau-espace {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+    gap: var(--space-12);
+  }
+}
+
+.tableau-espace h2 {
+  margin: 0 0 var(--space-2);
+}
+
+.colonne-cote {
+  display: grid;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+/* Une performance : la barre en gras, dessous la date, la vidéo et l'état,
+   Retirer au bout de la ligne. */
+.liste-perfs-compte .perf-compte {
+  flex-wrap: nowrap;
+}
+
+.perf-texte {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.perf-barre {
+  font-weight: 700;
+}
+
+.perf-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-2);
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
 .positions {
   display: grid;
   gap: var(--space-2);
