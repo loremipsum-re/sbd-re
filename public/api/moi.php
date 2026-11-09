@@ -8,7 +8,7 @@
  *
  * Le mot de passe à l'effacement empêche qu'un ordinateur resté connecté,
  * dans une salle ou chez un ami, suffise à détruire le compte de quelqu'un.
- * L'adresse recopiée, demande de l'auteur du 10 novembre 2026, fait mesurer
+ * L'adresse recopiée, demande de l'auteur du 9 novembre 2026, fait mesurer
  * le geste : l'effacement est définitif.
  *
  * L'effacement part en cascade : sessions, performances, votes. Les messages

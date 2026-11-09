@@ -38,7 +38,7 @@ if (!defined('SBDRE_API')) {
 require_once __DIR__ . '/session.php';
 
 /*
- * LES RANGS, demande de l'auteur du 10 novembre 2026 (docs/comptes.md) :
+ * LES RANGS, demande de l'auteur du 9 novembre 2026 (docs/comptes.md) :
  *   admin        tout, et lui seul donne les rangs ; il se nomme à la main
  *                en base, aucun point d'entrée n'écrit ce rang-là ;
  *   moderateur   la file des signalements (masquer, retirer, classer, état

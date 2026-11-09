@@ -49,7 +49,7 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 
 export const JOURNAL: readonly EntreeJournal[] = [
   {
-    date: '2026-11-10',
+    date: '2026-11-09',
     nature: 'fonction',
     version: '1.19.0',
     titre: 'Le top des membres sur la page Communauté',
@@ -57,7 +57,7 @@ export const JOURNAL: readonly EntreeJournal[] = [
       "La page Communauté montre les dernières actualités, les trois barres vérifiées les plus lourdes de chaque mouvement et les dernières barres publiées. Une barre se publie en touchant des boutons. L'admin et les modérateurs portent un badge au forum et au chat, et « Connexion » se trouve dans l'en-tête.",
   },
   {
-    date: '2026-11-10',
+    date: '2026-11-09',
     nature: 'fonction',
     version: '1.18.0',
     titre: 'L\'espace membre en tableau de bord',
@@ -65,7 +65,7 @@ export const JOURNAL: readonly EntreeJournal[] = [
       "Votre espace montre d'un coup d'œil vos barres publiées, vérifiées et en attente, et vos notifications non lues, avec un raccourci vers chaque geste. Les réglages ont leur sommaire. Dans les notifications, une barre vérifiée se distingue en vert, avec sa coche.",
   },
   {
-    date: '2026-11-10',
+    date: '2026-11-09',
     nature: 'fonction',
     version: '1.17.0',
     titre: 'L\'annuaire des membres, et « J\'aime » au forum',
@@ -73,7 +73,7 @@ export const JOURNAL: readonly EntreeJournal[] = [
       "L'annuaire liste chaque membre de la communauté avec sa salle et ses barres publiées et vérifiées. Une recherche y trouve un pseudo. Au forum, un « J'aime » salue un message. Taper « @ » propose les pseudos, au forum comme au chat. Le chat se resserre sur deux salons, Général et Général 2.",
   },
   {
-    date: '2026-11-10',
+    date: '2026-11-09',
     nature: 'visuel',
     version: '1.16.1',
     titre: 'Le profil d\'un coup d\'œil',
@@ -81,7 +81,7 @@ export const JOURNAL: readonly EntreeJournal[] = [
       "Sur ordinateur, le profil d'un membre se lit sur deux colonnes : sa carte à gauche, ses records à droite, sans défiler. Les records tiennent en tuiles, une par mouvement et le total, et les informations du membre portent chacune une icône.",
   },
   {
-    date: '2026-11-10',
+    date: '2026-11-09',
     nature: 'fonction',
     version: '1.16.0',
     titre: 'Relier son profil à sa fiche d\'athlète',

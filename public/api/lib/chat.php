@@ -28,7 +28,7 @@ require_once __DIR__ . '/notifications.php';
 require_once __DIR__ . '/autorisation.php';
 
 /**
- * Deux salons généraux, choix de l'auteur du 10 novembre 2026, en attendant
+ * Deux salons généraux, choix de l'auteur du 9 novembre 2026, en attendant
  * que la communauté grandisse. Les salons par mouvement et Compétitions
  * sont retirés : leurs messages restent en base jusqu'à la purge d'un an,
  * sans être lus. La charte s'applique partout.

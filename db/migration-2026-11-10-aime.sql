@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration du 10 novembre 2026 : « J'aime » sur les messages du forum.
+-- Migration du 9 novembre 2026 : « J'aime » sur les messages du forum.
 --
 -- Pour la base déjà chargée. Une base neuve n'en a pas besoin : schema.sql
 -- porte déjà ceci. À importer UNE FOIS dans phpMyAdmin, onglet « Importer »,

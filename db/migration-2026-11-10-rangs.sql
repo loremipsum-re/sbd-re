@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration du 10 novembre 2026 : les rangs, admin, modérateur, juge,
+-- Migration du 9 novembre 2026 : les rangs, admin, modérateur, juge,
 -- donateur, membre (docs/comptes.md, « Les rangs »).
 --
 -- Pour la base déjà chargée. Une base neuve n'en a pas besoin : schema.sql

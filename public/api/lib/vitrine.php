@@ -1,7 +1,7 @@
 <?php
 /**
  * La vitrine de /communaute/ : les dernières barres publiées, et le top des
- * membres. Demande de l'auteur du 10 novembre 2026.
+ * membres. Demande de l'auteur du 9 novembre 2026.
  *
  * LE TOP : les trois barres vérifiées les plus lourdes de chaque mouvement,
  * en raw seulement, une par membre (sa meilleure). Une barre de salle n'est
