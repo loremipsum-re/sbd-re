@@ -51,6 +51,14 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-10',
     nature: 'fonction',
+    version: '1.18.0',
+    titre: 'L\'espace membre en tableau de bord',
+    texte:
+      "Votre espace montre d'un coup d'œil vos barres publiées, vérifiées et en attente, et vos notifications non lues, avec un raccourci vers chaque geste. Les réglages ont leur sommaire. Dans les notifications, une barre vérifiée se distingue en vert, avec sa coche.",
+  },
+  {
+    date: '2026-11-10',
+    nature: 'fonction',
     version: '1.17.0',
     titre: 'L\'annuaire des membres, et « J\'aime » au forum',
     texte:
