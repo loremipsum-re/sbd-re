@@ -51,6 +51,14 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-09',
     nature: 'fonction',
+    version: '1.14.0',
+    titre: 'Le forum au quotidien',
+    texte:
+      "Le forum garde vos brouillons sur l'appareil, publie à Ctrl + Entrée et cite le passage sélectionné. Les listes marquent les sujets nouveaux depuis votre visite et mènent à la première réponse non lue, et les pages se numérotent. Une mention dans le chat prévient le membre cité.",
+  },
+  {
+    date: '2026-11-09',
+    nature: 'fonction',
     version: '1.13.0',
     titre: 'Le chat sur toutes les pages',
     texte:

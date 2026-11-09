@@ -6,6 +6,7 @@
  *         et l'intervalle de la prochaine lecture. Ouvert à tous : un
  *         visiteur ne reçoit que ce qui arrive (lib/chat.php, lireChat).
  *   POST  { canal, texte, confirme? }  écrire, membre confirmé seulement.
+ *         Un @pseudo cité reçoit une notification (notifierMentionsChat).
  */
 
 declare(strict_types=1);
@@ -16,6 +17,7 @@ define('SBDRE_API', true);
 require __DIR__ . '/lib/comptes.php';
 require __DIR__ . '/lib/chat.php';
 require __DIR__ . '/lib/moderation.php';
+require __DIR__ . '/lib/forum.php';
 
 $methode = ouvrirApi(['GET', 'POST']);
 
@@ -59,4 +61,6 @@ if (chatTropRapide((int) $membre['id'])) {
     refuser(429, 'Doucement : un message toutes les ' . FREIN_CHAT_SECONDES . ' secondes.');
 }
 
-repondreOk('', ['id' => ecrireChat($membre, $canal, $texte, $analyse === 'sensible', ipVisiteur())]);
+$id = ecrireChat($membre, $canal, $texte, $analyse === 'sensible', ipVisiteur());
+notifierMentionsChat(mentionsDe($texte), (int) $membre['id'], $membre['pseudo'] . ' vous cite dans le chat, salon ' . SALONS[$canal] . '.', $canal);
+repondreOk('', ['id' => $id]);

@@ -285,6 +285,58 @@
   min-height: var(--cible-min);
 }
 
+/* Les numéros de page, comme sur phpBB : chacun une cible de 44 px, la page
+   en cours sous l'aplat et son filet (CLAUDE.md, état choisi). */
+.pagination ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pagination ol a,
+.pagination .courante,
+.pagination .trou {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--cible-min);
+  min-height: var(--cible-min);
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+}
+
+.pagination ol a {
+  border-color: var(--border);
+}
+
+.pagination .courante {
+  border-color: var(--accent);
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+
+.pagination .trou {
+  color: var(--muted);
+}
+
+/* « Nouveau » et « 3 nouvelles réponses » : un accent de texte, posé par
+   lib/forum-memoire.ts d'après ce que ce navigateur a déjà lu. */
+.page-forum .nouveau {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.page-forum a.nouveau {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  font-size: var(--step--1);
+}
+
 /* --- Messages d'un sujet ---------------------------------------------- */
 
 .meta-sujet {

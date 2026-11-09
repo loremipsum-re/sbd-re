@@ -67,6 +67,8 @@ function entourer(champ: HTMLTextAreaElement, ouvre: string, ferme: string, defa
   champ.setRangeText(ouvre + choisi + ferme, debut, fin, 'end');
   champ.focus();
   if (debut === fin) champ.setSelectionRange(debut + ouvre.length, debut + ouvre.length + choisi.length);
+  // Le texte change sans frappe : le brouillon du forum doit le savoir.
+  champ.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 function inserer(champ: HTMLTextAreaElement | HTMLInputElement, code: string): void {
@@ -79,6 +81,7 @@ function inserer(champ: HTMLTextAreaElement | HTMLInputElement, code: string): v
   const curseur = avant.length + ajout.length;
   champ.focus();
   champ.setSelectionRange(curseur, curseur);
+  champ.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 /** Un message en nœuds : le texte par `textContent`, les smileys en images. Jamais d'innerHTML. */
