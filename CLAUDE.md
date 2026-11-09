@@ -180,7 +180,7 @@ Points à ne pas casser :
 
 ## Infographies
 
-Dix-neuf infographies, écrites en HTML et CSS dans `src/components/infographies/`,
+Vingt et une infographies, écrites en HTML et CSS dans `src/components/infographies/`,
 autour d'un cadre commun, `Infographie.astro`. Une par page qui demande une
 explication : les mentions légales, la page 404, la liste des actualités,
 `/communaute/` et les pages du forum n'en ont pas. Celle des tranches de la
@@ -199,7 +199,11 @@ communauté est partie avec elles, à l'ouverture.
 - **Les chiffres se lisent dans les données**, jamais recopiés. Les calculs
   lourds vivent dans `src/lib/infographie-<nom>.ts`. Trois exemples sont
   construits, et leur légende le dit : les neuf essais, le comparateur, le
-  calcul des Dots. L'infographie des suggestions lit ses limites dans
+  calcul des Dots. Une seule recopie des dates, faute de donnée : le calendrier
+  2027 (`lib/calendrier-2027.ts`), qui nomme sa source, la version du
+  calendrier FFForce ; ses éditions passées se lisent dans les données.
+  L'infographie de la vérification lit ses seuils dans `autorisation.php`,
+  par `lib/communaute.ts`. L'infographie des suggestions lit ses limites dans
   `public/api/suggestion.php` lui-même : modifier ce fichier peut arrêter la
   génération, et c'est voulu.
 - `InfographieCategories` accepte `sexe` et `classe` pour mettre en avant la
