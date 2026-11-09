@@ -49,6 +49,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 
 export const JOURNAL: readonly EntreeJournal[] = [
   {
+    date: '2026-11-10',
+    nature: 'fonction',
+    version: '1.16.0',
+    titre: 'Relier son profil à sa fiche d\'athlète',
+    texte:
+      "Un membre qui a concouru à La Réunion réclame sa fiche d'athlète, en bas de la fiche. Une fois la demande validée par l'admin, son profil mène à ses résultats officiels, et la fiche à son profil dans la communauté.",
+  },
+  {
     date: '2026-11-09',
     nature: 'fonction',
     version: '1.15.1',
