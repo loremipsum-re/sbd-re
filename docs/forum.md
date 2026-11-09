@@ -451,6 +451,40 @@ Un lot choisi après la fin du plan, à la demande de l'auteur.
 - **Tests** : 278 règles, et deux essais de plus dans `php db/verifier.php` :
   106 attendus.
 
+### Construit le 10 novembre, l'annuaire et les « J'aime »
+
+Un lot choisi par Claude après la fusion de tout le reste, sans décision
+demandée à l'auteur.
+
+- **L'annuaire des membres**, à `/membres/`, qui répondait 404. Chaque
+  compte confirmé et non banni en carte : avatar ou initiale, pseudo,
+  salle, fiche d'athlète reliée, barres publiées et vérifiées. Ceux qui
+  publient le plus viennent en premier, trente par page. La recherche par
+  pseudo tient sur une page et reste hors index. Rendu comme les profils :
+  `api/annuaire.php` remplit le gabarit `/membres/-annuaire/`, et
+  `/sitemap-membres.xml` l'ajoute en tête. /communaute/ y mène.
+- **« J'aime » sur les messages du forum.** Un membre actif aime le message
+  d'un autre, une fois au plus ; son propre message, un message masqué ou
+  un forum masqué se refusent (`api/forum.php`, action `aimer`). Le
+  compte écarte les membres bannis. Le bouton porte `aria-pressed` et
+  l'état choisi des autres bascules, aplat sous filet. Un visiteur lit
+  « 2 membres aiment ce message ». Table `appreciation`, migration du
+  10 novembre. Aucune notification : un geste léger reste silencieux.
+- **Les pseudos proposés après « @ »**, au forum comme au chat. Huit au plus,
+  membres actifs, par `api/pseudos.php` réservé aux membres
+  (`pseudosCommencantPar`, lib/comptes.php). Flèches pour choisir, Entrée
+  pour insérer, Échap pour fermer sans fermer le chat : le clavier s'écoute
+  en capture (`lib/suggestions-pseudo.ts`). Le champ garde le focus et
+  porte `aria-activedescendant`.
+- **« C'est votre fiche ? »** lit l'état du membre : un compte déjà relié,
+  ou une demande qui attend l'admin, se dit à la place du formulaire.
+- **Mesuré** : aucun débordement de l'annuaire à 375 et 1 280 px ;
+  contrastes de 5,38:1 au moins dans les deux thèmes, 5,34:1 pour le filet
+  de l'option choisie en clair ; options de 44 px ; champ de recherche à
+  16 px.
+- **Tests** : 315 règles, et cinq essais de plus dans `php db/verifier.php`
+  (la table `appreciation` et quatre essais) : 116 attendus.
+
 ---
 
 ## 9. Questions
