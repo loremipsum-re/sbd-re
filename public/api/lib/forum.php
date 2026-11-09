@@ -178,6 +178,27 @@ function compte(int $n, string $singulier, string $pluriel): string
     return $n . "\u{00A0}" . ($n > 1 ? $pluriel : $singulier);
 }
 
+/**
+ * Les numéros de page à montrer, comme sur phpBB : la première, la dernière,
+ * deux de chaque côté de la page en cours, et 0 pour chaque trou (« … »).
+ *
+ * @return list<int>
+ */
+function numerosDePage(int $page, int $pages): array
+{
+    $numeros = [];
+    for ($p = 1; $p <= $pages; $p++) {
+        if ($p === 1 || $p === $pages || abs($p - $page) <= 2) {
+            if ($numeros !== [] && $p - end($numeros) > 1) {
+                $numeros[] = 0;
+            }
+            $numeros[] = $p;
+        }
+    }
+
+    return $numeros;
+}
+
 function pagination(string $chemin, int $page, int $pages): string
 {
     if ($pages <= 1) {
@@ -186,11 +207,19 @@ function pagination(string $chemin, int $page, int $pages): string
     $lien = static fn (int $p): string => e($chemin . ($p > 1 ? '?page=' . $p : ''));
     $html = '<nav class="pagination" aria-label="Pages">';
     if ($page > 1) {
-        $html .= '<a href="' . $lien($page - 1) . '" rel="prev">Page précédente</a>';
+        $html .= '<a href="' . $lien($page - 1) . '" rel="prev">Précédente</a>';
     }
-    $html .= '<span>Page ' . $page . ' sur ' . $pages . '</span>';
+    $html .= '<ol>';
+    foreach (numerosDePage($page, $pages) as $p) {
+        $html .= '<li>' . match (true) {
+            $p === 0 => '<span class="trou" aria-hidden="true">…</span>',
+            $p === $page => '<span class="courante" aria-current="page">' . $p . '</span>',
+            default => '<a href="' . $lien($p) . '" aria-label="Page ' . $p . '">' . $p . '</a>',
+        } . '</li>';
+    }
+    $html .= '</ol>';
     if ($page < $pages) {
-        $html .= '<a href="' . $lien($page + 1) . '" rel="next">Page suivante</a>';
+        $html .= '<a href="' . $lien($page + 1) . '" rel="next">Suivante</a>';
     }
 
     return $html . '</nav>';
@@ -218,7 +247,8 @@ function boutonsEnvoi(string $libelle): string
 function aideBalises(string $id): string
 {
     return '<p class="aide" id="' . $id . '">[b]gras[/b], [i]italique[/i], [quote]citation[/quote], '
-        . '[url]https://…[/url]. Les smileys d\'époque et les emojis passent.</p>';
+        . '[url]https://…[/url]. Les smileys d\'époque et les emojis passent. Ctrl + Entrée publie, '
+        . 'et le brouillon se garde sur cet appareil.</p>';
 }
 
 /** L'invitation à se connecter, ou la raison de la fermeture, à la place d'un formulaire. */
@@ -333,7 +363,8 @@ function ligneSujet(array $s, string $adresse, string $dans = ''): string
     $etiquettes = ($epingle ? '<span class="etiquette">Épinglé</span> ' : '')
         . ((int) ($s['verrouille'] ?? 0) === 1 ? '<span class="etiquette">Fermé</span> ' : '');
 
-    return '<li class="ligne-forum' . ($epingle ? ' epingle' : '') . '"><div class="intitule">'
+    return '<li class="ligne-forum' . ($epingle ? ' epingle' : '') . '" data-sujet-id="' . $id . '" data-reponses="'
+        . (int) $s['reponses'] . '" data-creation="' . (int) $s['creation_ts'] . '" data-adresse="' . e($adresse) . '"><div class="intitule">'
         . '<p class="titre-sujet">' . $etiquettes . '<a href="' . e(lienSujet($adresse, $id)) . '">' . e((string) $s['titre']) . '</a></p>'
         . '<p class="meta">' . ($dans !== '' ? 'dans ' . e($dans) . ', ' : '') . 'par ' . e((string) $s['pseudo']) . ', '
         . balisageDate((int) $s['creation_ts']) . '</p></div>'
@@ -442,7 +473,10 @@ function rendreSujet(array $forum, array $sujet, array $messages, int $page, int
             . ' <button type="button" class="bouton-citer" data-gerer="verrouiller" data-sujet="' . $sujetId . '" data-valeur="'
             . ((int) $sujet['verrouille'] === 1 ? '0' : '1') . '">' . ((int) $sujet['verrouille'] === 1 ? 'Rouvrir' : 'Fermer') . '</button>';
     }
-    $html .= '</p><ol class="messages-forum">';
+    // La place du dernier message de la page, la première valant 0 : le
+    // navigateur retient jusqu'où le lecteur est allé.
+    $vu = ($page - 1) * MESSAGES_PAR_PAGE + count($messages) - 1;
+    $html .= '</p><ol class="messages-forum" data-sujet-id="' . $sujetId . '" data-vu="' . max(0, $vu) . '">';
 
     $messages = array_values($messages);
     foreach ($messages as $i => $m) {
@@ -467,7 +501,7 @@ function rendreSujet(array $forum, array $sujet, array $messages, int $page, int
             . ($op ? '<span class="etiquette etiquette-op">Auteur du sujet</span>' : '')
             . (($m['inscription_ts'] ?? null) !== null ? '<span class="meta">Membre depuis ' . e(dateFr((int) $m['inscription_ts'], false)) . '</span>' : '')
             . '</div><div class="corps-message">'
-            . '<header><a class="numero" href="#' . $ancre . '" aria-label="Lien vers le message ' . $numero . '">#' . $numero . '</a> '
+            . '<header><a class="numero" id="n' . $numero . '" href="#' . $ancre . '" aria-label="Lien vers le message ' . $numero . '">#' . $numero . '</a> '
             . balisageDate((int) $m['date_ts'])
             . (($m['modif_ts'] ?? null) !== null ? ' <span class="modifie">modifié le ' . balisageDate((int) $m['modif_ts']) . '</span>' : '')
             . '</header>';

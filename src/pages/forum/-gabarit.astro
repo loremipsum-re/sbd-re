@@ -78,6 +78,7 @@ import '../../styles/communaute.css';
 <script>
   import { afficher, api, brancher, champ, confirmer, type ReponseApi } from '../../lib/api-compte';
   import { brancherBalises, brancherBarresSmileys } from '../../lib/barre-smileys';
+  import { brancherBrouillon, marquerNouveautes, purgerBrouillons, retenirLecture } from '../../lib/forum-memoire';
 
   brancherBarresSmileys();
   brancherBalises();
@@ -103,31 +104,83 @@ import '../../styles/communaute.css';
       return r;
     });
 
+  /*
+   * CE QUE LE NAVIGATEUR RETIENT (lib/forum-memoire.ts) : le brouillon de
+   * chaque formulaire, effacé à la publication, et jusqu'où chaque sujet a
+   * été lu, d'où les marques « Nouveau » des listes.
+   */
+  purgerBrouillons();
+  const garder = (form: HTMLFormElement, cle: string) => {
+    const brouillon = brancherBrouillon(form, cle);
+    if (brouillon.retrouve) afficher(form.querySelector<HTMLElement>('[data-etat]')!, 'Votre brouillon est revenu.', true);
+    return brouillon;
+  };
+  const lecture = document.querySelector<HTMLElement>('.messages-forum[data-sujet-id]');
+  if (lecture) retenirLecture(lecture.dataset.sujetId!, Number(lecture.dataset.vu));
+  marquerNouveautes([...document.querySelectorAll<HTMLElement>('.ligne-forum[data-sujet-id]')]);
+
+  // Ctrl + Entrée, ou Cmd + Entrée sur Mac, publie depuis n'importe quel champ du forum.
+  document.addEventListener('keydown', (evenement) => {
+    const zone = evenement.target as HTMLElement;
+    if (evenement.key !== 'Enter' || !(evenement.ctrlKey || evenement.metaKey) || zone.tagName !== 'TEXTAREA') return;
+    const form = zone.closest('form');
+    if (!form) return;
+    evenement.preventDefault();
+    form.requestSubmit();
+  });
+
   const formSujet = document.querySelector<HTMLFormElement>('[data-forum-sujet]');
   if (formSujet) {
+    const brouillon = garder(formSujet, `sujet:${formSujet.dataset.forum}`);
     brancher(
       formSujet,
       (d) => envoyer(formSujet, { action: 'sujet', forum: formSujet.dataset.forum, titre: champ(d, 'titre'), texte: champ(d, 'texte') }),
-      (r) => aller(r.lien as string),
+      (r) => {
+        brouillon.effacer();
+        aller(r.lien as string);
+      },
     );
   }
 
   const formReponse = document.querySelector<HTMLFormElement>('[data-forum-reponse]');
   if (formReponse) {
+    const brouillon = garder(formReponse, `reponse:${formReponse.dataset.sujet}`);
     brancher(
       formReponse,
       (d) => envoyer(formReponse, { action: 'reponse', sujet_id: Number(formReponse.dataset.sujet), texte: champ(d, 'texte') }),
-      (r) => aller(r.lien as string),
+      (r) => {
+        brouillon.effacer();
+        aller(r.lien as string);
+      },
     );
 
-    // Citer : le message entier, entre [quote=pseudo], au bout de la réponse.
+    /**
+     * Citer : le passage sélectionné dans le message s'il y en a un, sinon le
+     * message entier, entre [quote=pseudo], au bout de la réponse. Un passage
+     * se cite en texte simple, sans ses balises.
+     */
     const zone = formReponse.querySelector<HTMLTextAreaElement>('textarea')!;
+    const selectionDans = (article: Element | null) => {
+      const choix = getSelection();
+      if (!article || !choix || choix.isCollapsed || choix.rangeCount === 0) return '';
+      return article.contains(choix.getRangeAt(0).commonAncestorContainer) ? choix.toString().trim() : '';
+    };
     for (const bouton of document.querySelectorAll<HTMLButtonElement>('[data-citer]')) {
+      const article = bouton.closest('article')?.querySelector('.texte') ?? null;
+      // Sur téléphone, toucher le bouton peut effacer la sélection avant le clic.
+      let retenue = '';
+      bouton.addEventListener('pointerdown', () => {
+        retenue = selectionDans(article);
+      });
       bouton.addEventListener('click', () => {
-        const citation = `[quote=${bouton.dataset.pseudo}]${bouton.dataset.texte}[/quote]\n`;
+        const passage = selectionDans(article) || retenue;
+        retenue = '';
+        const citation = `[quote=${bouton.dataset.pseudo}]${passage || bouton.dataset.texte}[/quote]\n`;
         zone.value = zone.value === '' ? citation : `${zone.value.replace(/\s*$/, '')}\n${citation}`;
         zone.focus();
         zone.setSelectionRange(zone.value.length, zone.value.length);
+        // Le texte ajouté par le script se garde aussi au brouillon.
+        zone.dispatchEvent(new Event('input', { bubbles: true }));
       });
     }
   }
