@@ -101,6 +101,8 @@ const salons = [
     texte: string;
     sensible: boolean;
     date: number;
+    /** « Admin », « Modo », ou '' : le badge de rang (lib/autorisation.php). */
+    rang?: string;
   }
 
   const fenetre = document.querySelector<HTMLElement>('#chat-flottant')!;
@@ -188,7 +190,15 @@ const salons = [
       dateTime: new Date(m.date * 1000).toISOString(),
       textContent: heure(m.date),
     });
-    entete.append(auteur, ' · ', quand);
+    entete.append(auteur);
+    if (m.rang) {
+      const badge = Object.assign(document.createElement('span'), {
+        className: `rang ${m.rang === 'Admin' ? 'rang-admin' : 'rang-moderateur'}`,
+        textContent: m.rang,
+      });
+      entete.append(' ', badge);
+    }
+    entete.append(' · ', quand);
     li.append(entete);
     if (m.sensible) {
       li.append(Object.assign(document.createElement('p'), { className: 'avertissement', textContent: avertissement }));

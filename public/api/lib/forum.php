@@ -499,6 +499,7 @@ function rendreSujet(array $forum, array $sujet, array $messages, int $page, int
 
         $html .= '<li' . $dernier . '><article class="message-forum" id="' . $ancre . '">'
             . '<div class="auteur-message">' . $avatar . '<strong class="auteur">' . $auteur . '</strong>'
+            . badgeRangHtml($visible ? ($m['role'] ?? null) : null)
             . ($op ? '<span class="etiquette etiquette-op">Auteur du sujet</span>' : '')
             . (($m['inscription_ts'] ?? null) !== null ? '<span class="meta">Membre depuis ' . e(dateFr((int) $m['inscription_ts'], false)) . '</span>' : '')
             . '</div><div class="corps-message">'
@@ -546,6 +547,17 @@ function rendreSujet(array $forum, array $sujet, array $messages, int $page, int
     }
 
     return $html . '</section>';
+}
+
+/**
+ * Le badge « Admin » ou « Modo » à côté d'un pseudo, au forum ; rien pour
+ * les autres rangs, qui s'affichent « membre » (lib/autorisation.php).
+ */
+function badgeRangHtml(?string $role): string
+{
+    $badge = badgeRang($role);
+
+    return $badge === '' ? '' : '<span class="rang rang-' . e((string) $role) . '">' . e($badge) . '</span>';
 }
 
 /**
@@ -843,7 +855,7 @@ function messagesDuSujet(int $sujetId, int $page): array
     return lignes(
         'SELECT mf.id, mf.membre_id, mf.pseudo, mf.texte, mf.sensible, mf.masque_par,
                 UNIX_TIMESTAMP(mf.date_creation) AS date_ts, UNIX_TIMESTAMP(mf.date_modification) AS modif_ts,
-                m.pseudo AS pseudo_actuel, m.banni,
+                m.pseudo AS pseudo_actuel, m.banni, m.role,
                 UNIX_TIMESTAMP(m.date_inscription) AS inscription_ts, UNIX_TIMESTAMP(a.date_maj) AS avatar_v,
                 (SELECT COUNT(*) FROM appreciation ap JOIN membre ma ON ma.id = ap.membre_id AND ma.banni = 0
                   WHERE ap.message_id = mf.id) AS aime
