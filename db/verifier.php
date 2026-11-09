@@ -284,6 +284,7 @@ foreach ([
         require_once dirname($bibliotheque) . '/recapitulatif.php';
         require_once dirname($bibliotheque) . '/revendications.php';
         require_once dirname($bibliotheque) . '/annuaire.php';
+        require_once dirname($bibliotheque) . '/vitrine.php';
         break;
     }
 }
@@ -924,6 +925,11 @@ if (!function_exists('SBDRE\creerSujet')) {
             ? ok('Le chat porte le badge du modérateur.')
             : ko('Le badge de rang manque au chat : ' . json_encode($parLeModo));
         \SBDRE\donnerRang($cite['id'], 'membre');
+
+        $vitrine = \SBDRE\vitrine();
+        (count($vitrine['dernieres']) <= \SBDRE\DERNIERES_BARRES && array_keys($vitrine['top']) === ['squat', 'bench', 'deadlift'])
+            ? ok('La vitrine de /communaute/ se lit en mode strict.')
+            : ko('La vitrine de /communaute/ est fausse : ' . json_encode($vitrine));
 
         if (function_exists('imagewebp')) {
             $carre = imagecreatetruecolor(400, 400);

@@ -51,6 +51,7 @@ require_once dirname($chemin) . '/chat.php';
 require_once dirname($chemin) . '/recapitulatif.php';
 require_once dirname($chemin) . '/revendications.php';
 require_once dirname($chemin) . '/annuaire.php';
+require_once dirname($chemin) . '/vitrine.php';
 
 /* -------------------------------------------------------------------------
  * Affichage
@@ -684,6 +685,25 @@ titre('Le badge de rang au forum');
 
 verifie('Le modérateur porte « Modo »',                  \SBDRE\badgeRangHtml('moderateur') === '<span class="rang rang-moderateur">Modo</span>', true);
 verifie('Un juge ne porte rien',                         \SBDRE\badgeRangHtml('juge') === '', true);
+
+titre('Le top des membres, /communaute/');
+
+$barre = fn (string $pseudo, string $mv, string $kg, string $date, bool $verifiee) => ['pseudo' => $pseudo, 'mouvement' => $mv, 'equipement' => 'raw',
+    'charge_kg' => $kg, 'date_performance' => $date, 'date_verif_admin' => $verifiee ? '2026-11-01 10:00:00' : null, 'votes' => '0', 'favorables' => '0'];
+$top = \SBDRE\topMembres([
+    $barre('paul', 'squat', '250.00', '2026-10-01', true),
+    $barre('paul', 'squat', '240.00', '2026-09-01', true),
+    $barre('marie', 'squat', '180.00', '2026-10-02', true),
+    $barre('jean', 'squat', '300.00', '2026-10-03', false),
+    $barre('luc', 'squat', '180.00', '2026-09-15', true),
+    $barre('eva', 'squat', '170.00', '2026-10-04', true),
+    $barre('paul', 'bench', '150.00', '2026-10-05', true),
+]);
+verifie('Une barre non vérifiée n\'entre pas au top',    in_array('jean', array_column($top['squat'], 'pseudo'), true), false);
+verifie('Une barre par membre, sa meilleure',            array_column($top['squat'], 'charge') === [250.0, 180.0, 180.0], true);
+verifie('À égalité, la plus ancienne d\'abord',          array_column($top['squat'], 'pseudo') === ['paul', 'luc', 'marie'], true);
+verifie('Trois au plus par mouvement',                   count($top['squat']) === 3, true);
+verifie('Un mouvement sans barre reste vide',            $top['deadlift'] === [] && count($top['bench']) === 1, true);
 
 titre('Le récapitulatif par courriel');
 
