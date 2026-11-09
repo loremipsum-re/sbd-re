@@ -24,6 +24,7 @@ if (!defined('SBDRE_API')) {
 }
 
 require_once __DIR__ . '/bdd.php';
+require_once __DIR__ . '/notifications.php';
 
 /** Un salon donne un thème, pas une règle : la charte s'applique partout. */
 const SALONS = [
@@ -125,6 +126,36 @@ function chatTropRapide(int $membreId): bool
             AND date_envoi > NOW() - INTERVAL ' . FREIN_CHAT_SECONDES . ' SECOND LIMIT 1',
         ['m' => $membreId],
     ) !== null;
+}
+
+/**
+ * Les membres cités par @pseudo dans le chat, cinq au plus, hors auteur.
+ * Une seule notification non lue par salon et par membre : être cité dix
+ * fois de suite ne noie pas la cloche. Le lien ouvre le chat sur le salon.
+ *
+ * @param list<string> $pseudos
+ */
+function notifierMentionsChat(array $pseudos, int $auteurId, string $texte, string $canal): int
+{
+    if ($pseudos === [] || !isset(SALONS[$canal])) {
+        return 0;
+    }
+    $params = ['t' => texteNotification($texte), 'l' => '/communaute/#chat=' . $canal, 'l2' => '/communaute/#chat=' . $canal, 'auteur' => $auteurId];
+    $noms = [];
+    foreach (array_values($pseudos) as $i => $pseudo) {
+        $params["p$i"] = $pseudo;
+        $noms[] = ":p$i";
+    }
+
+    return executer(
+        "INSERT INTO notification (membre_id, nature, texte, lien)
+         SELECT m.id, 'mention', :t, :l
+           FROM membre m
+          WHERE m.pseudo IN (" . implode(', ', $noms) . ")
+            AND m.id <> :auteur AND m.banni = 0 AND m.courriel_verifie = 1
+            AND NOT EXISTS (SELECT 1 FROM notification n WHERE n.membre_id = m.id AND n.lue = 0 AND n.lien = :l2)",
+        $params,
+    );
 }
 
 /**

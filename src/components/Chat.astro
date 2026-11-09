@@ -255,12 +255,16 @@ const salons = [
     if (evenement.key === 'Escape') fermer();
   });
 
+  const choisirSalon = (bouton: HTMLButtonElement) => {
+    salon = bouton.dataset.salon!;
+    for (const b of boutonsSalon) b.setAttribute('aria-pressed', String(b === bouton));
+    fil.replaceChildren();
+    dernier = 0;
+  };
+
   for (const bouton of boutonsSalon) {
     bouton.addEventListener('click', () => {
-      salon = bouton.dataset.salon!;
-      for (const b of boutonsSalon) b.setAttribute('aria-pressed', String(b === bouton));
-      fil.replaceChildren();
-      dernier = 0;
+      choisirSalon(bouton);
       void lire();
     });
   }
@@ -283,8 +287,24 @@ const salons = [
     void lire();
   });
 
-  // Ouverte à la page précédente, ou demandée par l'adresse /communaute/#chat.
-  if (retenue() || location.hash === '#chat') ouvrir(location.hash === '#chat');
+  /**
+   * Demandée par l'adresse : /communaute/#chat, ou #chat=squat, que pose la
+   * notification d'une mention pour mener à son salon. Lue au chargement,
+   * et quand on clique la notification depuis /communaute/ même.
+   */
+  const suivreAdresse = () => {
+    const demande = /^#chat(?:=([a-z-]+))?$/.exec(location.hash);
+    if (!demande) return false;
+    const vise = boutonsSalon.find((b) => b.dataset.salon === demande[1]);
+    if (vise && vise.dataset.salon !== salon) choisirSalon(vise);
+    if (ouverte) void lire();
+    else ouvrir(true);
+    return true;
+  };
+  addEventListener('hashchange', suivreAdresse);
+
+  // Ouverte à la page précédente, ou demandée par l'adresse.
+  if (!suivreAdresse() && retenue()) ouvrir(false);
 </script>
 
 <style>
