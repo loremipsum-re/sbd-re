@@ -451,7 +451,7 @@ Un lot choisi après la fin du plan, à la demande de l'auteur.
 - **Tests** : 278 règles, et deux essais de plus dans `php db/verifier.php` :
   106 attendus.
 
-### Construit le 10 novembre, l'annuaire et les « J'aime »
+### Construit le 9 novembre, l'annuaire et les « J'aime »
 
 Un lot choisi par Claude après la fusion de tout le reste, sans décision
 demandée à l'auteur.
@@ -469,7 +469,7 @@ demandée à l'auteur.
   compte écarte les membres bannis. Le bouton porte `aria-pressed` et
   l'état choisi des autres bascules, aplat sous filet. Un visiteur lit
   « 2 membres aiment ce message ». Table `appreciation`, migration du
-  10 novembre. Aucune notification : un geste léger reste silencieux.
+  9 novembre. Aucune notification : un geste léger reste silencieux.
 - **Les pseudos proposés après « @ »**, au forum comme au chat. Huit au plus,
   membres actifs, par `api/pseudos.php` réservé aux membres
   (`pseudosCommencantPar`, lib/comptes.php). Flèches pour choisir, Entrée

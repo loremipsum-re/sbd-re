@@ -21,7 +21,7 @@ import { dateLongue } from '../../lib/format';
  * (components/Chat.astro) : la page l'annonce et l'ouvre. `#chat`, où
  * renvoie l'ancienne adresse /communaute/chat/, l'ouvre aussi.
  *
- * LA VITRINE, demande de l'auteur du 10 novembre 2026 : les dernières
+ * LA VITRINE, demande de l'auteur du 9 novembre 2026 : les dernières
  * nouvelles (les actualités, lues à la génération), le top des membres et
  * les dernières barres (public/api/communaute.php, lu à la visite). Le top
  * prend les barres vérifiées en raw, une par membre et par mouvement.
@@ -97,7 +97,7 @@ const nombreEnLettres = ['zéro', 'une', 'deux', 'trois', 'quatre', 'cinq'][TOP_
           ))
         }
       </ul>
-      <p><a href="/actualites/">Toutes les actualités</a></p>
+      <p class="suite-vitrine"><a href="/actualites/">Toutes les actualités</a></p>
     </section>
 
     <section class="bloc-vitrine" aria-labelledby="titre-top">
@@ -129,7 +129,7 @@ const nombreEnLettres = ['zéro', 'une', 'deux', 'trois', 'quatre', 'cinq'][TOP_
       <ul class="dernieres-barres" data-dernieres>
         <li class="attente">Chargement…</li>
       </ul>
-      <p><a href="/compte/a-verifier/">Vérifier des barres</a></p>
+      <p class="suite-vitrine"><a href="/compte/a-verifier/">Vérifier des barres</a></p>
     </section>
 
     <section class="fonctionnement" aria-labelledby="titre-fonctionnement">
@@ -358,6 +358,14 @@ const nombreEnLettres = ['zéro', 'une', 'deux', 'trois', 'quatre', 'cinq'][TOP_
 
   .bloc-vitrine {
     margin-bottom: var(--space-12);
+  }
+
+  /* Un lien seul dans son paragraphe : une cible de 44 px, pas un lien de
+     phrase (19 px mesurés). */
+  .suite-vitrine a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
   }
 
   .aide-vitrine {

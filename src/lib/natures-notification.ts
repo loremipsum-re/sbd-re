@@ -1,7 +1,7 @@
 /**
  * Les natures de notification (public/api/lib/notifications.php), chacune
  * avec son étiquette et son icône, pour la page des notifications et
- * l'espace du membre. Demande de l'auteur du 10 novembre 2026 : une barre
+ * l'espace du membre. Demande de l'auteur du 9 novembre 2026 : une barre
  * vérifiée se distingue des autres, en vert, avec la coche du profil.
  *
  * L'icône vient d'un sprite que la page pose (`#icone-<nom>`), l'étiquette

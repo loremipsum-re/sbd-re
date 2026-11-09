@@ -238,7 +238,7 @@ ajout ──> visible sur le profil, « non vérifiée »
 
 ### 6.4 Chat
 
-- **Deux salons généraux depuis le 10 novembre 2026**, `general` et
+- **Deux salons généraux depuis le 9 novembre 2026**, `general` et
   `general-2`, écrits dans `chat.php` (`SALONS`) et recopiés par
   `Chat.astro`. Choix de l'auteur, « on verra la suite » : les cinq salons
   de départ (`general`, `squat`, `developpe-couche`, `souleve-de-terre`,
@@ -639,7 +639,7 @@ ci-dessous restent le plan d'origine.
       le 8 novembre.
 - [x] Version 1.10.0 : nouvelle rubrique, le deuxième chiffre monte.
 
-### Les rangs, l'effacement, la vitrine, le 10 novembre
+### Les rangs, l'effacement, la vitrine, le 9 novembre
 
 Demandes de l'auteur, décisions prises avec lui le même jour.
 
@@ -681,7 +681,7 @@ Demandes de l'auteur, décisions prises avec lui le même jour.
   - Choix et liens de 44 px.
 - **Tests** : 345 règles, et `php db/verifier.php` attend 121 réussis.
 
-### L'espace du membre, le 10 novembre
+### L'espace du membre, le 9 novembre
 
 Demande de l'auteur : un espace compte amélioré, réglages compris, et une
 notification de barre vérifiée qui se distingue. Trois chantiers validés.

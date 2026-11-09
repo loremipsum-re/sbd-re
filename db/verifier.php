@@ -236,7 +236,7 @@ foreach ($attendues as $table => $colonnes) {
     if ($table === 'jeton' && !str_contains($presentes['type'] ?? '', "'session'")) {
         $manquantes[] = "type 'session'";
     }
-    // Les rangs, migration du 10 novembre 2026.
+    // Les rangs, migration du 9 novembre 2026.
     if ($table === 'membre' && !str_contains($presentes['role'] ?? '', "'moderateur'")) {
         $manquantes[] = "role 'moderateur'";
     }

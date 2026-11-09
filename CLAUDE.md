@@ -82,9 +82,9 @@ la mention « à compléter » tant que l'auteur ne les a pas fournis.
 | `/competitions/` | Liste, puis `/competitions/<nom>/<date>/` et ses records battus ce jour-là |
 | `/exterieur/` | Résultats obtenus hors de La Réunion |
 | `/athlete/<slug>/` | Une fiche par athlète. Un membre connecté y réclame la sienne, « C'est votre fiche ? » en bas de page, et l'admin relie ou refuse depuis `/compte/admin/` : relié, le profil mène à la fiche et la fiche au profil (`components/FicheMembre.astro`, `api/revendication.php`, `lib/revendications.php`). `/api/athletes.json`, généré avec le site, dit au serveur quelles fiches existent |
-| `/communaute/` | L'entrée de la communauté depuis l'ouverture du 7 novembre 2026 : le forum, le fil, les barres à vérifier, le compte, puis la vitrine du 10 novembre (trois dernières actualités, top des membres en raw, dernières barres, par `api/communaute.php` et `lib/vitrine.php`), le fonctionnement, et un bouton qui ouvre le chat. `/communaute/chat/` renvoie à `/communaute/#chat`, qui l'ouvre aussi. **Le chat flotte sur toutes les pages** depuis le 9 novembre, bouton « Chat » dans le coin (`components/Chat.astro`, posé par `BaseLayout.astro`) : il n'interroge le serveur que fenêtre ouverte, et ses styles vivent sous `.chat-flottant` |
+| `/communaute/` | L'entrée de la communauté depuis l'ouverture du 7 novembre 2026 : le forum, le fil, les barres à vérifier, le compte, puis la vitrine du 9 novembre (trois dernières actualités, top des membres en raw, dernières barres, par `api/communaute.php` et `lib/vitrine.php`), le fonctionnement, et un bouton qui ouvre le chat. `/communaute/chat/` renvoie à `/communaute/#chat`, qui l'ouvre aussi. **Le chat flotte sur toutes les pages** depuis le 9 novembre, bouton « Chat » dans le coin (`components/Chat.astro`, posé par `BaseLayout.astro`) : il n'interroge le serveur que fenêtre ouverte, et ses styles vivent sous `.chat-flottant` |
 | `/membres/`, `/membres/<pseudo>/` | L'annuaire, rendu par `api/annuaire.php` depuis le gabarit `/membres/-annuaire/` : les membres en cartes, les plus actifs d'abord, recherche par pseudo hors index. Profil public, rendu par `api/profil-page.php` depuis le gabarit `/membres/-gabarit/` (repères `%%NOM%%`), réécrit par le `.htaccess`. D'un coup d'œil depuis le 9 novembre : deux colonnes dès 56rem, la carte du membre (faits en icônes, chiffres) et les records en tuiles ; les icônes viennent de sprites posés par le gabarit, que PHP appelle par `<use>`. `noindex` tant que le profil n'a pas de performance. Plan des profils à `/sitemap-membres.xml` |
-| `/compte/`, `/compte/reglages/`, `/compte/a-verifier/`, `/compte/inscription/`, `/compte/connexion/`, `/compte/mot-de-passe/`, `/compte/recapitulatif/`, `/communaute/charte/` | Les comptes, servis par `public/api/*.php`. `/compte/` est le tableau de bord du membre depuis le 10 novembre : quatre chiffres, raccourcis en tuiles, puis deux colonnes dès 56rem (performances ; position au classement d'après `/api/positions.json`, fiche, sujets). Les réglages derrière l'engrenage, en cartes avec un sommaire collé à gauche, le récapitulatif par courriel coupé depuis le lien du courriel à `/compte/recapitulatif/`, le fil des barres à vérifier à `/compte/a-verifier/`. Prop `prive` de `BaseLayout` : `noindex`, hors plan de site, jamais de Clarity. Hors du menu : on y entre par Communauté |
+| `/compte/`, `/compte/reglages/`, `/compte/a-verifier/`, `/compte/inscription/`, `/compte/connexion/`, `/compte/mot-de-passe/`, `/compte/recapitulatif/`, `/communaute/charte/` | Les comptes, servis par `public/api/*.php`. `/compte/` est le tableau de bord du membre depuis le 9 novembre : quatre chiffres, raccourcis en tuiles, puis deux colonnes dès 56rem (performances ; position au classement d'après `/api/positions.json`, fiche, sujets). Les réglages derrière l'engrenage, en cartes avec un sommaire collé à gauche, le récapitulatif par courriel coupé depuis le lien du courriel à `/compte/recapitulatif/`, le fil des barres à vérifier à `/compte/a-verifier/`. Prop `prive` de `BaseLayout` : `noindex`, hors plan de site, jamais de Clarity. Hors du menu : on y entre par Communauté |
 | `/forum/`, `/forum/<adresse>/`, `/forum/<adresse>/<sujet>/`, `/forum/recherche/` | Le forum, rendu par `api/forum-page.php` depuis le gabarit `/forum/-gabarit/`, comme les profils. La recherche dans les titres est une adresse réservée, hors index. Indexé depuis l'ouverture (`FORUM_OUVERT` de `lib/forum.php`), plan à `/sitemap-forum.xml`. Écritures par `api/forum.php`, plan dans docs/forum.md. « J'aime » sur les messages (table `appreciation`). « @ » propose des pseudos au forum comme au chat (`lib/suggestions-pseudo.ts`, `api/pseudos.php`) |
 | `/forum/fil/`, `/compte/admin/`, `/avatars/<pseudo>.webp` | Le fil d'activité (adresse réservée du forum), l'espace de modération (404 à qui n'est pas admin, `api/admin.php`), les avatars gardés en base et servis par `api/avatar.php` : le déploiement efface tout fichier absent du site généré |
 | `/compte/notifications/` | Les notifications (`api/notifications.php`), page `prive`. Une icône et une étiquette par nature (`lib/natures-notification.ts`), la barre vérifiée en vert avec la coche, et en tête du récapitulatif. La cloche fait aussi partir le récapitulatif par courriel de quinzaine (`lib/recapitulatif.php`), faute de tâche planifiée possible. Le chat (`api/chat.php`) vit dans `/communaute/`. La cloche de l'en-tête ne paraît qu'avec le cookie lisible `sbdre-connecte`, posé à la connexion |
@@ -304,7 +304,7 @@ du menu « Se connecter » ou « Créer un compte » : la classe `connecte`,
 posée sur `<html>` avant le premier dessin d'après le cookie lisible, les
 masque à un membre.
 
-**Les rangs** (`lib/autorisation.php`, depuis le 10 novembre 2026) : admin,
+**Les rangs** (`lib/autorisation.php`, depuis le 9 novembre 2026) : admin,
 modérateur (signalements, bannir, jamais un admin ni un autre modérateur),
 juge (le badge « Vérifiée par SBD.re »), donateur (aucun droit), membre.
 L'admin les donne depuis `/compte/admin/` ; le rang d'admin se donne à la
@@ -415,6 +415,17 @@ Les rôles sombres vivent sur `:root`, le clair uniquement dans
 JavaScript, aucun attribut n'est posé sur `<html>` : c'est `:root` qui
 s'applique, donc le défaut doit y vivre. Et le repli du bouton de bascule vaut
 `'dark'`, pas `'light'`.
+
+**Le contour d'un champ de saisie porte `--bord-champ`, jamais `--border`.**
+Le filet décoratif `--border` ne se détache qu'à 1,51:1 ; un champ demande
+3:1 (critère 1.4.11). `--bord-champ` en fait 3,17 au moins, dans les deux
+thèmes, sur le fond comme sur la surface. Mesuré le 9 novembre 2026 : un
+nouveau champ le reprend.
+
+**L'en-tête tient à 320 px, connecté ou non.** Sous 22,5rem, le bouton du
+menu perd son mot et garde ses trois traits. Tout ajout à la barre se
+remesure à 320 px dans les deux états : « Connexion » l'a fait déborder de
+38 px, la cloche et l'avatar de 23 px.
 
 **`--accent` est un accent de TEXTE, `--accent-fill` est l'aplat.** Poser
 `--accent` en fond sous `--on-accent` donne 2,78:1 en thème clair. L'erreur a

@@ -6,6 +6,11 @@
  *
  * Une seule par page, ouverte par `confirmer()` de lib/api-compte.ts, qui
  * écrit le titre et les lignes, puis rend la réponse.
+ *
+ * LE FOCUS S'OUVRE SUR « ANNULER » (`autofocus`, que `showModal()` suit) :
+ * chaque geste confirmé ici retire ou change quelque chose. Sur « Confirmer »,
+ * deux appuis sur Entrée suffisaient à retirer une barre (audit du
+ * 9 novembre 2026).
  */
 ---
 
@@ -15,7 +20,7 @@
     <ul data-lignes></ul>
     <div class="actions">
       <button type="submit" value="oui">Confirmer</button>
-      <button type="submit" value="non" class="secondaire">Annuler</button>
+      <button type="submit" value="non" class="secondaire" autofocus>Annuler</button>
     </div>
   </form>
 </dialog>

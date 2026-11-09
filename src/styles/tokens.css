@@ -36,6 +36,8 @@
   --p-light-bg: #f3f2f2;
   --p-light-surface: #eae9e9;
   --p-light-border: #d7d3d3;
+  /* Le contour d'un champ : 3,49:1 sur le fond, 3,22:1 sur la surface. */
+  --p-light-bord-champ: #848080;
   --p-light-text: #201e1d; /* basalte */
   --p-light-muted: #605d5d;
   /*
@@ -98,6 +100,9 @@
   --p-dark-bg: #171614;
   --p-dark-surface: #211f1c;
   --p-dark-border: #3a3633;
+  /* Le contour d'un champ de saisie : 3,49:1 sur le fond, 3,17:1 sur la
+     surface (critère 1.4.11). --border, filet décoratif, n'en fait que 1,51. */
+  --p-dark-bord-champ: #716c69;
   --p-dark-text: #f3f2f2;
   --p-dark-muted: #b5afab;
   /* Le jaune peut rester franc sur fond sombre : il y est très lisible. */
@@ -147,6 +152,7 @@
   --bg: var(--p-dark-bg);
   --surface: var(--p-dark-surface);
   --border: var(--p-dark-border);
+  --bord-champ: var(--p-dark-bord-champ);
   --text: var(--p-dark-text);
   --muted: var(--p-dark-muted);
   --accent: var(--p-dark-accent);
@@ -315,6 +321,7 @@
   --bg: var(--p-light-bg);
   --surface: var(--p-light-surface);
   --border: var(--p-light-border);
+  --bord-champ: var(--p-light-bord-champ);
   --text: var(--p-light-text);
   --muted: var(--p-light-muted);
   --accent: var(--p-light-accent);

@@ -503,7 +503,7 @@ function rendreSujet(array $forum, array $sujet, array $messages, int $page, int
             . ($op ? '<span class="etiquette etiquette-op">Auteur du sujet</span>' : '')
             . (($m['inscription_ts'] ?? null) !== null ? '<span class="meta">Membre depuis ' . e(dateFr((int) $m['inscription_ts'], false)) . '</span>' : '')
             . '</div><div class="corps-message">'
-            . '<header><a class="numero" id="n' . $numero . '" href="#' . $ancre . '" aria-label="Lien vers le message ' . $numero . '">#' . $numero . '</a> '
+            . '<header><a class="numero" id="n' . $numero . '" href="#' . $ancre . '"><span class="sr-only">Lien vers le message </span>#' . $numero . '</a> '
             . balisageDate((int) $m['date_ts'])
             . (($m['modif_ts'] ?? null) !== null ? ' <span class="modifie">modifié le ' . balisageDate((int) $m['modif_ts']) . '</span>' : '')
             . '</header>';

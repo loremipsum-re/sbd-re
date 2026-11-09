@@ -107,7 +107,7 @@ const cases = verdicts.flatMap((v) => Array.from({ length: v.nombre }, () => v.r
   total > 0 && (
     <Infographie
       titre={titre}
-      source={`Audit mené par la mesure le ${dateAudit}, dans un navigateur et sur les pages réelles.`}
+      source={`Audit mené par la mesure le ${dateAudit}, dans un navigateur.`}
     >
       <ul class="perimetre" aria-label="Périmètre de l'audit">
         {perimetre.map((p) => (

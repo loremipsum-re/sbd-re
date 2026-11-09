@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration du 10 novembre 2026 : relier un membre à sa fiche d'athlète.
+-- Migration du 9 novembre 2026 : relier un membre à sa fiche d'athlète.
 --
 -- Pour la base déjà chargée. Une base neuve n'en a pas besoin : schema.sql
 -- porte déjà ceci. À importer UNE FOIS dans phpMyAdmin, onglet « Importer »,

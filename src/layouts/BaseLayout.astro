@@ -334,7 +334,7 @@ const courant = (href: string) =>
         </details>
 
         {/* « Se connecter » pour un visiteur, demande de l'auteur du
-            10 novembre 2026. Masqué dès que la classe `connecte`, posée en
+            9 novembre 2026. Masqué dès que la classe `connecte`, posée en
             tête de page, dit qu'un membre est là : la cloche et l'avatar
             prennent alors sa place. */}
         <a class="lien-connexion" href="/compte/connexion/">Connexion</a>
@@ -963,6 +963,24 @@ const courant = (href: string) =>
   }
   .menu summary::-webkit-details-marker {
     display: none;
+  }
+
+  /*
+   * SOUS 22,5rem, LE MENU GARDE SES TROIS TRAITS ET PERD LE MOT, dit aux
+   * lecteurs d'écran par `aria-label`. Mesuré à 320 px (critère 1.4.10) :
+   * la barre dépassait de 38 px pour un visiteur, logo, « Connexion » et
+   * menu, et de 23 px pour un membre, cloche et avatar compris.
+   */
+  @media (max-width: 22.49rem) {
+    .menu summary {
+      justify-content: center;
+      min-width: var(--cible-min);
+      padding-inline: var(--space-2);
+    }
+
+    .mot-menu {
+      display: none;
+    }
   }
   .menu summary:hover {
     border-color: var(--accent);

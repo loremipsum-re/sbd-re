@@ -44,7 +44,7 @@
   width: 100%;
   min-height: var(--cible-min);
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border);
+  border: 1px solid var(--bord-champ);
   border-radius: var(--radius);
   background: var(--bg);
   color: var(--text);
@@ -303,7 +303,7 @@
   color: var(--accent);
 }
 
-/* --- Le tableau de bord de /compte/, demande du 10 novembre 2026 ------- */
+/* --- Le tableau de bord de /compte/, demande du 9 novembre 2026 ------- */
 
 .page-espace .entete-espace {
   align-items: center;
@@ -486,7 +486,7 @@
 }
 
 /* --- Publier une barre : des boutons à choisir, plus de listes ----------
-   Demande de l'auteur du 10 novembre 2026. De vrais boutons radio, masqués
+   Demande de l'auteur du 9 novembre 2026. De vrais boutons radio, masqués
    à l'œil et non au clavier : le cadre porte l'état choisi (aplat sous
    filet, CLAUDE.md) et le contour du focus. */
 
@@ -645,7 +645,7 @@
   font-size: var(--step-0);
 }
 
-/* Effacer le compte, en rouge : demande de l'auteur du 10 novembre 2026,
+/* Effacer le compte, en rouge : demande de l'auteur du 9 novembre 2026,
    seule place du site avec le point du chat. --danger est un saumon en
    sombre, un écarlate en clair (tokens.css). Filet et texte, jamais d'aplat. */
 .carte-danger {
