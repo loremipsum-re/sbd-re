@@ -1,6 +1,7 @@
 ---
 import BadgeOfficiel from '../../components/BadgeOfficiel.astro';
 import Coupe from '../../components/Coupe.astro';
+import FicheMembre from '../../components/FicheMembre.astro';
 import IconeMouvement from '../../components/IconeMouvement.astro';
 import SpriteMouvements from '../../components/SpriteMouvements.astro';
 import InteractiveTable from '../../components/InteractiveTable.astro';
@@ -329,6 +330,7 @@ const description =
             )
           }
         </p>
+        <FicheMembre partie="lien" slug={slug} nom={name} />
       </div>
 
       <div class="liens-externes">
@@ -696,6 +698,8 @@ const description =
         </section>
       )
     }
+
+    <FicheMembre partie="reclamer" slug={slug} nom={name} />
   </div>
 </BaseLayout>
 

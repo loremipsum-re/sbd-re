@@ -1,0 +1,202 @@
+---
+/**
+ * Le lien entre une fiche d'athlète et un profil de membre, demande de
+ * l'auteur du 9 novembre 2026 (public/api/lib/revendications.php).
+ *
+ * Deux parties, posées par la fiche à deux endroits :
+ *   « lien »     sous le nom : « Profil dans la communauté : <pseudo> »,
+ *                quand l'admin a relié la fiche à un membre ;
+ *   « reclamer » en bas de page : « C'est votre fiche ? », pour un membre
+ *                connecté, quand la fiche n'est reliée à personne.
+ *
+ * La fiche est une page statique : le lien se lit à la visite, une requête
+ * gardée cinq minutes par le navigateur. Rien ne s'affiche sans JavaScript,
+ * et la fiche reste entière. Le script n'est livré qu'une fois par page,
+ * même avec les deux parties.
+ */
+import { deNom } from '../lib/format';
+
+interface Props {
+  partie: 'lien' | 'reclamer';
+  slug: string;
+  nom: string;
+}
+
+const { partie, slug, nom } = Astro.props;
+---
+
+{
+  partie === 'lien' ? (
+    <p class="profil-lie" data-profil-lie data-slug={slug} hidden>
+      Profil dans la communauté : <a href="/communaute/" data-pseudo-lie></a>
+    </p>
+  ) : (
+    <details class="reclamer-fiche" data-reclamer-fiche data-slug={slug} hidden>
+      <summary>C'est votre fiche ?</summary>
+      <form data-form-fiche novalidate>
+        <p>
+          Reliez la fiche {deNom(nom)} à votre profil de membre. L'admin vérifie la
+          demande avant de relier les deux pages, et le lien se retire à tout
+          moment depuis votre espace.
+        </p>
+        <label for="message-fiche">Un mot pour l'admin, facultatif</label>
+        <textarea id="message-fiche" name="message" rows="3" maxlength="300" aria-describedby="aide-message-fiche"></textarea>
+        <p class="aide" id="aide-message-fiche">Votre club, une compétition disputée ou votre Instagram aident à vous reconnaître.</p>
+        <button type="submit">Demander le lien</button>
+        <p class="etat-fiche" data-etat role="status" aria-live="polite" hidden></p>
+      </form>
+    </details>
+  )
+}
+
+<script>
+  import { api } from '../lib/api-compte';
+
+  const lien = document.querySelector<HTMLElement>('[data-profil-lie]');
+  const reclamer = document.querySelector<HTMLDetailsElement>('[data-reclamer-fiche]');
+  const slug = (lien ?? reclamer)?.dataset.slug ?? '';
+  const connecte = document.cookie.split('; ').includes('sbdre-connecte=1');
+
+  if (slug) {
+    void fetch(`/api/revendication.php?fiche=${encodeURIComponent(slug)}`, { credentials: 'same-origin' })
+      .then((r) => r.json() as Promise<{ ok?: boolean; pseudo?: string | null }>)
+      .then((r) => {
+        if (r.ok && r.pseudo) {
+          if (!lien) return;
+          const a = lien.querySelector<HTMLAnchorElement>('[data-pseudo-lie]')!;
+          a.href = `/membres/${r.pseudo}/`;
+          a.textContent = r.pseudo;
+          lien.hidden = false;
+        } else if (connecte && reclamer) {
+          reclamer.hidden = false;
+        }
+      })
+      .catch(() => {
+        /* Réseau coupé : la fiche se lit sans le lien. */
+      });
+  }
+
+  const form = reclamer?.querySelector<HTMLFormElement>('[data-form-fiche]');
+  if (form) {
+    const etat = form.querySelector<HTMLElement>('[data-etat]')!;
+    const bouton = form.querySelector<HTMLButtonElement>('button')!;
+    form.addEventListener('submit', async (evenement) => {
+      evenement.preventDefault();
+      bouton.disabled = true;
+      const r = await api('/api/revendication.php', 'POST', {
+        slug,
+        message: form.querySelector<HTMLTextAreaElement>('textarea')!.value,
+      });
+      etat.textContent = r.message;
+      etat.dataset.ok = r.ok ? 'oui' : 'non';
+      etat.hidden = false;
+      bouton.disabled = r.ok;
+    });
+  }
+</script>
+
+<style>
+  .profil-lie {
+    margin: var(--space-2) 0 0;
+    color: var(--muted);
+  }
+
+  .profil-lie a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+    font-weight: 700;
+  }
+
+  .profil-lie[hidden],
+  .reclamer-fiche[hidden],
+  .etat-fiche[hidden] {
+    display: none;
+  }
+
+  .reclamer-fiche {
+    max-width: 36rem;
+    margin-top: var(--space-8);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .reclamer-fiche summary {
+    display: flex;
+    align-items: center;
+    min-height: var(--cible-min);
+    padding: 0 var(--space-4);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  form {
+    display: grid;
+    gap: var(--space-3);
+    padding: 0 var(--space-4) var(--space-4);
+  }
+
+  form p {
+    margin: 0;
+  }
+
+  label {
+    font-weight: 600;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: var(--police-champ);
+    resize: vertical;
+  }
+
+  textarea:focus-visible {
+    border-color: var(--accent);
+  }
+
+  .aide {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  button {
+    justify-self: start;
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-6);
+    border: 1px solid var(--accent-fill);
+    border-radius: var(--radius);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  .etat-fiche {
+    padding: var(--space-2) var(--space-3);
+    border-left: 3px solid var(--border);
+    font-weight: 600;
+  }
+
+  .etat-fiche[data-ok='oui'] {
+    border-left-color: var(--positif);
+    color: var(--positif);
+  }
+
+  .etat-fiche[data-ok='non'] {
+    border-left-color: var(--negatif);
+    color: var(--negatif);
+  }
+</style>
