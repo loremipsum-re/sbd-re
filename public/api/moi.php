@@ -42,8 +42,12 @@ if ($methode === 'GET') {
     $compte['admin'] = estAdmin($membre);
     $compte['avatar'] = $avatar !== null ? '/avatars/' . $compte['pseudo'] . '.webp?v=' . (int) $avatar['v'] : '';
 
-    // « Mes sujets » de /compte/ : ceux qu'il a ouverts.
-    repondreOk('', ['compte' => $compte, 'sujets' => sujetsDuMembre((int) $membre['id'])]);
+    // « Mes sujets » et « Sujets suivis » de /compte/.
+    repondreOk('', [
+        'compte' => $compte,
+        'sujets' => sujetsDuMembre((int) $membre['id']),
+        'suivis' => sujetsSuivis((int) $membre['id']),
+    ]);
 }
 
 if ($methode === 'DELETE') {

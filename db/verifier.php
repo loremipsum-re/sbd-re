@@ -645,6 +645,39 @@ if (!function_exists('SBDRE\creerSujet')) {
             ? ok('« Mes sujets » rend les sujets ouverts par le membre.')
             : ko('« Mes sujets » est faux : ' . json_encode($siens));
 
+        \SBDRE\renommerSujet($sujetId, 'Essai de sujet renommé', false);
+        (\SBDRE\ligne('SELECT titre FROM sujet WHERE id = :s', ['s' => $sujetId])['titre'] ?? '') === 'Essai de sujet renommé'
+            ? ok('Le titre d\'un sujet se modifie.')
+            : ko('Le titre du sujet n\'a pas changé.');
+
+        // Sans accents ni majuscules, et _ cherché comme une lettre.
+        $trouves = array_map('intval', array_column(\SBDRE\rechercherSujets('ESSAI DE SUJET RENOMME'), 'id'));
+        $joker = array_map('intval', array_column(\SBDRE\rechercherSujets('Essai_de'), 'id'));
+        (in_array($sujetId, $trouves, true) && !in_array($sujetId, $joker, true))
+            ? ok('La recherche trouve un titre sans accents ni majuscules, et _ reste une lettre.')
+            : ko('La recherche des titres est fausse.');
+
+        in_array($sujetId, array_column(\SBDRE\sujetsSuivis($lecteur['id']), 'id'), true)
+            ? ok('« Sujets suivis » rend les sujets que le membre suit.')
+            : ko('« Sujets suivis » oublie un sujet suivi.');
+
+        $autre = \SBDRE\ligne("SELECT id FROM forum WHERE id <> :f AND etat <> 'masque' ORDER BY id LIMIT 1", ['f' => $forum['id']]);
+        \SBDRE\deplacerSujet($sujetId, (int) $autre['id']);
+        $ici = (int) (\SBDRE\ligne('SELECT forum_id FROM sujet WHERE id = :s', ['s' => $sujetId])['forum_id'] ?? 0);
+        \SBDRE\deplacerSujet($sujetId, (int) $forum['id']);
+        $ici === (int) $autre['id']
+            ? ok('Un sujet se déplace vers un autre forum.')
+            : ko('Le sujet n\'a pas changé de forum.');
+
+        $stats = \SBDRE\statistiquesForum();
+        ((int) ($stats['sujets'] ?? 0) >= 1 && (int) ($stats['membres'] ?? 0) >= 3 && ($stats['dernier'] ?? null) !== null)
+            ? ok('Les statistiques du pied du forum passent en mode strict.')
+            : ko('Les statistiques du forum sont fausses : ' . json_encode($stats));
+
+        $nombre("SELECT COUNT(*) AS n FROM forum WHERE adresse IN ('fil', 'gabarit', 'recherche')") === 0
+            ? ok('Aucun forum ne porte une adresse réservée, la recherche comprise.')
+            : ko('Un forum porte l\'adresse « fil », « gabarit » ou « recherche » : sa page serait masquée.');
+
         // Sur la même connexion : l'autre ne voit pas les membres de cette
         // transaction, et attendrait leur verrou au lieu de refuser.
         $refuseIci = function (string $intitule, string $sql, array $valeurs) use ($base): void {

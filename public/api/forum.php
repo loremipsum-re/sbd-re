@@ -7,6 +7,9 @@
  *   reponse  { sujet_id, texte, confirme? }      répondre
  *   suivre   { sujet_id, suivre }                suivre un sujet, ou plus
  *   modifier { message_id, texte, confirme? }    corriger son message, 24 heures
+ *   titre    { sujet_id, titre, confirme? }      corriger le titre de son sujet, 24 heures
+ *   apercu   { texte }                           le texte rendu tel qu'il paraîtra, sans rien publier
+ *   deplacer { sujet_id, forum }                 changer un sujet de forum, l'admin seul
  *   creer_forum, renommer_forum, epingler, verrouiller : les forums des membres
  *
  * Membre confirmé et non banni seulement (exigerActif). Un mot bloquant
@@ -134,6 +137,53 @@ switch (texte('action')) {
         }
         modifierMessage($messageId, $texte, controlerTexte($texte));
         repondreOk('Message modifié.');
+
+    case 'titre':
+        if (!is_int($sujetId) || $sujetId <= 0) {
+            refuser(422, 'Sujet illisible.');
+        }
+        $sujet = ligne(
+            'SELECT s.id, s.membre_id, s.verrouille, UNIX_TIMESTAMP(s.date_creation) AS creation_ts, f.etat
+               FROM sujet s JOIN forum f ON f.id = s.forum_id WHERE s.id = :s',
+            ['s' => $sujetId],
+        );
+        if ($sujet === null || $sujet['etat'] === 'masque') {
+            refuser(404, 'Ce sujet n\'existe plus.');
+        }
+        if ((int) $sujet['verrouille'] === 1 || $sujet['etat'] !== 'ouvert') {
+            refuser(403, 'Ce sujet est fermé : son titre ne se modifie plus.');
+        }
+        if (!peutModifierTitre($membre, $sujet, time())) {
+            refuser(403, 'Le titre se modifie par l\'auteur du sujet, dans les ' . MODIFICATION_HEURES . ' heures qui suivent son ouverture.');
+        }
+        $titre = texte('titre');
+        if (!titreSujetValide($titre)) {
+            refuser(422, 'Le titre tient en ' . TITRE_SUJET_MIN . ' à ' . TITRE_SUJET_MAX . ' caractères.');
+        }
+        renommerSujet($sujetId, $titre, controlerTexte($titre));
+        repondreOk('Titre modifié.');
+
+    case 'apercu':
+        if (!texteForumValide($texte)) {
+            refuser(422, 'Le message tient en 1 à ' . MESSAGE_FORUM_MAX . ' caractères.');
+        }
+        // Le rendu des pages, échappé d'abord : la page l'insère tel quel.
+        $smileys = json_decode((string) @file_get_contents(__DIR__ . '/smileys.json'), true);
+        repondreOk('', ['html' => rendreTexte($texte, is_array($smileys) ? $smileys : [])]);
+
+    case 'deplacer':
+        if (!estAdmin($membre)) {
+            refuser(403, 'Seul l\'admin déplace un sujet.');
+        }
+        if (!is_int($sujetId) || $sujetId <= 0) {
+            refuser(422, 'Sujet illisible.');
+        }
+        $vers = ligne("SELECT id, adresse FROM forum WHERE adresse = :a AND etat <> 'masque'", ['a' => texte('forum')]);
+        if ($vers === null || ligne('SELECT 1 AS n FROM sujet WHERE id = :s', ['s' => $sujetId]) === null) {
+            refuser(404, 'Ce sujet ou ce forum n\'existe plus.');
+        }
+        deplacerSujet($sujetId, (int) $vers['id']);
+        repondreOk('Sujet déplacé.', ['lien' => lienSujet((string) $vers['adresse'], $sujetId)]);
 
     case 'suivre':
         $suivre = entree()['suivre'] ?? null;

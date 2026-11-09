@@ -16,7 +16,8 @@
  * portent pas l'attribut qu'Astro pose pour isoler les styles d'un fichier.
  *
  * Les repères : PSEUDO, TITRE, DESCRIPTION, ROBOTS (index ou noindex, selon
- * que le profil a des performances), PRESENTATION, FICHE, RECORDS, DONNEES
+ * que le profil a des performances), PRESENTATION, FICHE, RECORDS, SUJETS
+ * (ses sujets au forum, ou rien), AVATAR, MEMBRE, DONNEES
  * (le JSON-LD ProfilePage). Toute adresse `/membres/-gabarit/` devient celle
  * du profil, l'adresse canonique comprise.
  */
@@ -40,6 +41,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       <h2 id="titre-records">Records</h2>
       %%RECORDS%%
     </section>
+
+    %%SUJETS%%
 
     {/* Signaler ce profil, avatar compris : pour un membre connecté seulement,
         d'après le cookie lisible de la connexion (lib/cloche.ts). */}
@@ -118,8 +121,34 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     min-height: var(--cible-min);
   }
 
-  .page-membre .records-membre {
+  .page-membre .records-membre,
+  .page-membre .sujets-membre {
     max-width: 48rem;
+  }
+
+  /* Ses sujets au forum : le titre en lien, le forum dessous. */
+  .page-membre .sujets-membre ul {
+    margin: var(--space-3) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .page-membre .sujets-membre li {
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-membre .sujets-membre a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+  }
+
+  .page-membre .sujets-membre .meta {
+    color: var(--muted);
+    font-size: var(--step--1);
   }
 
   .page-membre .records-membre h2 {

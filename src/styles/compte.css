@@ -252,6 +252,10 @@
   font-size: var(--step--1);
 }
 
+.liste-sujets-compte button {
+  margin-top: var(--space-1);
+}
+
 /* Vérifiée en vert, non vérifiée en ambre, le mot toujours écrit. Mêmes
    règles sur le profil public (pages/membres/-gabarit.astro). */
 .liste-perfs-compte .verif {

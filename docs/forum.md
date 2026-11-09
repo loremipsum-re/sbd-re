@@ -370,7 +370,40 @@ Le reste du plan, demandé par l'auteur le 8 novembre, en un lot de cinq.
   qui coupe sans connexion, une fois, en POST. Le jeton est un nouveau type
   de `jeton` : `db/migration-2026-11-08-recapitulatif.sql`.
 - **Tests** : 239 règles (`php -d extension=gd db/verifier-autorisation.php`),
-  et sept essais de plus dans `php db/verifier.php`.
+  et six essais de plus dans `php db/verifier.php` (97 réussites, relevées par
+  l'auteur le 9 novembre ; le lot en annonçait sept, par erreur de compte).
+
+### Construit le 9 novembre, le confort du forum
+
+Dix tâches demandées par l'auteur le 9 novembre, choisies d'après les forums
+phpBB pris pour modèle. Elles partagent les mêmes fichiers, d'où un seul
+commit pour le code.
+
+- **Modifier le titre de son sujet**, comme un message : son auteur, 24
+  heures après l'ouverture, sujet ouvert (`peutModifierTitre`). Un titre qui
+  aborde le dopage pose l'avertissement sur le premier message.
+- **Les boutons Gras, Italique, Citation, Lien** au-dessus de chaque champ
+  du forum, formulaire « Modifier » compris (`brancherBalises`,
+  `lib/barre-smileys.ts`). Ils entourent la sélection.
+- **L'aperçu** : le serveur rend le texte par `rendreTexte`, sans rien
+  publier (action `apercu`), et la page l'affiche dans un cadre pointillé.
+- **« Dernier message » mène au message**, plus seulement à sa page : le
+  dernier message d'un sujet porte l'ancre `#dernier` (`lienDernier`).
+- **« Qui est en ligne » et les statistiques** au pied de l'accueil, comme
+  sur phpBB. Lire le forum compte désormais comme une présence, au même
+  titre que le chat (`marquerActivite`). La page de confidentialité le dit.
+- **« Sujets suivis »** dans `/compte/`, avec « Ne plus suivre ».
+- **Les sujets d'un membre sur son profil public**, dix au plus, repère
+  `%%SUJETS%%`.
+- **L'admin déplace un sujet** vers un autre forum, au pied du sujet. Les
+  anciennes adresses du sujet renvoient en 301 vers la nouvelle.
+- **La recherche dans les titres**, `/forum/recherche/?q=`, adresse
+  réservée comme le fil, hors index. Sans accents ni majuscules, et % ou _
+  se cherchent comme des lettres.
+- **Le fil d'Ariane en données structurées** `BreadcrumbList`, sur le fil,
+  chaque forum et chaque sujet.
+- **Tests** : 265 règles (`php -d extension=gd db/verifier-autorisation.php`),
+  six essais de plus dans `php db/verifier.php` : 103 attendus.
 
 ---
 

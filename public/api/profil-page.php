@@ -17,6 +17,7 @@ namespace SBDRE;
 
 define('SBDRE_API', true);
 require __DIR__ . '/lib/profil.php';
+require __DIR__ . '/lib/forum.php';
 
 header('X-Content-Type-Options: nosniff');
 
@@ -80,6 +81,7 @@ try {
         introuvable();
     }
     $performances = performancesAvecVotes('p.membre_id = :id', ['id' => $membre['id']]);
+    $sujets = sujetsDuMembre((int) $membre['id'], 10);
 } catch (\RuntimeException | \PDOException $e) {
     indisponible($e->getMessage());
 }
@@ -102,4 +104,4 @@ if ($methode === 'HEAD') {
     exit;
 }
 
-echo rendreProfil($membre, $gabarit, is_array($salles) ? $salles : [], $performances);
+echo rendreProfil($membre, $gabarit, is_array($salles) ? $salles : [], $performances, $sujets);
