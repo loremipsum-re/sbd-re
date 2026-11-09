@@ -94,8 +94,9 @@ CREATE TABLE IF NOT EXISTS membre (
   -- vivent dans le dépôt, pas en base. PHP valide contre leur liste.
   salle           VARCHAR(80)     NULL     DEFAULT NULL,
 
-  -- Donné à la main en base. Aucun point d'entrée ne permet de le changer.
-  role            ENUM('membre','admin') NOT NULL DEFAULT 'membre',
+  -- Le rang (lib/autorisation.php). L'admin donne les quatre premiers depuis
+  -- /compte/admin/ ; « admin » se donne à la main en base, et nulle part ailleurs.
+  role            ENUM('membre','donateur','juge','moderateur','admin') NOT NULL DEFAULT 'membre',
 
   -- Sans adresse vérifiée : ni publier, ni voter, ni chat.
   courriel_verifie TINYINT(1)     NOT NULL DEFAULT 0,

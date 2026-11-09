@@ -5,8 +5,10 @@
  * La file des signalements, une ligne par contenu signalé, les plus signalés
  * d'abord, avec l'aperçu, l'auteur et les gestes qui conviennent. Puis les
  * forums des membres, les plus récents d'abord. Tout passe par
- * public/api/admin.php, qui répond 404 à qui n'est pas admin : la page dit
- * alors seulement qu'elle n'existe pas.
+ * public/api/admin.php, qui répond 404 hors de l'équipe de modération : la
+ * page dit alors seulement qu'elle n'existe pas. Un modérateur y trouve les
+ * signalements, les forums et les comptes bannis ; l'admin, en plus, les
+ * fiches réclamées et les rangs (lib/autorisation.php).
  *
  * Page `prive` : ni indexée, ni mesurée, hors du menu.
  */
@@ -36,9 +38,34 @@ import '../../styles/communaute.css';
       <ol class="liste-notifications" data-forums></ol>
       <p class="aide" data-forums-vide hidden>Aucun forum de membre pour l'instant.</p>
 
-      <h2>Fiches réclamées</h2>
-      <ol class="liste-notifications" data-revendications></ol>
-      <p class="aide" data-revendications-vide hidden>Aucune fiche réclamée en attente.</p>
+      <div data-admin-seul hidden>
+        <h2>Fiches réclamées</h2>
+        <ol class="liste-notifications" data-revendications></ol>
+        <p class="aide" data-revendications-vide hidden>Aucune fiche réclamée en attente.</p>
+
+        <h2>Rangs</h2>
+        <p class="aide">
+          Le modérateur traite les signalements et bannit, le juge pose le badge
+          « Vérifiée par SBD.re », le donateur ne change rien aux droits. Seuls
+          l'admin et le modérateur portent un badge au forum et au chat. Le rang
+          d'admin se donne à la main, en base.
+        </p>
+        <ol class="liste-notifications" data-rangs></ol>
+        <form class="form-compte" data-form-rang novalidate>
+          <div class="champ">
+            <label for="pseudo-rang">Pseudo</label>
+            <input id="pseudo-rang" name="pseudo" type="text" required autocomplete="off" autocapitalize="none" spellcheck="false" />
+          </div>
+          <div class="champ">
+            <label for="choix-rang">Rang</label>
+            <select id="choix-rang" name="rang" data-choix-rang></select>
+          </div>
+          <div class="actions">
+            <button type="submit">Donner le rang</button>
+          </div>
+          <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+        </form>
+      </div>
 
       <h2>Comptes bannis</h2>
       <ol class="liste-notifications" data-bannis></ol>
@@ -50,7 +77,7 @@ import '../../styles/communaute.css';
 </BaseLayout>
 
 <script>
-  import { afficher, api, confirmer } from '../../lib/api-compte';
+  import { afficher, api, brancher, champ, confirmer } from '../../lib/api-compte';
   import { deNom } from '../../lib/format';
 
   interface Signalement {
@@ -202,6 +229,34 @@ import '../../styles/communaute.css';
     return li;
   };
 
+  /* --- Les rangs, pour l'admin seul ------------------------------------- */
+
+  interface Rang {
+    id: number;
+    pseudo: string;
+    rang: string;
+  }
+
+  const ligneRang = (m: Rang, noms: Record<string, string>) => {
+    const li = el('li');
+    li.append(el('p', { textContent: `${m.pseudo} · ${m.rang === 'admin' ? 'Admin' : (noms[m.rang] ?? m.rang)}` }));
+    // L'admin se change en base : pas de geste sur sa ligne.
+    if (m.rang !== 'admin') {
+      li.append(geste('Remettre membre', { action: 'rang', pseudo: m.pseudo, rang: 'membre' }, `${m.pseudo} perd son rang et redevient membre.`));
+    }
+    return li;
+  };
+
+  const formRang = document.querySelector<HTMLFormElement>('[data-form-rang]')!;
+  brancher(
+    formRang,
+    (d) => api('/api/admin.php', 'POST', { action: 'rang', pseudo: champ(d, 'pseudo'), rang: champ(d, 'rang') }),
+    () => {
+      formRang.reset();
+      charger();
+    },
+  );
+
   const charger = () =>
     void api('/api/admin.php', 'GET').then((r) => {
       if (r.statut === 401) {
@@ -212,8 +267,20 @@ import '../../styles/communaute.css';
         intro.textContent = 'Cette page n\'existe pas.';
         return;
       }
-      intro.textContent = 'Les signalements en attente, les plus signalés d\'abord, puis les fiches réclamées, les forums des membres et les comptes bannis.';
+      const admin = r.admin === true;
+      intro.textContent = admin
+        ? 'Les signalements en attente, les plus signalés d\'abord, puis les forums des membres, les fiches réclamées, les rangs et les comptes bannis.'
+        : 'Les signalements en attente, les plus signalés d\'abord, puis les forums des membres et les comptes bannis.';
       section.hidden = false;
+      document.querySelector<HTMLElement>('[data-admin-seul]')!.hidden = !admin;
+      if (admin) {
+        const noms = (r.rangs_attribuables ?? {}) as Record<string, string>;
+        const choix = document.querySelector<HTMLSelectElement>('[data-choix-rang]')!;
+        if (choix.options.length === 0) {
+          choix.append(...Object.entries(noms).map(([valeur, nom]) => new Option(nom, valeur)));
+        }
+        document.querySelector<HTMLOListElement>('[data-rangs]')!.replaceChildren(...((r.rangs ?? []) as Rang[]).map((m) => ligneRang(m, noms)));
+      }
       const file = r.file as Signalement[];
       const forums = r.forums as ForumMembre[];
       listeFile.replaceChildren(...file.map(ligneSignalement));

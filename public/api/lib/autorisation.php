@@ -37,7 +37,37 @@ if (!defined('SBDRE_API')) {
 
 require_once __DIR__ . '/session.php';
 
-const ROLE_ADMIN = 'admin';
+/*
+ * LES RANGS, demande de l'auteur du 10 novembre 2026 (docs/comptes.md) :
+ *   admin        tout, et lui seul donne les rangs ; il se nomme à la main
+ *                en base, aucun point d'entrée n'écrit ce rang-là ;
+ *   moderateur   la file des signalements (masquer, retirer, classer, état
+ *                d'un forum) et bannir, jamais un admin ni un autre
+ *                modérateur ;
+ *   juge         le badge « Vérifiée par SBD.re » sur une performance ;
+ *   donateur     aucun droit, un merci enregistré ;
+ *   membre       le rang de tous.
+ * Seuls l'admin et le modérateur s'affichent, d'un badge, au forum et au chat.
+ */
+const ROLE_ADMIN      = 'admin';
+const ROLE_MODERATEUR = 'moderateur';
+const ROLE_JUGE       = 'juge';
+const ROLE_DONATEUR   = 'donateur';
+const ROLE_MEMBRE     = 'membre';
+
+/** Les rangs que l'admin donne depuis /compte/admin/, dans l'ordre du menu. */
+const RANGS_ATTRIBUABLES = [
+    ROLE_MEMBRE     => 'Membre',
+    ROLE_DONATEUR   => 'Donateur',
+    ROLE_JUGE       => 'Juge',
+    ROLE_MODERATEUR => 'Modérateur',
+];
+
+/** Le badge affiché au forum et au chat : l'admin et le modérateur seuls. */
+const BADGES_RANG = [
+    ROLE_ADMIN      => 'Admin',
+    ROLE_MODERATEUR => 'Modo',
+];
 
 /** Le badge communauté : 20 votes au moins, dont 60 % favorables. */
 const VOTES_MIN           = 20;
@@ -78,6 +108,44 @@ function estActif(?array $membre): bool
 function estAdmin(?array $membre): bool
 {
     return estActif($membre) && ($membre['role'] ?? '') === ROLE_ADMIN;
+}
+
+/** Modérer : le modérateur actif, et l'admin. */
+function estModerateur(?array $membre): bool
+{
+    return estActif($membre) && in_array($membre['role'] ?? '', [ROLE_MODERATEUR, ROLE_ADMIN], true);
+}
+
+/** Juger une barre : le juge actif, et l'admin. */
+function estJuge(?array $membre): bool
+{
+    return estActif($membre) && in_array($membre['role'] ?? '', [ROLE_JUGE, ROLE_ADMIN], true);
+}
+
+/**
+ * Bannir ce compte ? Le modérateur bannit un membre, un donateur ou un juge ;
+ * l'admin, un modérateur en plus. Personne ne bannit un admin, ni soi-même.
+ *
+ * @param array<string, mixed>|null $acteur
+ * @param array<string, mixed>      $cible  id, role
+ */
+function peutBannir(?array $acteur, array $cible): bool
+{
+    if (!estModerateur($acteur) || (int) ($cible['id'] ?? 0) === (int) ($acteur['id'] ?? 0)) {
+        return false;
+    }
+
+    return match ($cible['role'] ?? '') {
+        ROLE_ADMIN      => false,
+        ROLE_MODERATEUR => estAdmin($acteur),
+        default         => true,
+    };
+}
+
+/** Le badge de rang à afficher à côté d'un pseudo, ou ''. */
+function badgeRang(?string $role): string
+{
+    return BADGES_RANG[$role ?? ''] ?? '';
 }
 
 /**
@@ -123,7 +191,7 @@ function peutPublier(?array $membre): bool
  */
 function peutRetirerPerformance(array $performance, ?array $membre): bool
 {
-    return (estActif($membre) && estAuteur($performance, $membre)) || estAdmin($membre);
+    return (estActif($membre) && estAuteur($performance, $membre)) || estModerateur($membre);
 }
 
 /**
@@ -151,13 +219,14 @@ function peutVoter(array $performance, ?array $membre, int $maintenant): bool
 }
 
 /**
- * Poser le badge admin, masquer un message, bannir, traiter un signalement.
+ * Masquer un message, bannir, traiter un signalement : le modérateur et
+ * l'admin. Le badge SBD.re relève du juge (estJuge).
  *
  * @param array<string, mixed>|null $membre
  */
 function peutModerer(?array $membre): bool
 {
-    return estAdmin($membre);
+    return estModerateur($membre);
 }
 
 /**
@@ -243,6 +312,23 @@ function exigerActif(): array
 
     if (!estActif($membre)) {
         refuser(403, 'Adresse de courriel non vérifiée.');
+    }
+
+    return $membre;
+}
+
+/**
+ * L'équipe : modérateur, juge ou admin. Les autres reçoivent 404, comme
+ * pour exigerAdmin.
+ *
+ * @return array<string, mixed>
+ */
+function exigerEquipe(): array
+{
+    $membre = exigerMembre();
+
+    if (!estModerateur($membre) && !estJuge($membre)) {
+        refuser(404, 'Introuvable.');
     }
 
     return $membre;

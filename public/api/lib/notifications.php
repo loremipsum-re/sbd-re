@@ -84,28 +84,33 @@ function notifierMentions(array $pseudos, int $sujetId, int $auteurId, string $t
 
 /**
  * Ce que l'en-tête montre d'un membre connecté, lu avec la cloche une fois
- * par minute : son pseudo et son avatar pour le menu du compte, le nombre de
- * signalements en attente pour un admin, et le numéro du dernier message du
- * chat écrit par un autre, pour le point du bouton « Chat ».
+ * par minute : son pseudo et son avatar pour le menu du compte, ses droits
+ * (modération, juge, admin) pour les liens de l'équipe, la file en attente,
+ * et le numéro du dernier message du chat écrit par un autre, pour le point
+ * du bouton « Chat ».
  *
  * @param array<string, mixed> $membre id, pseudo, role
- * @return array{pseudo: string, avatar: string, admin: bool, signalements: int, chat_dernier: int}
+ * @return array{pseudo: string, avatar: string, admin: bool, moderation: bool, juge: bool, signalements: int, chat_dernier: int}
  */
 function etatEntete(array $membre): array
 {
     $id = (int) $membre['id'];
     $avatar = ligne('SELECT UNIX_TIMESTAMP(date_maj) AS v FROM avatar WHERE membre_id = :m', ['m' => $id]);
     $admin = estAdmin($membre);
+    $moderation = estModerateur($membre);
 
     return [
         'pseudo'       => (string) $membre['pseudo'],
         'avatar'       => $avatar !== null ? adresseAvatar((string) $membre['pseudo'], (int) $avatar['v']) : '',
         'admin'        => $admin,
-        // La file de l'admin : les cibles signalées, et les fiches réclamées.
-        'signalements' => $admin
-            ? (int) (ligne('SELECT COUNT(*) AS n FROM (SELECT 1 FROM signalement WHERE traite = 0 GROUP BY type, cible_id) AS file')['n'] ?? 0)
-                + (int) (ligne("SELECT COUNT(*) AS n FROM revendication WHERE etat = 'attente'")['n'] ?? 0)
-            : 0,
+        'moderation'   => $moderation,
+        'juge'         => estJuge($membre),
+        // La file de l'équipe : les cibles signalées, et pour l'admin les
+        // fiches réclamées.
+        'signalements' => ($moderation
+                ? (int) (ligne('SELECT COUNT(*) AS n FROM (SELECT 1 FROM signalement WHERE traite = 0 GROUP BY type, cible_id) AS file')['n'] ?? 0)
+                : 0)
+            + ($admin ? (int) (ligne("SELECT COUNT(*) AS n FROM revendication WHERE etat = 'attente'")['n'] ?? 0) : 0),
         // Les salons ouverts seulement : un message d'un salon retiré, que
         // personne ne lit plus, laisserait le point allumé sept jours.
         'chat_dernier' => (int) (ligne(

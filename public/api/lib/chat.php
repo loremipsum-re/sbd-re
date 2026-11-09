@@ -25,6 +25,7 @@ if (!defined('SBDRE_API')) {
 
 require_once __DIR__ . '/bdd.php';
 require_once __DIR__ . '/notifications.php';
+require_once __DIR__ . '/autorisation.php';
 
 /**
  * Deux salons généraux, choix de l'auteur du 10 novembre 2026, en attendant
@@ -61,8 +62,11 @@ function texteChatValide(string $texte): bool
  */
 function lireChat(string $canal, int $depuis, bool $membre): array
 {
-    $champs = 'SELECT id, pseudo, texte, sensible, UNIX_TIMESTAMP(date_envoi) AS date_ts
-                 FROM message WHERE canal = :c AND masque_par IS NULL';
+    // Le rang de l'auteur, pour le badge de l'admin et du modérateur : un
+    // compte banni ou effacé n'en porte plus.
+    $champs = 'SELECT ms.id, ms.pseudo, ms.texte, ms.sensible, UNIX_TIMESTAMP(ms.date_envoi) AS date_ts, mb.role
+                 FROM message ms LEFT JOIN membre mb ON mb.id = ms.membre_id AND mb.banni = 0
+                WHERE ms.canal = :c AND ms.masque_par IS NULL';
     $params = ['c' => $canal];
     if ($depuis > 0) {
         $params['d'] = $depuis;
@@ -70,15 +74,15 @@ function lireChat(string $canal, int $depuis, bool $membre): array
 
     $lignes = match (true) {
         $membre && $depuis > 0 => lignes(
-            "$champs AND id > :d AND date_envoi > NOW() - INTERVAL " . CHAT_JOURS . ' DAY ORDER BY id LIMIT 100',
+            "$champs AND ms.id > :d AND ms.date_envoi > NOW() - INTERVAL " . CHAT_JOURS . ' DAY ORDER BY ms.id LIMIT 100',
             $params,
         ),
         $membre => array_reverse(lignes(
-            "$champs AND date_envoi > NOW() - INTERVAL " . CHAT_JOURS . ' DAY ORDER BY id DESC LIMIT 100',
+            "$champs AND ms.date_envoi > NOW() - INTERVAL " . CHAT_JOURS . ' DAY ORDER BY ms.id DESC LIMIT 100',
             $params,
         )),
         $depuis > 0 => lignes(
-            "$champs AND id > :d AND date_envoi > NOW() - INTERVAL " . CHAT_VISITEUR_MINUTES . ' MINUTE ORDER BY id LIMIT 50',
+            "$champs AND ms.id > :d AND ms.date_envoi > NOW() - INTERVAL " . CHAT_VISITEUR_MINUTES . ' MINUTE ORDER BY ms.id LIMIT 50',
             $params,
         ),
         default => [],
@@ -95,6 +99,7 @@ function lireChat(string $canal, int $depuis, bool $membre): array
             'texte'    => $m['texte'],
             'sensible' => (int) $m['sensible'] === 1,
             'date'     => (int) $m['date_ts'],
+            'rang'     => badgeRang($m['role'] ?? null),
         ], $lignes),
         'dernier' => $dernier,
     ];

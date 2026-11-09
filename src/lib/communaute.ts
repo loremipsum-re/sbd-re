@@ -20,3 +20,12 @@ function entier(nom: string): number {
 export const VOTES_MIN = entier('VOTES_MIN');
 export const FAVORABLES_POURCENT = entier('FAVORABLES_POURCENT');
 export const ANCIENNETE_VOTE_JOURS = entier('ANCIENNETE_VOTE_JOURS');
+
+/** Le top des membres de /communaute/, lu dans public/api/lib/vitrine.php. */
+import vitrine from '../../public/api/lib/vitrine.php?raw';
+
+const top = vitrine.match(/^const TOP_PAR_MOUVEMENT\s*=\s*(\d+);/m);
+if (!top) {
+  throw new Error('Communauté : la constante TOP_PAR_MOUVEMENT est introuvable dans public/api/lib/vitrine.php.');
+}
+export const TOP_PAR_MOUVEMENT = Number(top[1]);

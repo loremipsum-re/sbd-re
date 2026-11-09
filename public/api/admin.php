@@ -1,6 +1,10 @@
 <?php
 /**
- * Les gestes de l'admin (docs/comptes.md, phase 8 ; docs/forum.md, étape 8).
+ * Les gestes de l'équipe (docs/comptes.md, phase 8 et rangs ; docs/forum.md,
+ * étape 8). Chaque geste exige son rang (lib/autorisation.php) :
+ *   juge        le badge SBD.re ;
+ *   modérateur  masquer, retirer, classer, état d'un forum, bannir, rétablir ;
+ *   admin       tout, plus les fiches réclamées et les rangs.
  *
  *   GET   la file des signalements, les forums des membres, les comptes bannis,
  *         les fiches d'athlètes réclamées
@@ -14,10 +18,12 @@
  *         { action: 'retirer_avatar', membre_id }
  *         { action: 'forum', forum_id, etat }  ouvert, verrouille, archive, masque
  *         { action: 'classer', type, id }      sans suite
+ *         { action: 'rang', pseudo, rang }      l'admin donne un rang
  *
  * Masquer, retirer et bannir classent aussi les signalements de la cible,
- * et préviennent l'auteur. Un compte non admin reçoit 404 (exigerAdmin) : la
- * page ne confirme pas son existence à qui la cherche.
+ * et préviennent l'auteur. Hors de l'équipe, 404 (exigerEquipe) : la page ne
+ * confirme pas son existence à qui la cherche. Un juge reçoit 404 au GET :
+ * son seul geste, le badge, part de /compte/a-verifier/.
  *
  * Devenir admin se fait à la main, en base :
  *   UPDATE membre SET role = 'admin' WHERE pseudo = '…';
@@ -36,15 +42,46 @@ require __DIR__ . '/lib/avatar.php';
 require __DIR__ . '/lib/revendications.php';
 
 $methode = ouvrirApi(['GET', 'POST']);
-$admin = exigerAdmin();
+$equipe = exigerEquipe();
+$parAdmin = estAdmin($equipe);
+$parModerateur = estModerateur($equipe);
+
+/** Un geste que le rang ne permet pas : 403, et rien n'est fait. */
+function exigerDroit(bool $droit): void
+{
+    if (!$droit) {
+        refuser(403, 'Ce geste ne relève pas de votre rang.');
+    }
+}
 
 if ($methode === 'GET') {
+    if (!$parModerateur) {
+        refuser(404, 'Introuvable.');
+    }
     repondreOk('', [
+        'admin'          => $parAdmin,
         'file'           => fileModeration(),
         'forums'         => forumsDesMembres(),
         'bannis'         => membresBannis(),
-        'revendications' => revendicationsEnAttente(),
+        'revendications' => $parAdmin ? revendicationsEnAttente() : [],
+        'rangs'          => $parAdmin ? membresAvecRang() : [],
+        'rangs_attribuables' => $parAdmin ? RANGS_ATTRIBUABLES : [],
     ]);
+}
+
+/** Le compte visé par un bannissement, et le droit de le viser. */
+function cibleBannissement(array $equipe): int
+{
+    $id = identifiant('membre_id');
+    $cible = ligne('SELECT id, role FROM membre WHERE id = :m', ['m' => $id]);
+    if ($cible === null) {
+        refuser(404, 'Ce compte n\'existe plus.');
+    }
+    if (!peutBannir($equipe, $cible)) {
+        refuser(403, 'Ce compte ne relève pas de votre rang : un admin, ou un modérateur pour un autre modérateur.');
+    }
+
+    return $id;
 }
 
 /** Un entier strictement positif lu dans la requête, ou le refus. */
@@ -63,6 +100,7 @@ const LIEN_CHARTE = '/communaute/charte/';
 switch (texte('action')) {
     case '':
         // Le badge « Vérifiée par SBD.re », phase 6, appelé par /compte/a-verifier/.
+        exigerDroit(estJuge($equipe));
         $id = identifiant('performance_id');
         $verifier = entree()['verifier'] ?? null;
         if (!is_bool($verifier)) {
@@ -70,7 +108,7 @@ switch (texte('action')) {
         }
         // admin_id garde qui a vérifié : une vérification se retrace.
         $touchees = $verifier
-            ? executer('UPDATE performance SET admin_id = :admin, date_verif_admin = NOW() WHERE id = :id', ['admin' => $admin['id'], 'id' => $id])
+            ? executer('UPDATE performance SET admin_id = :admin, date_verif_admin = NOW() WHERE id = :id', ['admin' => $equipe['id'], 'id' => $id])
             : executer('UPDATE performance SET admin_id = NULL, date_verif_admin = NULL WHERE id = :id', ['id' => $id]);
         if ($touchees === 0 && ligne('SELECT 1 AS n FROM performance WHERE id = :id', ['id' => $id]) === null) {
             refuser(404, 'Cette performance n\'existe plus.');
@@ -83,12 +121,13 @@ switch (texte('action')) {
         repondreOk($verifier ? 'Badge « Vérifiée par SBD.re » posé.' : 'Badge retiré.');
 
     case 'masquer':
+        exigerDroit($parModerateur);
         $type = texte('type');
         if (!in_array($type, ['message', 'message_forum'], true)) {
             refuser(422, 'Demande illisible.');
         }
         $id = identifiant('id');
-        $auteur = masquerMessage($type, $id, (int) $admin['id']);
+        $auteur = masquerMessage($type, $id, (int) $equipe['id']);
         classer($type, $id);
         if ($auteur !== null) {
             notifier($auteur, 'moderation', 'Un de vos messages a été masqué par la modération.', LIEN_CHARTE);
@@ -96,6 +135,7 @@ switch (texte('action')) {
         repondreOk('Message masqué.');
 
     case 'retirer_performance':
+        exigerDroit($parModerateur);
         $id = identifiant('id');
         $auteur = retirerPerformance($id);
         classer('performance', $id);
@@ -105,15 +145,17 @@ switch (texte('action')) {
         repondreOk('Performance retirée.');
 
     case 'bannir':
-        $id = identifiant('membre_id');
-        if (!bannir($id)) {
+        exigerDroit($parModerateur);
+        $id = cibleBannissement($equipe);
+        if (!bannir($id, $parAdmin)) {
             refuser(422, 'Ce compte ne peut pas être banni : il n\'existe pas, ou c\'est un admin.');
         }
         classer('membre', $id);
         repondreOk('Membre banni. Ses sessions sont fermées.');
 
     case 'debannir':
-        $id = identifiant('membre_id');
+        exigerDroit($parModerateur);
+        $id = cibleBannissement($equipe);
         if (!debannir($id)) {
             refuser(422, 'Ce compte n\'est pas banni, ou il n\'existe plus.');
         }
@@ -121,7 +163,8 @@ switch (texte('action')) {
         repondreOk('Compte rétabli. Le membre peut se reconnecter.');
 
     case 'relier_fiche':
-        $relie = accepterRevendication(identifiant('id'), (int) $admin['id']);
+        exigerDroit($parAdmin);
+        $relie = accepterRevendication(identifiant('id'), (int) $equipe['id']);
         if ($relie === null) {
             refuser(409, 'Cette demande ne peut plus aboutir : la fiche est déjà reliée, ou le membre en a une.');
         }
@@ -129,7 +172,8 @@ switch (texte('action')) {
         repondreOk('Fiche reliée. Le profil et la fiche se renvoient l\'un à l\'autre.');
 
     case 'refuser_fiche':
-        $membreId = refuserRevendication(identifiant('id'), (int) $admin['id']);
+        exigerDroit($parAdmin);
+        $membreId = refuserRevendication(identifiant('id'), (int) $equipe['id']);
         if ($membreId === null) {
             refuser(404, 'Cette demande n\'attend plus.');
         }
@@ -137,12 +181,14 @@ switch (texte('action')) {
         repondreOk('Demande refusée. Le membre en est prévenu.');
 
     case 'retirer_avatar':
+        exigerDroit($parModerateur);
         $id = identifiant('membre_id');
         supprimerAvatar($id);
         notifier($id, 'moderation', 'Votre avatar a été retiré par la modération.', LIEN_CHARTE);
         repondreOk('Avatar retiré.');
 
     case 'forum':
+        exigerDroit($parModerateur);
         $id = identifiant('forum_id');
         $etat = texte('etat');
         if (!in_array($etat, ETATS_FORUM, true)) {
@@ -155,12 +201,31 @@ switch (texte('action')) {
         repondreOk('Forum passé à l\'état « ' . $etat . ' ».');
 
     case 'classer':
+        exigerDroit($parModerateur);
         $type = texte('type');
         if (!in_array($type, TYPES_SIGNALEMENT, true)) {
             refuser(422, 'Demande illisible.');
         }
         classer($type, identifiant('id'));
         repondreOk('Signalements classés sans suite.');
+
+    case 'rang':
+        exigerDroit($parAdmin);
+        $rang = texte('rang');
+        if (!isset(RANGS_ATTRIBUABLES[$rang])) {
+            refuser(422, 'Rang inconnu.');
+        }
+        $cible = ligne('SELECT id, role FROM membre WHERE pseudo = :p', ['p' => mb_strtolower(texte('pseudo'))]);
+        if ($cible === null) {
+            refuser(404, 'Aucun membre ne porte ce pseudo.');
+        }
+        if ($cible['role'] === ROLE_ADMIN) {
+            refuser(403, 'Le rang d\'un admin se change à la main, en base.');
+        }
+        if (donnerRang((int) $cible['id'], $rang)) {
+            notifier((int) $cible['id'], 'moderation', 'Votre rang sur sbd.re est désormais « ' . RANGS_ATTRIBUABLES[$rang] . ' ».', '/compte/');
+        }
+        repondreOk('Rang « ' . RANGS_ATTRIBUABLES[$rang] . ' » donné.');
 
     default:
         refuser(422, 'Action inconnue.');

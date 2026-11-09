@@ -1009,6 +1009,31 @@ textarea {
 }
 
 /*
+ * LE BADGE DE RANG, à côté d'un pseudo au forum et au chat : l'admin en
+ * aplat sous son filet, le modérateur au filet seul. Les autres rangs
+ * s'affichent « membre », sans badge (lib/autorisation.php, BADGES_RANG).
+ * Global : le chat flotte sur toutes les pages.
+ */
+.rang {
+  display: inline-block;
+  margin-left: var(--space-1);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: var(--step--1);
+  font-weight: 700;
+  line-height: 1.5;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.rang-admin {
+  background: var(--accent-fill);
+  color: var(--on-accent);
+}
+
+/*
  * Icônes des trois mouvements, reprises du sprite par `<use>`.
  *
  * Les attributs de trait vivent ICI et non sur chaque balise : la fiche de

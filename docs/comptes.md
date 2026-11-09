@@ -639,6 +639,48 @@ ci-dessous restent le plan d'origine.
       le 8 novembre.
 - [x] Version 1.10.0 : nouvelle rubrique, le deuxième chiffre monte.
 
+### Les rangs, l'effacement, la vitrine, le 10 novembre
+
+Demandes de l'auteur, décisions prises avec lui le même jour.
+
+- **Les rangs** : admin, modérateur, juge, donateur, membre
+  (`lib/autorisation.php`, migration `migration-2026-11-10-rangs.sql`).
+  - Le modérateur traite la file des signalements (masquer, retirer,
+    classer, état d'un forum) et bannit ou rétablit. Il ne vise jamais un
+    admin ni un autre modérateur (`peutBannir`, redit par `bannir()` en base).
+  - Le juge pose le badge « Vérifiée par SBD.re », depuis
+    `/compte/a-verifier/`. Il reçoit 404 sur `/compte/admin/`.
+  - Le donateur n'a aucun droit. Le rang reste pour un merci futur.
+  - L'admin fait tout, et lui seul donne les rangs, depuis la section
+    « Rangs » de `/compte/admin/`. Le sien se donne à la main en base.
+  - Seuls l'admin (aplat) et le modérateur (filet) portent un badge, au
+    forum et au chat. Les autres s'affichent membre.
+- **Effacer son compte**, en rouge (`--danger`, filet et texte, la seule
+  place du site avec le point du chat) : on recopie son adresse, puis le
+  mot de passe. Le bouton ne s'arme qu'à l'adresse exacte, et le serveur
+  refait les deux contrôles (`adresseConfirmee`). Le texte dit que
+  l'effacement est définitif.
+- **Publier une barre avec des boutons** : mouvement (son dessin),
+  équipement (sa précision), catégorie (pastilles, femmes puis hommes).
+  De vrais boutons radio, que le clavier parcourt aux flèches.
+- **« Connexion » dans l'en-tête** pour un visiteur, et en tête du panneau
+  du menu « Se connecter » ou « Créer un compte ». À 375 px, la barre
+  dépassait de 20 px avec « Se connecter » : le libellé court et l'écart
+  resserré la font tenir.
+- **La vitrine de /communaute/** :
+  - les trois dernières actualités ;
+  - le top des membres : les trois barres vérifiées les plus lourdes de
+    chaque mouvement, en raw, une par membre (`topMembres`) ;
+  - les six dernières barres.
+  - Le top est une vitrine de salle, la page le dit : le classement officiel
+    reste celui des compétitions.
+- **Mesuré.**
+  - Aucun débordement, à 375 comme à 1 280 px.
+  - Contrastes de 5,34:1 au moins dans les deux thèmes. Le rouge de
+    l'effacement : 8,91:1 en sombre, 7,05:1 en clair.
+  - Choix et liens de 44 px.
+- **Tests** : 345 règles, et `php db/verifier.php` attend 121 réussis.
+
 ### L'espace du membre, le 10 novembre
 
 Demande de l'auteur : un espace compte amélioré, réglages compris, et une

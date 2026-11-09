@@ -19,6 +19,8 @@ interface EtatCompte {
   pseudo?: string;
   avatar?: string;
   admin?: boolean;
+  moderation?: boolean;
+  juge?: boolean;
   signalements?: number;
 }
 
@@ -32,7 +34,8 @@ export function brancherMenuCompte(): void {
   const silhouette = menu.querySelector<HTMLElement>('[data-silhouette]')!;
   const pseudo = menu.querySelector<HTMLElement>('[data-pseudo-entete]')!;
   const profil = menu.querySelector<HTMLAnchorElement>('[data-profil-entete]')!;
-  const gestesAdmin = [...menu.querySelectorAll<HTMLElement>('[data-admin-entete]')];
+  // Les liens de l'équipe : chacun dit le droit qu'il demande (lib/autorisation.php).
+  const gestesEquipe = [...menu.querySelectorAll<HTMLElement>('[data-droit-entete]')];
   const file = menu.querySelector<HTMLElement>('[data-file-entete]')!;
 
   document.addEventListener('sbd:compte', (evenement) => {
@@ -49,7 +52,7 @@ export function brancherMenuCompte(): void {
     avatar.hidden = !etat.avatar;
     silhouette.hidden = Boolean(etat.avatar);
     if (etat.avatar && avatar.getAttribute('src') !== etat.avatar) avatar.src = etat.avatar;
-    for (const geste of gestesAdmin) geste.hidden = etat.admin !== true;
+    for (const geste of gestesEquipe) geste.hidden = etat[geste.dataset.droitEntete as 'moderation' | 'juge'] !== true;
     const n = Number(etat.signalements) || 0;
     file.textContent = n === 0 ? '' : ` · ${n} en attente`;
   });

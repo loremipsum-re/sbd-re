@@ -194,6 +194,6 @@ import '../../styles/compte.css';
 
     const fil = lecture.fil as Barre[];
     vide.hidden = fil.length > 0;
-    liste.replaceChildren(...fil.map((b) => rendre(b, peutVoter, lecture.admin === true)));
+    liste.replaceChildren(...fil.map((b) => rendre(b, peutVoter, lecture.juge === true)));
   });
 </script>

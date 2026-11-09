@@ -51,6 +51,14 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-10',
     nature: 'fonction',
+    version: '1.19.0',
+    titre: 'Le top des membres sur la page Communauté',
+    texte:
+      "La page Communauté montre les dernières actualités, les trois barres vérifiées les plus lourdes de chaque mouvement et les dernières barres publiées. Une barre se publie en touchant des boutons. L'admin et les modérateurs portent un badge au forum et au chat, et « Connexion » se trouve dans l'en-tête.",
+  },
+  {
+    date: '2026-11-10',
+    nature: 'fonction',
     version: '1.18.0',
     titre: 'L\'espace membre en tableau de bord',
     texte:

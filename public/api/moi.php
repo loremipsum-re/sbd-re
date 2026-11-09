@@ -4,10 +4,12 @@
  *
  *   GET     lire son compte, adresse comprise : seul son titulaire la voit.
  *   PATCH   changer présentation, salle, lien Instagram.
- *   DELETE  effacer son compte, mot de passe exigé.
+ *   DELETE  effacer son compte : l'adresse recopiée, puis le mot de passe.
  *
  * Le mot de passe à l'effacement empêche qu'un ordinateur resté connecté,
  * dans une salle ou chez un ami, suffise à détruire le compte de quelqu'un.
+ * L'adresse recopiée, demande de l'auteur du 10 novembre 2026, fait mesurer
+ * le geste : l'effacement est définitif.
  *
  * L'effacement part en cascade : sessions, performances, votes. Les messages
  * du chat sortent du chat et restent au journal d'un an, signés du pseudo
@@ -40,6 +42,7 @@ if ($methode === 'GET') {
     unset($compte['date_instagram'], $compte['date_pseudo']);
     $avatar = ligne('SELECT UNIX_TIMESTAMP(date_maj) AS v FROM avatar WHERE membre_id = :id', ['id' => $membre['id']]);
     $compte['admin'] = estAdmin($membre);
+    $compte['moderation'] = estModerateur($membre);
     $compte['avatar'] = $avatar !== null ? '/avatars/' . $compte['pseudo'] . '.webp?v=' . (int) $avatar['v'] : '';
 
     // « Mes sujets » et « Sujets suivis » de /compte/.
@@ -52,8 +55,11 @@ if ($methode === 'GET') {
 
 if ($methode === 'DELETE') {
     $membre = exigerMembre();
-    $hash = ligne('SELECT mot_de_passe_hash FROM membre WHERE id = :id', ['id' => $membre['id']]);
+    $hash = ligne('SELECT courriel, mot_de_passe_hash FROM membre WHERE id = :id', ['id' => $membre['id']]);
 
+    if (!adresseConfirmee(texte('courriel'), (string) ($hash['courriel'] ?? ''))) {
+        refuser(422, 'L\'adresse ne correspond pas à celle du compte. Le compte n\'est pas effacé.');
+    }
     if (!password_verify(brut('mot_de_passe'), (string) ($hash['mot_de_passe_hash'] ?? EMPREINTE_FACTICE))) {
         refuser(403, 'Mot de passe incorrect. Le compte n\'est pas effacé.');
     }
