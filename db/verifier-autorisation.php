@@ -513,6 +513,46 @@ verifie('Le créateur voit « Renommer le forum »',     str_contains(\SBDRE\ren
 verifie('Un autre membre ne le voit pas',             str_contains(\SBDRE\rendreForum($forumMembre, [], 1, 1, $recent), 'data-forum-renommer'), false);
 verifie('Le nom prérempli reste échappé',             str_contains(\SBDRE\rendreForum($forumMembre, [], 1, 1, $ancien), 'value="Salle &quot;du&quot; Tampon"'), true);
 
+titre('Le confort du forum');
+
+$sujetRecent = ['membre_id' => 5, 'creation_ts' => time() - 3600] + $sujetOuvert;
+verifie('Son sujet, une heure après : le titre se modifie', \SBDRE\peutModifierTitre($ancien, $sujetRecent, time()), true);
+verifie('Le sujet d\'un autre : non',                      \SBDRE\peutModifierTitre($recent, $sujetRecent, time()), false);
+verifie('Sans date d\'ouverture : non',                     \SBDRE\peutModifierTitre($ancien, $sujetOuvert, time()), false);
+verifie('« Modifier le titre » paraît pour son auteur',     str_contains($pageSujet($message, $sujetRecent), 'data-modifier-titre'), true);
+verifie('Le dernier message porte l\'ancre #dernier',        str_contains($pageSujet($message, $sujetOuvert), '<li id="dernier">'), true);
+verifie('« Dernier message » mène à l\'ancre',              \SBDRE\lienDernier('squat-technique', 3, 25) === '/forum/squat-technique/3/?page=2#dernier', true);
+verifie('Le formulaire de réponse a son aperçu',            str_contains($pageSujet($message, $sujetOuvert), 'data-apercu'), true);
+verifie('Et ses boutons de mise en forme',                  str_contains($pageSujet($message, $sujetOuvert), 'data-balises'), true);
+verifie('« Recherche » ne prend pas l\'adresse réservée',   \SBDRE\adresseDepuisTitre('Recherche') === 'forum-recherche', true);
+verifie('Recherche de 2 caractères refusée',                \SBDRE\rechercheValide('ab'), false);
+verifie('Recherche de 81 caractères refusée',               \SBDRE\rechercheValide(str_repeat('a', 81)), false);
+verifie('Recherche à retour à la ligne refusée',            \SBDRE\rechercheValide("squat\nprofond"), false);
+$rechercheXss = \SBDRE\rendreRecherche('"><script>', []);
+verifie('La recherche saisie reste échappée',              !str_contains($rechercheXss, '<script>') && str_contains($rechercheXss, 'value="&quot;&gt;&lt;script&gt;"'), true);
+verifie('Rien trouvé : une phrase et la sortie',           str_contains($rechercheXss, 'Aucun sujet trouvé') && str_contains($rechercheXss, 'href="/forum/"'), true);
+$trouve = \SBDRE\rendreRecherche('prépa', [['id' => 3, 'titre' => 'Ma prépa', 'pseudo' => 'jean_93', 'reponses' => 2, 'dernier_pseudo' => 'marie', 'dernier_ts' => $le7, 'creation_ts' => $le7, 'adresse' => 'squat-technique', 'forum' => 'Technique']]);
+verifie('Un résultat nomme son forum',                     str_contains($trouve, 'dans Technique') && str_contains($trouve, '/forum/squat-technique/3/'), true);
+$deplacer = \SBDRE\formulaireDeplacer([
+    ['adresse' => 'squat-technique', 'titre' => 'Technique', 'categorie' => 'Squat'],
+    ['adresse' => 'hors-sujet', 'titre' => '<b>Hors</b>', 'categorie' => 'Divers'],
+], 3, 'squat-technique');
+verifie('Déplacer : le forum actuel est choisi',           str_contains($deplacer, '<option value="squat-technique" selected>'), true);
+verifie('Déplacer : les noms restent échappés',            str_contains($deplacer, '&lt;b&gt;Hors'), true);
+$pied = \SBDRE\rendrePiedForum(['jean_93', '<img>'], ['sujets' => 3, 'messages' => 12, 'membres' => 40, 'dernier' => 'paul_120']);
+verifie('Qui est en ligne : deux membres, liés au profil', str_contains($pied, "2\u{00A0}membres en ligne") && str_contains($pied, '/membres/jean_93/'), true);
+verifie('Un pseudo en ligne reste échappé',                !str_contains($pied, '<img>'), true);
+verifie('Les statistiques et le dernier membre',           str_contains($pied, "12\u{00A0}messages dans 3\u{00A0}sujets") && str_contains($pied, '/membres/paul_120/'), true);
+verifie('Personne en ligne : une phrase',                  str_contains(\SBDRE\rendrePiedForum([], []), 'paraissent ici'), true);
+$ariane = \SBDRE\donneesAriane([['Forum', '/forum/'], ['Squat, Technique', '/forum/squat-technique/'], ['</script><b>', null]], '/forum/squat-technique/3/');
+$lu = json_decode((string) preg_replace('~^<script type="application/ld\+json">|</script>$~', '', $ariane), true);
+verifie('Le fil d\'Ariane en BreadcrumbList',               ($lu['@type'] ?? '') === 'BreadcrumbList' && count($lu['itemListElement']) === 3, true);
+verifie('La dernière étape est la page elle-même',         ($lu['itemListElement'][2]['item'] ?? '') === 'https://sbd.re/forum/squat-technique/3/', true);
+verifie('Un titre ne referme pas le bloc de données',      substr_count($ariane, '</script>') === 1, true);
+verifie('Profil sans sujet : rien',                        \SBDRE\rendreSujetsMembre([]) === '', true);
+$sesSujets = \SBDRE\rendreSujetsMembre([['lien' => '/forum/squat-technique/3/#dernier', 'titre' => '<i>Prépa</i>', 'forum' => 'Technique', 'reponses' => 1]]);
+verifie('Ses sujets au profil, titre échappé',             str_contains($sesSujets, '&lt;i&gt;Prépa') && str_contains($sesSujets, "1\u{00A0}réponse"), true);
+
 titre('Le récapitulatif par courriel');
 
 $corps = \SBDRE\corpsRecapitulatif('jean_93', [
