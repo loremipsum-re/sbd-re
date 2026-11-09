@@ -635,6 +635,27 @@ ci-dessous restent le plan d'origine.
       le 8 novembre.
 - [x] Version 1.10.0 : nouvelle rubrique, le deuxième chiffre monte.
 
+### Le profil d'un coup d'œil, le 9 novembre
+
+Demande de l'auteur : un profil qui se lit d'un coup d'œil, en deux colonnes
+ou avec des icônes. Les deux.
+
+- **Deux colonnes dès 56rem** : la carte du membre à gauche (avatar, pseudo,
+  présentation, faits, chiffres, signaler), les records et les sujets à
+  droite, visibles sans défiler.
+- **Les faits en icônes** Tabler (salle, Instagram, fiche d'athlète,
+  inscription), le libellé dit aux lecteurs d'écran. Sur téléphone, ils se
+  rangent côte à côte, sans filet.
+- **Deux chiffres** : barres publiées, barres vérifiées.
+- **Les records en tuiles**, une par mouvement et le total : le dessin du
+  mouvement et son abréviation (SQ, DC, SDT, le nom entier pour les lecteurs
+  d'écran), la vidéo, la charge en grand, une coche pour une barre vérifiée.
+  L'historique complet se replie dessous.
+- **Mesuré** sur un profil complet : à 1 280 px, la page passe de 1 646 à
+  882 px et les records de y 561 à y 137 ; à 375 px, de 2 194 à 1 432 px, et
+  la première tuile finit au pli (815 px contre 979). Contrastes de 5,34:1 au
+  moins dans les deux thèmes.
+
 ### Relier un membre à sa fiche, le 9 novembre
 
 Demande de l'auteur : relier le profil d'un membre à sa fiche d'athlète
