@@ -549,6 +549,8 @@ $lu = json_decode((string) preg_replace('~^<script type="application/ld\+json">|
 verifie('Le fil d\'Ariane en BreadcrumbList',               ($lu['@type'] ?? '') === 'BreadcrumbList' && count($lu['itemListElement']) === 3, true);
 verifie('La dernière étape est la page elle-même',         ($lu['itemListElement'][2]['item'] ?? '') === 'https://sbd.re/forum/squat-technique/3/', true);
 verifie('Un titre ne referme pas le bloc de données',      substr_count($ariane, '</script>') === 1, true);
+verifie('Forum vide : pas de sujets récents',             \SBDRE\rendreSujetsRecents([]) === '', true);
+verifie('Un sujet récent nomme son forum',                 str_contains(\SBDRE\rendreSujetsRecents([['id' => 3, 'titre' => 'Ma prépa', 'pseudo' => 'jean_93', 'verrouille' => 0, 'reponses' => 0, 'dernier_pseudo' => 'jean_93', 'dernier_ts' => $le7, 'creation_ts' => $le7, 'adresse' => 'squat-technique', 'forum' => 'Technique']]), 'dans Technique'), true);
 verifie('Profil sans sujet : rien',                        \SBDRE\rendreSujetsMembre([]) === '', true);
 $sesSujets = \SBDRE\rendreSujetsMembre([['lien' => '/forum/squat-technique/3/#dernier', 'titre' => '<i>Prépa</i>', 'forum' => 'Technique', 'reponses' => 1]]);
 verifie('Ses sujets au profil, titre échappé',             str_contains($sesSujets, '&lt;i&gt;Prépa') && str_contains($sesSujets, "1\u{00A0}réponse"), true);
