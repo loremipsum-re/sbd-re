@@ -194,18 +194,32 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
 
         </section>
 
-        <section class="carte-reglage" id="effacer" aria-labelledby="titre-effacer">
+        <section class="carte-reglage carte-danger" id="effacer" aria-labelledby="titre-effacer">
         <h2 id="titre-effacer">Effacer le compte</h2>
         <details class="repli">
           <summary>Effacer mon compte</summary>
           <form class="form-compte" data-effacement novalidate>
+            <p><strong>L'effacement est définitif. Rien ne se récupère ensuite.</strong></p>
             <p>
-              Le profil, les performances et les votes disparaissent aussitôt.
-              Vos messages quittent le chat et restent au journal un an,
-              signés de votre pseudo.
+              Le profil, l'avatar, les performances, les votes et les
+              notifications disparaissent aussitôt. Vos messages du forum
+              restent dans leurs sujets, détachés du compte. Ceux du chat
+              restent au journal un an, comme la loi le demande.
             </p>
             <div class="champ">
-              <label for="mot-de-passe">Mot de passe, pour confirmer</label>
+              <label for="courriel-effacement">Recopiez votre adresse, <span data-adresse-compte></span></label>
+              <input
+                id="courriel-effacement"
+                name="courriel"
+                type="email"
+                required
+                autocomplete="off"
+                autocapitalize="none"
+                spellcheck="false"
+              />
+            </div>
+            <div class="champ">
+              <label for="mot-de-passe">Puis votre mot de passe</label>
               <input
                 id="mot-de-passe"
                 name="mot_de_passe"
@@ -215,7 +229,7 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
               />
             </div>
             <div class="actions">
-              <button type="submit" class="secondaire">Effacer définitivement</button>
+              <button type="submit" class="bouton-danger" data-effacer disabled>Effacer définitivement mon compte</button>
             </div>
             <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
           </form>
@@ -344,6 +358,8 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
       const compte = lecture.compte as Compte;
       montrerAvatar(String((lecture.compte as { avatar?: string }).avatar ?? ''));
       bonjour.textContent = `Connecté en tant que ${compte.pseudo}, adresse ${compte.courriel}.`;
+      adresseCompte = compte.courriel.toLowerCase();
+      document.querySelector('[data-adresse-compte]')!.textContent = compte.courriel;
       section.hidden = false;
 
       if (compte.pseudo_prochain !== '') {
@@ -412,9 +428,21 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
     () => location.assign('/compte/connexion/'),
   );
 
+  /*
+   * Effacer : le bouton ne s'arme qu'une fois l'adresse du compte recopiée et
+   * le mot de passe saisi. Le serveur refait les deux contrôles.
+   */
+  let adresseCompte = '';
+  const formEffacement = document.querySelector<HTMLFormElement>('[data-effacement]')!;
+  const boutonEffacer = formEffacement.querySelector<HTMLButtonElement>('[data-effacer]')!;
+  formEffacement.addEventListener('input', () => {
+    const adresse = formEffacement.querySelector<HTMLInputElement>('[name="courriel"]')!.value.trim().toLowerCase();
+    const motDePasse = formEffacement.querySelector<HTMLInputElement>('[name="mot_de_passe"]')!.value;
+    boutonEffacer.disabled = adresse === '' || adresse !== adresseCompte || motDePasse === '';
+  });
   brancher(
-    document.querySelector<HTMLFormElement>('[data-effacement]')!,
-    (donnees) => api('/api/moi.php', 'DELETE', { mot_de_passe: champ(donnees, 'mot_de_passe') }),
+    formEffacement,
+    (donnees) => api('/api/moi.php', 'DELETE', { courriel: champ(donnees, 'courriel'), mot_de_passe: champ(donnees, 'mot_de_passe') }),
     () => location.assign('/'),
   );
 </script>

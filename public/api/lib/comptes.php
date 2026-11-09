@@ -223,6 +223,17 @@ function adresseInjoignable(string $courriel): bool
 }
 
 /** L'adresse en minuscules si elle est valide, sinon ''. */
+/**
+ * L'adresse recopiée pour effacer son compte est-elle celle du compte ?
+ * Comparée normalisée : majuscules et espaces autour ne comptent pas.
+ */
+function adresseConfirmee(string $saisie, string $adresseDuCompte): bool
+{
+    $saisie = normaliserCourriel($saisie);
+
+    return $saisie !== '' && hash_equals(mb_strtolower($adresseDuCompte), $saisie);
+}
+
 function normaliserCourriel(string $courriel): string
 {
     $courriel = mb_strtolower(trim($courriel));

@@ -541,6 +541,34 @@
   font-size: var(--step-0);
 }
 
+/* Effacer le compte, en rouge : demande de l'auteur du 10 novembre 2026,
+   seule place du site avec le point du chat. --danger est un saumon en
+   sombre, un écarlate en clair (tokens.css). Filet et texte, jamais d'aplat. */
+.carte-danger {
+  border-color: var(--danger);
+}
+
+.carte-danger h2,
+.carte-danger summary {
+  color: var(--danger);
+}
+
+.form-compte button.bouton-danger {
+  border: 2px solid var(--danger);
+  background: transparent;
+  color: var(--danger);
+}
+
+.form-compte button.bouton-danger:disabled {
+  cursor: not-allowed;
+}
+
+.form-compte button.bouton-danger:hover:not(:disabled),
+.form-compte button.bouton-danger:focus-visible {
+  outline: 2px solid var(--danger);
+  outline-offset: 2px;
+}
+
 /* L'avatar en tête de la carte du profil, un filet avant les champs. */
 .bloc-avatar {
   display: grid;
