@@ -10,6 +10,7 @@
  *   titre    { sujet_id, titre, confirme? }      corriger le titre de son sujet, 24 heures
  *   apercu   { texte }                           le texte rendu tel qu'il paraîtra, sans rien publier
  *   deplacer { sujet_id, forum }                 changer un sujet de forum, l'admin seul
+ *   aimer    { message_id, aime }                « J'aime » sur le message d'un autre
  *   creer_forum, renommer_forum, epingler, verrouiller : les forums des membres
  *
  * Membre confirmé et non banni seulement (exigerActif). Un mot bloquant
@@ -184,6 +185,25 @@ switch (texte('action')) {
         }
         deplacerSujet($sujetId, (int) $vers['id']);
         repondreOk('Sujet déplacé.', ['lien' => lienSujet((string) $vers['adresse'], $sujetId)]);
+
+    case 'aimer':
+        $messageId = entree()['message_id'] ?? null;
+        $aime = entree()['aime'] ?? null;
+        if (!is_int($messageId) || $messageId <= 0 || !is_bool($aime)) {
+            refuser(422, 'Demande illisible.');
+        }
+        $cible = ligne(
+            "SELECT mf.membre_id, mf.masque_par, f.etat FROM message_forum mf
+               JOIN sujet s ON s.id = mf.sujet_id JOIN forum f ON f.id = s.forum_id WHERE mf.id = :id",
+            ['id' => $messageId],
+        );
+        if ($cible === null || $cible['masque_par'] !== null || $cible['etat'] === 'masque') {
+            refuser(404, 'Ce message n\'existe plus.');
+        }
+        if ((int) ($cible['membre_id'] ?? 0) === $membreId) {
+            refuser(403, 'On n\'aime pas son propre message.');
+        }
+        repondreOk($aime ? 'Vous aimez ce message.' : 'Vous n\'aimez plus ce message.', ['aime' => aimerMessage($membreId, $messageId, $aime)]);
 
     case 'suivre':
         $suivre = entree()['suivre'] ?? null;

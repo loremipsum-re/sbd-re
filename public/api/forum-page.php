@@ -182,6 +182,8 @@ try {
                 ['m' => $membre['id'], 's' => $sujet['id']],
             ) !== null;
 
+            // Les messages de la page que le membre aime, pour l'état de ses boutons.
+            $aimes = $membre !== null ? messagesAimes((int) $membre['id'], array_map('intval', array_column($messages, 'id'))) : [];
             $premier = $messages[0] ?? null;
             $extrait = $premier !== null && $premier['masque_par'] === null
                 ? mb_substr(trim((string) preg_replace('/\s+/u', ' ', (string) preg_replace('~\[/?[a-z]+(=[^\]]*)?\]~', '', (string) $premier['texte']))), 0, 155)
@@ -201,7 +203,7 @@ try {
                 'DESCRIPTION'  => e($extrait),
                 'ARIANE'       => ariane($etapes),
                 'CHAPEAU'      => '',
-                'CONTENU'      => rendreSujet($forum, $sujet, $messages, $page, $pages, $membre, $abonne, $smileys) . $deplacer,
+                'CONTENU'      => rendreSujet($forum, $sujet, $messages, $page, $pages, $membre, $abonne, $smileys, $aimes) . $deplacer,
                 'DONNEES'      => donneesAriane($etapes, $chemin)
                     . ($page === 1 && $premier !== null ? donneesSujet($sujet, $premier, (string) $forum['adresse']) : ''),
             ];

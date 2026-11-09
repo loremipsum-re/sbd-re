@@ -329,6 +329,20 @@ import '../../styles/communaute.css';
     });
   }
 
+  // « J'aime » : l'état et le compte changent sur place, sans recharger.
+  for (const bouton of document.querySelectorAll<HTMLButtonElement>('[data-aimer]')) {
+    bouton.addEventListener('click', async () => {
+      const aime = bouton.getAttribute('aria-pressed') !== 'true';
+      bouton.disabled = true;
+      const r = await api('/api/forum.php', 'POST', { action: 'aimer', message_id: Number(bouton.dataset.message), aime });
+      bouton.disabled = false;
+      if (!r.ok) return;
+      bouton.setAttribute('aria-pressed', String(aime));
+      const n = Number(r.aime);
+      bouton.querySelector('.nombre-aime')!.textContent = n > 0 ? ` · ${n}` : '';
+    });
+  }
+
   // Signaler un message : il part dans la file de l'admin.
   for (const bouton of document.querySelectorAll<HTMLButtonElement>('[data-signaler]')) {
     bouton.addEventListener('click', async () => {
