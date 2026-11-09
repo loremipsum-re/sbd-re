@@ -49,6 +49,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 
 export const JOURNAL: readonly EntreeJournal[] = [
   {
+    date: '2026-11-10',
+    nature: 'correction',
+    version: '1.19.2',
+    titre: 'Des noms plus faciles à toucher',
+    texte:
+      "Sur téléphone, les noms d'athlètes et de compétitions, les catégories et les records des listes offrent une cible de 24 px au moins, contre 17 à 23 auparavant. Les liens de retour en tête de page, comme « Toutes les compétitions », en offrent 44.",
+  },
+  {
     date: '2026-11-09',
     nature: 'correction',
     version: '1.19.1',
