@@ -1,19 +1,35 @@
 ---
 /**
- * Le chat (docs/forum.md, section 5), posé dans /communaute/ depuis
- * l'ouverture (docs/comptes.md, phase 9). La page qui l'accueille pose aussi
- * <FenetreConfirmation />, qui sert à signaler.
+ * Le chat (docs/forum.md, section 5), EN FENÊTRE FLOTTANTE sur toutes les
+ * pages, à la manière d'un « live chat » : demande de l'auteur du 9 novembre
+ * 2026. Posé une fois par BaseLayout.astro. Tout bouton `[data-ouvrir-chat]`
+ * l'ouvre, celui du coin comme celui de /communaute/.
  *
  * Cinq salons, lisibles de tous. Un membre connecté lit sept jours et écrit,
  * un visiteur voit arriver les nouveaux messages. Lecture par interrogation
- * (public/api/chat.php), à l'intervalle que le serveur donne, arrêtée quand
- * l'onglet est masqué. Chaque message s'écrit par `textContent`, les
- * smileys par `createElement('img')` : aucun HTML d'un membre n'est lu.
- * Le champ porte `data-clarity-mask` : la mesure d'audience, si elle est
- * acceptée, ne voit pas ce qu'on tape.
+ * (public/api/chat.php), à l'intervalle que le serveur donne, SEULEMENT
+ * fenêtre ouverte et onglet visible : une page qu'on lit sans ouvrir le chat
+ * n'interroge jamais le serveur. Ouverte, la fenêtre le reste d'une page à
+ * l'autre (sessionStorage), comme un live chat.
+ *
+ * Chaque message s'écrit par `textContent`, les smileys par
+ * `createElement('img')` : aucun HTML d'un membre n'est lu. Le champ porte
+ * `data-clarity-mask` : la mesure d'audience, si elle est acceptée, ne voit
+ * pas ce qu'on tape.
+ *
+ * LES STYLES SONT ENFERMÉS SOUS `.chat-flottant` : la fenêtre vit sur toutes
+ * les pages, et les feuilles du forum portent des classes, `.libelle` ou
+ * `.avertissement`, que d'autres pages emploient aussi. Les éléments écrits
+ * par le script passent par `:global()`, toujours sous ce préfixe.
+ *
+ * Signaler se confirme d'un second clic, sur place : la fenêtre de
+ * confirmation des comptes n'existe que sur leurs pages.
+ *
+ * Empilement (CLAUDE.md) : la fenêtre à 7, au-dessus de l'en-tête (6) et
+ * sous le voile du menu (9) ; le bouton du coin à 4, avec les autres boutons
+ * flottants, dont BaseLayout règle l'apparition.
  */
-import '../styles/compte.css';
-import '../styles/communaute.css';
+import Icone from './Icone.astro';
 
 const salons = [
   ['general', 'Général'],
@@ -24,14 +40,20 @@ const salons = [
 ] as const;
 ---
 
-<section class="chat" id="chat" aria-labelledby="titre-chat">
-  <h2 id="titre-chat">Le chat</h2>
-  <p class="aide">
-    Cinq salons, un thème chacun, la charte partout. Les membres lisent les
-    sept derniers jours, les visiteurs voient arriver les nouveaux messages.
-  </p>
+<button class="lanceur-chat" type="button" data-ouvrir-chat data-lanceur-chat aria-controls="chat-flottant" aria-expanded="false">
+  <Icone nom="forum" />
+  <span>Chat</span>
+</button>
 
-  <noscript><p class="aide">Le chat demande JavaScript.</p></noscript>
+<section class="chat-flottant" id="chat-flottant" aria-labelledby="titre-chat" hidden>
+  <div class="entete-chat">
+    <h2 id="titre-chat" tabindex="-1">Le chat</h2>
+    <button type="button" class="fermer-chat" data-fermer-chat aria-label="Fermer le chat">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M18 6 6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+      </svg>
+    </button>
+  </div>
 
   <div class="salons" role="group" aria-label="Salons">
     {salons.map(([id, nom], i) => <button type="button" data-salon={id} aria-pressed={i === 0 ? 'true' : 'false'}>{nom}</button>)}
@@ -40,24 +62,25 @@ const salons = [
   <p class="en-ligne" data-en-ligne>Chargement…</p>
 
   <ol class="fil-chat" role="log" aria-label="Messages du salon" data-fil></ol>
-  <p class="aide" data-vide hidden></p>
+  <p class="vide" data-vide hidden></p>
 
-  <form class="form-compte ecrire-chat" data-ecrire hidden novalidate data-clarity-mask="true">
+  <form class="ecrire-chat" data-ecrire hidden novalidate data-clarity-mask="true">
     <label for="texte-chat">Votre message</label>
     <div class="ligne-envoi">
       <input id="texte-chat" name="texte" maxlength="500" autocomplete="off" required />
       <button type="submit">Envoyer</button>
     </div>
     <div class="barre-smileys" data-smileys></div>
-    <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+    <p class="etat-chat" data-etat role="status" aria-live="polite" hidden></p>
   </form>
   <p class="inviter" data-inviter hidden>
     <a href="/compte/connexion/">Connectez-vous</a> pour écrire et lire les sept derniers jours.
   </p>
+  <p class="pied-chat"><a href="/communaute/charte/">La charte</a> vaut dans chaque salon.</p>
 </section>
 
 <script>
-  import { afficher, api, confirmer } from '../lib/api-compte';
+  import { afficher, api } from '../lib/api-compte';
   import { brancherBarresSmileys, messageEnNoeuds } from '../lib/barre-smileys';
 
   interface Message {
@@ -68,15 +91,37 @@ const salons = [
     date: number;
   }
 
-  const fil = document.querySelector<HTMLOListElement>('[data-fil]')!;
-  const vide = document.querySelector<HTMLElement>('[data-vide]')!;
-  const enLigne = document.querySelector<HTMLElement>('[data-en-ligne]')!;
-  const form = document.querySelector<HTMLFormElement>('[data-ecrire]')!;
+  const fenetre = document.querySelector<HTMLElement>('#chat-flottant')!;
+  const lanceur = document.querySelector<HTMLButtonElement>('[data-lanceur-chat]')!;
+  const titre = fenetre.querySelector<HTMLElement>('#titre-chat')!;
+  const fil = fenetre.querySelector<HTMLOListElement>('[data-fil]')!;
+  const vide = fenetre.querySelector<HTMLElement>('[data-vide]')!;
+  const enLigne = fenetre.querySelector<HTMLElement>('[data-en-ligne]')!;
+  const form = fenetre.querySelector<HTMLFormElement>('[data-ecrire]')!;
   const champ = form.querySelector<HTMLInputElement>('input')!;
   const etat = form.querySelector<HTMLElement>('[data-etat]')!;
-  const inviter = document.querySelector<HTMLElement>('[data-inviter]')!;
-  const boutonsSalon = [...document.querySelectorAll<HTMLButtonElement>('[data-salon]')];
+  const inviter = fenetre.querySelector<HTMLElement>('[data-inviter]')!;
+  const boutonsSalon = [...fenetre.querySelectorAll<HTMLButtonElement>('[data-salon]')];
 
+  /** La fenêtre reste ouverte d'une page à l'autre. Stockage refusé : elle se referme, rien de plus. */
+  const CLE = 'sbd-chat';
+  const retenir = (ouverte: boolean) => {
+    try {
+      if (ouverte) sessionStorage.setItem(CLE, 'ouvert');
+      else sessionStorage.removeItem(CLE);
+    } catch {
+      /* navigation privée stricte : sans mémoire */
+    }
+  };
+  const retenue = () => {
+    try {
+      return sessionStorage.getItem(CLE) === 'ouvert';
+    } catch {
+      return false;
+    }
+  };
+
+  let ouverte = false;
   let salon = 'general';
   let dernier = 0;
   let intervalle = 15;
@@ -84,8 +129,7 @@ const salons = [
   let avertissement = '';
   let connecte = false;
   let moi = '';
-
-  brancherBarresSmileys(form);
+  let branche = false;
 
   const heure = (secondes: number) => {
     const d = new Date(secondes * 1000);
@@ -111,7 +155,7 @@ const salons = [
     const corps = Object.assign(document.createElement('p'), { className: 'corps' });
     corps.append(...messageEnNoeuds(m.texte));
     li.append(corps);
-    // Signaler ce qu'un autre a écrit : la file de l'admin.
+    // Signaler ce qu'un autre a écrit, d'un second clic : la file de l'admin.
     if (connecte && m.pseudo !== moi) {
       const signaler = Object.assign(document.createElement('button'), {
         type: 'button',
@@ -119,8 +163,11 @@ const salons = [
         textContent: 'Signaler',
       });
       signaler.addEventListener('click', async () => {
-        const oui = await confirmer(["Le message part dans la file de l'admin, qui juge d'après la charte."], 'Signaler ce message');
-        if (!oui) return;
+        if (signaler.dataset.confirmer !== '1') {
+          signaler.dataset.confirmer = '1';
+          signaler.textContent = "Confirmer : il part à l'admin";
+          return;
+        }
         signaler.disabled = true;
         const r = await api('/api/signalements.php', 'POST', { type: 'message', cible_id: m.id });
         signaler.textContent = r.ok ? 'Signalé' : 'Réessayer';
@@ -135,9 +182,9 @@ const salons = [
 
   const lire = async () => {
     clearTimeout(minuterie);
-    // Une seule lecture à la fois : deux lectures parties du même numéro
-    // afficheraient deux fois les mêmes messages.
-    if (document.hidden || enCours) return;
+    // Fenêtre fermée ou onglet masqué : aucune lecture. Une seule à la fois :
+    // deux lectures parties du même numéro afficheraient deux fois les messages.
+    if (!ouverte || document.hidden || enCours) return;
     enCours = true;
     const pour = salon;
     const r = await api(`/api/chat.php?canal=${pour}&depuis=${dernier}`, 'GET');
@@ -152,6 +199,10 @@ const salons = [
       moi = String(r.pseudo ?? '');
       form.hidden = !connecte;
       inviter.hidden = connecte;
+      if (connecte && !branche) {
+        brancherBarresSmileys(form);
+        branche = true;
+      }
 
       // Suivre le bas du fil seulement si le lecteur y était déjà.
       const enBas = fil.scrollHeight - fil.scrollTop - fil.clientHeight < 40;
@@ -162,12 +213,47 @@ const salons = [
       vide.hidden = fil.childElementCount > 0;
       vide.textContent = connecte
         ? 'Aucun message ces sept derniers jours. Lancez la conversation.'
-        : 'Les nouveaux messages s\'afficheront ici.';
+        : "Les nouveaux messages s'afficheront ici.";
       const qui = r.en_ligne as string[];
-      enLigne.textContent = qui.length === 0 ? 'Personne en ligne pour l\'instant.' : `En ligne : ${qui.join(', ')}`;
+      enLigne.textContent = qui.length === 0 ? "Personne en ligne pour l'instant." : `En ligne : ${qui.join(', ')}`;
     }
     minuterie = window.setTimeout(lire, intervalle * 1000);
   };
+
+  const declencheurs = () => [...document.querySelectorAll<HTMLButtonElement>('[data-ouvrir-chat]')];
+
+  /** Ouvrir : la lecture part, le focus va au titre sans faire surgir le clavier. */
+  const ouvrir = (focus: boolean) => {
+    ouverte = true;
+    fenetre.hidden = false;
+    lanceur.hidden = true;
+    for (const b of declencheurs()) b.setAttribute('aria-expanded', 'true');
+    retenir(true);
+    document.dispatchEvent(new CustomEvent('sbd:chat', { detail: { ouverte } }));
+    if (focus) titre.focus();
+    void lire();
+  };
+
+  const fermer = () => {
+    ouverte = false;
+    clearTimeout(minuterie);
+    fenetre.hidden = true;
+    lanceur.hidden = false;
+    for (const b of declencheurs()) b.setAttribute('aria-expanded', 'false');
+    retenir(false);
+    // Le focus d'abord : les boutons flottants restent visibles tant que l'un
+    // d'eux l'a (BaseLayout).
+    lanceur.focus();
+    document.dispatchEvent(new CustomEvent('sbd:chat', { detail: { ouverte } }));
+  };
+
+  document.addEventListener('click', (evenement) => {
+    if ((evenement.target as Element).closest('[data-ouvrir-chat]')) ouvrir(true);
+  });
+  fenetre.querySelector('[data-fermer-chat]')!.addEventListener('click', fermer);
+  fenetre.addEventListener('keydown', (evenement) => {
+    if (evenement.key === 'Escape') fermer();
+  });
 
   for (const bouton of boutonsSalon) {
     bouton.addEventListener('click', () => {
@@ -197,6 +283,338 @@ const salons = [
     void lire();
   });
 
-  void lire();
+  // Ouverte à la page précédente, ou demandée par l'adresse /communaute/#chat.
+  if (retenue() || location.hash === '#chat') ouvrir(location.hash === '#chat');
 </script>
 
+<style>
+  /* --- Le bouton du coin ------------------------------------------------ */
+
+  /* Le gabarit des autres boutons flottants (BaseLayout, BoutonSuggestion),
+     avec son mot : une icône seule demanderait de deviner. */
+  .lanceur-chat {
+    position: fixed;
+    right: var(--space-4);
+    bottom: var(--space-4);
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 2.75rem;
+    padding: 0 var(--space-4);
+    border: 2px solid var(--accent-fill);
+    border-radius: 999px;
+    background: var(--accent-fill);
+    color: var(--on-accent);
+    font: inherit;
+    font-size: var(--step--1);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .lanceur-chat:hover,
+  .lanceur-chat:focus-visible {
+    border-color: var(--accent);
+  }
+
+  .lanceur-chat[hidden] {
+    display: none;
+  }
+
+  .lanceur-chat :global(svg) {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  /* --- La fenêtre ------------------------------------------------------- */
+
+  /* Un panneau aux angles du système, bordure de 2 px, sans ombre : le
+     Modernist du site. Sur téléphone, il occupe le bas de l'écran. */
+  .chat-flottant {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 7;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    height: min(40rem, calc(100dvh - 4rem));
+    padding: var(--space-3) var(--space-4) var(--space-4);
+    border-top: 2px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  @media (min-width: 40rem) {
+    .chat-flottant {
+      right: var(--space-4);
+      bottom: var(--space-4);
+      left: auto;
+      width: min(24rem, calc(100vw - 2 * var(--space-4)));
+      height: 34rem;
+      max-height: calc(100dvh - 6rem);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-lg);
+    }
+  }
+
+  .chat-flottant[hidden],
+  .chat-flottant :global([hidden]) {
+    display: none;
+  }
+
+  .entete-chat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .entete-chat h2 {
+    margin: 0;
+    font-size: var(--step-1);
+  }
+
+  .fermer-chat {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--cible-min);
+    min-height: var(--cible-min);
+    padding: 0;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .fermer-chat:hover,
+  .fermer-chat:focus-visible {
+    border-color: var(--accent);
+  }
+
+  .fermer-chat svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  /* Les salons défilent de côté plutôt que de manger la hauteur du fil. */
+  .salons {
+    display: flex;
+    gap: var(--space-2);
+    padding-bottom: var(--space-1);
+    overflow-x: auto;
+  }
+
+  .salons button {
+    flex: none;
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-3);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: var(--step--1);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  /* Un état choisi : l'aplat sous un filet d'accent, jamais l'aplat seul
+     (critère 1.4.11 en thème clair, CLAUDE.md). */
+  .salons button[aria-pressed='true'] {
+    border-color: var(--accent);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+  }
+
+  .en-ligne,
+  .vide,
+  .pied-chat {
+    margin: 0;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .fil-chat {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2);
+    flex: 1;
+    min-height: 6rem;
+    margin: 0;
+    padding: var(--space-3);
+    overflow-y: auto;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    list-style: none;
+  }
+
+  .chat-flottant :global(.fil-chat li) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .chat-flottant :global(.entete-message) {
+    margin: 0;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .chat-flottant :global(.entete-message a) {
+    font-weight: 700;
+  }
+
+  .chat-flottant :global(.corps) {
+    margin: 0;
+  }
+
+  .chat-flottant :global(.smiley) {
+    height: 1.15em;
+    width: auto;
+    vertical-align: -0.2em;
+  }
+
+  /* L'avertissement du dopage (docs/forum.md, section 5 bis), en ambre. */
+  .chat-flottant :global(.avertissement) {
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border-left: 3px solid var(--alerte);
+    color: var(--alerte);
+    font-size: var(--step--1);
+    font-weight: 600;
+  }
+
+  .chat-flottant :global(.bouton-signaler) {
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: var(--step--1);
+    cursor: pointer;
+  }
+
+  .chat-flottant :global(.bouton-signaler:hover),
+  .chat-flottant :global(.bouton-signaler:focus-visible) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* --- Écrire ----------------------------------------------------------- */
+
+  .ecrire-chat {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .ecrire-chat label {
+    font-size: var(--step--1);
+    font-weight: 600;
+  }
+
+  .ligne-envoi {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .ligne-envoi input {
+    flex: 1;
+    min-width: 0;
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: var(--police-champ);
+  }
+
+  .ligne-envoi input:focus-visible {
+    border-color: var(--accent);
+  }
+
+  .ligne-envoi button {
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid var(--accent-fill);
+    border-radius: var(--radius);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .etat-chat {
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border-left: 3px solid var(--negatif);
+    color: var(--negatif);
+    font-size: var(--step--1);
+    font-weight: 600;
+  }
+
+  .inviter {
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  /* Le panneau des smileys, posé par lib/barre-smileys.ts : le cadre replié
+     de phpBB, boutons de 32 px (cinquième exclusion, tokens.css). */
+  .chat-flottant :global(.panneau-smileys) {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .chat-flottant :global(.panneau-smileys summary) {
+    display: flex;
+    align-items: center;
+    padding: 0 var(--space-3);
+    font-size: var(--step--1);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .chat-flottant :global(.grille-smileys) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 2rem);
+    gap: var(--space-1);
+    max-height: 6.5rem;
+    padding: 0 var(--space-3) var(--space-3);
+    overflow-y: auto;
+  }
+
+  .chat-flottant :global(.grille-smileys button) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    min-height: 2rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .chat-flottant :global(.grille-smileys button:hover),
+  .chat-flottant :global(.grille-smileys button:focus-visible) {
+    border-color: var(--accent);
+  }
+
+  .chat-flottant :global(.grille-smileys img) {
+    height: 1.25rem;
+    width: auto;
+  }
+</style>

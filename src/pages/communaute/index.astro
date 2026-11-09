@@ -1,7 +1,5 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Chat from '../../components/Chat.astro';
-import FenetreConfirmation from '../../components/FenetreConfirmation.astro';
 import Icone from '../../components/Icone.astro';
 import { ANCIENNETE_VOTE_JOURS, FAVORABLES_POURCENT, VOTES_MIN } from '../../lib/communaute';
 
@@ -13,8 +11,10 @@ import { ANCIENNETE_VOTE_JOURS, FAVORABLES_POURCENT, VOTES_MIN } from '../../lib
  *
  * LE PREMIER ÉCRAN DIT CE QU'ON TROUVE ICI ET Y MÈNE. Quatre actions : le
  * forum en bouton plein, le fil, les barres à vérifier, et le compte. Puis
- * le fonctionnement en une liste courte, et le chat en bas de page, qui se
- * lit sans compte.
+ * le fonctionnement en une liste courte, et le chat, qui se lit sans compte.
+ * Il vit en fenêtre flottante sur toutes les pages depuis le 9 novembre
+ * (components/Chat.astro) : la page l'annonce et l'ouvre. `#chat`, où
+ * renvoie l'ancienne adresse /communaute/chat/, l'ouvre aussi.
  *
  * LES SEUILS SE LISENT DANS lib/communaute.ts, recopiés de
  * public/api/lib/autorisation.php et contrôlés par db/verifier-autorisation.php :
@@ -80,10 +80,19 @@ import { ANCIENNETE_VOTE_JOURS, FAVORABLES_POURCENT, VOTES_MIN } from '../../lib
       </p>
     </section>
 
-    <Chat />
+    <section class="bloc-chat" id="chat" aria-labelledby="titre-bloc-chat">
+      <h2 id="titre-bloc-chat">Le chat</h2>
+      <p>
+        Cinq salons, un thème chacun, la charte partout. Les membres lisent les
+        sept derniers jours, les visiteurs voient arriver les nouveaux messages.
+        Il s'ouvre aussi du bouton « Chat », en bas à droite de chaque page.
+      </p>
+      <button type="button" class="ouvrir-chat" data-ouvrir-chat aria-controls="chat-flottant" aria-expanded="false">
+        <Icone nom="forum" />
+        Ouvrir le chat
+      </button>
+    </section>
   </div>
-
-  <FenetreConfirmation />
 </BaseLayout>
 
 <style>
@@ -175,5 +184,31 @@ import { ANCIENNETE_VOTE_JOURS, FAVORABLES_POURCENT, VOTES_MIN } from '../../lib
 
   .fonctionnement {
     margin-bottom: var(--space-12);
+  }
+
+  .bloc-chat p {
+    max-width: 62ch;
+  }
+
+  /* L'aplat sous --on-accent, comme le bouton du forum plus haut. */
+  .ouvrir-chat {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-6);
+    border: 2px solid var(--accent-fill);
+    border-radius: var(--radius);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .ouvrir-chat:hover,
+  .ouvrir-chat:focus-visible {
+    border-color: var(--accent-fill-hover);
+    background: var(--accent-fill-hover);
   }
 </style>

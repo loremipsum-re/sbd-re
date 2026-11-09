@@ -428,8 +428,7 @@
 }
 
 .bouton-citer,
-.bouton-suivre,
-.salons button {
+.bouton-suivre {
   min-height: var(--cible-min);
   padding: var(--space-2) var(--space-4);
   border: 2px solid var(--border);
@@ -443,8 +442,7 @@
 
 /* Un état choisi : l'aplat sous un filet d'accent, jamais l'aplat seul
    (critère 1.4.11 en thème clair, CLAUDE.md). */
-.bouton-suivre[aria-pressed='true'],
-.salons button[aria-pressed='true'] {
+.bouton-suivre[aria-pressed='true'] {
   border-color: var(--accent);
   background: var(--accent-fill);
   color: var(--on-accent);
@@ -507,65 +505,8 @@
   width: auto;
 }
 
-/* --- Chat ------------------------------------------------------------- */
-
-.salons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-block: var(--space-4);
-}
-
-.en-ligne {
-  font-size: var(--step--1);
-  color: var(--muted);
-}
-
-.fil-chat {
-  display: grid;
-  gap: var(--space-2);
-  max-height: 60vh;
-  margin: var(--space-4) 0;
-  padding: var(--space-3);
-  overflow-y: auto;
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  list-style: none;
-}
-
-.fil-chat li {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.fil-chat .entete-message {
-  margin: 0;
-  font-size: var(--step--1);
-  color: var(--muted);
-}
-
-.fil-chat .entete-message a {
-  font-weight: 700;
-}
-
-.fil-chat .corps {
-  margin: 0;
-}
-
-.ecrire-chat {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.ecrire-chat .ligne-envoi {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.ecrire-chat .ligne-envoi input {
-  flex: 1;
-  min-width: 0;
-}
+/* --- Chat : ses règles vivent dans components/Chat.astro, sous
+   .chat-flottant, depuis qu'il flotte sur toutes les pages. --------------- */
 
 /* --- Notifications ---------------------------------------------------- */
 
@@ -669,16 +610,10 @@
   padding: 0 var(--space-4) var(--space-4);
 }
 
-/* `display: grid` d'un formulaire l'emporterait sur l'attribut `hidden` : le
-   champ du chat restait visible d'un visiteur, hors de .page-compte qui
-   portait seule cette règle. */
-.chat [hidden],
+/* `display: grid` d'un formulaire l'emporterait sur l'attribut `hidden` :
+   le champ du chat est resté visible d'un visiteur, faute de cette règle. */
 .page-forum [hidden] {
   display: none;
-}
-
-.chat {
-  margin-top: var(--space-8);
 }
 
 /* --- Mise en forme, aperçu, recherche, pied de l'accueil -------------- */
