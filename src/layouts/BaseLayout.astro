@@ -964,6 +964,24 @@ const courant = (href: string) =>
   .menu summary::-webkit-details-marker {
     display: none;
   }
+
+  /*
+   * SOUS 22,5rem, LE MENU GARDE SES TROIS TRAITS ET PERD LE MOT, dit aux
+   * lecteurs d'écran par `aria-label`. Mesuré à 320 px (critère 1.4.10) :
+   * la barre dépassait de 38 px pour un visiteur, logo, « Connexion » et
+   * menu, et de 23 px pour un membre, cloche et avatar compris.
+   */
+  @media (max-width: 22.49rem) {
+    .menu summary {
+      justify-content: center;
+      min-width: var(--cible-min);
+      padding-inline: var(--space-2);
+    }
+
+    .mot-menu {
+      display: none;
+    }
+  }
   .menu summary:hover {
     border-color: var(--accent);
     color: var(--accent);
