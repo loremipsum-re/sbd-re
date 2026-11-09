@@ -424,6 +424,33 @@ commit pour le code.
 - **Tests** : 267 règles, et un essai de plus dans `php db/verifier.php` :
   104 attendus.
 
+### Construit le 9 novembre, le forum au quotidien
+
+Un lot choisi après la fin du plan, à la demande de l'auteur.
+
+- **Les brouillons gardés** sur l'appareil, sept jours au plus, pour ouvrir
+  un sujet comme pour répondre : « Votre brouillon est revenu », et
+  effacés à la publication (`lib/forum-memoire.ts`).
+- **Ctrl + Entrée**, ou Cmd + Entrée sur Mac, publie depuis tout champ du
+  forum. L'aide sous le champ le dit.
+- **Citer un passage** : le texte sélectionné dans un message, sinon le
+  message entier. Un passage se cite en texte simple, sans ses balises.
+- **La pagination numérotée**, comme sur phpBB : la première page, la
+  dernière, deux de chaque côté, « … » entre (`numerosDePage`).
+- **« Nouveau » et « 3 nouvelles réponses »** dans les listes, calculés par
+  le navigateur d'après les sujets qu'il a déjà lus, sans rien envoyer au
+  serveur. Le lien mène à la première réponse non lue, par l'ancre `#nN`
+  posée sur le numéro de chaque message. La première visite ne marque rien.
+- **Les mentions du chat** préviennent le cité, une notification non lue au
+  plus par salon (`notifierMentionsChat`), dont le lien ouvre le chat sur
+  ce salon : `/communaute/#chat=squat`.
+- **Rétablir un compte banni** depuis `/compte/admin/`, qui liste les
+  comptes bannis ; le membre en reçoit une notification.
+- `/confidentialite/` dit ce que le navigateur garde : brouillons, sujets
+  lus, chat ouvert.
+- **Tests** : 278 règles, et deux essais de plus dans `php db/verifier.php` :
+  106 attendus.
+
 ---
 
 ## 9. Questions
