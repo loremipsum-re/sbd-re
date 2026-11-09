@@ -50,6 +50,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-09',
+    nature: 'correction',
+    version: '1.19.1',
+    titre: 'L\'accessibilité de la communauté, remesurée',
+    texte:
+      "Les pages de la communauté ont été passées au crible : contrastes, noms des commandes, clavier, taille des cibles, affichage à 320 px. Le contour des champs de saisie se voit mieux, l'en-tête tient sur les plus petits écrans, et la fenêtre de confirmation s'ouvre sur « Annuler ». Le détail est sur la page Accessibilité.",
+  },
+  {
+    date: '2026-11-09',
     nature: 'fonction',
     version: '1.19.0',
     titre: 'Le top des membres sur la page Communauté',
