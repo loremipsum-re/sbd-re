@@ -165,6 +165,8 @@ const salons = [
   });
 
   let ouverte = false;
+  /** La commande qui a ouvert le chat : le focus y revient à la fermeture. */
+  let origine: HTMLElement | null = null;
   let salon = 'general';
   let dernier = 0;
   let intervalle = 15;
@@ -277,6 +279,8 @@ const salons = [
   /** Ouvrir : la lecture part, le focus va au titre sans faire surgir le clavier. */
   const ouvrir = (focus: boolean) => {
     ouverte = true;
+    const actif = document.activeElement;
+    origine = actif instanceof HTMLElement && actif !== document.body && !fenetre.contains(actif) ? actif : null;
     fenetre.hidden = false;
     lanceur.hidden = true;
     retenirVu(dernierAilleurs);
@@ -295,8 +299,10 @@ const salons = [
     for (const b of declencheurs()) b.setAttribute('aria-expanded', 'false');
     retenir(false);
     // Le focus d'abord : les boutons flottants restent visibles tant que l'un
-    // d'eux l'a (BaseLayout).
-    lanceur.focus();
+    // d'eux l'a (BaseLayout). Il revient à la commande qui a ouvert le chat,
+    // « Ouvrir le chat » de /communaute/ par exemple, sinon au bouton du coin.
+    (origine?.isConnected && !origine.closest('[hidden]') && origine !== lanceur ? origine : lanceur).focus();
+    origine = null;
     document.dispatchEvent(new CustomEvent('sbd:chat', { detail: { ouverte } }));
   };
 
