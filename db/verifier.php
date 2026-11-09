@@ -236,6 +236,10 @@ foreach ($attendues as $table => $colonnes) {
     if ($table === 'jeton' && !str_contains($presentes['type'] ?? '', "'session'")) {
         $manquantes[] = "type 'session'";
     }
+    // Les rangs, migration du 10 novembre 2026.
+    if ($table === 'membre' && !str_contains($presentes['role'] ?? '', "'moderateur'")) {
+        $manquantes[] = "role 'moderateur'";
+    }
 
     if ($manquantes === []) {
         ok("La table $table est à jour.");
@@ -351,8 +355,8 @@ try {
     $refuse('Courriel déjà pris', $sqlMembre, ["essai-$s@exemple.re", $hash, "neuf_$s", $ip]);
     $refuse('Présentation de 161 caractères',
         'UPDATE membre SET bio = ? WHERE id = ?', [str_repeat('a', 161), $membreId]);
-    $refuse('Rôle inconnu « moderateur »',
-        'UPDATE membre SET role = ? WHERE id = ?', ['moderateur', $membreId]);
+    $refuse('Rôle inconnu « superadmin »',
+        'UPDATE membre SET role = ? WHERE id = ?', ['superadmin', $membreId]);
 
     // Le nom Instagram, distinct du pseudo (migration du 7 novembre 2026).
     $sqlInstagram = 'UPDATE membre SET instagram = ? WHERE id = ?';
@@ -895,6 +899,31 @@ if (!function_exists('SBDRE\creerSujet')) {
         !\SBDRE\bannir($lecteur['id'])
             ? ok('Un admin ne se bannit pas.')
             : ko('Un admin a été banni.');
+
+        info('Rangs');
+
+        $donne = \SBDRE\donnerRang($cite['id'], 'moderateur');
+        $surAdmin = \SBDRE\donnerRang($lecteur['id'], 'membre');
+        $inconnu = \SBDRE\donnerRang($cite['id'], 'admin');
+        $liste = array_column(\SBDRE\membresAvecRang(), 'rang', 'pseudo');
+        ($donne && !$surAdmin && !$inconnu && ($liste[$cite['pseudo']] ?? '') === 'moderateur' && ($liste[$lecteur['pseudo']] ?? '') === 'admin')
+            ? ok('L\'admin donne un rang ; le rang d\'admin ne se donne ni ne se retire ainsi.')
+            : ko('Les rangs sont faux : ' . json_encode([$donne, $surAdmin, $inconnu, $liste]));
+
+        $parModo = \SBDRE\bannir($cite['id']);
+        $parAdmin = \SBDRE\bannir($cite['id'], true);
+        \SBDRE\debannir($cite['id']);
+        (!$parModo && $parAdmin)
+            ? ok('Un modérateur ne se bannit que par l\'admin.')
+            : ko("Le bannissement d'un modérateur est faux : $parModo, $parAdmin.");
+
+        $base->prepare("INSERT INTO message (canal, membre_id, pseudo, texte, ip) VALUES ('general', ?, ?, 'Message du modo', ?)")
+             ->execute([$cite['id'], $cite['pseudo'], $ip2]);
+        $parLeModo = array_values(array_filter(\SBDRE\lireChat('general', 0, true)['messages'], fn (array $m): bool => $m['texte'] === 'Message du modo'));
+        ($parLeModo !== [] && $parLeModo[0]['rang'] === 'Modo')
+            ? ok('Le chat porte le badge du modérateur.')
+            : ko('Le badge de rang manque au chat : ' . json_encode($parLeModo));
+        \SBDRE\donnerRang($cite['id'], 'membre');
 
         if (function_exists('imagewebp')) {
             $carre = imagecreatetruecolor(400, 400);

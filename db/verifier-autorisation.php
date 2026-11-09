@@ -191,6 +191,31 @@ verifie('Un admin modère',                                      \SBDRE\peutMode
 verifie('Un admin banni ne modère plus',                        \SBDRE\peutModerer($adminBanni), false);
 verifie('Un anonyme ne modère pas',                             \SBDRE\peutModerer($anonyme),    false);
 
+titre('Les rangs : modérateur, juge, donateur');
+
+$modo     = $personne(7, ['role' => 'moderateur']);
+$juge     = $personne(8, ['role' => 'juge']);
+$donateur = $personne(9, ['role' => 'donateur']);
+verifie('Un modérateur modère',                          \SBDRE\peutModerer($modo), true);
+verifie('Un juge ne modère pas',                         \SBDRE\peutModerer($juge), false);
+verifie('Un juge juge',                                  \SBDRE\estJuge($juge), true);
+verifie('Un modérateur ne juge pas',                     \SBDRE\estJuge($modo), false);
+verifie('L\'admin juge et modère',                       \SBDRE\estJuge($admin) && \SBDRE\estModerateur($admin), true);
+verifie('Un donateur n\'a aucun droit',                  \SBDRE\estModerateur($donateur) || \SBDRE\estJuge($donateur), false);
+verifie('Un modérateur banni ne modère plus',            \SBDRE\estModerateur(['banni' => 1] + $modo), false);
+verifie('Le modérateur bannit un membre',                \SBDRE\peutBannir($modo, ['id' => 2, 'role' => 'membre']), true);
+verifie('Le modérateur bannit un juge',                  \SBDRE\peutBannir($modo, ['id' => 8, 'role' => 'juge']), true);
+verifie('Le modérateur ne bannit pas un modérateur',     \SBDRE\peutBannir($modo, ['id' => 10, 'role' => 'moderateur']), false);
+verifie('L\'admin bannit un modérateur',                 \SBDRE\peutBannir($admin, ['id' => 10, 'role' => 'moderateur']), true);
+verifie('Personne ne bannit un admin',                   \SBDRE\peutBannir($admin, ['id' => 11, 'role' => 'admin']), false);
+verifie('On ne se bannit pas soi-même',                  \SBDRE\peutBannir($modo, ['id' => 7, 'role' => 'moderateur']), false);
+verifie('Un juge ne bannit pas',                         \SBDRE\peutBannir($juge, ['id' => 2, 'role' => 'membre']), false);
+verifie('Le modérateur retire une barre signalée',       \SBDRE\peutRetirerPerformance($barreAlice, $modo), true);
+verifie('Le juge ne retire pas la barre d\'un autre',    \SBDRE\peutRetirerPerformance($barreAlice, $juge), false);
+verifie('Badges : Admin et Modo, rien pour les autres',  \SBDRE\badgeRang('admin') === 'Admin' && \SBDRE\badgeRang('moderateur') === 'Modo'
+    && \SBDRE\badgeRang('juge') === '' && \SBDRE\badgeRang('donateur') === '' && \SBDRE\badgeRang(null) === '', true);
+verifie('Le rang d\'admin ne se donne pas par la page',  isset(\SBDRE\RANGS_ATTRIBUABLES['admin']), false);
+
 titre('Badge communauté : 20 votes, 60 % favorables');
 
 verifie('19 votes favorables sur 19 : pas de badge',            \SBDRE\badgeCommunaute(19, 19), false);
@@ -647,6 +672,18 @@ verifie('La page 2 a sa propre adresse canonique',        str_contains(\SBDRE\re
 $recherche = \SBDRE\rendreAnnuaire($gabaritAnnuaire, [], 0, 1, 'zz', []);
 verifie('Une recherche reste hors index',                 str_contains($recherche, '|noindex|'), true);
 verifie('Une recherche vide le dit, avec la sortie',      str_contains($recherche, 'Aucun membre ne porte « zz » dans son pseudo') && str_contains($recherche, 'href="/membres/"'), true);
+
+titre('Effacer son compte : l\'adresse recopiée');
+
+verifie('L\'adresse exacte confirme',                    \SBDRE\adresseConfirmee('paul@exemple.re', 'paul@exemple.re'), true);
+verifie('Majuscules et espaces ne comptent pas',         \SBDRE\adresseConfirmee(' Paul@Exemple.RE ', 'paul@exemple.re'), true);
+verifie('Une autre adresse ne confirme pas',             \SBDRE\adresseConfirmee('autre@exemple.re', 'paul@exemple.re'), false);
+verifie('Rien ne confirme rien',                         \SBDRE\adresseConfirmee('', ''), false);
+
+titre('Le badge de rang au forum');
+
+verifie('Le modérateur porte « Modo »',                  \SBDRE\badgeRangHtml('moderateur') === '<span class="rang rang-moderateur">Modo</span>', true);
+verifie('Un juge ne porte rien',                         \SBDRE\badgeRangHtml('juge') === '', true);
 
 titre('Le récapitulatif par courriel');
 
