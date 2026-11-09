@@ -51,6 +51,14 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-09',
     nature: 'fonction',
+    version: '1.15.0',
+    titre: 'Votre compte dans l\'en-tête',
+    texte:
+      "Connecté, votre avatar ouvre en haut de page l'accès à votre espace, votre profil, vos réglages et votre avatar. Le bouton « Chat » s'orne d'un point quand d'autres ont écrit, « Proposer » paraît sur chaque page, et une carte annonce les nouveautés à chaque version.",
+  },
+  {
+    date: '2026-11-09',
+    nature: 'fonction',
     version: '1.14.0',
     titre: 'Le forum au quotidien',
     texte:
