@@ -82,7 +82,7 @@ la mention « à compléter » tant que l'auteur ne les a pas fournis.
 | `/competitions/` | Liste, puis `/competitions/<nom>/<date>/` et ses records battus ce jour-là |
 | `/exterieur/` | Résultats obtenus hors de La Réunion |
 | `/athlete/<slug>/` | Une fiche par athlète. Un membre connecté y réclame la sienne, « C'est votre fiche ? » en bas de page, et l'admin relie ou refuse depuis `/compte/admin/` : relié, le profil mène à la fiche et la fiche au profil (`components/FicheMembre.astro`, `api/revendication.php`, `lib/revendications.php`). `/api/athletes.json`, généré avec le site, dit au serveur quelles fiches existent |
-| `/communaute/` | L'entrée de la communauté depuis l'ouverture du 7 novembre 2026 : le forum, le fil, les barres à vérifier, le compte, le fonctionnement, puis un bouton qui ouvre le chat. `/communaute/chat/` renvoie à `/communaute/#chat`, qui l'ouvre aussi. **Le chat flotte sur toutes les pages** depuis le 9 novembre, bouton « Chat » dans le coin (`components/Chat.astro`, posé par `BaseLayout.astro`) : il n'interroge le serveur que fenêtre ouverte, et ses styles vivent sous `.chat-flottant` |
+| `/communaute/` | L'entrée de la communauté depuis l'ouverture du 7 novembre 2026 : le forum, le fil, les barres à vérifier, le compte, puis la vitrine du 10 novembre (trois dernières actualités, top des membres en raw, dernières barres, par `api/communaute.php` et `lib/vitrine.php`), le fonctionnement, et un bouton qui ouvre le chat. `/communaute/chat/` renvoie à `/communaute/#chat`, qui l'ouvre aussi. **Le chat flotte sur toutes les pages** depuis le 9 novembre, bouton « Chat » dans le coin (`components/Chat.astro`, posé par `BaseLayout.astro`) : il n'interroge le serveur que fenêtre ouverte, et ses styles vivent sous `.chat-flottant` |
 | `/membres/`, `/membres/<pseudo>/` | L'annuaire, rendu par `api/annuaire.php` depuis le gabarit `/membres/-annuaire/` : les membres en cartes, les plus actifs d'abord, recherche par pseudo hors index. Profil public, rendu par `api/profil-page.php` depuis le gabarit `/membres/-gabarit/` (repères `%%NOM%%`), réécrit par le `.htaccess`. D'un coup d'œil depuis le 9 novembre : deux colonnes dès 56rem, la carte du membre (faits en icônes, chiffres) et les records en tuiles ; les icônes viennent de sprites posés par le gabarit, que PHP appelle par `<use>`. `noindex` tant que le profil n'a pas de performance. Plan des profils à `/sitemap-membres.xml` |
 | `/compte/`, `/compte/reglages/`, `/compte/a-verifier/`, `/compte/inscription/`, `/compte/connexion/`, `/compte/mot-de-passe/`, `/compte/recapitulatif/`, `/communaute/charte/` | Les comptes, servis par `public/api/*.php`. `/compte/` est le tableau de bord du membre depuis le 10 novembre : quatre chiffres, raccourcis en tuiles, puis deux colonnes dès 56rem (performances ; position au classement d'après `/api/positions.json`, fiche, sujets). Les réglages derrière l'engrenage, en cartes avec un sommaire collé à gauche, le récapitulatif par courriel coupé depuis le lien du courriel à `/compte/recapitulatif/`, le fil des barres à vérifier à `/compte/a-verifier/`. Prop `prive` de `BaseLayout` : `noindex`, hors plan de site, jamais de Clarity. Hors du menu : on y entre par Communauté |
 | `/forum/`, `/forum/<adresse>/`, `/forum/<adresse>/<sujet>/`, `/forum/recherche/` | Le forum, rendu par `api/forum-page.php` depuis le gabarit `/forum/-gabarit/`, comme les profils. La recherche dans les titres est une adresse réservée, hors index. Indexé depuis l'ouverture (`FORUM_OUVERT` de `lib/forum.php`), plan à `/sitemap-forum.xml`. Écritures par `api/forum.php`, plan dans docs/forum.md. « J'aime » sur les messages (table `appreciation`). « @ » propose des pseudos au forum comme au chat (`lib/suggestions-pseudo.ts`, `api/pseudos.php`) |
@@ -298,7 +298,19 @@ trois s'effacent chat ouvert.
 
 **L'en-tête d'un membre connecté** porte, avec la cloche, le menu du compte
 (`lib/entete-compte.ts`) : espace, profil, notifications, réglages, avatar,
-déconnexion, et pour l'admin la modération et ses signalements en attente.
+déconnexion, et pour l'équipe la modération et ses signalements en attente
+(`data-droit-entete`). Un visiteur y trouve « Connexion », et le panneau
+du menu « Se connecter » ou « Créer un compte » : la classe `connecte`,
+posée sur `<html>` avant le premier dessin d'après le cookie lisible, les
+masque à un membre.
+
+**Les rangs** (`lib/autorisation.php`, depuis le 10 novembre 2026) : admin,
+modérateur (signalements, bannir, jamais un admin ni un autre modérateur),
+juge (le badge « Vérifiée par SBD.re »), donateur (aucun droit), membre.
+L'admin les donne depuis `/compte/admin/` ; le rang d'admin se donne à la
+main en base, nulle part ailleurs. Chaque geste de `api/admin.php` exige
+son rang. Seuls l'admin et le modérateur portent un badge, au forum et au
+chat (`.rang`, `tokens.css`).
 Une seule lecture par minute les nourrit, celle de la cloche
 (`etatEntete` de `lib/notifications.php`, évènement `sbd:compte`), qui
 allume aussi le point rouge du bouton « Chat ». **La carte « Nouveau sur
