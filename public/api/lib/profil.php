@@ -157,6 +157,11 @@ function rendreProfil(array $membre, string $gabarit, array $salles, array $perf
         $fiche[] = ['Instagram', '<a href="' . e($instagram) . '" target="_blank" rel="me noopener"'
             . ' aria-describedby="annonce-lien-sortant">@' . e((string) $membre['instagram']) . '</a>'];
     }
+    // La fiche d'athlète officielle, reliée par l'admin (lib/revendications.php).
+    if (($membre['athlete_nom'] ?? null) !== null) {
+        $fiche[] = ['Athlète', '<a href="/athlete/' . e((string) $membre['athlete_slug']) . '/">' . e((string) $membre['athlete_nom'])
+            . '</a> <span class="verifie">vérifié</span>'];
+    }
     $fiche[] = ['Membre depuis', e(dateFr($inscription, false))];
 
     $htmlFiche = '<dl class="fiche-membre">' . implode('', array_map(
@@ -191,6 +196,9 @@ function rendreProfil(array $membre, string $gabarit, array $salles, array $perf
     }
     if ($instagram !== '') {
         $personne['sameAs'] = [$instagram];
+    }
+    if (($membre['athlete_nom'] ?? null) !== null) {
+        $personne['sameAs'] = [...($personne['sameAs'] ?? []), 'https://sbd.re/athlete/' . $membre['athlete_slug'] . '/'];
     }
     // JSON_HEX_TAG écrit < et > en < et > : une présentation qui
     // contiendrait « </script> » ne peut pas refermer le bloc.

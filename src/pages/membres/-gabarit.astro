@@ -121,6 +121,19 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     min-height: var(--cible-min);
   }
 
+  /* La fiche d'athlète reliée par l'admin : le mot en vert, au filet de sa
+     couleur, comme les barres vérifiées. */
+  .page-membre .fiche-membre .verifie {
+    display: inline-block;
+    margin-left: var(--space-1);
+    padding: 0 var(--space-2);
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    color: var(--succes);
+    font-size: var(--step--1);
+    font-weight: 600;
+  }
+
   .page-membre .records-membre,
   .page-membre .sujets-membre {
     max-width: 48rem;
