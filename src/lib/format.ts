@@ -67,6 +67,14 @@ export function place(value: string): string {
   return value;
 }
 
+/**
+ * « de Paul Dupont », « d'Alicia Allais » : l'élision devant une voyelle ou
+ * un h, qu'on tienne le nom de la donnée ou d'un membre.
+ */
+export function deNom(nom: string): string {
+  return /^[aeiouyhàâäéèêëîïôöùûü]/i.test(nom) ? `d'${nom}` : `de ${nom}`;
+}
+
 /** Accord au pluriel, cas simple. */
 export function pluriel(n: number, singulier: string, pluriel_ = `${singulier}s`): string {
   return n > 1 ? pluriel_ : singulier;

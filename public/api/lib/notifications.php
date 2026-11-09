@@ -100,8 +100,10 @@ function etatEntete(array $membre): array
         'pseudo'       => (string) $membre['pseudo'],
         'avatar'       => $avatar !== null ? adresseAvatar((string) $membre['pseudo'], (int) $avatar['v']) : '',
         'admin'        => $admin,
+        // La file de l'admin : les cibles signalées, et les fiches réclamées.
         'signalements' => $admin
             ? (int) (ligne('SELECT COUNT(*) AS n FROM (SELECT 1 FROM signalement WHERE traite = 0 GROUP BY type, cible_id) AS file')['n'] ?? 0)
+                + (int) (ligne("SELECT COUNT(*) AS n FROM revendication WHERE etat = 'attente'")['n'] ?? 0)
             : 0,
         'chat_dernier' => (int) (ligne(
             'SELECT MAX(id) AS n FROM message

@@ -18,6 +18,7 @@ namespace SBDRE;
 define('SBDRE_API', true);
 require __DIR__ . '/lib/profil.php';
 require __DIR__ . '/lib/forum.php';
+require __DIR__ . '/lib/revendications.php';
 
 header('X-Content-Type-Options: nosniff');
 
@@ -61,7 +62,7 @@ if ($pseudo !== $demande) {
 
 try {
     $membre = ligne(
-        'SELECT id, pseudo, bio, salle, instagram, instagram_visible, date_inscription,
+        'SELECT id, pseudo, bio, salle, instagram, instagram_visible, date_inscription, athlete_slug,
                 (SELECT UNIX_TIMESTAMP(a.date_maj) FROM avatar a WHERE a.membre_id = membre.id) AS avatar_v
            FROM membre
           WHERE pseudo = :p AND courriel_verifie = 1 AND banni = 0',
@@ -82,6 +83,8 @@ try {
     }
     $performances = performancesAvecVotes('p.membre_id = :id', ['id' => $membre['id']]);
     $sujets = sujetsDuMembre((int) $membre['id'], 10);
+    // La fiche d'athlète reliée, son nom lu dans /api/athletes.json.
+    $membre['athlete_nom'] = $membre['athlete_slug'] !== null ? nomAthlete((string) $membre['athlete_slug']) : null;
 } catch (\RuntimeException | \PDOException $e) {
     indisponible($e->getMessage());
 }

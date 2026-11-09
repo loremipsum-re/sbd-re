@@ -635,6 +635,29 @@ ci-dessous restent le plan d'origine.
       le 8 novembre.
 - [x] Version 1.10.0 : nouvelle rubrique, le deuxième chiffre monte.
 
+### Relier un membre à sa fiche, le 9 novembre
+
+Demande de l'auteur : relier le profil d'un membre à sa fiche d'athlète
+officielle. Migration `db/migration-2026-11-10-fiches.sql`.
+
+- **Le membre réclame**, depuis la fiche, « C'est votre fiche ? », avec un
+  mot facultatif pour l'admin (300 caractères). Trois demandes par jour, une
+  à la fois.
+- **L'admin relie ou refuse**, depuis `/compte/admin/`, « Fiches
+  réclamées ». Le membre reçoit une notification dans les deux cas. Les
+  demandes en attente comptent dans le « en attente » du menu de l'admin.
+- **Une fiche, un membre** : `membre.athlete_slug`, unique. Une fiche reliée
+  se refuse à un autre, et le membre retire le lien à tout moment depuis
+  `/compte/`.
+- **Relié**, le profil porte la ligne « Athlète » vers la fiche, et la fiche
+  « Profil dans la communauté » vers le profil. La fiche, statique, lit le
+  lien à la visite (`GET /api/revendication.php?fiche=`), gardé cinq
+  minutes par le navigateur. Un membre banni n'y paraît plus.
+- **Les fiches existantes** se lisent dans `/api/athletes.json`, généré avec
+  le site : le serveur refuse une fiche inconnue.
+- Tests : 286 règles, quatre essais de plus dans `php db/verifier.php`,
+  111 attendus.
+
 ---
 
 ## 11. Décisions du 6 novembre

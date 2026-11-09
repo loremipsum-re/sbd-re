@@ -49,6 +49,7 @@ require_once dirname($chemin) . '/performances.php';
 require_once dirname($chemin) . '/forum.php';
 require_once dirname($chemin) . '/chat.php';
 require_once dirname($chemin) . '/recapitulatif.php';
+require_once dirname($chemin) . '/revendications.php';
 
 /* -------------------------------------------------------------------------
  * Affichage
@@ -571,6 +572,19 @@ $page1 = $pageSujet($message, $sujetOuvert);
 verifie('Le sujet dit jusqu\'où la page mène',               str_contains($page1, 'data-sujet-id="3" data-vu="0"'), true);
 verifie('Le numéro du message est une ancre',              str_contains($page1, 'id="n1"'), true);
 verifie('L\'aide annonce Ctrl + Entrée et le brouillon',     str_contains($page1, 'Ctrl + Entrée publie'), true);
+
+titre('Relier un membre à sa fiche');
+
+verifie('Adresse de fiche « jean-dupont-2 » valide',       \SBDRE\slugAthleteValide('jean-dupont-2'), true);
+verifie('Adresse à majuscule refusée',                    \SBDRE\slugAthleteValide('Jean-dupont'), false);
+verifie('Adresse qui remonte d\'un dossier refusée',       \SBDRE\slugAthleteValide('../membre'), false);
+verifie('Adresse à tiret final refusée',                  \SBDRE\slugAthleteValide('jean-'), false);
+verifie('Message de 300 caractères accepté',              \SBDRE\messageRevendicationValide(str_repeat('é', 300)), true);
+verifie('Message de 301 caractères refusé',               \SBDRE\messageRevendicationValide(str_repeat('é', 301)), false);
+$profilAthlete = \SBDRE\rendreProfil(['id' => 7, 'pseudo' => 'paul_120', 'bio' => '', 'salle' => '', 'instagram' => '', 'instagram_visible' => 0,
+    'date_inscription' => '2026-08-01 10:00:00', 'avatar_v' => null, 'athlete_slug' => 'paul-dupont', 'athlete_nom' => 'Paul <b>Dupont</b>'], '%%FICHE%%%%DONNEES%%', [], []);
+verifie('Le profil relié mène à la fiche, nom échappé',   str_contains($profilAthlete, 'href="/athlete/paul-dupont/"') && str_contains($profilAthlete, 'Paul &lt;b&gt;Dupont'), true);
+verifie('Et la dit aux moteurs, sameAs',                 str_contains($profilAthlete, 'https://sbd.re/athlete/paul-dupont/'), true);
 
 titre('Le récapitulatif par courriel');
 

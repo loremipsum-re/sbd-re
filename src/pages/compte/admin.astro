@@ -36,6 +36,10 @@ import '../../styles/communaute.css';
       <ol class="liste-notifications" data-forums></ol>
       <p class="aide" data-forums-vide hidden>Aucun forum de membre pour l'instant.</p>
 
+      <h2>Fiches réclamées</h2>
+      <ol class="liste-notifications" data-revendications></ol>
+      <p class="aide" data-revendications-vide hidden>Aucune fiche réclamée en attente.</p>
+
       <h2>Comptes bannis</h2>
       <ol class="liste-notifications" data-bannis></ol>
       <p class="aide" data-bannis-vide hidden>Aucun compte banni.</p>
@@ -47,6 +51,7 @@ import '../../styles/communaute.css';
 
 <script>
   import { afficher, api, confirmer } from '../../lib/api-compte';
+  import { deNom } from '../../lib/format';
 
   interface Signalement {
     type: 'message' | 'message_forum' | 'membre' | 'performance' | 'forum';
@@ -81,6 +86,39 @@ import '../../styles/communaute.css';
   const listeFile = document.querySelector<HTMLOListElement>('[data-file]')!;
   const listeForums = document.querySelector<HTMLOListElement>('[data-forums]')!;
   const listeBannis = document.querySelector<HTMLOListElement>('[data-bannis]')!;
+  const listeRevendications = document.querySelector<HTMLOListElement>('[data-revendications]')!;
+
+  interface Revendication {
+    id: number;
+    pseudo: string;
+    slug: string;
+    nom: string;
+    message: string;
+    deja: string;
+  }
+
+  /** Une fiche réclamée : qui, quelle fiche, son mot, et les deux décisions. */
+  const ligneRevendication = (r: Revendication) => {
+    const li = el('li');
+    const titre = el('p');
+    titre.style.fontWeight = '700';
+    titre.append(`${r.pseudo} réclame la fiche ${deNom(r.nom).slice(0, -r.nom.length)}`, el('a', { href: `/athlete/${r.slug}/`, textContent: r.nom }));
+    li.append(titre);
+    // Écrit en texte, jamais en HTML : c'est le mot du membre.
+    if (r.message) li.append(el('p', { textContent: r.message }));
+    if (r.deja) li.append(el('p', { className: 'date', textContent: `Déjà reliée à ${r.deja}.` }));
+    li.append(el('a', { href: `/membres/${r.pseudo}/`, textContent: `Voir le profil de ${r.pseudo}` }));
+    const gestes = el('div', { className: 'actions' });
+    gestes.style.display = 'flex';
+    gestes.style.flexWrap = 'wrap';
+    gestes.style.gap = '0.5rem';
+    gestes.append(
+      geste('Relier', { action: 'relier_fiche', id: r.id }, `Le profil ${deNom(r.pseudo)} et la fiche ${deNom(r.nom)} se renverront l'un à l'autre.`),
+      geste('Refuser', { action: 'refuser_fiche', id: r.id }),
+    );
+    li.append(gestes);
+    return li;
+  };
 
   const el = <K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLElementTagNameMap[K]> = {}) =>
     Object.assign(document.createElement(tag), props);
@@ -174,7 +212,7 @@ import '../../styles/communaute.css';
         intro.textContent = 'Cette page n\'existe pas.';
         return;
       }
-      intro.textContent = 'Les signalements en attente, les plus signalés d\'abord, puis les forums des membres et les comptes bannis.';
+      intro.textContent = 'Les signalements en attente, les plus signalés d\'abord, puis les fiches réclamées, les forums des membres et les comptes bannis.';
       section.hidden = false;
       const file = r.file as Signalement[];
       const forums = r.forums as ForumMembre[];
@@ -182,6 +220,9 @@ import '../../styles/communaute.css';
       listeForums.replaceChildren(...forums.map(ligneForum));
       document.querySelector<HTMLElement>('[data-file-vide]')!.hidden = file.length > 0;
       document.querySelector<HTMLElement>('[data-forums-vide]')!.hidden = forums.length > 0;
+      const revendications = (r.revendications ?? []) as Revendication[];
+      listeRevendications.replaceChildren(...revendications.map(ligneRevendication));
+      document.querySelector<HTMLElement>('[data-revendications-vide]')!.hidden = revendications.length > 0;
       const bannis = (r.bannis ?? []) as { id: number; pseudo: string }[];
       listeBannis.replaceChildren(...bannis.map(ligneBanni));
       document.querySelector<HTMLElement>('[data-bannis-vide]')!.hidden = bannis.length > 0;

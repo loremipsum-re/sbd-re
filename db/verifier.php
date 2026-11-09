@@ -277,6 +277,7 @@ foreach ([
         require_once dirname($bibliotheque) . '/chat.php';
         require_once dirname($bibliotheque) . '/signalements.php';
         require_once dirname($bibliotheque) . '/recapitulatif.php';
+        require_once dirname($bibliotheque) . '/revendications.php';
         break;
     }
 }
@@ -809,6 +810,44 @@ if (!function_exists('SBDRE\creerSujet')) {
             && (int) (\SBDRE\ligne('SELECT banni FROM membre WHERE id = :m', ['m' => $cite['id']])['banni'] ?? 1) === 0))
             ? ok('Un compte banni se liste pour l\'admin, et se rétablit une fois.')
             : ko('Le rétablissement d\'un compte banni est faux.');
+
+        info('Fiches d\'athlètes');
+
+        // Une fiche réelle, reliée à personne, lue dans /api/athletes.json déployé.
+        $slugLibre = null;
+        foreach (array_keys(\SBDRE\fichesAthletes()) as $candidat) {
+            if (\SBDRE\membreLie((string) $candidat) === null) {
+                $slugLibre = (string) $candidat;
+                break;
+            }
+        }
+        if ($slugLibre === null) {
+            ko('/api/athletes.json introuvable ou vide : les fiches ne peuvent pas se réclamer.');
+        } else {
+            $refusInconnue = \SBDRE\refusRevendication($lecteur['id'], 'fiche-qui-n-existe-pas');
+            $avant = \SBDRE\refusRevendication($lecteur['id'], $slugLibre);
+            $demande = \SBDRE\demanderFiche($lecteur['id'], $slugLibre, 'Mon club');
+            $doublon = \SBDRE\refusRevendication($lecteur['id'], $slugLibre);
+            ($refusInconnue !== '' && $avant === '' && $doublon !== '' && (\SBDRE\etatFiche($lecteur['id'])['attente']['slug'] ?? '') === $slugLibre)
+                ? ok('Une fiche se réclame une fois, une fiche inconnue jamais.')
+                : ko('La demande de fiche est fausse : ' . json_encode([$refusInconnue, $avant, $doublon]));
+
+            $relie = \SBDRE\accepterRevendication($demande, $lecteur['id']);
+            ($relie !== null && \SBDRE\membreLie($slugLibre) === $lecteur['pseudo'] && \SBDRE\accepterRevendication($demande, $lecteur['id']) === null)
+                ? ok('L\'admin relie la fiche, une seule fois, et la fiche nomme le membre.')
+                : ko('Relier une fiche a échoué.');
+
+            $autre = \SBDRE\refusRevendication($cite['id'], $slugLibre);
+            \SBDRE\retirerFiche($lecteur['id']);
+            ($autre !== '' && \SBDRE\membreLie($slugLibre) === null && \SBDRE\etatFiche($lecteur['id'])['lien'] === null)
+                ? ok('Une fiche reliée se refuse à un autre, et le membre retire son lien.')
+                : ko('Le lien de fiche ne protège pas ou ne se retire pas.');
+
+            $refusable = \SBDRE\demanderFiche($lecteur['id'], $slugLibre, '');
+            (\SBDRE\refuserRevendication($refusable, $lecteur['id']) === $lecteur['id'] && \SBDRE\etatFiche($lecteur['id'])['attente'] === null)
+                ? ok('L\'admin refuse une demande, qui n\'attend plus.')
+                : ko('Le refus d\'une demande de fiche est faux.');
+        }
 
         $base->prepare("UPDATE membre SET role = 'admin' WHERE id = ?")->execute([$lecteur['id']]);
         !\SBDRE\bannir($lecteur['id'])

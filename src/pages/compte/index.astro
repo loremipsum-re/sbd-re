@@ -138,6 +138,12 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
           <li><a href="/simulateur/">Me situer en détail</a></li>
         </ul>
 
+        <h2>Ma fiche d'athlète</h2>
+        <p class="aide" data-fiche-etat>Chargement…</p>
+        <ul class="liens-compte" data-fiche-gestes hidden>
+          <li><button type="button" class="secondaire" data-fiche-retirer></button></li>
+        </ul>
+
         <h2>Mes sujets</h2>
         <ul class="liste-perfs-compte liste-sujets-compte" data-liste-sujets></ul>
         <p class="aide" data-aucun-sujet hidden>
@@ -161,6 +167,7 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
 
 <script>
   import { afficher, api, brancher, champ, confirmer } from '../../lib/api-compte';
+  import { deNom } from '../../lib/format';
   import { marquerLienSortant } from '../../lib/liens-sortants';
 
   interface Performance {
@@ -214,6 +221,54 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
       EQUIPEMENTS[p.equipement],
       kg(p.charge_kg),
     ].join(' · ');
+
+  /* --- Ma fiche d'athlète (public/api/lib/revendications.php) ------------- */
+
+  interface EtatFiche {
+    lien: { slug: string; nom: string } | null;
+    attente: { slug: string; nom: string } | null;
+  }
+
+  /** Le texte et le lien de la fiche, écrits en nœuds : un nom n'est jamais du HTML. */
+  const afficherFiche = (e: EtatFiche) => {
+    const zone = document.querySelector<HTMLElement>('[data-fiche-etat]')!;
+    const gestes = document.querySelector<HTMLElement>('[data-fiche-gestes]')!;
+    const bouton = document.querySelector<HTMLButtonElement>('[data-fiche-retirer]')!;
+    const fiche = e.lien ?? e.attente;
+    if (!fiche) {
+      const classement = Object.assign(document.createElement('a'), { href: '/classement/', textContent: 'classement' });
+      zone.replaceChildren(
+        "Si vous avez concouru à La Réunion, trouvez votre fiche au ",
+        classement,
+        ", puis « C'est votre fiche ? » en bas de page. L'admin relie les deux pages.",
+      );
+      gestes.hidden = true;
+      return;
+    }
+    // Le lien porte le nom seul : « d' » ou « de » le précède, en texte.
+    const de = deNom(fiche.nom).slice(0, -fiche.nom.length);
+    const a = Object.assign(document.createElement('a'), { href: `/athlete/${fiche.slug}/`, textContent: fiche.nom });
+    zone.replaceChildren(...(e.lien ? [`Votre compte est relié à la fiche ${de}`, a, '.'] : [`Votre demande pour la fiche ${de}`, a, " attend l'admin."]));
+    bouton.textContent = e.lien ? 'Retirer le lien' : 'Annuler la demande';
+    gestes.hidden = false;
+  };
+
+  const chargerFiche = () =>
+    void api('/api/revendication.php', 'GET').then((r) => {
+      if (r.ok) afficherFiche(r as unknown as EtatFiche);
+    });
+  chargerFiche();
+
+  document.querySelector<HTMLButtonElement>('[data-fiche-retirer]')!.addEventListener('click', async () => {
+    const oui = await confirmer(
+      ['Votre profil et votre fiche d\'athlète ne se renverront plus l\'un à l\'autre.', 'Une nouvelle demande repasse par l\'admin.'],
+      'Retirer le lien',
+    );
+    if (!oui) return;
+    const r = await api('/api/revendication.php', 'DELETE');
+    afficher(etatPerfs, r.message, r.ok);
+    chargerFiche();
+  });
 
   /* --- Mes sujets --------------------------------------------------------- */
 
