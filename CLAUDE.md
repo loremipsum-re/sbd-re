@@ -416,6 +416,17 @@ JavaScript, aucun attribut n'est posé sur `<html>` : c'est `:root` qui
 s'applique, donc le défaut doit y vivre. Et le repli du bouton de bascule vaut
 `'dark'`, pas `'light'`.
 
+**Le contour d'un champ de saisie porte `--bord-champ`, jamais `--border`.**
+Le filet décoratif `--border` ne se détache qu'à 1,51:1 ; un champ demande
+3:1 (critère 1.4.11). `--bord-champ` en fait 3,17 au moins, dans les deux
+thèmes, sur le fond comme sur la surface. Mesuré le 9 novembre 2026 : un
+nouveau champ le reprend.
+
+**L'en-tête tient à 320 px, connecté ou non.** Sous 22,5rem, le bouton du
+menu perd son mot et garde ses trois traits. Tout ajout à la barre se
+remesure à 320 px dans les deux états : « Connexion » l'a fait déborder de
+38 px, la cloche et l'avatar de 23 px.
+
 **`--accent` est un accent de TEXTE, `--accent-fill` est l'aplat.** Poser
 `--accent` en fond sous `--on-accent` donne 2,78:1 en thème clair. L'erreur a
 déjà été commise une fois, sur le lien d'évitement. Le thème sombre ne la
