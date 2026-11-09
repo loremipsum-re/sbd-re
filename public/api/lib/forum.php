@@ -893,6 +893,37 @@ function formulaireDeplacer(array $forums, int $sujetId, string $adresseActuelle
         . '<p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p></form></details>';
 }
 
+/**
+ * Les dix sujets les plus récemment actifs, tous forums confondus : le haut
+ * de l'accueil, avant les catégories, comme sur Reddit. Demande de l'auteur
+ * du 9 novembre.
+ */
+function sujetsRecents(): array
+{
+    return lignes(
+        "SELECT s.id, s.titre, s.pseudo, s.verrouille, s.reponses, s.dernier_pseudo,
+                UNIX_TIMESTAMP(s.date_dernier) AS dernier_ts, UNIX_TIMESTAMP(s.date_creation) AS creation_ts,
+                f.adresse, f.titre AS forum
+           FROM sujet s JOIN forum f ON f.id = s.forum_id
+          WHERE f.etat <> 'masque'
+          ORDER BY s.date_dernier DESC, s.id DESC LIMIT 10",
+    );
+}
+
+/** Les sujets récents, chacun avec son forum. Rien tant que le forum est vide. */
+function rendreSujetsRecents(array $sujets): string
+{
+    if ($sujets === []) {
+        return '';
+    }
+
+    return '<section class="tableau-forum tableau-sujets" aria-labelledby="titre-recents">'
+        . barreTableau('Sujets récents', 'titre-recents', ['Réponses', 'Dernier message'])
+        . '<ul class="lignes-forum">'
+        . implode('', array_map(static fn (array $s): string => ligneSujet($s, (string) $s['adresse'], (string) $s['forum']), $sujets))
+        . '</ul></section>';
+}
+
 /** Les chiffres du pied de l'accueil, comme sur phpBB. */
 function statistiquesForum(): array
 {
