@@ -41,7 +41,10 @@ export type NomIcone =
   | 'cloche'
   | 'compte'
   | 'instagram'
-  | 'forum';
+  | 'forum'
+  | 'mention'
+  | 'moderation'
+  | 'publier';
 
 /**
  * LES TROIS FAMILLES DU SITE, dans l'ordre où le menu et le pied de page les

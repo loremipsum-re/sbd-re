@@ -660,6 +660,8 @@ verifie('Un lien vide ne fait pas de ligne',          str_contains($corps, "http
 verifie('Le reste est compté',                        str_contains($corps, 'Et 21 autres.'), true);
 verifie('Le lien « couper » porte le jeton après #',  str_contains($corps, '/compte/recapitulatif/#jeton=' . str_repeat('a', 64)), true);
 verifie('Une seule notification, au singulier',       str_contains(\SBDRE\corpsRecapitulatif('x', [['texte' => 't', 'lien' => '/']], 1, 'j'), 'Une notification vous attend'), true);
+verifie('Une barre vérifiée se distingue par la coche', str_contains(\SBDRE\corpsRecapitulatif('x', [['nature' => 'badge', 'texte' => 'Votre squat est vérifié.', 'lien' => '/compte/']], 1, 'j'),
+    "\n✓ Barre vérifiée. Votre squat est vérifié.\n"), true);
 
 titre('Le fil');
 
