@@ -49,6 +49,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 
 export const JOURNAL: readonly EntreeJournal[] = [
   {
+    date: '2026-11-09',
+    nature: 'fonction',
+    version: '1.12.0',
+    titre: 'Le confort du forum',
+    texte:
+      "Le forum gagne une recherche dans les titres, un aperçu avant publication et des boutons de mise en forme. « Dernier message » mène au message lui-même, l'accueil dit qui est en ligne, et l'espace membre liste les sujets suivis. Les profils montrent les sujets ouverts au forum.",
+  },
+  {
     date: '2026-11-08',
     nature: 'fonction',
     version: '1.11.0',
