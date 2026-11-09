@@ -22,6 +22,7 @@ if (!defined('SBDRE_API')) {
 
 require_once __DIR__ . '/bdd.php';
 require_once __DIR__ . '/notifications.php';
+require_once __DIR__ . '/autorisation.php';
 
 const TYPES_SIGNALEMENT = ['message', 'message_forum', 'membre', 'performance', 'forum'];
 const SIGNALEMENTS_PAR_JOUR = 10;
@@ -179,12 +180,43 @@ function retirerPerformance(int $id): ?int
  * et du plan de site, ses messages restent au journal d'un an. Un admin ne
  * se bannit pas, ni un autre admin. Rend vrai si quelqu'un est banni.
  */
-function bannir(int $membreId): bool
+function bannir(int $membreId, bool $parAdmin = false): bool
 {
-    $touche = executer("UPDATE membre SET banni = 1 WHERE id = :m AND role <> 'admin'", ['m' => $membreId]);
+    // Le garde-fou de peutBannir, redit en base : jamais un admin, et un
+    // modérateur seulement par l'admin.
+    $proteges = $parAdmin ? "'admin'" : "'admin', 'moderateur'";
+    $touche = executer("UPDATE membre SET banni = 1 WHERE id = :m AND role NOT IN ($proteges)", ['m' => $membreId]);
     executer("DELETE FROM jeton WHERE membre_id = :m AND type = 'session'", ['m' => $membreId]);
 
     return $touche === 1;
+}
+
+/**
+ * Donner un rang (RANGS_ATTRIBUABLES), jamais à un admin ni le rang
+ * d'admin : celui-là se donne à la main, en base. Rend vrai si le rang a
+ * changé.
+ */
+function donnerRang(int $membreId, string $rang): bool
+{
+    if (!isset(RANGS_ATTRIBUABLES[$rang])) {
+        return false;
+    }
+
+    return executer("UPDATE membre SET role = :r WHERE id = :m AND role <> 'admin'", ['r' => $rang, 'm' => $membreId]) === 1;
+}
+
+/**
+ * L'équipe et les donateurs, pour la page de l'admin : tout compte dont le
+ * rang n'est pas « membre ».
+ *
+ * @return list<array{id: int, pseudo: string, rang: string}>
+ */
+function membresAvecRang(): array
+{
+    return array_map(
+        static fn (array $m): array => ['id' => (int) $m['id'], 'pseudo' => (string) $m['pseudo'], 'rang' => (string) $m['role']],
+        lignes("SELECT id, pseudo, role FROM membre WHERE role <> 'membre' ORDER BY FIELD(role, 'admin', 'moderateur', 'juge', 'donateur'), pseudo"),
+    );
 }
 
 /** Rétablir un compte banni par erreur : il se reconnecte, son profil revient. */

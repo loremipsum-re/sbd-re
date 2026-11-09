@@ -55,7 +55,8 @@ if ($methode === 'GET') {
         'fil'          => $fil,
         'peut_voter'   => $possible <= time(),
         'vote_possible_le' => $possible > time() ? dateFr($possible) : '',
-        'admin'        => estAdmin($membre),
+        // Le badge SBD.re : le juge, et l'admin (lib/autorisation.php).
+        'juge'         => estJuge($membre),
         'seuil'        => ['votes' => VOTES_MIN, 'pourcent' => FAVORABLES_POURCENT, 'jours' => ANCIENNETE_VOTE_JOURS],
     ]);
 }

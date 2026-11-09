@@ -477,7 +477,7 @@ const categoriesHommes = categories.filter((c) => !FEMMES.has(c.id));
       bonjour.textContent = lecture.message;
       return;
     }
-    const compte = lecture.compte as { pseudo: string; admin?: boolean; avatar?: string };
+    const compte = lecture.compte as { pseudo: string; moderation?: boolean; avatar?: string };
     if (compte.avatar) {
       const avatar = document.querySelector<HTMLImageElement>('[data-avatar]')!;
       avatar.src = compte.avatar;
@@ -485,7 +485,7 @@ const categoriesHommes = categories.filter((c) => !FEMMES.has(c.id));
     }
     afficherSujets((lecture.sujets ?? []) as Sujet[]);
     afficherSuivis((lecture.suivis ?? []) as Sujet[]);
-    document.querySelector<HTMLElement>('[data-lien-admin]')!.hidden = compte.admin !== true;
+    document.querySelector<HTMLElement>('[data-lien-admin]')!.hidden = compte.moderation !== true;
     bonjour.textContent = `Bonjour ${compte.pseudo}.`;
     document.querySelector<HTMLAnchorElement>('[data-lien-profil]')!.href = `/membres/${compte.pseudo}/`;
     section.hidden = false;

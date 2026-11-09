@@ -42,6 +42,7 @@ if ($methode === 'GET') {
     unset($compte['date_instagram'], $compte['date_pseudo']);
     $avatar = ligne('SELECT UNIX_TIMESTAMP(date_maj) AS v FROM avatar WHERE membre_id = :id', ['id' => $membre['id']]);
     $compte['admin'] = estAdmin($membre);
+    $compte['moderation'] = estModerateur($membre);
     $compte['avatar'] = $avatar !== null ? '/avatars/' . $compte['pseudo'] . '.webp?v=' . (int) $avatar['v'] : '';
 
     // « Mes sujets » et « Sujets suivis » de /compte/.
