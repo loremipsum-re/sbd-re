@@ -485,6 +485,110 @@
   font-size: var(--step--1);
 }
 
+/* --- Publier une barre : des boutons à choisir, plus de listes ----------
+   Demande de l'auteur du 10 novembre 2026. De vrais boutons radio, masqués
+   à l'œil et non au clavier : le cadre porte l'état choisi (aplat sous
+   filet, CLAUDE.md) et le contour du focus. */
+
+.form-compte .choix-perf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.form-compte .choix-perf legend {
+  margin-bottom: var(--space-2);
+  padding: 0;
+  font-weight: 600;
+}
+
+.form-compte .choix-perf .aide,
+.form-compte .groupe-categories {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.form-compte .groupe-categories {
+  margin-top: var(--space-1);
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
+.form-compte .choix {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--cible-min);
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+/* Plus spécifique que la règle des champs plus haut, qui viserait la radio. */
+.form-compte .choix input[type='radio'] {
+  position: absolute;
+  width: 1px;
+  min-height: 0;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+}
+
+.form-compte .choix:hover {
+  border-color: var(--accent);
+}
+
+.form-compte .choix:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-fill);
+  color: var(--on-accent);
+}
+
+.form-compte .choix:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.form-compte .choix small {
+  display: block;
+  color: var(--muted);
+  font-size: var(--step--1);
+  font-weight: 400;
+}
+
+.form-compte .choix:has(input:checked) small {
+  color: inherit;
+}
+
+/* Mouvement et équipement : des tuiles de même largeur, le dessin du
+   mouvement au-dessus de son nom. */
+.form-compte .choix-mouvement .choix,
+.form-compte .choix-equipement .choix {
+  flex: 1 1 8rem;
+}
+
+/* Les trois mouvements sur une rangée, même à 375 px. */
+.form-compte .choix-mouvement .choix {
+  flex-basis: 6rem;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-3) var(--space-2);
+  text-align: center;
+}
+
+.form-compte .choix .icone-mouvement {
+  width: 2rem;
+  height: 2rem;
+}
+
 /* --- Les réglages : un sommaire, puis une carte par réglage ------------- */
 
 .page-reglages .reglages {

@@ -23,6 +23,8 @@
  */
 import FenetreConfirmation from '../../components/FenetreConfirmation.astro';
 import Icone from '../../components/Icone.astro';
+import IconeMouvement from '../../components/IconeMouvement.astro';
+import SpriteMouvements from '../../components/SpriteMouvements.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { EQUIPMENT_GROUPS, LIFTS, compareWeightClass, parseWeightClass } from '../../lib/categories';
 import '../../styles/compte.css';
@@ -37,9 +39,14 @@ const categories = ['47', '52', '57', '63', '69', '76', '84', '84+', '59', '66',
   .map((c) => parseWeightClass(c)!)
   .sort(compareWeightClass);
 const mouvements = LIFTS.filter((l) => l.id !== 'total');
+/* Les catégories en deux rangées de pastilles, femmes puis hommes. */
+const FEMMES = new Set(['47', '52', '57', '63', '69', '76', '84', '84+']);
+const categoriesFemmes = categories.filter((c) => FEMMES.has(c.id));
+const categoriesHommes = categories.filter((c) => !FEMMES.has(c.id));
 ---
 
 <BaseLayout titre="Mon espace" description="L'espace membre de SBD.re." prive>
+  <SpriteMouvements />
   <div class="wrap page-compte page-espace">
     <header class="entete-espace">
       <div class="identite-espace">
@@ -121,19 +128,36 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
           <details class="repli publier" id="publier" data-publier>
             <summary>Publier une performance</summary>
             <form class="form-compte" data-perf novalidate>
-              <div class="champ">
-                <label for="mouvement">Mouvement</label>
-                <select id="mouvement" name="mouvement" required>
-                  {mouvements.map((m) => <option value={m.id}>{m.label}</option>)}
-                </select>
-              </div>
+              {/* Des boutons à choisir plutôt que des listes, demande de
+                  l'auteur du 10 novembre 2026 : de vrais boutons radio,
+                  groupés par fieldset, que le clavier parcourt aux flèches. */}
+              <fieldset class="choix-perf choix-mouvement">
+                <legend>Mouvement</legend>
+                {
+                  mouvements.map((m, i) => (
+                    <label class="choix">
+                      <input type="radio" name="mouvement" value={m.id} checked={i === 0} />
+                      <IconeMouvement mouvement={m.id} taille={32} />
+                      <span>{m.label}</span>
+                    </label>
+                  ))
+                }
+              </fieldset>
 
-              <div class="champ">
-                <label for="equipement">Équipement</label>
-                <select id="equipement" name="equipement" required>
-                  {EQUIPMENT_GROUPS.map((e) => <option value={e.id}>{e.label}, {e.hint.toLowerCase()}</option>)}
-                </select>
-              </div>
+              <fieldset class="choix-perf choix-equipement">
+                <legend>Équipement</legend>
+                {
+                  EQUIPMENT_GROUPS.map((e, i) => (
+                    <label class="choix">
+                      <input type="radio" name="equipement" value={e.id} checked={i === 0} />
+                      <span>
+                        {e.label}
+                        <small>{e.hint}</small>
+                      </span>
+                    </label>
+                  ))
+                }
+              </fieldset>
 
               <div class="champ">
                 <label for="charge">Charge, en kilos</label>
@@ -145,16 +169,34 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
                 <input id="date-perf" name="date_performance" type="date" required min="2000-01-01" data-date-max />
               </div>
 
-              <div class="champ">
-                <label for="categorie">Catégorie de poids</label>
-                <select id="categorie" name="categorie" aria-describedby="aide-categorie">
-                  <option value="">Non précisée</option>
-                  {categories.map((c) => <option value={c.id}>{c.label}</option>)}
-                </select>
+              <fieldset class="choix-perf choix-categorie" aria-describedby="aide-categorie">
+                <legend>Catégorie de poids</legend>
                 <p class="aide" id="aide-categorie">
                   Facultative, mais c'est elle qui vous situe au classement.
                 </p>
-              </div>
+                <label class="choix">
+                  <input type="radio" name="categorie" value="" checked />
+                  <span>Non précisée</span>
+                </label>
+                <p class="groupe-categories">Femmes</p>
+                {
+                  categoriesFemmes.map((c) => (
+                    <label class="choix">
+                      <input type="radio" name="categorie" value={c.id} />
+                      <span>{c.label}</span>
+                    </label>
+                  ))
+                }
+                <p class="groupe-categories">Hommes</p>
+                {
+                  categoriesHommes.map((c) => (
+                    <label class="choix">
+                      <input type="radio" name="categorie" value={c.id} />
+                      <span>{c.label}</span>
+                    </label>
+                  ))
+                }
+              </fieldset>
 
               <div class="champ">
                 <label for="video">Lien de la vidéo</label>
