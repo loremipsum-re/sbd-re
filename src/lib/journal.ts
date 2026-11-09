@@ -50,6 +50,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-10',
+    nature: 'fonction',
+    version: '1.17.0',
+    titre: 'L\'annuaire des membres, et « J\'aime » au forum',
+    texte:
+      "L'annuaire liste chaque membre de la communauté avec sa salle et ses barres publiées et vérifiées. Une recherche y trouve un pseudo. Au forum, un « J'aime » salue un message. Taper « @ » propose les pseudos, au forum comme au chat.",
+  },
+  {
+    date: '2026-11-10',
     nature: 'visuel',
     version: '1.16.1',
     titre: 'Le profil d\'un coup d\'œil',
