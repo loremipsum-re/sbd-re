@@ -2,11 +2,12 @@
 /**
  * Les gestes de l'admin (docs/comptes.md, phase 8 ; docs/forum.md, étape 8).
  *
- *   GET   la file des signalements et les forums des membres
+ *   GET   la file des signalements, les forums des membres, les comptes bannis
  *   POST  { performance_id, verifier }    poser ou retirer le badge SBD.re
  *   POST  { action: 'masquer', type, id } masquer un message du chat ou du forum
  *         { action: 'retirer_performance', id }
  *         { action: 'bannir', membre_id }
+ *         { action: 'debannir', membre_id }    rétablir un compte banni par erreur
  *         { action: 'retirer_avatar', membre_id }
  *         { action: 'forum', forum_id, etat }  ouvert, verrouille, archive, masque
  *         { action: 'classer', type, id }      sans suite
@@ -34,7 +35,7 @@ $methode = ouvrirApi(['GET', 'POST']);
 $admin = exigerAdmin();
 
 if ($methode === 'GET') {
-    repondreOk('', ['file' => fileModeration(), 'forums' => forumsDesMembres()]);
+    repondreOk('', ['file' => fileModeration(), 'forums' => forumsDesMembres(), 'bannis' => membresBannis()]);
 }
 
 /** Un entier strictement positif lu dans la requête, ou le refus. */
@@ -101,6 +102,14 @@ switch (texte('action')) {
         }
         classer('membre', $id);
         repondreOk('Membre banni. Ses sessions sont fermées.');
+
+    case 'debannir':
+        $id = identifiant('membre_id');
+        if (!debannir($id)) {
+            refuser(422, 'Ce compte n\'est pas banni, ou il n\'existe plus.');
+        }
+        notifier($id, 'moderation', 'Votre compte est rétabli. La charte s\'applique comme avant.', LIEN_CHARTE);
+        repondreOk('Compte rétabli. Le membre peut se reconnecter.');
 
     case 'retirer_avatar':
         $id = identifiant('membre_id');

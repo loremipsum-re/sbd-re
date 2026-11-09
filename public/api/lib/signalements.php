@@ -187,6 +187,21 @@ function bannir(int $membreId): bool
     return $touche === 1;
 }
 
+/** Rétablir un compte banni par erreur : il se reconnecte, son profil revient. */
+function debannir(int $membreId): bool
+{
+    return executer('UPDATE membre SET banni = 0 WHERE id = :m AND banni = 1', ['m' => $membreId]) === 1;
+}
+
+/** Les comptes bannis, les plus récents d'abord, pour la page de modération. */
+function membresBannis(): array
+{
+    return array_map(
+        static fn (array $m): array => ['id' => (int) $m['id'], 'pseudo' => (string) $m['pseudo']],
+        lignes('SELECT id, pseudo FROM membre WHERE banni = 1 ORDER BY id DESC LIMIT 50'),
+    );
+}
+
 function changerEtatForum(int $forumId, string $etat): bool
 {
     return in_array($etat, ETATS_FORUM, true)

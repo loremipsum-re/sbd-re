@@ -35,6 +35,10 @@ import '../../styles/communaute.css';
       <h2>Forums des membres</h2>
       <ol class="liste-notifications" data-forums></ol>
       <p class="aide" data-forums-vide hidden>Aucun forum de membre pour l'instant.</p>
+
+      <h2>Comptes bannis</h2>
+      <ol class="liste-notifications" data-bannis></ol>
+      <p class="aide" data-bannis-vide hidden>Aucun compte banni.</p>
     </section>
   </div>
 
@@ -76,6 +80,7 @@ import '../../styles/communaute.css';
   const etat = document.querySelector<HTMLElement>('[data-etat]')!;
   const listeFile = document.querySelector<HTMLOListElement>('[data-file]')!;
   const listeForums = document.querySelector<HTMLOListElement>('[data-forums]')!;
+  const listeBannis = document.querySelector<HTMLOListElement>('[data-bannis]')!;
 
   const el = <K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLElementTagNameMap[K]> = {}) =>
     Object.assign(document.createElement(tag), props);
@@ -149,6 +154,16 @@ import '../../styles/communaute.css';
     return li;
   };
 
+  /** Un compte banni, et de quoi le rétablir s'il l'a été par erreur. */
+  const ligneBanni = (m: { id: number; pseudo: string }) => {
+    const li = el('li');
+    li.append(
+      el('p', { textContent: m.pseudo }),
+      geste(`Rétablir ${m.pseudo}`, { action: 'debannir', membre_id: m.id }, 'Le compte se reconnecte et son profil revient. Le membre en est prévenu.'),
+    );
+    return li;
+  };
+
   const charger = () =>
     void api('/api/admin.php', 'GET').then((r) => {
       if (r.statut === 401) {
@@ -159,7 +174,7 @@ import '../../styles/communaute.css';
         intro.textContent = 'Cette page n\'existe pas.';
         return;
       }
-      intro.textContent = 'Les signalements en attente, les plus signalés d\'abord, puis les forums des membres.';
+      intro.textContent = 'Les signalements en attente, les plus signalés d\'abord, puis les forums des membres et les comptes bannis.';
       section.hidden = false;
       const file = r.file as Signalement[];
       const forums = r.forums as ForumMembre[];
@@ -167,6 +182,9 @@ import '../../styles/communaute.css';
       listeForums.replaceChildren(...forums.map(ligneForum));
       document.querySelector<HTMLElement>('[data-file-vide]')!.hidden = file.length > 0;
       document.querySelector<HTMLElement>('[data-forums-vide]')!.hidden = forums.length > 0;
+      const bannis = (r.bannis ?? []) as { id: number; pseudo: string }[];
+      listeBannis.replaceChildren(...bannis.map(ligneBanni));
+      document.querySelector<HTMLElement>('[data-bannis-vide]')!.hidden = bannis.length > 0;
     });
 
   charger();
