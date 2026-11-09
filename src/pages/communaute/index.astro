@@ -1,7 +1,12 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Icone from '../../components/Icone.astro';
-import { ANCIENNETE_VOTE_JOURS, FAVORABLES_POURCENT, VOTES_MIN } from '../../lib/communaute';
+import IconeMouvement from '../../components/IconeMouvement.astro';
+import SpriteMouvements from '../../components/SpriteMouvements.astro';
+import { ANCIENNETE_VOTE_JOURS, FAVORABLES_POURCENT, TOP_PAR_MOUVEMENT, VOTES_MIN } from '../../lib/communaute';
+import { articles } from '../../lib/actualites';
+import { LIFTS } from '../../lib/categories';
+import { dateLongue } from '../../lib/format';
 
 /**
  * L'entrée de la communauté, depuis l'ouverture (docs/comptes.md, phase 9).
@@ -16,11 +21,19 @@ import { ANCIENNETE_VOTE_JOURS, FAVORABLES_POURCENT, VOTES_MIN } from '../../lib
  * (components/Chat.astro) : la page l'annonce et l'ouvre. `#chat`, où
  * renvoie l'ancienne adresse /communaute/chat/, l'ouvre aussi.
  *
+ * LA VITRINE, demande de l'auteur du 10 novembre 2026 : les dernières
+ * nouvelles (les actualités, lues à la génération), le top des membres et
+ * les dernières barres (public/api/communaute.php, lu à la visite). Le top
+ * prend les barres vérifiées en raw, une par membre et par mouvement.
+ *
  * LES SEUILS SE LISENT DANS lib/communaute.ts, recopiés de
  * public/api/lib/autorisation.php et contrôlés par db/verifier-autorisation.php :
  * une page qui annoncerait 20 avis quand le serveur en demande 25 tromperait
  * le visiteur.
  */
+const nouvelles = (await articles()).slice(0, 3);
+const mouvements = LIFTS.filter((l) => l.id !== 'total');
+const nombreEnLettres = ['zéro', 'une', 'deux', 'trois', 'quatre', 'cinq'][TOP_PAR_MOUVEMENT] ?? String(TOP_PAR_MOUVEMENT);
 ---
 
 <BaseLayout
@@ -69,6 +82,56 @@ import { ANCIENNETE_VOTE_JOURS, FAVORABLES_POURCENT, VOTES_MIN } from '../../lib
       </li>
     </ul>
 
+    <SpriteMouvements />
+
+    <section class="bloc-vitrine" aria-labelledby="titre-nouvelles">
+      <h2 id="titre-nouvelles">Les dernières nouvelles</h2>
+      <ul class="nouvelles">
+        {
+          nouvelles.map((a) => (
+            <li>
+              <p class="date">{dateLongue(a.data.date.toISOString().slice(0, 10))}</p>
+              <a href={`/actualites/${a.id}/`}>{a.data.titre}</a>
+              <p class="resume">{a.data.description}</p>
+            </li>
+          ))
+        }
+      </ul>
+      <p><a href="/actualites/">Toutes les actualités</a></p>
+    </section>
+
+    <section class="bloc-vitrine" aria-labelledby="titre-top">
+      <h2 id="titre-top">Le top des membres</h2>
+      <p class="aide-vitrine">
+        Les {nombreEnLettres} barres vérifiées les plus lourdes de chaque mouvement, en
+        raw, une par membre. Des barres de salle : le classement officiel reste
+        celui des compétitions.
+      </p>
+      <div class="top-mouvements">
+        {
+          mouvements.map((m) => (
+            <section class="top-mouvement" aria-labelledby={`top-${m.id}`}>
+              <h3 id={`top-${m.id}`}>
+                <IconeMouvement mouvement={m.id} taille={24} />
+                {m.label}
+              </h3>
+              <ol data-top={m.id}>
+                <li class="attente">Chargement…</li>
+              </ol>
+            </section>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="bloc-vitrine" aria-labelledby="titre-dernieres">
+      <h2 id="titre-dernieres">Les dernières barres</h2>
+      <ul class="dernieres-barres" data-dernieres>
+        <li class="attente">Chargement…</li>
+      </ul>
+      <p><a href="/compte/a-verifier/">Vérifier des barres</a></p>
+    </section>
+
     <section class="fonctionnement" aria-labelledby="titre-fonctionnement">
       <h2 id="titre-fonctionnement">Le fonctionnement</h2>
       <ul class="principes">
@@ -100,6 +163,79 @@ import { ANCIENNETE_VOTE_JOURS, FAVORABLES_POURCENT, VOTES_MIN } from '../../lib
     </section>
   </div>
 </BaseLayout>
+
+<script>
+  interface Barre {
+    pseudo: string;
+    mouvement: 'squat' | 'bench' | 'deadlift';
+    equipement: 'raw' | 'wraps' | 'equipped';
+    charge: number;
+    date: string;
+    verifiee: boolean;
+  }
+
+  const MOUVEMENTS = { squat: 'Squat', bench: 'Développé couché', deadlift: 'Soulevé de terre' };
+  const EQUIPEMENTS = { raw: 'raw', wraps: 'bandes', equipped: 'équipé' };
+  // Texte fabriqué ici : il échappe au middleware, d'où l'insécable écrite.
+  const kg = (n: number) => `${n.toLocaleString('fr-FR')}\u00a0kg`;
+  const quand = (iso: string) =>
+    new Date(`${iso}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  /** Le pseudo en lien vers le profil, écrit en nœud : jamais du HTML. */
+  const profil = (pseudo: string) => Object.assign(document.createElement('a'), { href: `/membres/${pseudo}/`, textContent: pseudo });
+
+  const vide = (texte: string) => Object.assign(document.createElement('li'), { className: 'attente', textContent: texte });
+
+  const remplir = (r: { top: Record<string, Omit<Barre, 'mouvement' | 'equipement' | 'verifiee'>[]>; dernieres: Barre[] }) => {
+    for (const liste of document.querySelectorAll<HTMLOListElement>('[data-top]')) {
+      const top = r.top[liste.dataset.top!] ?? [];
+      liste.replaceChildren(
+        ...(top.length === 0
+          ? [vide('Aucune barre vérifiée pour l\'instant.')]
+          : top.map((b) => {
+              const li = document.createElement('li');
+              li.append(profil(b.pseudo), Object.assign(document.createElement('span'), { className: 'charge', textContent: kg(b.charge) }));
+              return li;
+            })),
+      );
+    }
+
+    const dernieres = document.querySelector<HTMLUListElement>('[data-dernieres]')!;
+    dernieres.replaceChildren(
+      ...(r.dernieres.length === 0
+        ? [vide('Aucune barre publiée pour l\'instant.')]
+        : r.dernieres.map((b) => {
+            const li = document.createElement('li');
+            const quoi = Object.assign(document.createElement('p'), {
+              className: 'barre',
+              textContent: `${MOUVEMENTS[b.mouvement]} ${EQUIPEMENTS[b.equipement]} · ${kg(b.charge)}`,
+            });
+            const qui = Object.assign(document.createElement('p'), { className: 'meta' });
+            qui.append(profil(b.pseudo), ` · ${quand(b.date)} · `);
+            qui.append(
+              Object.assign(document.createElement('span'), {
+                className: b.verifiee ? 'verif verif-oui' : 'verif verif-non',
+                textContent: b.verifiee ? 'Vérifiée' : 'Non vérifiée',
+              }),
+            );
+            li.append(quoi, qui);
+            return li;
+          })),
+    );
+  };
+
+  fetch('/api/communaute.php', { credentials: 'same-origin' })
+    .then((reponse) => reponse.json())
+    .then((r) => {
+      if (r.ok) remplir(r);
+      else throw new Error();
+    })
+    .catch(() => {
+      for (const liste of document.querySelectorAll('[data-top], [data-dernieres]')) {
+        liste.replaceChildren(vide('Les barres des membres ne se chargent pas pour l\'instant. Réessayez dans quelques minutes.'));
+      }
+    });
+</script>
 
 <style>
   .page {
@@ -216,5 +352,177 @@ import { ANCIENNETE_VOTE_JOURS, FAVORABLES_POURCENT, VOTES_MIN } from '../../lib
   .ouvrir-chat:focus-visible {
     border-color: var(--accent-fill-hover);
     background: var(--accent-fill-hover);
+  }
+
+  /* --- La vitrine : nouvelles, top, dernières barres ------------------- */
+
+  .bloc-vitrine {
+    margin-bottom: var(--space-12);
+  }
+
+  .aide-vitrine {
+    max-width: 62ch;
+    color: var(--muted);
+  }
+
+  .nouvelles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+    gap: var(--space-4);
+    margin: 0 0 var(--space-4);
+    padding: 0;
+    list-style: none;
+  }
+
+  .nouvelles li {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .nouvelles a {
+    font-weight: 700;
+  }
+
+  .nouvelles p {
+    margin: 0;
+  }
+
+  .nouvelles .date,
+  .nouvelles .resume {
+    color: var(--muted);
+    font-size: var(--step--1);
+  }
+
+  .top-mouvements {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+    gap: var(--space-4);
+  }
+
+  .top-mouvement {
+    min-width: 0;
+    padding: var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .top-mouvement h3 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-3);
+    font-size: var(--step-1);
+  }
+
+  /* Le rang écrit par un compteur : en flex, une ligne perd la puce
+     numérotée de la liste, que les lecteurs d'écran gardent. */
+  .top-mouvement ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: rang;
+  }
+
+  .top-mouvement :global(li:not(.attente))::before {
+    content: counter(rang);
+    counter-increment: rang;
+    min-width: 1.5rem;
+    color: var(--muted);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .top-mouvement :global(li:not(.attente) a) {
+    flex: 1;
+  }
+
+  /* Les lignes viennent du script : hors de la portée des styles d'Astro,
+     d'où :global() sous le bloc. */
+  .top-mouvement :global(li) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0 var(--space-3);
+    min-height: var(--cible-min);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .top-mouvement :global(li:last-child) {
+    border-bottom: 0;
+  }
+
+  .top-mouvement :global(.charge) {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .top-mouvement :global(a),
+  .dernieres-barres :global(a) {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+    overflow-wrap: anywhere;
+  }
+
+  .dernieres-barres {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+    gap: var(--space-2) var(--space-6);
+    margin: 0 0 var(--space-4);
+    padding: 0;
+    list-style: none;
+  }
+
+  .dernieres-barres :global(li) {
+    min-width: 0;
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dernieres-barres :global(p) {
+    margin: 0;
+  }
+
+  .dernieres-barres :global(.barre) {
+    font-weight: 700;
+  }
+
+  .dernieres-barres :global(.meta) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 var(--space-1);
+    color: var(--muted);
+    font-size: var(--step--1);
+  }
+
+  .bloc-vitrine :global(.attente) {
+    color: var(--muted);
+    list-style: none;
+  }
+
+  /* Vérifiée en vert, non vérifiée en ambre, le mot toujours écrit, comme
+     sur le profil et dans l'espace du membre. */
+  .dernieres-barres :global(.verif) {
+    padding: 0 var(--space-2);
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .dernieres-barres :global(.verif-oui) {
+    color: var(--succes);
+  }
+
+  .dernieres-barres :global(.verif-non) {
+    color: var(--alerte);
   }
 </style>
