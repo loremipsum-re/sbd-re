@@ -1,0 +1,170 @@
+---
+/**
+ * La vérification d'une barre de salle, en trois étapes, puis le seuil en
+ * vingt cases.
+ *
+ * LES SEUILS SE LISENT DANS LE CODE DU SERVEUR, par lib/communaute.ts, qui les
+ * tire de public/api/lib/autorisation.php : l'image dit ce que le serveur
+ * applique. L'EXEMPLE DES CASES EST CONSTRUIT, et la légende le dit : le
+ * nombre d'avis favorables tout juste suffisant, calculé du seuil.
+ */
+import Icone from '../Icone.astro';
+import Infographie from './Infographie.astro';
+import { ANCIENNETE_VOTE_JOURS, FAVORABLES_POURCENT, VOTES_MIN } from '../../lib/communaute';
+import type { IdInfographie } from '../../lib/infographies';
+
+interface Props {
+  lienArticle?: IdInfographie;
+}
+
+const { lienArticle } = Astro.props;
+
+/** Le plus petit nombre d'avis favorables qui atteint le seuil. */
+const favorables = Math.ceil((VOTES_MIN * FAVORABLES_POURCENT) / 100);
+const cases = Array.from({ length: VOTES_MIN }, (_, i) => i < favorables);
+---
+
+<Infographie titre="La vérification d'une barre de salle" source="Seuils du site. Cases : exemple construit au seuil." lienArticle={lienArticle}>
+  <ol class="etapes">
+    <li>
+      <span class="numero num">1</span>
+      <p><strong>Le membre publie sa barre</strong> avec la vidéo où on la voit en entier.</p>
+    </li>
+    <li>
+      <span class="numero num">2</span>
+      <p>
+        <strong>Les membres donnent leur avis</strong>, validée ou non, à partir de
+        {ANCIENNETE_VOTE_JOURS} jours d'inscription. Personne ne vote sur sa propre barre.
+      </p>
+    </li>
+    <li>
+      <span class="numero num">3</span>
+      <p>
+        <strong>À {VOTES_MIN} avis, dont {FAVORABLES_POURCENT}{' '}% favorables</strong>, la barre devient
+        « Vérifiée par la communauté ».
+      </p>
+    </li>
+  </ol>
+
+  <div class="seuil">
+    <p class="cases-titre">
+      <span class="num">{favorables}</span> avis favorables sur {VOTES_MIN} suffisent
+    </p>
+    <ol class="cases" aria-hidden="true">
+      {cases.map((ok) => <li data-avis={ok ? 'oui' : 'non'}></li>)}
+    </ol>
+    <p class="badges">
+      <span class="badge"><Icone nom="valide" taille={16} /> Vérifiée par la communauté</span>
+      <span class="badge"><Icone nom="valide" taille={16} /> Vérifiée par SBD.re</span>
+    </p>
+    <p class="regle">
+      L'admin peut aussi vérifier une barre, d'un clic. Le classement officiel
+      et les records restent réservés aux compétitions homologuées.
+    </p>
+  </div>
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  .etapes {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0 0 var(--space-6);
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 48rem) {
+    .etapes {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .etapes li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+
+  .numero {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--accent-fill);
+    color: var(--on-accent);
+    font-weight: 700;
+  }
+
+  .seuil {
+    display: grid;
+    gap: var(--space-3);
+    padding-top: var(--space-4);
+    border-top: 2px solid var(--border);
+  }
+
+  .cases-titre {
+    font-weight: 700;
+  }
+
+  .cases-titre .num {
+    font-size: var(--step-2);
+    color: var(--accent);
+  }
+
+  /* Une case par avis : pleine pour un avis favorable, vide sinon. */
+  .cases {
+    display: grid;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    gap: var(--space-1);
+    max-width: 30rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .cases li {
+    aspect-ratio: 1;
+    border: 2px solid var(--border);
+    border-radius: 2px;
+  }
+
+  .cases li[data-avis='oui'] {
+    border-color: var(--accent);
+    background: var(--accent-fill);
+  }
+
+  /* Le badge du profil : vert, au filet de sa couleur, le mot toujours écrit. */
+  .badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 0 var(--space-2);
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    color: var(--succes);
+    font-size: var(--step--1);
+    font-weight: 600;
+  }
+
+  .regle {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+</style>
