@@ -5,6 +5,7 @@
 import BanniereConsentement from '../components/BanniereConsentement.astro';
 import BoutonSuggestion from '../components/BoutonSuggestion.astro';
 import Chat from '../components/Chat.astro';
+import Nouveautes from '../components/Nouveautes.astro';
 import EtiquetteRubrique from '../components/EtiquetteRubrique.astro';
 import Icone from '../components/Icone.astro';
 import Logo from '../components/Logo.astro';
@@ -428,6 +429,10 @@ const courant = (href: string) =>
     */}
     <Chat />
 
+    {/* Le bref « Nouveau sur sbd.re » des versions qui ajoutent une
+        fonction, une fois par visiteur (components/Nouveautes.astro). */}
+    <Nouveautes />
+
     {/*
       Retour en haut. C'est un LIEN vers l'ancre du haut de page, pas un bouton :
       sans JavaScript il fonctionne quand même, et le clavier le traite
@@ -513,12 +518,12 @@ const courant = (href: string) =>
       })();
 
       /*
-       * LES BOUTONS FLOTTANTS, retour en haut et suggestion, réglés ici
-       * ensemble : ils forment une paire et doivent paraître ensemble. Le
-       * bouton du chat, dans le coin sous eux, suit la même règle, à une
-       * différence près : il paraît aussi en haut de page, où l'on cherche à
-       * entrer en conversation. Chat ouvert, tous trois s'effacent : la
-       * fenêtre occupe leur coin.
+       * LES BOUTONS FLOTTANTS, du bas vers le haut « Chat », « Proposer » et
+       * retour en haut, réglés ici ensemble. « Chat » et « Proposer » sont là
+       * dès le haut de page, demande de l'auteur du 9 novembre : une idée se
+       * propose au moment où elle vient. Le retour en haut, lui, attend que
+       * la page soit défilée. Chat ouvert, tous trois s'effacent : la fenêtre
+       * occupe leur coin.
        *
        * Ils recouvraient les chiffres. Mesuré le 27 octobre 2026 : à 375 px,
        * le total et les Dots de la carte qui passe dessous ; jusqu'à 1 280 px,
