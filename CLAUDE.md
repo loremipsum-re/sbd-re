@@ -82,7 +82,7 @@ la mention « à compléter » tant que l'auteur ne les a pas fournis.
 | `/competitions/` | Liste, puis `/competitions/<nom>/<date>/` et ses records battus ce jour-là |
 | `/exterieur/` | Résultats obtenus hors de La Réunion |
 | `/athlete/<slug>/` | Une fiche par athlète |
-| `/communaute/` | L'entrée de la communauté depuis l'ouverture du 7 novembre 2026 : le forum, le fil, les barres à vérifier, le compte, le fonctionnement, puis le chat (`components/Chat.astro`). `/communaute/chat/` y renvoie |
+| `/communaute/` | L'entrée de la communauté depuis l'ouverture du 7 novembre 2026 : le forum, le fil, les barres à vérifier, le compte, le fonctionnement, puis un bouton qui ouvre le chat. `/communaute/chat/` renvoie à `/communaute/#chat`, qui l'ouvre aussi. **Le chat flotte sur toutes les pages** depuis le 9 novembre, bouton « Chat » dans le coin (`components/Chat.astro`, posé par `BaseLayout.astro`) : il n'interroge le serveur que fenêtre ouverte, et ses styles vivent sous `.chat-flottant` |
 | `/membres/<pseudo>/` | Profil public, rendu par `api/profil-page.php` depuis le gabarit `/membres/-gabarit/` (repères `%%NOM%%`), réécrit par le `.htaccess`. `noindex` tant que le profil n'a pas de performance. Plan des profils à `/sitemap-membres.xml` |
 | `/compte/`, `/compte/reglages/`, `/compte/a-verifier/`, `/compte/inscription/`, `/compte/connexion/`, `/compte/mot-de-passe/`, `/compte/recapitulatif/`, `/communaute/charte/` | Les comptes, servis par `public/api/*.php`. `/compte/` est l'accueil du membre (performances, position au classement d'après `/api/positions.json`, ses sujets du forum), les réglages derrière l'engrenage, le récapitulatif par courriel coupé depuis le lien du courriel à `/compte/recapitulatif/`, le fil des barres à vérifier à `/compte/a-verifier/`. Prop `prive` de `BaseLayout` : `noindex`, hors plan de site, jamais de Clarity. Hors du menu : on y entre par Communauté |
 | `/forum/`, `/forum/<adresse>/`, `/forum/<adresse>/<sujet>/`, `/forum/recherche/` | Le forum, rendu par `api/forum-page.php` depuis le gabarit `/forum/-gabarit/`, comme les profils. La recherche dans les titres est une adresse réservée, hors index. Indexé depuis l'ouverture (`FORUM_OUVERT` de `lib/forum.php`), plan à `/sitemap-forum.xml`. Écritures par `api/forum.php`, plan dans docs/forum.md |
@@ -283,11 +283,12 @@ de `tokens.css` l'applique. Un composant qui redéclare `font` écrit
 `user-scalable=no`, qui empêcheraient aussi le zoom volontaire.
 
 **Ordre d'empilement** : bannière de consentement et infobulle du glossaire 20,
-lien d'évitement et panneau du menu 10, voile du menu 9, en-tête 6, bulles du
-lexique 5, boutons flottants 4. Les
-deux boutons flottants, retour en haut et « Proposer », sont réglés ensemble
-dans `BaseLayout.astro` : quand ils empiètent sur la colonne du contenu, ils se
-retirent à la descente et reviennent à la remontée.
+lien d'évitement et panneau du menu 10, voile du menu 9, fenêtre du chat 7,
+en-tête 6, bulles du lexique 5, boutons flottants 4. Les trois boutons
+flottants, du bas vers le haut « Chat », retour en haut et « Proposer », sont
+réglés ensemble dans `BaseLayout.astro` : quand ils empiètent sur la colonne
+du contenu, ils se retirent à la descente et reviennent à la remontée.
+« Chat » paraît aussi en haut de page, et tous trois s'effacent chat ouvert.
 
 **L'en-tête est collante, deux conséquences sur les ancres.** Une ancre de
 retour en haut ne doit jamais viser un élément collant : sa boîte étant déjà en

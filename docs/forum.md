@@ -405,6 +405,25 @@ commit pour le code.
 - **Tests** : 265 règles (`php -d extension=gd db/verifier-autorisation.php`),
   six essais de plus dans `php db/verifier.php` : 103 attendus.
 
+### Revu le 9 novembre, à la demande de l'auteur
+
+- **Le chat en fenêtre flottante**, comme un « live chat » : un bouton
+  « Chat » dans le coin de chaque page ouvre une fenêtre, en bas à droite sur
+  ordinateur, en bas de l'écran sur téléphone. Elle interroge le serveur
+  seulement ouverte, et reste ouverte d'une page à l'autre (`sessionStorage`).
+  /communaute/ garde un bouton qui l'ouvre. Les styles du chat quittent
+  `communaute.css` pour le composant, sous `.chat-flottant` : les feuilles
+  du forum portent des classes, `.libelle` ou `.avertissement`, que
+  d'autres pages emploient. Signaler s'y confirme d'un second clic, la
+  fenêtre de confirmation des comptes n'existant que sur leurs pages.
+- **Le fil d'Ariane aligné** : le titre de la page, sans lien, se tenait
+  11 px plus haut que les liens, centrés dans leurs 44 px. Chaque étape est
+  désormais centrée sur 44 px.
+- **Les sujets récents en tête de l'accueil**, les dix plus actifs tous
+  forums confondus, puis les catégories (`sujetsRecents`).
+- **Tests** : 267 règles, et un essai de plus dans `php db/verifier.php` :
+  104 attendus.
+
 ---
 
 ## 9. Questions
