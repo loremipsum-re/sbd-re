@@ -317,6 +317,13 @@ const fournies = new Set(
     white-space: nowrap;
   }
 
+  /* 24 px au moins (--cible-aa) : 21 mesurés sur téléphone. */
+  .categorie a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-aa);
+  }
+
   @media (min-width: 60rem) {
     .liste tbody .categorie {
       background: color-mix(in srgb, var(--text) 5%, transparent);

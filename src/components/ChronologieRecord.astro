@@ -100,9 +100,17 @@ const { etapes } = Astro.props;
   .chrono-meta {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: var(--space-1) var(--space-3);
     font-size: var(--step--1);
     color: var(--muted);
+  }
+
+  /* La date mène à la compétition : 24 px (--cible-aa), 21 mesurés. */
+  .chrono-meta a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-aa);
   }
 
   /* Le marqueur d'écart est commun au site et vit dans tokens.css. Rien à

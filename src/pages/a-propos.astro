@@ -154,7 +154,7 @@ const developpeSeul = meets.filter((m) => m.events.length === 1 && m.events[0] =
     </p>
 
     <h2>Contact</h2>
-    <p>
+    <p class="contact">
       <a href="mailto:hello@loremipsum.re">hello@loremipsum.re</a>
     </p>
 
@@ -169,6 +169,13 @@ const developpeSeul = meets.filter((m) => m.events.length === 1 && m.events[0] =
 </BaseLayout>
 
 <style>
+  /* L'adresse, seule dans son paragraphe : une cible de 44 px (17 mesurés). */
+  .contact a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+  }
+
   .texte {
     max-width: 44rem;
     padding-bottom: var(--space-8);

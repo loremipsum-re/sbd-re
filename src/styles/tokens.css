@@ -303,6 +303,14 @@
    * bouton de thème 40 px, liens de pied de page 15 px.
    */
   --cible-min: 2.75rem;
+  /*
+   * 24 PX, LE MINIMUM DU NIVEAU AA (critère 2.5.8), pour les liens des listes
+   * de données : noms, compétitions, catégories, détenteurs et dates des
+   * records. Choix de l'auteur du 10 novembre 2026 : à 44 px, le classement
+   * et /exterieur/ s'allongeaient de 10 %, mesuré. Ils mesuraient de 17 à
+   * 23 px sur téléphone.
+   */
+  --cible-aa: 1.5rem;
 
   --radius: 0.5rem;
   --radius-lg: 0.875rem;
@@ -1013,6 +1021,17 @@ textarea {
  */
 .sprite-mouvements {
   display: none;
+}
+
+/*
+ * LE LIEN DE RETOUR EN TÊTE DE PAGE, « Toutes les compétitions » ou « Retour
+ * au classement », seul dans son paragraphe : une cible de 44 px. Il en
+ * mesurait 15 sur téléphone (audit du 10 novembre 2026).
+ */
+.fil a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
 }
 
 /*

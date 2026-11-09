@@ -551,11 +551,20 @@ const description =
   .editions {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--space-3);
+    align-items: center;
+    gap: var(--space-1);
     margin-bottom: var(--space-6);
     font-size: var(--step--1);
     color: var(--muted);
+  }
+
+  /* Une année par cible de 44 px : « 2025 » en mesurait 30 × 21. */
+  .editions a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--cible-min);
+    min-height: var(--cible-min);
   }
 
   /* Colonnes et alignement des rangées : voir `.chiffres-cles` dans
