@@ -176,6 +176,14 @@ const courant = (href: string) =>
         } catch (e) {
           document.documentElement.dataset.theme = 'dark';
         }
+        /*
+         * Connecté ou non, lu avant le premier dessin sur le cookie lisible
+         * de la connexion : « Se connecter » ne clignote ni pour l'un ni
+         * pour l'autre (lib/cloche.ts pour le cookie).
+         */
+        if (document.cookie.split('; ').indexOf('sbdre-connecte=1') !== -1) {
+          document.documentElement.classList.add('connecte');
+        }
       })();
     </script>
 
@@ -325,6 +333,12 @@ const courant = (href: string) =>
           </div>
         </details>
 
+        {/* « Se connecter » pour un visiteur, demande de l'auteur du
+            10 novembre 2026. Masqué dès que la classe `connecte`, posée en
+            tête de page, dit qu'un membre est là : la cloche et l'avatar
+            prennent alors sa place. */}
+        <a class="lien-connexion" href="/compte/connexion/">Connexion</a>
+
         <details class="menu">
           <summary aria-label="Ouvrir le menu">
             <span class="barres-menu" aria-hidden="true"></span>
@@ -352,6 +366,12 @@ const courant = (href: string) =>
               après les treize rubriques demandait 575 px de défilement pour un
               réglage qui tenait auparavant à un seul appui.
             */}
+            {/* Le compte en tête du panneau, pour un visiteur. */}
+            <div class="acces-compte wrap">
+              <a class="acces-principal" href="/compte/connexion/">Se connecter</a>
+              <a href="/compte/inscription/">Créer un compte</a>
+            </div>
+
             <div class="reglages wrap">
               {/* Le bouton garde son propre nom accessible, « Changer de
                   thème » : l'intitulé visible situe la rangée, il ne nomme pas
@@ -693,8 +713,78 @@ const courant = (href: string) =>
   }
 
   .cloche:not([hidden]) + .menu,
-  .menu-compte:not([hidden]) + .menu {
+  .menu-compte:not([hidden]) + .menu,
+  html:not(.connecte) .lien-connexion + .menu {
     margin-left: 0;
+  }
+
+  /* « Se connecter », pour un visiteur : le gabarit des boutons de la
+     barre, l'aplat d'accent sous son filet. */
+  .lien-connexion {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+    margin-left: auto;
+    padding: 0 var(--space-3);
+    border: 2px solid var(--accent);
+    border-radius: var(--radius);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .lien-connexion:hover,
+  .lien-connexion:focus-visible {
+    background: transparent;
+    color: var(--accent);
+  }
+
+  html.connecte .lien-connexion,
+  html.connecte .acces-compte {
+    display: none;
+  }
+
+  /* À 375 px, logo, « Connexion » et menu tiennent avec un écart resserré :
+     au pas de 16 px, la barre dépassait de 20 px. */
+  @media (max-width: 47.99rem) {
+    html:not(.connecte) .barre {
+      gap: var(--space-2);
+    }
+  }
+
+  /* Dans le panneau du menu : se connecter, ou créer un compte. */
+  .acces-compte {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+
+  .acces-compte a {
+    display: inline-flex;
+    flex: 1 1 10rem;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--cible-min);
+    padding: 0 var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .acces-compte .acces-principal {
+    border-color: var(--accent);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+  }
+
+  .acces-compte a:hover,
+  .acces-compte a:focus-visible {
+    border-color: var(--accent);
   }
 
   /* Le menu du compte, entre la cloche et le grand menu. Son panneau se

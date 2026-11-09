@@ -31,6 +31,7 @@ export function brancherCloche(): void {
       if (reponse.status === 401) {
         // Session finie ailleurs : le cookie lisible part avec elle.
         document.cookie = `${COOKIE}=; Max-Age=0; Path=/; Secure; SameSite=Lax`;
+        document.documentElement.classList.remove('connecte');
         cloche.hidden = true;
         clearInterval(minuterie);
         document.dispatchEvent(new CustomEvent('sbd:compte', { detail: { deconnecte: true } }));
