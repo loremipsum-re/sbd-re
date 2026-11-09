@@ -6,6 +6,7 @@
  *   /forum/                      l'accueil, catégories et forums
  *   /forum/<adresse>/            un forum, ses sujets, ?page=N
  *   /forum/<adresse>/<sujet>/    un sujet, ses messages, ?page=N
+ *   /forum/fil/, /forum/recherche/?q=   deux adresses réservées
  *
  * La page connaît le membre connecté, pour lui offrir le formulaire : elle
  * ne se garde donc que dans le cache de son navigateur (`private`).
@@ -17,6 +18,7 @@ namespace SBDRE;
 
 define('SBDRE_API', true);
 require __DIR__ . '/lib/forum.php';
+require __DIR__ . '/lib/chat.php';
 
 header('X-Content-Type-Options: nosniff');
 
@@ -65,18 +67,39 @@ $smileys = is_array($smileys) ? $smileys : [];
 
 try {
     $membre = membreCourant();
+    // Lire le forum compte comme une présence : « Qui est en ligne » le dit.
+    if ($membre !== null) {
+        marquerActivite((int) $membre['id']);
+    }
+    $indexer = true;
 
     if ($adresse === 'fil') {
         /* --- Le fil, adresse réservée (ADRESSES_RESERVEES) ----------------- */
         $chemin = '/forum/fil/';
         $page = 1;
+        $etapes = [['Forum', '/forum/'], ['Le fil', null]];
         $reperes = [
             'TITRE'        => 'Le fil',
             'TITRE_ONGLET' => 'Le fil du forum | SBD.re',
             'DESCRIPTION'  => e('Les nouveaux sujets, les réponses et les performances vérifiées de la communauté SBD.re.'),
-            'ARIANE'       => ariane([['Forum', '/forum/'], ['Le fil', null]]),
+            'ARIANE'       => ariane($etapes),
             'CHAPEAU'      => '<p class="chapeau">Les nouveaux sujets, les réponses et les performances vérifiées, du plus récent au plus ancien.</p>',
             'CONTENU'      => rendreFil(filActualite()),
+            'DONNEES'      => donneesAriane($etapes, $chemin),
+        ];
+    } elseif ($adresse === 'recherche') {
+        /* --- La recherche, adresse réservée, hors index ------------------- */
+        $q = trim((string) ($_GET['q'] ?? ''));
+        $chemin = '/forum/recherche/';
+        $page = 1;
+        $indexer = false;
+        $reperes = [
+            'TITRE'        => 'Chercher un sujet',
+            'TITRE_ONGLET' => e(($q !== '' ? $q . ', ' : '') . 'recherche dans le forum | SBD.re'),
+            'DESCRIPTION'  => e('Chercher un sujet dans le forum de SBD.re.'),
+            'ARIANE'       => ariane([['Forum', '/forum/'], ['Recherche', null]]),
+            'CHAPEAU'      => '',
+            'CONTENU'      => rendreRecherche($q, rechercheValide($q) ? rechercherSujets($q) : []),
             'DONNEES'      => '',
         ];
     } elseif ($adresse === null) {
@@ -93,7 +116,9 @@ try {
             'ARIANE'       => '',
             'CHAPEAU'      => '<p class="chapeau">Technique, programmation, compétitions : une catégorie par mouvement, à la manière des forums d\'autrefois.</p>',
             'CONTENU'      => '<p class="actions-forum"><a class="bouton-nouveau" href="/forum/fil/">Le fil de l\'activité</a></p>'
-                . rendreIndexForum($categories, $forums, $membre),
+                . formulaireRecherche()
+                . rendreIndexForum($categories, $forums, $membre)
+                . rendrePiedForum(enLigne(), statistiquesForum()),
             'DONNEES'      => '',
         ];
     } else {
@@ -117,22 +142,33 @@ try {
             }
             $sujets = sujetsDuForum((int) $forum['id'], $page);
             $chemin = '/forum/' . $forum['adresse'] . '/';
+            $etapes = [['Forum', '/forum/'], [$nomForum, null]];
             $reperes = [
                 'TITRE'        => e($nomForum),
                 'TITRE_ONGLET' => e($nomForum . ($page > 1 ? ', page ' . $page : '') . ' | Forum SBD.re'),
                 'DESCRIPTION'  => e($forum['description'] !== '' ? $forum['description'] : $nomForum),
-                'ARIANE'       => ariane([['Forum', '/forum/'], [$nomForum, null]]),
+                'ARIANE'       => ariane($etapes),
                 'CHAPEAU'      => $forum['description'] !== '' ? '<p class="chapeau">' . e($forum['description']) . '</p>' : '',
                 'CONTENU'      => rendreForum($forum, $sujets, $page, $pages, $membre),
-                'DONNEES'      => '',
+                'DONNEES'      => donneesAriane($etapes, $chemin),
             ];
         } else {
             /* --- Un sujet ------------------------------------------------- */
             $sujet = ligne(
-                'SELECT id, membre_id, titre, epingle, verrouille, reponses FROM sujet WHERE id = :s AND forum_id = :f',
+                'SELECT id, membre_id, titre, epingle, verrouille, reponses, UNIX_TIMESTAMP(date_creation) AS creation_ts
+                   FROM sujet WHERE id = :s AND forum_id = :f',
                 ['s' => $sujetDemande, 'f' => $forum['id']],
             );
             if ($sujet === null) {
+                // Un sujet déplacé par l'admin : ses anciens liens mènent à sa nouvelle adresse.
+                $ailleurs = ligne(
+                    "SELECT f.adresse FROM sujet s JOIN forum f ON f.id = s.forum_id WHERE s.id = :s AND f.etat <> 'masque'",
+                    ['s' => $sujetDemande],
+                );
+                if ($ailleurs !== null) {
+                    header('Location: ' . lienSujet((string) $ailleurs['adresse'], (int) $sujetDemande, $page), true, 301);
+                    exit;
+                }
                 introuvable();
             }
             $pages = max(1, (int) ceil(((int) $sujet['reponses'] + 1) / MESSAGES_PAR_PAGE));
@@ -150,14 +186,23 @@ try {
                 ? mb_substr(trim((string) preg_replace('/\s+/u', ' ', (string) preg_replace('~\[/?[a-z]+(=[^\]]*)?\]~', '', (string) $premier['texte']))), 0, 155)
                 : (string) $sujet['titre'];
             $chemin = lienSujet((string) $forum['adresse'], (int) $sujet['id'], $page);
+            $etapes = [['Forum', '/forum/'], [$nomForum, '/forum/' . $forum['adresse'] . '/'], [(string) $sujet['titre'], null]];
+            // L'admin déplace un sujet posté au mauvais endroit.
+            $deplacer = estAdmin($membre)
+                ? formulaireDeplacer(lignes(
+                    "SELECT f.adresse, f.titre, c.titre AS categorie FROM forum f JOIN forum_categorie c ON c.id = f.categorie_id
+                      WHERE f.etat <> 'masque' ORDER BY c.ordre, c.id, f.ordre, f.id",
+                ), (int) $sujet['id'], (string) $forum['adresse'])
+                : '';
             $reperes = [
                 'TITRE'        => e((string) $sujet['titre']),
                 'TITRE_ONGLET' => e($sujet['titre'] . ($page > 1 ? ', page ' . $page : '') . ' | ' . $nomForum . ' | Forum SBD.re'),
                 'DESCRIPTION'  => e($extrait),
-                'ARIANE'       => ariane([['Forum', '/forum/'], [$nomForum, '/forum/' . $forum['adresse'] . '/'], [(string) $sujet['titre'], null]]),
+                'ARIANE'       => ariane($etapes),
                 'CHAPEAU'      => '',
-                'CONTENU'      => rendreSujet($forum, $sujet, $messages, $page, $pages, $membre, $abonne, $smileys),
-                'DONNEES'      => $page === 1 && $premier !== null ? donneesSujet($sujet, $premier, (string) $forum['adresse']) : '',
+                'CONTENU'      => rendreSujet($forum, $sujet, $messages, $page, $pages, $membre, $abonne, $smileys) . $deplacer,
+                'DONNEES'      => donneesAriane($etapes, $chemin)
+                    . ($page === 1 && $premier !== null ? donneesSujet($sujet, $premier, (string) $forum['adresse']) : ''),
             ];
         }
     }
@@ -174,4 +219,4 @@ if ($methode === 'HEAD') {
     exit;
 }
 
-echo remplirGabaritForum($gabarit, $reperes, $chemin);
+echo remplirGabaritForum($gabarit, $reperes, $chemin, $indexer);

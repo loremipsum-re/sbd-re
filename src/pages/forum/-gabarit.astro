@@ -14,8 +14,9 @@
  * devient celle de la page, l'adresse canonique comprise.
  *
  * Le script branche les formulaires que PHP écrit : ouvrir un sujet,
- * répondre, citer, modifier son message, suivre, créer et renommer un forum,
- * et la barre de smileys.
+ * répondre, citer, modifier son message ou son titre, l'aperçu, suivre,
+ * créer et renommer un forum, déplacer un sujet, les boutons de mise en
+ * forme et la barre de smileys.
  */
 import FenetreConfirmation from '../../components/FenetreConfirmation.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
@@ -43,7 +44,25 @@ import '../../styles/communaute.css';
     <form class="form-compte form-modifier" data-forum-modifier novalidate>
       <div class="champ">
         <label>Votre message</label>
+        <div class="barre-balises" data-balises></div>
         <textarea name="texte" rows="6" required maxlength="5000"></textarea>
+      </div>
+      <div class="apercu" data-zone-apercu hidden></div>
+      <div class="actions">
+        <button type="submit">Enregistrer</button>
+        <button type="button" class="secondaire" data-apercu>Aperçu</button>
+        <button type="button" class="secondaire" data-annuler>Annuler</button>
+      </div>
+      <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+    </form>
+  </template>
+
+  <!-- Le formulaire « Modifier le titre », posé sous la ligne du sujet. -->
+  <template id="modele-titre">
+    <form class="form-compte form-modifier" data-forum-titre novalidate>
+      <div class="champ">
+        <label>Titre du sujet</label>
+        <input name="titre" required minlength="5" maxlength="120" />
       </div>
       <div class="actions">
         <button type="submit">Enregistrer</button>
@@ -58,9 +77,10 @@ import '../../styles/communaute.css';
 
 <script>
   import { afficher, api, brancher, champ, confirmer, type ReponseApi } from '../../lib/api-compte';
-  import { brancherBarresSmileys } from '../../lib/barre-smileys';
+  import { brancherBalises, brancherBarresSmileys } from '../../lib/barre-smileys';
 
   brancherBarresSmileys();
+  brancherBalises();
 
   /** Va au message publié. Même page, autre ancre : il faut recharger. */
   const aller = (lien: string) => {
@@ -123,6 +143,7 @@ import '../../styles/communaute.css';
       zone.id = `modifier-${bouton.dataset.message}`;
       form.querySelector('label')!.htmlFor = zone.id;
       zone.value = bouton.dataset.texte ?? '';
+      brancherBalises(form);
       texte.hidden = true;
       bouton.hidden = true;
       texte.after(form);
@@ -139,6 +160,66 @@ import '../../styles/communaute.css';
         () => aller(`${location.pathname}${location.search}#${article.id}`),
       );
     });
+  }
+
+  // Modifier le titre de son sujet, dans les 24 heures.
+  const modeleTitre = document.querySelector<HTMLTemplateElement>('#modele-titre')!;
+  for (const bouton of document.querySelectorAll<HTMLButtonElement>('[data-modifier-titre]')) {
+    bouton.addEventListener('click', () => {
+      const ligne = bouton.closest('.meta-sujet')!;
+      const form = modeleTitre.content.firstElementChild!.cloneNode(true) as HTMLFormElement;
+      const titre = form.querySelector('input')!;
+      titre.id = 'modifier-titre';
+      form.querySelector('label')!.htmlFor = titre.id;
+      titre.value = bouton.dataset.titre ?? '';
+      ligne.after(form);
+      bouton.hidden = true;
+      titre.focus();
+      form.querySelector('[data-annuler]')!.addEventListener('click', () => {
+        form.remove();
+        bouton.hidden = false;
+        bouton.focus();
+      });
+      brancher(
+        form,
+        (d) => envoyer(form, { action: 'titre', sujet_id: Number(bouton.dataset.sujet), titre: champ(d, 'titre') }),
+        () => location.reload(),
+      );
+    });
+  }
+
+  // L'aperçu : le serveur rend le texte comme il le publiera, sans rien
+  // publier. Écouté sur la page entière : le formulaire « Modifier » naît après.
+  document.addEventListener('click', async (evenement) => {
+    const bouton = (evenement.target as Element).closest<HTMLButtonElement>('[data-apercu]');
+    if (!bouton) return;
+    const form = bouton.closest('form')!;
+    const zone = form.querySelector<HTMLElement>('[data-zone-apercu]')!;
+    const etat = form.querySelector<HTMLElement>('[data-etat]')!;
+    bouton.disabled = true;
+    const r = await api('/api/forum.php', 'POST', { action: 'apercu', texte: form.querySelector('textarea')!.value });
+    bouton.disabled = false;
+    if (!r.ok) {
+      afficher(etat, r.message, false);
+      return;
+    }
+    const titre = Object.assign(document.createElement('p'), { className: 'titre-apercu', textContent: 'Aperçu, avant publication' });
+    const texte = Object.assign(document.createElement('div'), { className: 'texte' });
+    // Rendu par rendreTexte, qui échappe d'abord : le même HTML que la page.
+    texte.innerHTML = r.html as string;
+    zone.replaceChildren(titre, texte);
+    zone.hidden = false;
+    afficher(etat, '', true);
+  });
+
+  // Déplacer un sujet, l'admin seul : la page suit le sujet à sa nouvelle adresse.
+  const formDeplacer = document.querySelector<HTMLFormElement>('[data-deplacer]');
+  if (formDeplacer) {
+    brancher(
+      formDeplacer,
+      (d) => api('/api/forum.php', 'POST', { action: 'deplacer', sujet_id: Number(formDeplacer.dataset.sujet), forum: champ(d, 'forum') }),
+      (r) => location.assign(r.lien as string),
+    );
   }
 
   // Renommer un forum de membre : son créateur, ou l'admin. L'adresse reste.

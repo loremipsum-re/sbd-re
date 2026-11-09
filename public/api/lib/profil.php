@@ -110,8 +110,29 @@ function e(string $texte): string
  *              instagram_visible: int|string, date_inscription: string} $membre
  * @param array<string, array{nom: string, commune: string}> $salles
  * @param list<array<string, mixed>> $performances les barres du membre, plus récente d'abord
+ * @param list<array<string, mixed>> $sujets       ses sujets au forum (sujetsDuMembre), dix au plus
  */
-function rendreProfil(array $membre, string $gabarit, array $salles, array $performances): string
+/** Ses sujets au forum, du plus récemment actif au plus ancien. Rien s'il n'en a ouvert aucun. */
+function rendreSujetsMembre(array $sujets): string
+{
+    if ($sujets === []) {
+        return '';
+    }
+    $lignes = array_map(
+        static fn (array $s): string => '<li><a href="' . e((string) $s['lien']) . '">' . e((string) $s['titre']) . '</a>'
+            . '<span class="meta">' . e((string) $s['forum']) . ', ' . match ((int) $s['reponses']) {
+                0 => 'aucune réponse',
+                1 => "1 réponse",
+                default => (int) $s['reponses'] . " réponses",
+            } . '</span></li>',
+        $sujets,
+    );
+
+    return '<section class="sujets-membre" aria-labelledby="titre-sujets-membre">'
+        . '<h2 id="titre-sujets-membre">Ses sujets au forum</h2><ul>' . implode('', $lignes) . '</ul></section>';
+}
+
+function rendreProfil(array $membre, string $gabarit, array $salles, array $performances, array $sujets = []): string
 {
     $pseudo = (string) $membre['pseudo'];
     $bio = trim((string) ($membre['bio'] ?? ''));
@@ -191,6 +212,7 @@ function rendreProfil(array $membre, string $gabarit, array $salles, array $perf
         '%%PRESENTATION%%' => $bio !== '' ? '<p class="chapeau">' . e($bio) . '</p>' : '',
         '%%FICHE%%'        => $htmlFiche,
         '%%RECORDS%%'      => rendrePerformances($performances),
+        '%%SUJETS%%'       => rendreSujetsMembre($sujets),
         '%%DONNEES%%'      => (string) $donnees,
         // L'avatar, décoratif : le pseudo, en titre juste dessous, dit qui c'est.
         '%%AVATAR%%'       => ($membre['avatar_v'] ?? null) !== null

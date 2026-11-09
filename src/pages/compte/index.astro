@@ -3,8 +3,9 @@
  * L'accueil du membre : ses performances d'abord, puis où elles le
  * placeraient au classement officiel. Les réglages (profil, session,
  * effacement) se rangent derrière l'engrenage, à /compte/reglages/.
- * Demande de l'auteur du 7 novembre 2026. « Mes sujets » ferme la page : ceux
- * qu'il a ouverts au forum, rendus par `GET /api/moi.php`.
+ * Demande de l'auteur du 7 novembre 2026. « Mes sujets » et « Sujets suivis »
+ * ferment la page, rendus par `GET /api/moi.php` ; un sujet suivi se quitte
+ * d'un bouton, qui coupe ses notifications et son récapitulatif.
  *
  * La page est statique et se remplit par `GET /api/performances.php`, qui
  * rend aussi les records, calculés par la même règle que le profil public.
@@ -142,6 +143,15 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
         <p class="aide" data-aucun-sujet hidden>
           Aucun sujet pour l'instant. <a href="/forum/">Le forum</a> attend le premier.
         </p>
+
+        <h2>Sujets suivis</h2>
+        <p class="aide">
+          Une réponse dans un sujet suivi vous parvient en notification. Ceux
+          que vous ouvrez se suivent d'office.
+        </p>
+        <ul class="liste-perfs-compte liste-sujets-compte" data-liste-suivis></ul>
+        <p class="aide" data-aucun-suivi hidden>Aucun sujet suivi pour l'instant.</p>
+        <p class="etat-compte" data-etat-suivis role="status" aria-live="polite" hidden></p>
       </section>
     </div>
   </div>
@@ -208,6 +218,7 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
   /* --- Mes sujets --------------------------------------------------------- */
 
   interface Sujet {
+    id: number;
     titre: string;
     forum: string;
     lien: string;
@@ -218,18 +229,49 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
   }
 
   /** Le titre en lien, puis le forum et la dernière réponse, en texte. */
+  const ligneSujet = (s: Sujet) => {
+    const ligne = document.createElement('li');
+    const lien = Object.assign(document.createElement('a'), { href: s.lien, textContent: s.titre });
+    const suite =
+      s.reponses === 0
+        ? 'aucune réponse'
+        : `${s.reponses} réponse${s.reponses > 1 ? 's' : ''}, la dernière de ${s.dernier_pseudo} le ${s.dernier}`;
+    const meta = Object.assign(document.createElement('span'), { className: 'meta', textContent: `${s.forum} · ${suite}` });
+    ligne.append(lien, meta);
+    return ligne;
+  };
+
   const afficherSujets = (sujets: Sujet[]) => {
     document.querySelector<HTMLElement>('[data-aucun-sujet]')!.hidden = sujets.length > 0;
-    document.querySelector<HTMLUListElement>('[data-liste-sujets]')!.replaceChildren(
-      ...sujets.map((s) => {
-        const ligne = document.createElement('li');
-        const lien = Object.assign(document.createElement('a'), { href: s.lien, textContent: s.titre });
-        const suite =
-          s.reponses === 0
-            ? 'aucune réponse'
-            : `${s.reponses} réponse${s.reponses > 1 ? 's' : ''}, la dernière de ${s.dernier_pseudo} le ${s.dernier}`;
-        const meta = Object.assign(document.createElement('span'), { className: 'meta', textContent: `${s.forum} · ${suite}` });
-        ligne.append(lien, meta);
+    document.querySelector<HTMLUListElement>('[data-liste-sujets]')!.replaceChildren(...sujets.map(ligneSujet));
+  };
+
+  /** Chaque sujet suivi, et « Ne plus suivre » : la ligne part, le message le dit. */
+  const afficherSuivis = (suivis: Sujet[]) => {
+    const liste = document.querySelector<HTMLUListElement>('[data-liste-suivis]')!;
+    const aucun = document.querySelector<HTMLElement>('[data-aucun-suivi]')!;
+    const etat = document.querySelector<HTMLElement>('[data-etat-suivis]')!;
+    aucun.hidden = suivis.length > 0;
+    liste.replaceChildren(
+      ...suivis.map((s) => {
+        const ligne = ligneSujet(s);
+        const quitter = Object.assign(document.createElement('button'), { type: 'button', className: 'secondaire', textContent: 'Ne plus suivre' });
+        quitter.addEventListener('click', async () => {
+          quitter.disabled = true;
+          const r = await api('/api/forum.php', 'POST', { action: 'suivre', sujet_id: s.id, suivre: false });
+          // Texte fabriqué ici : il échappe au middleware, d'où les insécables écrites.
+          afficher(etat, r.ok ? `Vous ne suivez plus « ${s.titre} ».` : r.message, r.ok);
+          if (!r.ok) {
+            quitter.disabled = false;
+            return;
+          }
+          ligne.remove();
+          aucun.hidden = liste.childElementCount > 0;
+          // La ligne partie emporte le focus : il passe au message qui le dit.
+          etat.tabIndex = -1;
+          etat.focus();
+        });
+        ligne.append(quitter);
         return ligne;
       }),
     );
@@ -248,6 +290,7 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
     }
     const compte = lecture.compte as { pseudo: string; admin?: boolean };
     afficherSujets((lecture.sujets ?? []) as Sujet[]);
+    afficherSuivis((lecture.suivis ?? []) as Sujet[]);
     document.querySelector<HTMLElement>('[data-lien-admin]')!.hidden = compte.admin !== true;
     bonjour.textContent = `Bonjour ${compte.pseudo}.`;
     document.querySelector<HTMLAnchorElement>('[data-lien-profil]')!.href = `/membres/${compte.pseudo}/`;

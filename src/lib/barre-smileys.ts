@@ -1,7 +1,8 @@
 /**
  * La barre de smileys sous un champ : un clic insère le code à la place du
  * curseur, entouré d'espaces, pour qu'il soit reconnu (src/lib/smileys.ts).
- * Partagée par le forum et le chat.
+ * Partagée par le forum et le chat. Les boutons de mise en forme du forum,
+ * au-dessus du champ, vivent ici aussi.
  */
 import { SMILEYS, decouper } from './smileys';
 
@@ -30,6 +31,42 @@ export function brancherBarresSmileys(racine: ParentNode = document): void {
     panneau.append(titre, grille);
     zone.replaceChildren(panneau);
   }
+}
+
+/** Les balises d'époque du forum (lib/forum.php, rendreTexte). */
+const BALISES = [
+  { libelle: 'Gras', classe: 'balise-gras', ouvre: '[b]', ferme: '[/b]', defaut: '' },
+  { libelle: 'Italique', classe: 'balise-italique', ouvre: '[i]', ferme: '[/i]', defaut: '' },
+  { libelle: 'Citation', classe: '', ouvre: '[quote]', ferme: '[/quote]', defaut: '' },
+  { libelle: 'Lien', classe: '', ouvre: '[url]', ferme: '[/url]', defaut: 'https://' },
+];
+
+/**
+ * Pose, dans chaque `[data-balises]`, les boutons Gras, Italique, Citation et
+ * Lien, comme au-dessus du champ d'un phpBB. Un clic entoure la sélection ;
+ * sans sélection, le curseur se pose entre les deux balises.
+ */
+export function brancherBalises(racine: ParentNode = document): void {
+  for (const zone of racine.querySelectorAll<HTMLElement>('[data-balises]')) {
+    const champ = zone.closest('form')?.querySelector<HTMLTextAreaElement>('textarea');
+    if (!champ || zone.childElementCount > 0) continue;
+    zone.append(
+      ...BALISES.map((b) => {
+        const bouton = Object.assign(document.createElement('button'), { type: 'button', className: b.classe, textContent: b.libelle });
+        bouton.addEventListener('click', () => entourer(champ, b.ouvre, b.ferme, b.defaut));
+        return bouton;
+      }),
+    );
+  }
+}
+
+function entourer(champ: HTMLTextAreaElement, ouvre: string, ferme: string, defaut: string): void {
+  const debut = champ.selectionStart;
+  const fin = champ.selectionEnd;
+  const choisi = champ.value.slice(debut, fin) || defaut;
+  champ.setRangeText(ouvre + choisi + ferme, debut, fin, 'end');
+  champ.focus();
+  if (debut === fin) champ.setSelectionRange(debut + ouvre.length, debut + ouvre.length + choisi.length);
 }
 
 function inserer(champ: HTMLTextAreaElement | HTMLInputElement, code: string): void {

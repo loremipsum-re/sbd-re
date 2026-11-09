@@ -671,3 +671,82 @@
 .chat {
   margin-top: var(--space-8);
 }
+
+/* --- Mise en forme, aperçu, recherche, pied de l'accueil -------------- */
+
+/* Gras, Italique, Citation, Lien au-dessus du champ, comme sur phpBB : des
+   gestes secondaires, bordure seule, jamais l'aplat du bouton d'envoi. */
+.form-compte .barre-balises {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.form-compte .barre-balises button {
+  padding: var(--space-1) var(--space-3);
+  border-color: var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: var(--step--1);
+  font-weight: 400;
+}
+
+.form-compte .barre-balises .balise-gras {
+  font-weight: 700;
+}
+
+.form-compte .barre-balises .balise-italique {
+  font-style: italic;
+}
+
+.form-compte .barre-balises button:hover,
+.form-compte .barre-balises button:focus-visible {
+  border-color: var(--accent);
+}
+
+/* L'aperçu : le texte rendu, dans un cadre pointillé qui le distingue d'un
+   message publié. */
+.apercu {
+  padding: var(--space-3) var(--space-4);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.apercu .titre-apercu {
+  margin: 0 0 var(--space-2);
+  color: var(--muted);
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+
+.apercu .texte {
+  overflow-wrap: anywhere;
+}
+
+/* La recherche : le champ et son bouton sur une ligne. */
+.recherche-forum {
+  max-width: 36rem;
+  margin-block: var(--space-4);
+}
+
+.ligne-recherche {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.form-compte.recherche-forum .ligne-recherche input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* « Qui est en ligne » et les statistiques, au pied de l'accueil. */
+.pied-forum {
+  margin-top: var(--space-8);
+  padding-top: var(--space-4);
+  border-top: 2px solid var(--border);
+}
+
+.pied-forum h2 {
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: var(--step-0);
+}
