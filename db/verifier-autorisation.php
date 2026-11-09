@@ -48,6 +48,7 @@ require_once dirname($chemin) . '/comptes.php';
 require_once dirname($chemin) . '/performances.php';
 require_once dirname($chemin) . '/forum.php';
 require_once dirname($chemin) . '/chat.php';
+require_once dirname($chemin) . '/recapitulatif.php';
 
 /* -------------------------------------------------------------------------
  * Affichage
@@ -235,6 +236,8 @@ $profilEnvoye = \SBDRE\filtrerChamps([
     'pseudo'           => 'autre',      // passe, puis la règle d'un an
     'pseudo_precedent' => 'vole',       // garder l'ancien pseudo d'un autre
     'date_pseudo'      => null,         // effacer son délai
+    'recapitulatif'    => true,         // demander le récapitulatif
+    'date_recapitulatif' => null,       // en avancer l'envoi
     'id'               => 999,
 ], \SBDRE\CHAMPS_PROFIL);
 
@@ -243,6 +246,8 @@ verifie('Se nommer admin est ignoré',               array_key_exists('role', $p
 verifie('Valider soi-même son adresse est ignoré',  array_key_exists('courriel_verifie', $profilEnvoye), false);
 verifie('Se débannir est ignoré',                   array_key_exists('banni', $profilEnvoye),            false);
 verifie('Le pseudo passe, pour la règle d\'un an',  array_key_exists('pseudo', $profilEnvoye),           true);
+verifie('Le récapitulatif se demande',              array_key_exists('recapitulatif', $profilEnvoye),    true);
+verifie('Sa date d\'envoi est ignorée',             array_key_exists('date_recapitulatif', $profilEnvoye), false);
 verifie('Écrire son ancien pseudo est ignoré',      array_key_exists('pseudo_precedent', $profilEnvoye), false);
 verifie('Effacer son délai de pseudo est ignoré',   array_key_exists('date_pseudo', $profilEnvoye),      false);
 verifie('Changer d\'identifiant est ignoré',        array_key_exists('id', $profilEnvoye),               false);
@@ -479,6 +484,47 @@ verifie('Adresse tirée du nom, sans accent',          \SBDRE\adresseDepuisTitre
 verifie('« Fil » ne prend pas l\'adresse du fil',     \SBDRE\adresseDepuisTitre('Fil') === 'forum-fil', true);
 verifie('Un nom sans lettre donne « forum »',         \SBDRE\adresseDepuisTitre('!!!') === 'forum', true);
 verifie('Toute adresse tirée est valide',             \SBDRE\adresseForumValide(\SBDRE\adresseDepuisTitre('Salle Saint-Pierre — Le Tampon')), true);
+
+titre('Modifier un message, renommer un forum');
+
+$sien = ['membre_id' => 5, 'masque_par' => null, 'date_ts' => $le7 - 3600];
+verifie('Son message, une heure après : se modifie',  \SBDRE\peutModifierMessage($ancien, $sien, $le7), true);
+verifie('25 heures après : non',                      \SBDRE\peutModifierMessage($ancien, ['date_ts' => $le7 - 25 * 3600] + $sien, $le7), false);
+verifie('Le message d\'un autre : non',               \SBDRE\peutModifierMessage($recent, $sien, $le7), false);
+verifie('Masqué par la modération : non',             \SBDRE\peutModifierMessage($ancien, ['masque_par' => 1] + $sien, $le7), false);
+verifie('D\'un compte effacé : personne',              \SBDRE\peutModifierMessage($ancien, ['membre_id' => null] + $sien, $le7), false);
+verifie('Banni : non',                                \SBDRE\peutModifierMessage(['banni' => 1] + $ancien, $sien, $le7), false);
+verifie('Nom de forum correct accepté',               \SBDRE\erreurForum('Salle du Tampon', 'Les lundis') === '', true);
+verifie('Nom de deux lettres refusé',                 \SBDRE\erreurForum('Ab', '') !== '', true);
+verifie('Description de 201 caractères refusée',      \SBDRE\erreurForum('Salle du Tampon', str_repeat('a', 201)) !== '', true);
+verifie('Le dopage refusé dans un nom de forum',      \SBDRE\erreurForum('Cures de stéroïdes', '') !== '', true);
+
+$message = ['id' => 44, 'membre_id' => 5, 'pseudo' => 'jean_93', 'pseudo_actuel' => 'jean_93', 'banni' => 0,
+    'inscription_ts' => $le7, 'texte' => 'Mon "texte"', 'sensible' => 0, 'masque_par' => null, 'date_ts' => time() - 60,
+    'modif_ts' => null, 'avatar_v' => null];
+$sujetOuvert = ['id' => 3, 'membre_id' => 5, 'titre' => 'Ma prépa', 'verrouille' => 0, 'epingle' => 0, 'reponses' => 0];
+$pageSujet = fn (array $m, array $s): string => \SBDRE\rendreSujet(['adresse' => 'squat-technique', 'etat' => 'ouvert', 'createur_id' => null], $s, [$m], 1, 1, $ancien, false, []);
+verifie('Son message récent porte « Modifier »',      str_contains($pageSujet($message, $sujetOuvert), 'data-modifier'), true);
+verifie('Sujet fermé : plus de « Modifier »',         str_contains($pageSujet($message, ['verrouille' => 1] + $sujetOuvert), 'data-modifier'), false);
+verifie('Un message modifié le dit',                  str_contains($pageSujet(['modif_ts' => time()] + $message, $sujetOuvert), 'modifié le'), true);
+
+$forumMembre = ['adresse' => 'salle-du-tampon', 'etat' => 'ouvert', 'createur_id' => 5, 'titre' => 'Salle "du" Tampon', 'description' => ''];
+verifie('Le créateur voit « Renommer le forum »',     str_contains(\SBDRE\rendreForum($forumMembre, [], 1, 1, $ancien), 'data-forum-renommer'), true);
+verifie('Un autre membre ne le voit pas',             str_contains(\SBDRE\rendreForum($forumMembre, [], 1, 1, $recent), 'data-forum-renommer'), false);
+verifie('Le nom prérempli reste échappé',             str_contains(\SBDRE\rendreForum($forumMembre, [], 1, 1, $ancien), 'value="Salle &quot;du&quot; Tampon"'), true);
+
+titre('Le récapitulatif par courriel');
+
+$corps = \SBDRE\corpsRecapitulatif('jean_93', [
+    ['texte' => 'marie a répondu à « Ma prépa ».', 'lien' => '/forum/squat-technique/3/#message-44'],
+    ['texte' => 'Un message masqué.', 'lien' => ''],
+], 23, str_repeat('a', 64));
+verifie('Le nombre est dit',                          str_contains($corps, '23 notifications vous attendent'), true);
+verifie('Chaque lien est complet',                    str_contains($corps, 'https://sbd.re/forum/squat-technique/3/#message-44'), true);
+verifie('Un lien vide ne fait pas de ligne',          str_contains($corps, "https://sbd.re\n"), false);
+verifie('Le reste est compté',                        str_contains($corps, 'Et 21 autres.'), true);
+verifie('Le lien « couper » porte le jeton après #',  str_contains($corps, '/compte/recapitulatif/#jeton=' . str_repeat('a', 64)), true);
+verifie('Une seule notification, au singulier',       str_contains(\SBDRE\corpsRecapitulatif('x', [['texte' => 't', 'lien' => '/']], 1, 'j'), 'Une notification vous attend'), true);
 
 titre('Le fil');
 

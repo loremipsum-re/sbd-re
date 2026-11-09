@@ -1,7 +1,7 @@
 ---
 /**
  * Les réglages du compte, derrière l'engrenage de /compte/ : profil,
- * session, effacement. Demande de l'auteur du 7 novembre 2026 : l'accueil du
+ * avatar, récapitulatif par courriel, session, effacement. Demande de l'auteur du 7 novembre 2026 : l'accueil du
  * membre montre d'abord ses performances, les réglages se rangent à part.
  *
  * La page est statique et se remplit par `GET /api/moi.php`. Sans session,
@@ -141,6 +141,23 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
           <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
         </form>
 
+        <h2 id="recapitulatif">Récapitulatif par courriel</h2>
+        <form class="form-compte" data-recapitulatif novalidate>
+          <label class="case">
+            <input name="recapitulatif" type="checkbox" aria-describedby="aide-recapitulatif" />
+            <span>Recevoir le récapitulatif toutes les deux semaines</span>
+          </label>
+          <p class="aide" id="aide-recapitulatif">
+            Un courriel qui reprend vos notifications non lues : réponses dans
+            les sujets suivis, mentions, performances vérifiées. Il ne part pas
+            s'il n'y a rien. Chaque courriel porte un lien pour le couper.
+          </p>
+          <div class="actions">
+            <button type="submit">Enregistrer</button>
+          </div>
+          <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+        </form>
+
         <h2>Session</h2>
         <form class="form-compte" data-deconnexion novalidate>
           <div class="actions">
@@ -233,7 +250,15 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
     instagram_visible: number;
     bio: string | null;
     salle: string | null;
+    recapitulatif: number;
   }
+
+  // Le récapitulatif par courriel, seul dans sa requête : enregistrer le
+  // profil n'y touche pas.
+  const formRecapitulatif = document.querySelector<HTMLFormElement>('[data-recapitulatif]')!;
+  brancher(formRecapitulatif, (donnees) =>
+    api('/api/moi.php', 'PATCH', { recapitulatif: donnees.get('recapitulatif') === 'on' }),
+  );
 
   /*
    * PSEUDO ET INSTAGRAM, EN TROIS TEMPS : le champ est grisé, une case le
@@ -301,6 +326,7 @@ const salles = (await getCollection('salles', (s) => s.data.actif))
       profil.querySelector<HTMLSelectElement>('[name="salle"]')!.value = compte.salle ?? '';
       profil.querySelector<HTMLInputElement>('[name="instagram_visible"]')!.checked =
         compte.instagram_visible === 1;
+      formRecapitulatif.querySelector<HTMLInputElement>('[name="recapitulatif"]')!.checked = compte.recapitulatif === 1;
 
       enregistre.pseudo = compte.pseudo;
       enregistre.instagram = compte.instagram ?? '';

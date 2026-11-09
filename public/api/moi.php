@@ -20,13 +20,15 @@ namespace SBDRE;
 
 define('SBDRE_API', true);
 require __DIR__ . '/lib/comptes.php';
+require __DIR__ . '/lib/forum.php';
 
 $methode = ouvrirApi(['GET', 'PATCH', 'DELETE']);
 
 if ($methode === 'GET') {
     $membre = exigerMembre();
     $compte = ligne(
-        'SELECT pseudo, date_pseudo, courriel, instagram, date_instagram, instagram_visible, bio, salle, date_inscription
+        'SELECT pseudo, date_pseudo, courriel, instagram, date_instagram, instagram_visible, bio, salle, date_inscription,
+                recapitulatif
            FROM membre WHERE id = :id',
         ['id' => $membre['id']],
     );
@@ -40,7 +42,8 @@ if ($methode === 'GET') {
     $compte['admin'] = estAdmin($membre);
     $compte['avatar'] = $avatar !== null ? '/avatars/' . $compte['pseudo'] . '.webp?v=' . (int) $avatar['v'] : '';
 
-    repondreOk('', ['compte' => $compte]);
+    // « Mes sujets » de /compte/ : ceux qu'il a ouverts.
+    repondreOk('', ['compte' => $compte, 'sujets' => sujetsDuMembre((int) $membre['id'])]);
 }
 
 if ($methode === 'DELETE') {
@@ -64,6 +67,17 @@ $valeurs = [];
 
 if (array_key_exists('instagram_visible', $recu)) {
     $valeurs['instagram_visible'] = $recu['instagram_visible'] === true ? 1 : 0;
+}
+
+if (array_key_exists('recapitulatif', $recu)) {
+    // Le récapitulatif par courriel (docs/forum.md, section 4). L'allumer
+    // remet l'horloge à zéro : le premier part deux semaines plus tard, et
+    // l'éteindre puis le rallumer n'en avance aucun.
+    $valeurs['recapitulatif'] = $recu['recapitulatif'] === true ? 1 : 0;
+    $actuel = ligne('SELECT recapitulatif FROM membre WHERE id = :id', ['id' => $membre['id']]);
+    if ($valeurs['recapitulatif'] === 1 && (int) ($actuel['recapitulatif'] ?? 0) === 0) {
+        $valeurs['date_recapitulatif'] = date('Y-m-d H:i:s');
+    }
 }
 
 if (array_key_exists('bio', $recu)) {
@@ -166,4 +180,8 @@ try {
     throw $e;
 }
 
-repondreOk('Profil enregistré.');
+repondreOk(match (true) {
+    array_keys($recu) !== ['recapitulatif'] => 'Profil enregistré.',
+    $valeurs['recapitulatif'] === 1 => 'Récapitulatif demandé : toutes les deux semaines, s\'il y a du nouveau.',
+    default => 'Récapitulatif coupé.',
+});

@@ -3,8 +3,8 @@
  * L'accueil du membre : ses performances d'abord, puis où elles le
  * placeraient au classement officiel. Les réglages (profil, session,
  * effacement) se rangent derrière l'engrenage, à /compte/reglages/.
- * Demande de l'auteur du 7 novembre 2026. Les sujets du forum viendront s'y
- * ajouter avec lui (docs/forum.md).
+ * Demande de l'auteur du 7 novembre 2026. « Mes sujets » ferme la page : ceux
+ * qu'il a ouverts au forum, rendus par `GET /api/moi.php`.
  *
  * La page est statique et se remplit par `GET /api/performances.php`, qui
  * rend aussi les records, calculés par la même règle que le profil public.
@@ -136,6 +136,12 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
         <ul class="liens-compte">
           <li><a href="/simulateur/">Me situer en détail</a></li>
         </ul>
+
+        <h2>Mes sujets</h2>
+        <ul class="liste-perfs-compte liste-sujets-compte" data-liste-sujets></ul>
+        <p class="aide" data-aucun-sujet hidden>
+          Aucun sujet pour l'instant. <a href="/forum/">Le forum</a> attend le premier.
+        </p>
       </section>
     </div>
   </div>
@@ -199,6 +205,36 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
       kg(p.charge_kg),
     ].join(' · ');
 
+  /* --- Mes sujets --------------------------------------------------------- */
+
+  interface Sujet {
+    titre: string;
+    forum: string;
+    lien: string;
+    reponses: number;
+    dernier_pseudo: string;
+    /** « 7 novembre 2026 à 14 h 05 », écrit par le serveur. */
+    dernier: string;
+  }
+
+  /** Le titre en lien, puis le forum et la dernière réponse, en texte. */
+  const afficherSujets = (sujets: Sujet[]) => {
+    document.querySelector<HTMLElement>('[data-aucun-sujet]')!.hidden = sujets.length > 0;
+    document.querySelector<HTMLUListElement>('[data-liste-sujets]')!.replaceChildren(
+      ...sujets.map((s) => {
+        const ligne = document.createElement('li');
+        const lien = Object.assign(document.createElement('a'), { href: s.lien, textContent: s.titre });
+        const suite =
+          s.reponses === 0
+            ? 'aucune réponse'
+            : `${s.reponses} réponse${s.reponses > 1 ? 's' : ''}, la dernière de ${s.dernier_pseudo} le ${s.dernier}`;
+        const meta = Object.assign(document.createElement('span'), { className: 'meta', textContent: `${s.forum} · ${suite}` });
+        ligne.append(lien, meta);
+        return ligne;
+      }),
+    );
+  };
+
   /* --- Le compte, pour le bonjour et le lien du profil -------------------- */
 
   void api('/api/moi.php', 'GET').then((lecture) => {
@@ -211,6 +247,7 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
       return;
     }
     const compte = lecture.compte as { pseudo: string; admin?: boolean };
+    afficherSujets((lecture.sujets ?? []) as Sujet[]);
     document.querySelector<HTMLElement>('[data-lien-admin]')!.hidden = compte.admin !== true;
     bonjour.textContent = `Bonjour ${compte.pseudo}.`;
     document.querySelector<HTMLAnchorElement>('[data-lien-profil]')!.href = `/membres/${compte.pseudo}/`;

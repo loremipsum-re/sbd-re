@@ -6,6 +6,8 @@
  *   sujet    { forum, titre, texte, confirme? }  ouvrir un sujet
  *   reponse  { sujet_id, texte, confirme? }      répondre
  *   suivre   { sujet_id, suivre }                suivre un sujet, ou plus
+ *   modifier { message_id, texte, confirme? }    corriger son message, 24 heures
+ *   creer_forum, renommer_forum, epingler, verrouiller : les forums des membres
  *
  * Membre confirmé et non banni seulement (exigerActif). Un mot bloquant
  * refuse le message ; un mot du dopage le fait passer sous avertissement,
@@ -107,6 +109,32 @@ switch (texte('action')) {
         $lien = dansUneTransaction(static fn (): string => ajouterReponse($membre, $sujet, (string) $sujet['adresse'], $texte, $sensible, ipVisiteur()));
         repondreOk('Réponse publiée.', ['lien' => $lien]);
 
+    case 'modifier':
+        $messageId = entree()['message_id'] ?? null;
+        if (!is_int($messageId) || $messageId <= 0) {
+            refuser(422, 'Message illisible.');
+        }
+        $message = ligne(
+            'SELECT mf.id, mf.membre_id, mf.masque_par, UNIX_TIMESTAMP(mf.date_creation) AS date_ts, s.verrouille, f.etat
+               FROM message_forum mf JOIN sujet s ON s.id = mf.sujet_id JOIN forum f ON f.id = s.forum_id
+              WHERE mf.id = :id',
+            ['id' => $messageId],
+        );
+        if ($message === null || $message['etat'] === 'masque') {
+            refuser(404, 'Ce message n\'existe plus.');
+        }
+        if ((int) $message['verrouille'] === 1 || $message['etat'] !== 'ouvert') {
+            refuser(403, 'Ce sujet est fermé : ses messages ne se modifient plus.');
+        }
+        if (!peutModifierMessage($membre, $message, time())) {
+            refuser(403, 'Un message se modifie par son auteur, dans les ' . MODIFICATION_HEURES . ' heures qui suivent sa publication.');
+        }
+        if (!texteForumValide($texte)) {
+            refuser(422, 'Le message tient en 1 à ' . MESSAGE_FORUM_MAX . ' caractères.');
+        }
+        modifierMessage($messageId, $texte, controlerTexte($texte));
+        repondreOk('Message modifié.');
+
     case 'suivre':
         $suivre = entree()['suivre'] ?? null;
         if (!is_int($sujetId) || $sujetId <= 0 || !is_bool($suivre)) {
@@ -125,22 +153,32 @@ switch (texte('action')) {
         }
         $titre = texte('titre');
         $description = texte('description');
-        $n = mb_strlen($titre);
-        if ($n < TITRE_FORUM_MIN || $n > TITRE_FORUM_MAX || preg_match('/[\x00-\x1F\x7F]/', $titre . $description) === 1
-            || mb_strlen($description) > DESCRIPTION_FORUM_MAX) {
-            refuser(422, 'Le nom tient en ' . TITRE_FORUM_MIN . ' à ' . TITRE_FORUM_MAX . ' caractères, la description en '
-                . DESCRIPTION_FORUM_MAX . '.');
-        }
-        // Le nom s'affiche à tous : le filtre strict, sans le passe du dopage,
-        // qui n'a pas de forum à lui (docs/forum.md, section 2).
-        if (analyserTexte($titre . ' ' . $description) !== 'ok') {
-            refuser(422, 'Ce nom ou cette description contient un terme refusé pour un forum.');
+        $erreur = erreurForum($titre, $description);
+        if ($erreur !== '') {
+            refuser(422, $erreur);
         }
         if (forumsCreesCeMois($membreId) >= FORUMS_PAR_MOIS) {
             refuser(429, 'Un forum par mois au plus. Le prochain pourra se créer dans quelques jours.');
         }
         $adresse = creerForumMembre($membre, $titre, $description);
         repondreOk('Forum créé.', ['lien' => '/forum/' . $adresse . '/']);
+
+    case 'renommer_forum':
+        $forum = ligne('SELECT id, createur_id, etat FROM forum WHERE adresse = :a', ['a' => texte('forum')]);
+        if ($forum === null || $forum['etat'] === 'masque') {
+            refuser(404, 'Ce forum n\'existe pas.');
+        }
+        if (!peutGererForum($membre, $forum)) {
+            refuser(403, 'Seuls le créateur du forum et l\'admin le peuvent.');
+        }
+        $titre = texte('titre');
+        $description = texte('description');
+        $erreur = erreurForum($titre, $description);
+        if ($erreur !== '') {
+            refuser(422, $erreur);
+        }
+        renommerForum((int) $forum['id'], $titre, $description);
+        repondreOk('Forum renommé. Son adresse ne change pas.');
 
     case 'epingler':
     case 'verrouiller':

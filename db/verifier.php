@@ -276,6 +276,7 @@ foreach ([
         require_once dirname($bibliotheque) . '/forum.php';
         require_once dirname($bibliotheque) . '/chat.php';
         require_once dirname($bibliotheque) . '/signalements.php';
+        require_once dirname($bibliotheque) . '/recapitulatif.php';
         break;
     }
 }
@@ -629,6 +630,21 @@ if (!function_exists('SBDRE\creerSujet')) {
             ? ok('Le freinage du forum et le compte des sujets du jour mordent.')
             : ko('Le freinage du forum ne mord pas.');
 
+        // Modifier sa réponse : le texte change, la date le dit, et l'horloge
+        // de MySQL s'accorde avec celle de PHP pour le délai de 24 heures.
+        $reponse = array_values(array_filter(\SBDRE\messagesDuSujet($sujetId, 1), fn (array $m): bool => (int) $m['membre_id'] === $lecteur['id']))[0];
+        \SBDRE\modifierMessage((int) $reponse['id'], 'Texte corrigé', false);
+        $corrige = array_values(array_filter(\SBDRE\messagesDuSujet($sujetId, 1), fn (array $m): bool => (int) $m['id'] === (int) $reponse['id']))[0];
+        $actif = $lecteur + ['courriel_verifie' => 1, 'banni' => 0];
+        ($corrige['texte'] === 'Texte corrigé' && $corrige['modif_ts'] !== null && \SBDRE\peutModifierMessage($actif, $reponse, time()))
+            ? ok('Un message se modifie dans le délai, et la date de modification se pose.')
+            : ko('La modification d\'un message a échoué : ' . json_encode($corrige));
+
+        $siens = \SBDRE\sujetsDuMembre($auteur['id']);
+        (count($siens) === 1 && $siens[0]['titre'] === 'Essai de sujet' && $siens[0]['reponses'] === 1)
+            ? ok('« Mes sujets » rend les sujets ouverts par le membre.')
+            : ko('« Mes sujets » est faux : ' . json_encode($siens));
+
         // Sur la même connexion : l'autre ne voit pas les membres de cette
         // transaction, et attendrait leur verrou au lieu de refuser.
         $refuseIci = function (string $intitule, string $sql, array $valeurs) use ($base): void {
@@ -692,6 +708,13 @@ if (!function_exists('SBDRE\creerSujet')) {
             ? ok('Deux forums du même nom reçoivent deux adresses, comptés par créateur.')
             : ko("Adresses des forums de membres : $adresse1, $adresse2.");
 
+        $idForum2 = (int) \SBDRE\ligne('SELECT id FROM forum WHERE adresse = :a', ['a' => $adresse2])['id'];
+        \SBDRE\renommerForum($idForum2, 'Forum renommé', 'Nouvelle description');
+        $renomme = \SBDRE\ligne('SELECT adresse, titre, description FROM forum WHERE id = :f', ['f' => $idForum2]);
+        ($renomme['titre'] === 'Forum renommé' && $renomme['description'] === 'Nouvelle description' && $renomme['adresse'] === $adresse2)
+            ? ok('Un forum se renomme et garde son adresse.')
+            : ko('Le renommage du forum est faux : ' . json_encode($renomme));
+
         $base->prepare('UPDATE forum SET date_creation = NOW() - INTERVAL 7 MONTH WHERE adresse = ?')->execute([$adresse1]);
         \SBDRE\archiverForumsInactifs();
         (\SBDRE\ligne('SELECT etat FROM forum WHERE adresse = :a', ['a' => $adresse1])['etat'] ?? '') === 'archive'
@@ -746,6 +769,31 @@ if (!function_exists('SBDRE\creerSujet')) {
         } else {
             ko('GD ou WebP manque sur ce serveur : les avatars ne fonctionneront pas.');
         }
+
+        info('Récapitulatif par courriel');
+
+        // Demandé il y a quinze jours, une notification depuis : il est dû.
+        $base->prepare('UPDATE membre SET recapitulatif = 1, date_recapitulatif = NOW() - INTERVAL 15 DAY WHERE id = ?')
+             ->execute([$lecteur['id']]);
+        \SBDRE\notifier($lecteur['id'], 'reponse', 'Essai de récapitulatif', '/forum/');
+        $du = array_values(array_filter(\SBDRE\recapitulatifsDus(1000), fn (array $m): bool => (int) $m['id'] === $lecteur['id']));
+        $precedent = $du[0]['date_recapitulatif'] ?? null;
+        ($du !== [] && \SBDRE\notificationsDuRecapitulatif($lecteur['id'], $precedent)['total'] === 1)
+            ? ok('Un récapitulatif demandé, vieux de quinze jours, avec du nouveau, est dû.')
+            : ko('Le récapitulatif dû ne se trouve pas.');
+
+        $reserve = \SBDRE\reserverRecapitulatif($lecteur['id'], $precedent);
+        $double = \SBDRE\reserverRecapitulatif($lecteur['id'], $precedent);
+        $encoreDu = array_filter(\SBDRE\recapitulatifsDus(1000), fn (array $m): bool => (int) $m['id'] === $lecteur['id']);
+        ($reserve && !$double && $encoreDu === [])
+            ? ok('Un récapitulatif se réserve une seule fois, puis n\'est plus dû.')
+            : ko('La réservation du récapitulatif laisserait partir deux courriels.');
+
+        // Le type de jeton vient de migration-2026-11-08-recapitulatif.sql.
+        $jeton = \SBDRE\creerJeton($lecteur['id'], 'recapitulatif', \SBDRE\JETON_RECAPITULATIF_MINUTES);
+        (\SBDRE\consommerJeton($jeton, 'recapitulatif') === $lecteur['id'] && \SBDRE\consommerJeton($jeton, 'recapitulatif') === null)
+            ? ok('Le lien « couper » sert une fois.')
+            : ko('Le jeton du récapitulatif ne fonctionne pas.');
 
         // La promesse de /confidentialite/ : l'adresse IP s'efface au bout d'un an.
         $base->prepare('UPDATE message_forum SET date_creation = NOW() - INTERVAL 13 MONTH WHERE sujet_id = ?')->execute([$sujetId]);

@@ -49,6 +49,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 
 export const JOURNAL: readonly EntreeJournal[] = [
   {
+    date: '2026-11-08',
+    nature: 'fonction',
+    version: '1.11.0',
+    titre: 'Modifier un message, et le récapitulatif par courriel',
+    texte:
+      "Un message du forum se corrige dans les 24 heures, et le dit. Le créateur d'un forum le renomme, sans en changer l'adresse. L'espace membre liste ses sujets, et les réglages proposent un récapitulatif des notifications par courriel, toutes les deux semaines, coupé tant qu'on ne le demande pas.",
+  },
+  {
     date: '2026-11-07',
     nature: 'fonction',
     version: '1.10.0',

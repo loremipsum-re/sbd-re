@@ -306,15 +306,16 @@ CREATE TABLE IF NOT EXISTS signalement (
 -- -----------------------------------------------------------------------------
 -- jeton
 --
--- Vérification d'adresse (24 h), réinitialisation de mot de passe, et
--- session (30 jours). Seule l'EMPREINTE est stockée : une injection SQL qui
--- lirait la table n'y trouverait rien d'utilisable. Bannir un membre efface
+-- Vérification d'adresse (24 h), réinitialisation de mot de passe, session
+-- (30 jours), et le lien « couper » du récapitulatif par courriel (60 jours).
+-- Seule l'EMPREINTE est stockée : une injection SQL qui lirait la table n'y
+-- trouverait rien d'utilisable. Bannir un membre efface
 -- ses jetons de session, ce qui le déconnecte partout.
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS jeton (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   membre_id       BIGINT UNSIGNED NOT NULL,
-  type            ENUM('verification','reinitialisation','session') NOT NULL,
+  type            ENUM('verification','reinitialisation','session','recapitulatif') NOT NULL,
 
   -- SHA-256 du jeton, en hexadécimal.
   jeton_hash      CHAR(64)        NOT NULL,

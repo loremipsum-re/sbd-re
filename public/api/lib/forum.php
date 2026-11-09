@@ -40,6 +40,8 @@ const TITRE_SUJET_MAX = 120;
 const FREIN_FORUM_SECONDES = 15;
 const SUJETS_PAR_JOUR = 5;
 const MENTIONS_MAX = 5;
+/** Un message se corrige dans les 24 heures : au-delà, les réponses s'appuient sur lui. */
+const MODIFICATION_HEURES = 24;
 
 const MOIS_FR = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
     'août', 'septembre', 'octobre', 'novembre', 'décembre'];
@@ -349,8 +351,25 @@ function rendreForum(array $forum, array $sujets, int $page, int $pages, ?array 
             . '<div class="actions"><button type="submit">Publier le sujet</button></div>'
             . '<p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p></form>';
     }
+    $html .= '</section>';
 
-    return $html . '</section>';
+    // Renommer : le créateur d'un forum de membre, et l'admin. L'adresse ne
+    // change pas, pour qu'aucun lien déjà partagé ne casse.
+    if (peutGererForum($membre, $forum)) {
+        $html .= '<details class="repli gerer-forum"><summary>Renommer le forum</summary>'
+            . '<form class="form-compte" data-forum-renommer data-forum="' . e($adresse) . '" novalidate>'
+            . '<p class="aide">Le nom et la description changent, l\'adresse de la page reste la même.</p>'
+            . '<div class="champ"><label for="renommer-titre">Nom du forum</label>'
+            . '<input id="renommer-titre" name="titre" required minlength="' . TITRE_FORUM_MIN . '" maxlength="' . TITRE_FORUM_MAX
+            . '" value="' . e((string) ($forum['titre'] ?? '')) . '" /></div>'
+            . '<div class="champ"><label for="renommer-description">Description</label>'
+            . '<input id="renommer-description" name="description" maxlength="' . DESCRIPTION_FORUM_MAX
+            . '" value="' . e((string) ($forum['description'] ?? '')) . '" /></div>'
+            . '<div class="actions"><button type="submit">Renommer</button></div>'
+            . '<p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p></form></details>';
+    }
+
+    return $html;
 }
 
 /**
@@ -410,7 +429,9 @@ function rendreSujet(array $forum, array $sujet, array $messages, int $page, int
             . (($m['inscription_ts'] ?? null) !== null ? '<span class="meta">Membre depuis ' . e(dateFr((int) $m['inscription_ts'], false)) . '</span>' : '')
             . '</div><div class="corps-message">'
             . '<header><a class="numero" href="#' . $ancre . '" aria-label="Lien vers le message ' . $numero . '">#' . $numero . '</a> '
-            . balisageDate((int) $m['date_ts']) . '</header>';
+            . balisageDate((int) $m['date_ts'])
+            . (($m['modif_ts'] ?? null) !== null ? ' <span class="modifie">modifié le ' . balisageDate((int) $m['modif_ts']) . '</span>' : '')
+            . '</header>';
 
         if ($m['masque_par'] !== null) {
             $html .= '<p class="aide">Message masqué par la modération.</p></div></article></li>';
@@ -420,9 +441,13 @@ function rendreSujet(array $forum, array $sujet, array $messages, int $page, int
             $html .= '<p class="avertissement" role="note">' . AVERTISSEMENT_DOPAGE . '</p>';
         }
         $html .= '<div class="texte">' . rendreTexte((string) $m['texte'], $smileys) . '</div>';
-        // Citer qui veut répondre ; signaler ce qu'un autre a écrit.
+        // Citer qui veut répondre ; modifier le sien, 24 heures ; signaler ce qu'un autre a écrit.
         $gestes = ($peutEcrire ? '<button type="button" class="bouton-citer" data-citer data-pseudo="' . e($pseudo)
                 . '" data-texte="' . e((string) $m['texte']) . '">Citer</button>' : '')
+            . ($peutEcrire && peutModifierMessage($membre, $m, time())
+                ? '<button type="button" class="bouton-citer" data-modifier data-message="' . (int) $m['id']
+                    . '" data-texte="' . e((string) $m['texte']) . '">Modifier</button>'
+                : '')
             . ($membre !== null && (int) ($m['membre_id'] ?? 0) !== (int) $membre['id']
                 ? '<button type="button" class="bouton-signaler" data-signaler data-type="message_forum" data-cible="'
                     . (int) $m['id'] . '">Signaler</button>'
@@ -558,6 +583,30 @@ function ajouterReponse(array $membre, array $sujet, string $adresse, string $te
     return $lien;
 }
 
+/**
+ * Son propre message, visible, dans les 24 heures. Le sujet fermé l'interdit
+ * aussi : l'appelant le contrôle, il connaît le sujet.
+ *
+ * @param array<string, mixed> $message membre_id, masque_par, date_ts
+ */
+function peutModifierMessage(?array $membre, array $message, int $maintenant): bool
+{
+    return estActif($membre)
+        && ($message['membre_id'] ?? null) !== null
+        && (int) $message['membre_id'] === (int) $membre['id']
+        && ($message['masque_par'] ?? null) === null
+        && $maintenant - (int) $message['date_ts'] < MODIFICATION_HEURES * 3600;
+}
+
+/** Le nouveau texte, son repérage du dopage refait, et la date qui le dit. Les cités ne sont pas prévenus à nouveau. */
+function modifierMessage(int $messageId, string $texte, bool $sensible): void
+{
+    executer(
+        'UPDATE message_forum SET texte = :t, sensible = :s, date_modification = NOW() WHERE id = :id',
+        ['t' => $texte, 's' => $sensible ? 1 : 0, 'id' => $messageId],
+    );
+}
+
 function suivreSujet(int $membreId, int $sujetId, bool $suivre): void
 {
     $suivre
@@ -617,7 +666,8 @@ function messagesDuSujet(int $sujetId, int $page): array
 {
     return lignes(
         'SELECT mf.id, mf.membre_id, mf.pseudo, mf.texte, mf.sensible, mf.masque_par,
-                UNIX_TIMESTAMP(mf.date_creation) AS date_ts, m.pseudo AS pseudo_actuel, m.banni,
+                UNIX_TIMESTAMP(mf.date_creation) AS date_ts, UNIX_TIMESTAMP(mf.date_modification) AS modif_ts,
+                m.pseudo AS pseudo_actuel, m.banni,
                 UNIX_TIMESTAMP(m.date_inscription) AS inscription_ts, UNIX_TIMESTAMP(a.date_maj) AS avatar_v
            FROM message_forum mf
            LEFT JOIN membre m ON m.id = mf.membre_id
@@ -626,6 +676,34 @@ function messagesDuSujet(int $sujetId, int $page): array
           ORDER BY mf.id
           LIMIT ' . MESSAGES_PAR_PAGE . ' OFFSET ' . (($page - 1) * MESSAGES_PAR_PAGE),
         ['s' => $sujetId],
+    );
+}
+
+/**
+ * Les sujets qu'un membre a ouverts, les plus récemment actifs d'abord, pour
+ * « Mes sujets » de /compte/. Le lien mène à la dernière page.
+ *
+ * @return list<array{titre: string, forum: string, lien: string, reponses: int, dernier_pseudo: string, dernier: string}>
+ */
+function sujetsDuMembre(int $membreId): array
+{
+    return array_map(
+        static fn (array $s): array => [
+            'titre'          => (string) $s['titre'],
+            'forum'          => (string) $s['forum'],
+            'lien'           => lienSujet((string) $s['adresse'], (int) $s['id'], pageDuMessage((int) $s['reponses'])),
+            'reponses'       => (int) $s['reponses'],
+            'dernier_pseudo' => (string) $s['dernier_pseudo'],
+            'dernier'        => dateHeureFr((int) $s['dernier_ts']),
+        ],
+        lignes(
+            "SELECT s.id, s.titre, s.reponses, s.dernier_pseudo, UNIX_TIMESTAMP(s.date_dernier) AS dernier_ts,
+                    f.adresse, f.titre AS forum
+               FROM sujet s JOIN forum f ON f.id = s.forum_id
+              WHERE s.membre_id = :m AND f.etat <> 'masque'
+              ORDER BY s.date_dernier DESC, s.id DESC LIMIT 20",
+            ['m' => $membreId],
+        ),
     );
 }
 
@@ -678,6 +756,31 @@ function forumsCreesCeMois(int $membreId): int
         'SELECT COUNT(*) AS n FROM forum WHERE createur_id = :m AND date_creation > NOW() - INTERVAL 30 DAY',
         ['m' => $membreId],
     )['n'] ?? 0);
+}
+
+/**
+ * '' si le nom et la description d'un forum passent, la raison sinon. Ils
+ * s'affichent à tous : le filtre strict, sans le passe du dopage, qui n'a pas
+ * de forum à lui (docs/forum.md, section 2).
+ */
+function erreurForum(string $titre, string $description): string
+{
+    $n = mb_strlen($titre);
+    if ($n < TITRE_FORUM_MIN || $n > TITRE_FORUM_MAX || mb_strlen($description) > DESCRIPTION_FORUM_MAX
+        || preg_match('/[\x00-\x1F\x7F]/', $titre . $description) === 1) {
+        return 'Le nom tient en ' . TITRE_FORUM_MIN . ' à ' . TITRE_FORUM_MAX . ' caractères, la description en '
+            . DESCRIPTION_FORUM_MAX . '.';
+    }
+
+    return analyserTexte($titre . ' ' . $description) !== 'ok'
+        ? 'Ce nom ou cette description contient un terme refusé pour un forum.'
+        : '';
+}
+
+/** Le nom et la description, jamais l'adresse. */
+function renommerForum(int $forumId, string $titre, string $description): void
+{
+    executer('UPDATE forum SET titre = :t, description = :d WHERE id = :f', ['t' => $titre, 'd' => $description, 'f' => $forumId]);
 }
 
 /** Crée le forum, publié aussitôt (choix de l'auteur du 7 novembre). Rend son adresse. */
