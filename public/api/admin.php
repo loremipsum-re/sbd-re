@@ -2,12 +2,15 @@
 /**
  * Les gestes de l'admin (docs/comptes.md, phase 8 ; docs/forum.md, étape 8).
  *
- *   GET   la file des signalements, les forums des membres, les comptes bannis
+ *   GET   la file des signalements, les forums des membres, les comptes bannis,
+ *         les fiches d'athlètes réclamées
  *   POST  { performance_id, verifier }    poser ou retirer le badge SBD.re
  *   POST  { action: 'masquer', type, id } masquer un message du chat ou du forum
  *         { action: 'retirer_performance', id }
  *         { action: 'bannir', membre_id }
  *         { action: 'debannir', membre_id }    rétablir un compte banni par erreur
+ *         { action: 'relier_fiche', id }       relier un membre à la fiche qu'il réclame
+ *         { action: 'refuser_fiche', id }
  *         { action: 'retirer_avatar', membre_id }
  *         { action: 'forum', forum_id, etat }  ouvert, verrouille, archive, masque
  *         { action: 'classer', type, id }      sans suite
@@ -30,12 +33,18 @@ require __DIR__ . '/lib/performances.php';
 require __DIR__ . '/lib/notifications.php';
 require __DIR__ . '/lib/signalements.php';
 require __DIR__ . '/lib/avatar.php';
+require __DIR__ . '/lib/revendications.php';
 
 $methode = ouvrirApi(['GET', 'POST']);
 $admin = exigerAdmin();
 
 if ($methode === 'GET') {
-    repondreOk('', ['file' => fileModeration(), 'forums' => forumsDesMembres(), 'bannis' => membresBannis()]);
+    repondreOk('', [
+        'file'           => fileModeration(),
+        'forums'         => forumsDesMembres(),
+        'bannis'         => membresBannis(),
+        'revendications' => revendicationsEnAttente(),
+    ]);
 }
 
 /** Un entier strictement positif lu dans la requête, ou le refus. */
@@ -110,6 +119,22 @@ switch (texte('action')) {
         }
         notifier($id, 'moderation', 'Votre compte est rétabli. La charte s\'applique comme avant.', LIEN_CHARTE);
         repondreOk('Compte rétabli. Le membre peut se reconnecter.');
+
+    case 'relier_fiche':
+        $relie = accepterRevendication(identifiant('id'), (int) $admin['id']);
+        if ($relie === null) {
+            refuser(409, 'Cette demande ne peut plus aboutir : la fiche est déjà reliée, ou le membre en a une.');
+        }
+        notifier($relie['membre_id'], 'moderation', 'Votre compte est relié à votre fiche d\'athlète.', '/athlete/' . $relie['slug'] . '/');
+        repondreOk('Fiche reliée. Le profil et la fiche se renvoient l\'un à l\'autre.');
+
+    case 'refuser_fiche':
+        $membreId = refuserRevendication(identifiant('id'), (int) $admin['id']);
+        if ($membreId === null) {
+            refuser(404, 'Cette demande n\'attend plus.');
+        }
+        notifier($membreId, 'moderation', 'Votre demande de fiche d\'athlète est refusée. Écrivez à l\'admin pour en savoir plus.', '/compte/');
+        repondreOk('Demande refusée. Le membre en est prévenu.');
 
     case 'retirer_avatar':
         $id = identifiant('membre_id');
