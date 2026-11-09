@@ -50,6 +50,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-10',
+    nature: 'visuel',
+    version: '1.16.1',
+    titre: 'Le profil d\'un coup d\'œil',
+    texte:
+      "Sur ordinateur, le profil d'un membre se lit sur deux colonnes : sa carte à gauche, ses records à droite, sans défiler. Les records tiennent en tuiles, une par mouvement et le total, et les informations du membre portent chacune une icône.",
+  },
+  {
+    date: '2026-11-10',
     nature: 'fonction',
     version: '1.16.0',
     titre: 'Relier son profil à sa fiche d\'athlète',

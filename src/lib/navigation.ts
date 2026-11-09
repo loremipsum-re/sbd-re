@@ -40,6 +40,7 @@ export type NomIcone =
   | 'reglages'
   | 'cloche'
   | 'compte'
+  | 'instagram'
   | 'forum';
 
 /**

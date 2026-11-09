@@ -40,8 +40,23 @@ const LIBELLES_BADGE = [
     ''           => 'Non vérifiée',
 ];
 
+/**
+ * Les mêmes, en court, pour les tuiles des records, où la place manque : la
+ * coche dit « vérifiée », la légende sous « Records » le rappelle, et les
+ * lecteurs d'écran entendent la phrase entière.
+ */
+const COCHE = '<svg class="icone-verif" aria-hidden="true" focusable="false"><use href="#icone-valide"/></svg>';
+const LIBELLES_BADGE_COURTS = [
+    'admin'      => COCHE . '<span class="sr-only">Vérifiée par </span>SBD.re',
+    'communaute' => COCHE . '<span class="sr-only">Vérifiée par la </span>communauté',
+    ''           => 'Non vérifiée',
+];
+
+/** Les abréviations des tableaux du site, à côté du dessin du mouvement. */
+const ABREGES = ['squat' => 'SQ', 'bench' => 'DC', 'deadlift' => 'SDT'];
+
 /** L'état de vérification d'une barre. */
-function etatVerification(array $performance): string
+function etatVerification(array $performance, bool $court = false): string
 {
     // Deux couleurs, demande de l'auteur du 7 novembre 2026 : --succes pour
     // vérifiée, --alerte pour non vérifiée. Le mot reste écrit : la couleur
@@ -49,11 +64,23 @@ function etatVerification(array $performance): string
     $badge = badgeDe($performance);
 
     return '<span class="verif ' . ($badge !== '' ? 'verif-oui' : 'verif-non') . '">'
-        . LIBELLES_BADGE[$badge] . '</span>';
+        . ($court ? LIBELLES_BADGE_COURTS : LIBELLES_BADGE)[$badge] . '</span>';
 }
 
 /**
- * Les records puis la liste complète, plus récente d'abord.
+ * Une ligne de la carte du membre : l'icône du sprite du gabarit, un libellé
+ * dit aux lecteurs d'écran, la valeur. L'icône est décorative.
+ */
+function fait(string $icone, string $libelle, string $valeur): string
+{
+    return '<li><svg class="icone-fait" aria-hidden="true" focusable="false"><use href="#icone-' . $icone . '"/></svg>'
+        . '<span><span class="sr-only">' . $libelle . ' : </span>' . $valeur . '</span></li>';
+}
+
+/**
+ * Les records en tuiles, une par mouvement et le total, pour se lire d'un
+ * coup d'œil ; puis la liste complète, repliée, plus récente d'abord.
+ * Demande de l'auteur du 9 novembre 2026.
  *
  * @param list<array<string, mixed>> $performances
  */
@@ -63,20 +90,24 @@ function rendrePerformances(array $performances): string
         return '<p class="chapeau">Aucune performance publiée pour l\'instant.</p>';
     }
 
-    $html = '';
+    $html = '<p class="legende-records">' . COCHE . ' Une coche marque une barre vérifiée, par la communauté ou par SBD.re.</p>';
     foreach (recordsDe($performances) as $equipement => $record) {
-        $cases = '';
+        $tuiles = '';
         foreach ($record['barres'] as $mouvement => $barre) {
-            $cases .= '<div><dt>' . e(MOUVEMENTS[$mouvement]) . '</dt><dd>'
-                . '<span class="charge">' . kgFr((float) $barre['charge_kg']) . '</span> '
-                . lienVideo((string) $barre['lien_video']) . ' ' . etatVerification($barre)
-                . '</dd></div>';
+            // Le dessin du mouvement vient du sprite posé par le gabarit (SpriteMouvements).
+            // Le dessin et l'abréviation, la vidéo sur la même ligne : la tuile
+            // tient en trois lignes. Le nom entier reste dit aux lecteurs d'écran.
+            $tuiles .= '<li class="tuile"><p class="mouvement"><span><svg class="icone-mouvement" aria-hidden="true" focusable="false">'
+                . '<use href="#mvt-' . e((string) $mouvement) . '"/></svg><span aria-hidden="true">' . (ABREGES[$mouvement] ?? '') . '</span>'
+                . '<span class="sr-only">' . e(MOUVEMENTS[$mouvement]) . '</span></span>'
+                . lienVideo((string) $barre['lien_video']) . '</p>'
+                . '<p class="charge">' . kgFr((float) $barre['charge_kg']) . '</p>'
+                . '<p class="etat-barre">' . etatVerification($barre, true) . '</p></li>';
         }
         if ($record['total'] !== null) {
-            $cases .= '<div class="total"><dt>Total</dt><dd><span class="charge">'
-                . kgFr($record['total']) . '</span></dd></div>';
+            $tuiles .= '<li class="tuile total"><p class="mouvement">Total</p><p class="charge">' . kgFr($record['total']) . '</p></li>';
         }
-        $html .= '<h3>' . e(EQUIPEMENTS[$equipement]) . '</h3><dl class="records">' . $cases . '</dl>';
+        $html .= '<h3>' . e(EQUIPEMENTS[$equipement]) . '</h3><ul class="tuiles">' . $tuiles . '</ul>';
     }
 
     $lignes = '';
@@ -94,7 +125,8 @@ function rendrePerformances(array $performances): string
             . ' ' . etatVerification($p) . '</li>';
     }
 
-    return $html . '<h3>Toutes les performances</h3><ul class="liste-perfs">' . $lignes . '</ul>';
+    return $html . '<details class="repli historique"><summary>Toutes les performances, ' . count($performances) . '</summary>'
+        . '<ul class="liste-perfs">' . $lignes . '</ul></details>';
 }
 
 /** Échappe pour le texte comme pour un attribut entre guillemets. */
@@ -144,30 +176,35 @@ function rendreProfil(array $membre, string $gabarit, array $salles, array $perf
         : '';
     $salle = $salles[(string) ($membre['salle'] ?? '')] ?? null;
 
-    /* --- La fiche : salle, Instagram, ancienneté --------------------- */
+    /* --- La carte : salle, Instagram, fiche, ancienneté, en icônes --- */
 
     $fiche = [];
     if ($salle !== null) {
-        $fiche[] = ['Salle', '<a href="/salles/">' . e($salle['nom'] . ', ' . $salle['commune']) . '</a>'];
+        $fiche[] = fait('salles', 'Salle', '<a href="/salles/">' . e($salle['nom'] . ', ' . $salle['commune']) . '</a>');
     }
     if ($instagram !== '') {
         // Écrit par PHP, ce lien échappe au middleware d'Astro : il pose
         // lui-même nouvel onglet, `noopener` et l'annonce de sortie. `me`
         // dit aux moteurs que ce compte appartient à la personne du profil.
-        $fiche[] = ['Instagram', '<a href="' . e($instagram) . '" target="_blank" rel="me noopener"'
-            . ' aria-describedby="annonce-lien-sortant">@' . e((string) $membre['instagram']) . '</a>'];
+        $fiche[] = fait('instagram', 'Instagram', '<a href="' . e($instagram) . '" target="_blank" rel="me noopener"'
+            . ' aria-describedby="annonce-lien-sortant">@' . e((string) $membre['instagram']) . '</a>');
     }
     // La fiche d'athlète officielle, reliée par l'admin (lib/revendications.php).
     if (($membre['athlete_nom'] ?? null) !== null) {
-        $fiche[] = ['Athlète', '<a href="/athlete/' . e((string) $membre['athlete_slug']) . '/">' . e((string) $membre['athlete_nom'])
-            . '</a> <span class="verifie">vérifié</span>'];
+        $fiche[] = fait('records', 'Fiche d\'athlète', '<a href="/athlete/' . e((string) $membre['athlete_slug']) . '/">' . e((string) $membre['athlete_nom'])
+            . '</a> <span class="verifie">athlète vérifié</span>');
     }
-    $fiche[] = ['Membre depuis', e(dateFr($inscription, false))];
+    $fiche[] = fait('competitions', 'Inscription', 'Membre depuis ' . e(dateFr($inscription, false)));
 
-    $htmlFiche = '<dl class="fiche-membre">' . implode('', array_map(
-        static fn (array $ligne): string => '<div><dt>' . $ligne[0] . '</dt><dd>' . $ligne[1] . '</dd></div>',
-        $fiche,
-    )) . '</dl>';
+    $htmlFiche = '<ul class="faits">' . implode('', $fiche) . '</ul>';
+
+    /* --- Les chiffres, d'un coup d'œil ------------------------------- */
+
+    $verifiees = count(array_filter($performances, static fn (array $p): bool => badgeDe($p) !== ''));
+    $chiffres = $performances === [] ? '' : '<dl class="chiffres-membre">'
+        . '<div><dt>' . (count($performances) > 1 ? 'barres publiées' : 'barre publiée') . '</dt><dd>' . count($performances) . '</dd></div>'
+        . '<div><dt>' . ($verifiees > 1 ? 'vérifiées' : 'vérifiée') . '</dt><dd>' . $verifiees . '</dd></div>'
+        . '</dl>';
 
     /* --- Référencement ------------------------------------------------- */
 
@@ -219,6 +256,7 @@ function rendreProfil(array $membre, string $gabarit, array $salles, array $perf
         '%%ROBOTS%%'       => $robots,
         '%%PRESENTATION%%' => $bio !== '' ? '<p class="chapeau">' . e($bio) . '</p>' : '',
         '%%FICHE%%'        => $htmlFiche,
+        '%%CHIFFRES%%'     => $chiffres,
         '%%RECORDS%%'      => rendrePerformances($performances),
         '%%SUJETS%%'       => rendreSujetsMembre($sujets),
         '%%DONNEES%%'      => (string) $donnees,

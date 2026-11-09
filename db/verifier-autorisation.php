@@ -586,6 +586,28 @@ $profilAthlete = \SBDRE\rendreProfil(['id' => 7, 'pseudo' => 'paul_120', 'bio' =
 verifie('Le profil relié mène à la fiche, nom échappé',   str_contains($profilAthlete, 'href="/athlete/paul-dupont/"') && str_contains($profilAthlete, 'Paul &lt;b&gt;Dupont'), true);
 verifie('Et la dit aux moteurs, sameAs',                 str_contains($profilAthlete, 'https://sbd.re/athlete/paul-dupont/'), true);
 
+titre('Le profil d\'un coup d\'œil');
+
+$perfsProfil = [
+    ['mouvement' => 'squat', 'equipement' => 'raw', 'charge_kg' => '215.00', 'categorie' => '93', 'date_performance' => '2026-11-02',
+        'lien_video' => 'https://youtu.be/a', 'date_verif_admin' => null, 'votes' => '20', 'favorables' => '15'],
+    ['mouvement' => 'bench', 'equipement' => 'raw', 'charge_kg' => '140.00', 'categorie' => '93', 'date_performance' => '2026-10-28',
+        'lien_video' => 'https://youtu.be/b', 'date_verif_admin' => '2026-11-01 10:00:00', 'votes' => '0', 'favorables' => '0'],
+    ['mouvement' => 'deadlift', 'equipement' => 'raw', 'charge_kg' => '260.00', 'categorie' => '93', 'date_performance' => '2026-10-20',
+        'lien_video' => 'https://youtu.be/c', 'date_verif_admin' => null, 'votes' => '4', 'favorables' => '2'],
+];
+$coupDOeil = \SBDRE\rendreProfil(['id' => 7, 'pseudo' => 'paul_120', 'bio' => '', 'salle' => '', 'instagram' => 'paul.force', 'instagram_visible' => 1,
+    'date_inscription' => '2026-08-01 10:00:00', 'avatar_v' => null], '%%FICHE%%%%CHIFFRES%%%%RECORDS%%', [], $perfsProfil);
+verifie('Les faits portent leur icône du sprite',          str_contains($coupDOeil, '<use href="#icone-instagram"/>') && str_contains($coupDOeil, '<use href="#icone-competitions"/>'), true);
+verifie('Et leur libellé pour les lecteurs d\'écran',       str_contains($coupDOeil, '<span class="sr-only">Instagram : </span>'), true);
+verifie('Une tuile par mouvement, et le total',            substr_count($coupDOeil, '<li class="tuile') === 4 && str_contains($coupDOeil, '615'), true);
+verifie('Le dessin du mouvement vient du sprite',          str_contains($coupDOeil, '<use href="#mvt-deadlift"/>'), true);
+verifie('L\'abréviation à l\'œil, le nom entier à l\'oreille', str_contains($coupDOeil, '>SDT</span><span class="sr-only">Soulevé de terre</span>'), true);
+verifie('Les chiffres : 3 barres publiées, 2 vérifiées',   str_contains($coupDOeil, 'barres publiées</dt><dd>3</dd>') && str_contains($coupDOeil, 'vérifiées</dt><dd>2</dd>'), true);
+verifie('L\'historique se replie sous les tuiles',          str_contains($coupDOeil, '<summary>Toutes les performances, 3</summary>'), true);
+verifie('Sans barre, ni chiffres ni tuiles',               str_contains(\SBDRE\rendreProfil(['id' => 8, 'pseudo' => 'nouveau', 'bio' => '', 'salle' => '', 'instagram' => '', 'instagram_visible' => 0,
+    'date_inscription' => '2026-11-09 10:00:00', 'avatar_v' => null], '%%CHIFFRES%%%%RECORDS%%', [], []), 'tuile'), false);
+
 titre('Le récapitulatif par courriel');
 
 $corps = \SBDRE\corpsRecapitulatif('jean_93', [

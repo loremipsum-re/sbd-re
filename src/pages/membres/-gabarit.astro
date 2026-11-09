@@ -16,40 +16,74 @@
  * portent pas l'attribut qu'Astro pose pour isoler les styles d'un fichier.
  *
  * Les repères : PSEUDO, TITRE, DESCRIPTION, ROBOTS (index ou noindex, selon
- * que le profil a des performances), PRESENTATION, FICHE, RECORDS, SUJETS
- * (ses sujets au forum, ou rien), AVATAR, MEMBRE, DONNEES
+ * que le profil a des performances), PRESENTATION, FICHE (les faits en
+ * icônes), CHIFFRES (barres publiées et vérifiées), RECORDS, SUJETS (ses
+ * sujets au forum, ou rien), AVATAR, MEMBRE, DONNEES
+ *
+ * D'UN COUP D'ŒIL, demande de l'auteur du 9 novembre 2026 : sur ordinateur,
+ * deux colonnes, la carte du membre à gauche, ses records en tuiles à droite,
+ * visibles sans défiler ; sur téléphone, la carte puis les tuiles, deux par
+ * rangée. Les faits portent une icône tirée des sprites posés ici, que les
+ * `<use>` écrits par PHP viennent chercher : les mouvements
+ * (SpriteMouvements) et cinq icônes Tabler, la coche des barres vérifiées
+ * comprise.
  * (le JSON-LD ProfilePage). Toute adresse `/membres/-gabarit/` devient celle
  * du profil, l'adresse canonique comprise.
  */
+import Icone from '../../components/Icone.astro';
+import SpriteMouvements from '../../components/SpriteMouvements.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import type { NomIcone } from '../../lib/navigation';
+
+/** Les icônes des faits du membre, en sprite : PHP écrit `<use href="#icone-…">`. */
+const ICONES_FAITS: NomIcone[] = ['salles', 'instagram', 'records', 'competitions', 'valide'];
 ---
 
 <BaseLayout titre="%%PSEUDO%%" titreOnglet="%%TITRE%%" description="%%DESCRIPTION%%">
   <meta slot="tete" name="robots" content="%%ROBOTS%%" />
 
+  <SpriteMouvements />
+  <svg class="sprite-mouvements" aria-hidden="true">
+    {
+      ICONES_FAITS.map((nom) => (
+        <symbol id={`icone-${nom}`} viewBox="0 0 24 24">
+          <Icone nom={nom} taille={24} />
+        </symbol>
+      ))
+    }
+  </svg>
+
   <div class="wrap page-membre">
-    <header class="entete-page">
-      %%AVATAR%%
-      <p class="surtitre">Membre de la communauté</p>
-      <h1>%%PSEUDO%%</h1>
-      %%PRESENTATION%%
-    </header>
+    <div class="profil">
+      <header class="carte-membre">
+        <div class="identite">
+          %%AVATAR%%
+          <div>
+            <p class="surtitre">Membre de la communauté</p>
+            <h1>%%PSEUDO%%</h1>
+          </div>
+        </div>
+        %%PRESENTATION%%
+        %%FICHE%%
+        %%CHIFFRES%%
 
-    %%FICHE%%
+        {/* Signaler ce profil, avatar compris : pour un membre connecté seulement,
+            d'après le cookie lisible de la connexion (lib/cloche.ts). */}
+        <p class="signaler-profil" data-signaler-profil data-membre="%%MEMBRE%%" hidden>
+          <button type="button" class="bouton-signaler">Signaler ce profil</button>
+          <span class="etat-signalement" role="status" aria-live="polite"></span>
+        </p>
+      </header>
 
-    <section class="records-membre" aria-labelledby="titre-records">
-      <h2 id="titre-records">Records</h2>
-      %%RECORDS%%
-    </section>
+      <div class="contenu-membre">
+        <section class="records-membre" aria-labelledby="titre-records">
+          <h2 id="titre-records">Records</h2>
+          %%RECORDS%%
+        </section>
 
-    %%SUJETS%%
-
-    {/* Signaler ce profil, avatar compris : pour un membre connecté seulement,
-        d'après le cookie lisible de la connexion (lib/cloche.ts). */}
-    <p class="signaler-profil" data-signaler-profil data-membre="%%MEMBRE%%" hidden>
-      <button type="button" class="bouton-signaler">Signaler ce profil</button>
-      <span class="etat-signalement" role="status" aria-live="polite"></span>
-    </p>
+        %%SUJETS%%
+      </div>
+    </div>
   </div>
 
   <script type="application/ld+json" is:inline>%%DONNEES%%</script>
@@ -76,8 +110,43 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     padding-block: var(--space-8) var(--space-16);
   }
 
+  /*
+   * DEUX COLONNES DÈS 56rem : la carte du membre, étroite, et ses records.
+   * En dessous, une seule colonne, la carte d'abord. `minmax(0, 1fr)` laisse
+   * la colonne des records rétrécir sans déborder (CLAUDE.md).
+   */
+  .page-membre .profil {
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  @media (min-width: 56rem) {
+    .page-membre .profil {
+      grid-template-columns: 19rem minmax(0, 1fr);
+      align-items: start;
+      gap: var(--space-12);
+    }
+  }
+
+  .page-membre .carte-membre {
+    display: grid;
+    gap: var(--space-4);
+    min-width: 0;
+  }
+
+  .page-membre .identite {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-width: 0;
+  }
+
+  .page-membre .identite > div {
+    min-width: 0;
+  }
+
   .page-membre .surtitre {
-    margin: 0 0 var(--space-2);
+    margin: 0 0 var(--space-1);
     font-size: var(--step--1);
     font-weight: 600;
     color: var(--muted);
@@ -85,45 +154,60 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
   /* Le pseudo ne se tronque jamais : il passe à la ligne s'il est long. */
   .page-membre h1 {
+    margin: 0;
     overflow-wrap: anywhere;
   }
 
-  .page-membre .fiche-membre {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
-    gap: var(--space-4);
-    margin: 0 0 var(--space-12);
-    max-width: 48rem;
+  .page-membre .carte-membre .chapeau {
+    margin: 0;
   }
 
-  .page-membre .fiche-membre div {
-    min-width: 0;
-    padding: var(--space-3) var(--space-4);
+  .page-membre .avatar-profil {
+    display: block;
+    flex: none;
+    width: 5rem;
+    height: 5rem;
     border: 2px solid var(--border);
     border-radius: var(--radius);
   }
 
-  .page-membre .fiche-membre dt {
-    font-size: var(--step--1);
-    color: var(--muted);
+  /* Les faits, une icône et une valeur par ligne, filet entre deux. */
+  .page-membre .faits {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--border);
   }
 
-  .page-membre .fiche-membre dd {
-    margin: var(--space-1) 0 0;
-    font-weight: 600;
+  .page-membre .faits li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+    min-height: var(--cible-min);
+    padding: var(--space-1) 0;
+    border-bottom: 1px solid var(--border);
     overflow-wrap: anywhere;
   }
 
-  /* Un lien seul dans sa case est un contrôle : 44 px, comme le reste. */
-  .page-membre .fiche-membre a {
+  .page-membre .icone-fait {
+    flex: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--muted);
+  }
+
+  .page-membre .faits a {
     display: inline-flex;
     align-items: center;
     min-height: var(--cible-min);
+    font-weight: 600;
   }
 
   /* La fiche d'athlète reliée par l'admin : le mot en vert, au filet de sa
      couleur, comme les barres vérifiées. */
-  .page-membre .fiche-membre .verifie {
+  .page-membre .verifie {
     display: inline-block;
     margin-left: var(--space-1);
     padding: 0 var(--space-2);
@@ -132,14 +216,245 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     color: var(--succes);
     font-size: var(--step--1);
     font-weight: 600;
+    white-space: nowrap;
   }
 
-  .page-membre .records-membre,
-  .page-membre .sujets-membre {
-    max-width: 48rem;
+  /* Deux chiffres, grands, d'un coup d'œil. */
+  .page-membre .chiffres-membre {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+    margin: 0;
+  }
+
+  .page-membre .chiffres-membre div {
+    display: flex;
+    flex-direction: column-reverse;
+    padding: var(--space-2) var(--space-3);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .page-membre .chiffres-membre dd {
+    margin: 0;
+    font-size: var(--step-2);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .page-membre .chiffres-membre dt {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  /*
+   * SUR TÉLÉPHONE, LA CARTE SE RESSERRE pour que les records paraissent plus
+   * tôt : la présentation au corps du texte, les faits côte à côte sans filet,
+   * les chiffres plus bas. Mesuré à 375 px, voir docs/forum.md.
+   */
+  @media (max-width: 55.99rem) {
+    .page-membre .carte-membre .chapeau {
+      font-size: var(--step-0);
+    }
+
+    .page-membre .faits {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 var(--space-4);
+      border-top: 0;
+    }
+
+    .page-membre .faits li {
+      padding: 0;
+      border-bottom: 0;
+    }
+
+    .page-membre .chiffres-membre div {
+      flex-direction: row-reverse;
+      justify-content: flex-end;
+      align-items: baseline;
+      gap: var(--space-2);
+    }
+
+    .page-membre .chiffres-membre dd {
+      font-size: var(--step-1);
+    }
+  }
+
+  .page-membre .contenu-membre {
+    display: grid;
+    gap: var(--space-8);
+    min-width: 0;
+  }
+
+  .page-membre .records-membre h2 {
+    margin: 0 0 var(--space-3);
+  }
+
+  .page-membre .records-membre h3 {
+    margin: var(--space-4) 0 var(--space-2);
+    font-size: var(--step-0);
+  }
+
+  /*
+   * LES TUILES, une par mouvement et le total : le mouvement et son dessin, la
+   * charge en grand, l'état de la barre et sa vidéo. Deux par rangée sur
+   * téléphone, quatre dès que la colonne le permet.
+   */
+  .page-membre .tuiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(9.5rem, 100%), 1fr));
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (max-width: 30rem) {
+    .page-membre .tuiles {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .page-membre .tuile {
+    display: grid;
+    align-content: start;
+    gap: var(--space-1);
+    min-width: 0;
+    padding: var(--space-3);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .page-membre .tuile p {
+    margin: 0;
+  }
+
+  .page-membre .tuile .mouvement {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0 var(--space-2);
+    min-height: var(--cible-min);
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .page-membre .tuile .mouvement > span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--text);
+    font-size: var(--step-0);
+    font-weight: 700;
+  }
+
+  .page-membre .tuile .icone-mouvement {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .page-membre .charge {
+    font-size: var(--step-2);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .page-membre .etat-barre {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 var(--space-2);
+    font-size: var(--step--1);
+  }
+
+  /* Le total, état dans la donnée : l'aplat sous le filet, jamais seul. */
+  .page-membre .tuile.total {
+    border-color: var(--accent);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+  }
+
+  .page-membre .tuile.total .mouvement,
+  .page-membre .tuile.total .etat-barre {
+    color: inherit;
+  }
+
+  .page-membre .legende-records {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin: 0;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .page-membre .icone-verif {
+    flex: none;
+    width: 1rem;
+    height: 1rem;
+    color: var(--succes);
+  }
+
+  .page-membre .verif .icone-verif {
+    color: inherit;
+    vertical-align: -0.15em;
+    margin-right: 2px;
+  }
+
+  /* Vérifiée en vert, non vérifiée en ambre : une pastille au filet de sa
+     couleur, le mot toujours écrit. Mêmes règles dans styles/compte.css. */
+  .page-membre .verif {
+    display: inline-block;
+    padding: 0 var(--space-2);
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-size: var(--step--1);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .page-membre .verif-oui {
+    color: var(--succes);
+  }
+
+  .page-membre .verif-non {
+    color: var(--alerte);
+  }
+
+  /* L'historique complet, replié sous les tuiles. */
+  .page-membre .historique {
+    margin-top: var(--space-4);
+  }
+
+  .page-membre .liste-perfs {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .page-membre .liste-perfs li {
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Le lien de la vidéo, dans une tuile ou une ligne, reste une cible de 44 px. */
+  .page-membre .records-membre a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
   }
 
   /* Ses sujets au forum : le titre en lien, le forum dessous. */
+  .page-membre .sujets-membre h2 {
+    margin: 0;
+  }
+
   .page-membre .sujets-membre ul {
     margin: var(--space-3) 0 0;
     padding: 0;
@@ -164,115 +479,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     font-size: var(--step--1);
   }
 
-  .page-membre .records-membre h2 {
-    margin-bottom: var(--space-3);
-  }
-
-  .page-membre .records-membre h3 {
-    margin: var(--space-6) 0 var(--space-3);
-    font-size: var(--step-0);
-  }
-
-  /* Les records d'un équipement : une case par mouvement, puis le total. */
-  .page-membre .records {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
-    gap: var(--space-3);
-    margin: 0;
-  }
-
-  .page-membre .records div {
-    min-width: 0;
-    padding: var(--space-3) var(--space-4);
-    border: 2px solid var(--border);
-    border-radius: var(--radius);
-  }
-
-  /* Le total, état dans la donnée : l'aplat sous le filet, jamais seul. */
-  .page-membre .records .total {
-    border-color: var(--accent);
-    background: var(--accent-fill);
-    color: var(--on-accent);
-  }
-
-  .page-membre .records .total dt {
-    color: inherit;
-  }
-
-  .page-membre .records dt {
-    font-size: var(--step--1);
-    color: var(--muted);
-  }
-
-  .page-membre .records dd {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--space-1) var(--space-3);
-    margin: var(--space-1) 0 0;
-  }
-
-  .page-membre .charge {
-    font-size: var(--step-2);
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Vérifiée en vert, non vérifiée en ambre : une pastille au filet de sa
-     couleur, le mot toujours écrit. Mêmes règles dans styles/compte.css. */
-  .page-membre .verif {
-    display: inline-block;
-    padding: 0 var(--space-2);
-    border: 1px solid currentColor;
-    border-radius: 999px;
-    font-size: var(--step--1);
-    font-weight: 600;
-    white-space: nowrap;
-  }
-
-  .page-membre .verif-oui {
-    color: var(--succes);
-  }
-
-  .page-membre .verif-non {
-    color: var(--alerte);
-  }
-
-  .page-membre .liste-perfs {
-    display: grid;
-    gap: var(--space-2);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .page-membre .liste-perfs li {
-    padding: var(--space-2) 0;
-    border-bottom: 1px solid var(--border);
-  }
-
-  /* Le lien de la vidéo, dans une case ou une ligne, reste une cible de 44 px. */
-  .page-membre .records-membre a {
-    display: inline-flex;
-    align-items: center;
-    min-height: var(--cible-min);
-  }
-
-  .page-membre .avatar-profil {
-    display: block;
-    width: 6rem;
-    height: 6rem;
-    margin-bottom: var(--space-4);
-    border: 2px solid var(--border);
-    border-radius: var(--radius);
-  }
-
   .page-membre .signaler-profil {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-3);
-    margin-top: var(--space-12);
+    margin: 0;
     font-size: var(--step--1);
     color: var(--muted);
   }
