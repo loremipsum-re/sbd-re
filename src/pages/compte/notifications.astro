@@ -4,21 +4,37 @@
  * dernières, les non lues marquées. L'ouverture de la page les marque toutes
  * comme lues, la cloche de l'en-tête retombe à zéro.
  *
+ * Chacune porte l'icône et l'étiquette de sa nature (lib/natures-notification.ts) :
+ * une barre vérifiée se distingue en vert, avec la coche du profil, demande
+ * de l'auteur du 10 novembre 2026. Les icônes viennent du sprite posé ici.
+ *
  * Page `prive` : ni indexée, ni mesurée.
  */
+import Icone from '../../components/Icone.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { ICONES_NATURES } from '../../lib/natures-notification';
 import '../../styles/compte.css';
 import '../../styles/communaute.css';
 ---
 
 <BaseLayout titre="Notifications" description="Les notifications du membre." prive>
+  <svg class="sprite-mouvements" aria-hidden="true">
+    {
+      ICONES_NATURES.map((nom) => (
+        <symbol id={`icone-${nom}`} viewBox="0 0 24 24">
+          <Icone nom={nom} taille={24} />
+        </symbol>
+      ))
+    }
+  </svg>
+
   <div class="wrap page-compte">
     <div class="colonne">
       <header class="entete-page">
         <h1>Notifications</h1>
         <p class="chapeau">
-          Les réponses dans les sujets que vous suivez, les mentions de votre
-          pseudo et les badges posés sur vos performances.
+          Les barres vérifiées, les réponses dans les sujets que vous suivez, les
+          mentions de votre pseudo et les décisions de la modération.
         </p>
       </header>
 
@@ -35,8 +51,10 @@ import '../../styles/communaute.css';
 
 <script>
   import { api } from '../../lib/api-compte';
+  import { NATURES, natureDe } from '../../lib/natures-notification';
 
   interface Notification {
+    nature: string;
     texte: string;
     lien: string;
     lue: boolean;
@@ -45,6 +63,19 @@ import '../../styles/communaute.css';
 
   const liste = document.querySelector<HTMLOListElement>('[data-liste]')!;
   const vide = document.querySelector<HTMLElement>('[data-vide]')!;
+  const SVG = 'http://www.w3.org/2000/svg';
+
+  /** L'icône de la nature, tirée du sprite, décorative : l'étiquette la dit. */
+  const icone = (nom: string) => {
+    const svg = document.createElementNS(SVG, 'svg');
+    svg.setAttribute('class', 'icone-nature');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    const use = document.createElementNS(SVG, 'use');
+    use.setAttribute('href', `#icone-${nom}`);
+    svg.append(use);
+    return svg;
+  };
 
   void api('/api/notifications.php', 'GET').then((lecture) => {
     if (lecture.statut === 401) {
@@ -57,7 +88,11 @@ import '../../styles/communaute.css';
 
     liste.replaceChildren(
       ...notifications.map((n) => {
-        const li = Object.assign(document.createElement('li'), { className: n.lue ? '' : 'non-lue' });
+        const nature = natureDe(n.nature);
+        const li = Object.assign(document.createElement('li'), {
+          className: `notification nature-${nature}${n.lue ? '' : ' non-lue'}`,
+        });
+        const etiquette = Object.assign(document.createElement('p'), { className: 'etiquette-nature', textContent: NATURES[nature].etiquette });
         // Le lien vient de la base, toujours une adresse du site (contrainte
         // ck_notification_lien) : il reste relatif.
         const lien = Object.assign(document.createElement('a'), { href: n.lien, textContent: n.texte });
@@ -70,7 +105,9 @@ import '../../styles/communaute.css';
             minute: '2-digit',
           })}`,
         });
-        li.append(lien, date);
+        const corps = Object.assign(document.createElement('div'), { className: 'corps-notification' });
+        corps.append(etiquette, lien, date);
+        li.append(icone(NATURES[nature].icone), corps);
         return li;
       }),
     );

@@ -11,6 +11,14 @@
  * rend aussi les records, calculés par la même règle que le profil public.
  * Sans session, elle renvoie vers la connexion.
  *
+ * LE TABLEAU DE BORD, demande de l'auteur du 10 novembre 2026 : l'avatar et
+ * le pseudo en tête, quatre chiffres d'un coup d'œil (barres publiées,
+ * vérifiées, en attente d'avis, notifications non lues), les raccourcis en
+ * tuiles, puis deux colonnes dès 56rem : les performances à gauche, la
+ * position, la fiche, les sujets à droite. Les non lues et la file de
+ * l'admin viennent de la lecture de la cloche (évènement `sbd:compte`) :
+ * aucune requête de plus.
+ *
  * Page `prive` : ni indexée, ni mesurée.
  */
 import FenetreConfirmation from '../../components/FenetreConfirmation.astro';
@@ -32,134 +40,192 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
 ---
 
 <BaseLayout titre="Mon espace" description="L'espace membre de SBD.re." prive>
-  <div class="wrap page-compte">
-    <div class="colonne">
-      <header class="entete-page entete-espace">
+  <div class="wrap page-compte page-espace">
+    <header class="entete-espace">
+      <div class="identite-espace">
+        <img class="avatar-espace" data-avatar alt="" width="64" height="64" hidden />
         <div>
           <h1>Mon espace</h1>
           <p class="chapeau" data-bonjour>Chargement du compte…</p>
         </div>
+      </div>
+      <div class="gestes-espace">
+        <a class="lien-reglages" href="/compte/" data-lien-profil>
+          <Icone nom="compte" />
+          <span>Mon profil</span>
+        </a>
         <a class="lien-reglages" href="/compte/reglages/">
           <Icone nom="reglages" />
           <span>Réglages</span>
         </a>
-      </header>
+      </div>
+    </header>
 
-      <noscript>
-        <p class="aide">Cette page demande JavaScript.</p>
-      </noscript>
+    <noscript>
+      <p class="aide">Cette page demande JavaScript.</p>
+    </noscript>
 
-      <section data-compte hidden>
-        <ul class="liens-compte">
-          <li><a href="/compte/" data-lien-profil>Voir mon profil public</a></li>
-          <li><a href="/compte/a-verifier/">Vérifier les performances des autres</a></li>
-          <li><a href="/compte/notifications/">Mes notifications</a></li>
-          <li data-lien-admin hidden><a href="/compte/admin/">Modération</a></li>
-          <li><a href="/forum/">Le forum</a> et <a href="/communaute/#chat">le chat</a></li>
+    <section data-compte hidden>
+      <h2 class="sr-only">En bref</h2>
+      <dl class="chiffres-espace">
+        <div><dt>barres publiées</dt><dd data-chiffre="publiees">…</dd></div>
+        <div class="chiffre-verifie"><dt>vérifiées</dt><dd data-chiffre="verifiees">…</dd></div>
+        <div><dt>en attente d'avis</dt><dd data-chiffre="attente">…</dd></div>
+        <div><dt>notifications non lues</dt><dd data-chiffre="notifications">…</dd></div>
+      </dl>
+
+      <nav class="tuiles-espace" aria-label="Raccourcis de l'espace">
+        <ul>
+          <li>
+            <a href="#publier" data-aller-publier>
+              <Icone nom="publier" />
+              <span>Publier une barre</span>
+            </a>
+          </li>
+          <li>
+            <a href="/compte/a-verifier/">
+              <Icone nom="valide" />
+              <span>Vérifier des barres</span>
+            </a>
+          </li>
+          <li>
+            <a href="/compte/notifications/">
+              <Icone nom="cloche" />
+              <span>Notifications</span>
+              <span class="pastille" data-pastille="notifications" hidden></span>
+            </a>
+          </li>
+          <li>
+            <a href="/forum/">
+              <Icone nom="forum" />
+              <span>Le forum</span>
+            </a>
+          </li>
+          <li data-lien-admin hidden>
+            <a href="/compte/admin/">
+              <Icone nom="moderation" />
+              <span>Modération</span>
+              <span class="pastille" data-pastille="admin" hidden></span>
+            </a>
+          </li>
         </ul>
+      </nav>
 
-        <h2>Mes performances</h2>
-        <ul class="liste-perfs-compte" data-liste-perfs></ul>
-        <p class="aide" data-aucune-perf hidden>Aucune performance pour l'instant.</p>
-        <p class="etat-compte" data-etat-perfs role="status" aria-live="polite" hidden></p>
+      <div class="tableau-espace">
+        <div class="colonne-principale">
+          <h2>Mes performances</h2>
+          <ul class="liste-perfs-compte" data-liste-perfs></ul>
+          <p class="aide" data-aucune-perf hidden>Aucune performance pour l'instant.</p>
+          <p class="etat-compte" data-etat-perfs role="status" aria-live="polite" hidden></p>
 
-        <details class="repli publier" data-publier>
-          <summary>Publier une performance</summary>
-          <form class="form-compte" data-perf novalidate>
-            <div class="champ">
-              <label for="mouvement">Mouvement</label>
-              <select id="mouvement" name="mouvement" required>
-                {mouvements.map((m) => <option value={m.id}>{m.label}</option>)}
-              </select>
-            </div>
+          <details class="repli publier" id="publier" data-publier>
+            <summary>Publier une performance</summary>
+            <form class="form-compte" data-perf novalidate>
+              <div class="champ">
+                <label for="mouvement">Mouvement</label>
+                <select id="mouvement" name="mouvement" required>
+                  {mouvements.map((m) => <option value={m.id}>{m.label}</option>)}
+                </select>
+              </div>
 
-            <div class="champ">
-              <label for="equipement">Équipement</label>
-              <select id="equipement" name="equipement" required>
-                {EQUIPMENT_GROUPS.map((e) => <option value={e.id}>{e.label}, {e.hint.toLowerCase()}</option>)}
-              </select>
-            </div>
+              <div class="champ">
+                <label for="equipement">Équipement</label>
+                <select id="equipement" name="equipement" required>
+                  {EQUIPMENT_GROUPS.map((e) => <option value={e.id}>{e.label}, {e.hint.toLowerCase()}</option>)}
+                </select>
+              </div>
 
-            <div class="champ">
-              <label for="charge">Charge, en kilos</label>
-              <input id="charge" name="charge_kg" type="text" inputmode="decimal" required maxlength="6" />
-            </div>
+              <div class="champ">
+                <label for="charge">Charge, en kilos</label>
+                <input id="charge" name="charge_kg" type="text" inputmode="decimal" required maxlength="6" />
+              </div>
 
-            <div class="champ">
-              <label for="date-perf">Date</label>
-              <input id="date-perf" name="date_performance" type="date" required min="2000-01-01" data-date-max />
-            </div>
+              <div class="champ">
+                <label for="date-perf">Date</label>
+                <input id="date-perf" name="date_performance" type="date" required min="2000-01-01" data-date-max />
+              </div>
 
-            <div class="champ">
-              <label for="categorie">Catégorie de poids</label>
-              <select id="categorie" name="categorie" aria-describedby="aide-categorie">
-                <option value="">Non précisée</option>
-                {categories.map((c) => <option value={c.id}>{c.label}</option>)}
-              </select>
-              <p class="aide" id="aide-categorie">
-                Facultative, mais c'est elle qui vous situe au classement.
-              </p>
-            </div>
+              <div class="champ">
+                <label for="categorie">Catégorie de poids</label>
+                <select id="categorie" name="categorie" aria-describedby="aide-categorie">
+                  <option value="">Non précisée</option>
+                  {categories.map((c) => <option value={c.id}>{c.label}</option>)}
+                </select>
+                <p class="aide" id="aide-categorie">
+                  Facultative, mais c'est elle qui vous situe au classement.
+                </p>
+              </div>
 
-            <div class="champ">
-              <label for="video">Lien de la vidéo</label>
-              <input
-                id="video"
-                name="lien_video"
-                type="url"
-                required
-                maxlength="500"
-                autocomplete="off"
-                aria-describedby="aide-video"
-              />
-              <p class="aide" id="aide-video">
-                Instagram, YouTube ou TikTok, et la barre en entier à l'image. Une
-                performance ne se modifie pas : pour la corriger, retirez-la et
-                publiez-la de nouveau.
-              </p>
-            </div>
+              <div class="champ">
+                <label for="video">Lien de la vidéo</label>
+                <input
+                  id="video"
+                  name="lien_video"
+                  type="url"
+                  required
+                  maxlength="500"
+                  autocomplete="off"
+                  aria-describedby="aide-video"
+                />
+                <p class="aide" id="aide-video">
+                  Instagram, YouTube ou TikTok, et la barre en entier à l'image. Une
+                  performance ne se modifie pas : pour la corriger, retirez-la et
+                  publiez-la de nouveau.
+                </p>
+              </div>
 
-            <div class="actions">
-              <button type="submit">Publier la performance</button>
-            </div>
-            <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
-          </form>
-        </details>
+              <div class="actions">
+                <button type="submit">Publier la performance</button>
+              </div>
+              <p class="etat-compte" data-etat role="status" aria-live="polite" hidden></p>
+            </form>
+          </details>
+        </div>
 
-        <h2>Ma position</h2>
-        <p class="aide">
-          Où vos records vous placeraient au classement officiel de La Réunion,
-          dans votre catégorie et votre équipement. Une barre de salle n'est pas
-          une barre de compétition : arbitrage, pesée et tenue y changent tout.
-          Le rang donne une idée, pas une place.
-        </p>
-        <ul class="positions" data-positions></ul>
-        <ul class="liens-compte">
-          <li><a href="/simulateur/">Me situer en détail</a></li>
-        </ul>
+        <div class="colonne-cote">
+          <section class="bloc-espace" aria-labelledby="titre-position">
+            <h2 id="titre-position">Ma position</h2>
+            <p class="aide">
+              Où vos records vous placeraient au classement officiel de La Réunion,
+              dans votre catégorie et votre équipement. Une barre de salle n'est pas
+              une barre de compétition : arbitrage, pesée et tenue y changent tout.
+              Le rang donne une idée, pas une place.
+            </p>
+            <ul class="positions" data-positions></ul>
+            <ul class="liens-compte">
+              <li><a href="/simulateur/">Me situer en détail</a></li>
+            </ul>
+          </section>
 
-        <h2>Ma fiche d'athlète</h2>
-        <p class="aide" data-fiche-etat>Chargement…</p>
-        <ul class="liens-compte" data-fiche-gestes hidden>
-          <li><button type="button" class="secondaire" data-fiche-retirer></button></li>
-        </ul>
+          <section class="bloc-espace" aria-labelledby="titre-fiche">
+            <h2 id="titre-fiche">Ma fiche d'athlète</h2>
+            <p class="aide" data-fiche-etat>Chargement…</p>
+            <ul class="liens-compte" data-fiche-gestes hidden>
+              <li><button type="button" class="secondaire" data-fiche-retirer></button></li>
+            </ul>
+          </section>
 
-        <h2>Mes sujets</h2>
-        <ul class="liste-perfs-compte liste-sujets-compte" data-liste-sujets></ul>
-        <p class="aide" data-aucun-sujet hidden>
-          Aucun sujet pour l'instant. <a href="/forum/">Le forum</a> attend le premier.
-        </p>
+          <section class="bloc-espace" aria-labelledby="titre-sujets">
+            <h2 id="titre-sujets">Mes sujets</h2>
+            <ul class="liste-perfs-compte liste-sujets-compte" data-liste-sujets></ul>
+            <p class="aide" data-aucun-sujet hidden>
+              Aucun sujet pour l'instant. <a href="/forum/">Le forum</a> attend le premier.
+            </p>
+          </section>
 
-        <h2>Sujets suivis</h2>
-        <p class="aide">
-          Une réponse dans un sujet suivi vous parvient en notification. Ceux
-          que vous ouvrez se suivent d'office.
-        </p>
-        <ul class="liste-perfs-compte liste-sujets-compte" data-liste-suivis></ul>
-        <p class="aide" data-aucun-suivi hidden>Aucun sujet suivi pour l'instant.</p>
-        <p class="etat-compte" data-etat-suivis role="status" aria-live="polite" hidden></p>
-      </section>
-    </div>
+          <section class="bloc-espace" aria-labelledby="titre-suivis">
+            <h2 id="titre-suivis">Sujets suivis</h2>
+            <p class="aide">
+              Une réponse dans un sujet suivi vous parvient en notification. Ceux
+              que vous ouvrez se suivent d'office.
+            </p>
+            <ul class="liste-perfs-compte liste-sujets-compte" data-liste-suivis></ul>
+            <p class="aide" data-aucun-suivi hidden>Aucun sujet suivi pour l'instant.</p>
+            <p class="etat-compte" data-etat-suivis role="status" aria-live="polite" hidden></p>
+          </section>
+        </div>
+      </div>
+    </section>
   </div>
 
   <FenetreConfirmation />
@@ -209,18 +275,44 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
   const aujourdhui = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   formPerf.querySelector<HTMLInputElement>('[data-date-max]')!.max = aujourdhui;
 
-  /** « 1 novembre 2026 · Squat · Raw · 200 kg », écrit en texte, jamais en HTML. */
-  const decrire = (p: Performance) =>
-    [
-      new Date(`${p.date_performance}T12:00:00`).toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      }),
-      MOUVEMENTS[p.mouvement],
-      EQUIPEMENTS[p.equipement],
-      kg(p.charge_kg),
-    ].join(' · ');
+  const datePerf = (p: Performance) =>
+    new Date(`${p.date_performance}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  /** « Squat · Raw · 200 kg », écrit en texte, jamais en HTML. */
+  const barre = (p: Performance) => [MOUVEMENTS[p.mouvement], EQUIPEMENTS[p.equipement], kg(p.charge_kg)].join(' · ');
+  /** « 1 novembre 2026 · Squat · Raw · 200 kg », pour la confirmation. */
+  const decrire = (p: Performance) => `${datePerf(p)} · ${barre(p)}`;
+
+  /* --- Les chiffres et les pastilles du tableau de bord ------------------- */
+
+  const chiffre = (cle: string, n: number) => {
+    document.querySelector<HTMLElement>(`[data-chiffre="${cle}"]`)!.textContent = String(n);
+  };
+
+  /** Une pastille sur une tuile : le nombre à l'œil, la phrase à l'oreille. */
+  const pastille = (cle: string, n: number, phrase: string) => {
+    const zone = document.querySelector<HTMLElement>(`[data-pastille="${cle}"]`)!;
+    const nombre = Object.assign(document.createElement('span'), { textContent: n > 99 ? '99+' : String(n) });
+    nombre.setAttribute('aria-hidden', 'true');
+    zone.replaceChildren(nombre, Object.assign(document.createElement('span'), { className: 'sr-only', textContent: `, ${phrase}` }));
+    zone.hidden = n === 0;
+  };
+
+  // La cloche lit l'état du compte une fois par minute (lib/cloche.ts) : la
+  // page s'en sert plutôt que d'interroger le serveur une fois de plus.
+  document.addEventListener('sbd:compte', (evenement) => {
+    const etat = (evenement as CustomEvent<Record<string, unknown>>).detail;
+    if (etat.deconnecte) return;
+    const nonLues = Number(etat.non_lues) || 0;
+    chiffre('notifications', nonLues);
+    pastille('notifications', nonLues, `${nonLues} non lue${nonLues > 1 ? 's' : ''}`);
+    const file = Number(etat.signalements) || 0;
+    pastille('admin', file, `${file} en attente`);
+  });
+
+  // « Publier une barre » ouvre le formulaire replié, l'ancre fait défiler.
+  document.querySelector('[data-aller-publier]')!.addEventListener('click', () => {
+    publier.open = true;
+  });
 
   /* --- Ma fiche d'athlète (public/api/lib/revendications.php) ------------- */
 
@@ -343,7 +435,12 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
       bonjour.textContent = lecture.message;
       return;
     }
-    const compte = lecture.compte as { pseudo: string; admin?: boolean };
+    const compte = lecture.compte as { pseudo: string; admin?: boolean; avatar?: string };
+    if (compte.avatar) {
+      const avatar = document.querySelector<HTMLImageElement>('[data-avatar]')!;
+      avatar.src = compte.avatar;
+      avatar.hidden = false;
+    }
     afficherSujets((lecture.sujets ?? []) as Sujet[]);
     afficherSuivis((lecture.suivis ?? []) as Sujet[]);
     document.querySelector<HTMLElement>('[data-lien-admin]')!.hidden = compte.admin !== true;
@@ -420,14 +517,19 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
       const perfs = lecture.performances as Performance[];
 
       aucune.hidden = perfs.length > 0;
+      const verifiees = perfs.filter((p) => p.badge !== '').length;
+      chiffre('publiees', perfs.length);
+      chiffre('verifiees', verifiees);
+      chiffre('attente', perfs.length - verifiees);
       // Sans performance, le formulaire s'ouvre de lui-même : c'est le seul
       // geste utile de la page.
       if (perfs.length === 0) publier.open = true;
 
       listePerfs.replaceChildren(
         ...perfs.map((p) => {
-          const ligne = document.createElement('li');
-          const texte = Object.assign(document.createElement('span'), { textContent: decrire(p) });
+          // La barre en gras, dessous la date, la vidéo et l'état ; Retirer au bout.
+          const ligne = Object.assign(document.createElement('li'), { className: 'perf-compte' });
+          const quoi = Object.assign(document.createElement('span'), { className: 'perf-barre', textContent: barre(p) });
 
           // Lien fabriqué en JavaScript : il échappe au middleware, d'où
           // marquerLienSortant, comme la carte des salles.
@@ -458,7 +560,11 @@ const mouvements = LIFTS.filter((l) => l.id !== 'total');
             if (reponse.ok) chargerPerfs();
           });
 
-          ligne.append(texte, ' ', video, ' ', etat, ' ', retirer);
+          const meta = Object.assign(document.createElement('span'), { className: 'perf-meta' });
+          meta.append(datePerf(p), ' · ', video, ' ', etat);
+          const texte = Object.assign(document.createElement('div'), { className: 'perf-texte' });
+          texte.append(quoi, meta);
+          ligne.append(texte, retirer);
           return ligne;
         }),
       );

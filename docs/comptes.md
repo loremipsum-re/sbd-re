@@ -238,10 +238,14 @@ ajout ──> visible sur le profil, « non vérifiée »
 
 ### 6.4 Chat
 
-- **Cinq salons fixes**, écrits dans `chat.php` : `general`, `squat`,
-  `developpe-couche`, `souleve-de-terre`, `competitions`. Un salon donne un
-  thème, pas une règle : on y parle de ce qu'on veut, la charte s'applique
-  partout.
+- **Deux salons généraux depuis le 10 novembre 2026**, `general` et
+  `general-2`, écrits dans `chat.php` (`SALONS`) et recopiés par
+  `Chat.astro`. Choix de l'auteur, « on verra la suite » : les cinq salons
+  de départ (`general`, `squat`, `developpe-couche`, `souleve-de-terre`,
+  `competitions`) dispersaient une communauté encore petite. Les messages
+  des salons retirés restent en base jusqu'à la purge d'un an, sans être
+  lus, et n'allument plus le point du chat. Un ancien lien `#chat=squat`
+  ouvre le chat sur le salon en cours. La charte s'applique partout.
 - **Lecture par interrogation** toutes les 5 secondes quand l'onglet est
   visible, arrêtée quand il est masqué. Un mutualisé ne garde pas de connexion
   ouverte, donc pas de WebSocket. À revoir au-delà d'une cinquantaine de
@@ -634,6 +638,37 @@ ci-dessous restent le plan d'origine.
       d'un compte banni, le profil d'un compte effacé. Validés par l'auteur
       le 8 novembre.
 - [x] Version 1.10.0 : nouvelle rubrique, le deuxième chiffre monte.
+
+### L'espace du membre, le 10 novembre
+
+Demande de l'auteur : un espace compte amélioré, réglages compris, et une
+notification de barre vérifiée qui se distingue. Trois chantiers validés.
+
+- **Le tableau de bord, `/compte/`.** L'avatar, « Mon profil » et
+  « Réglages » en tête ; quatre chiffres (barres publiées, vérifiées, en
+  attente d'avis, notifications non lues) ; les raccourcis en tuiles avec
+  icône, et une pastille pour les non lues et la file de l'admin. Ces deux
+  comptes viennent de la lecture de la cloche (`sbd:compte`), sans requête
+  de plus. Dès 56rem, deux colonnes : les performances, puis la position,
+  la fiche, les sujets. Une performance tient sur deux lignes, la barre en
+  gras, « Retirer » au bout. Le chat n'a pas de tuile : son bouton flotte
+  sur chaque page.
+- **Les notifications par nature** : une icône Tabler et une étiquette
+  (Barre vérifiée, Réponse, Mention, Modération), source unique
+  `lib/natures-notification.ts`. La barre vérifiée prend le vert de
+  `--succes`, sa coche et un filet à gauche. Le récapitulatif par courriel
+  la met en tête, précédée de « ✓ Barre vérifiée. ».
+- **Les réglages en cartes**, un sommaire en tête, collé à gauche dès
+  56rem sous l'en-tête. L'avatar rejoint la carte du profil ; l'ancre
+  `#avatar` reste valable.
+- **Mesuré.**
+  - Tableau de bord à 1 280 px : 2 801 px de haut contre 3 326, cinq tuiles
+    sur une rangée.
+  - À 375 px : la première barre à 736 px, au-dessus du pli, grâce aux
+    tuiles côte à côte (797 px empilées).
+  - Contrastes : 5,83:1 au moins dans les deux thèmes ; le vert des barres
+    vérifiées à 5,91:1 en clair et 10,41:1 en sombre.
+  - Aucun débordement, ni à 375 ni à 1 280 px.
 
 ### Le profil d'un coup d'œil, le 9 novembre
 

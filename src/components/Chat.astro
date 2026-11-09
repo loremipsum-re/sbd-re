@@ -5,7 +5,7 @@
  * 2026. Posé une fois par BaseLayout.astro. Tout bouton `[data-ouvrir-chat]`
  * l'ouvre, celui du coin comme celui de /communaute/.
  *
- * Cinq salons, lisibles de tous. Un membre connecté lit sept jours et écrit,
+ * Deux salons, Général et Général 2, lisibles de tous. Un membre connecté lit sept jours et écrit,
  * un visiteur voit arriver les nouveaux messages. Lecture par interrogation
  * (public/api/chat.php), à l'intervalle que le serveur donne, SEULEMENT
  * fenêtre ouverte et onglet visible : une page qu'on lit sans ouvrir le chat
@@ -39,12 +39,10 @@
 import Icone from './Icone.astro';
 import '../styles/suggestions-pseudo.css';
 
+/** Les salons, dans l'ordre et avec les noms de SALONS, public/api/lib/chat.php. */
 const salons = [
   ['general', 'Général'],
-  ['squat', 'Squat'],
-  ['developpe-couche', 'Développé couché'],
-  ['souleve-de-terre', 'Soulevé de terre'],
-  ['competitions', 'Compétitions'],
+  ['general-2', 'Général 2'],
 ] as const;
 ---
 
@@ -334,12 +332,13 @@ const salons = [
   });
 
   /**
-   * Demandée par l'adresse : /communaute/#chat, ou #chat=squat, que pose la
+   * Demandée par l'adresse : /communaute/#chat, ou #chat=general-2, que pose la
    * notification d'une mention pour mener à son salon. Lue au chargement,
    * et quand on clique la notification depuis /communaute/ même.
    */
   const suivreAdresse = () => {
-    const demande = /^#chat(?:=([a-z-]+))?$/.exec(location.hash);
+    // Un ancien salon (#chat=squat) ouvre le chat sur le salon en cours.
+    const demande = /^#chat(?:=([a-z0-9-]+))?$/.exec(location.hash);
     if (!demande) return false;
     const vise = boutonsSalon.find((b) => b.dataset.salon === demande[1]);
     if (vise && vise.dataset.salon !== salon) choisirSalon(vise);

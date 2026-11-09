@@ -443,7 +443,7 @@ Un lot choisi après la fin du plan, à la demande de l'auteur.
   posée sur le numéro de chaque message. La première visite ne marque rien.
 - **Les mentions du chat** préviennent le cité, une notification non lue au
   plus par salon (`notifierMentionsChat`), dont le lien ouvre le chat sur
-  ce salon : `/communaute/#chat=squat`.
+  ce salon : `/communaute/#chat=general-2`.
 - **Rétablir un compte banni** depuis `/compte/admin/`, qui liste les
   comptes bannis ; le membre en reçoit une notification.
 - `/confidentialite/` dit ce que le navigateur garde : brouillons, sujets
@@ -478,12 +478,16 @@ demandée à l'auteur.
   porte `aria-activedescendant`.
 - **« C'est votre fiche ? »** lit l'état du membre : un compte déjà relié,
   ou une demande qui attend l'admin, se dit à la place du formulaire.
+- **Le chat passe à deux salons**, Général et Général 2, demande de
+  l'auteur (docs/comptes.md, 6.4). Le point du chat ne compte plus que les
+  salons ouverts, et `#chat=` accepte les chiffres.
 - **Mesuré** : aucun débordement de l'annuaire à 375 et 1 280 px ;
   contrastes de 5,38:1 au moins dans les deux thèmes, 5,34:1 pour le filet
   de l'option choisie en clair ; options de 44 px ; champ de recherche à
   16 px.
-- **Tests** : 315 règles, et cinq essais de plus dans `php db/verifier.php`
-  (la table `appreciation` et quatre essais) : 116 attendus.
+- **Tests** : 315 règles, et six essais de plus dans `php db/verifier.php`
+  (la table `appreciation`, quatre essais, le point du chat d'un salon
+  retiré) : 117 attendus.
 
 ---
 

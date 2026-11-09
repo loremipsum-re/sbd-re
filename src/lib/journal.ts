@@ -51,10 +51,18 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-10',
     nature: 'fonction',
+    version: '1.18.0',
+    titre: 'L\'espace membre en tableau de bord',
+    texte:
+      "Votre espace montre d'un coup d'œil vos barres publiées, vérifiées et en attente, et vos notifications non lues, avec un raccourci vers chaque geste. Les réglages ont leur sommaire. Dans les notifications, une barre vérifiée se distingue en vert, avec sa coche.",
+  },
+  {
+    date: '2026-11-10',
+    nature: 'fonction',
     version: '1.17.0',
     titre: 'L\'annuaire des membres, et « J\'aime » au forum',
     texte:
-      "L'annuaire liste chaque membre de la communauté avec sa salle et ses barres publiées et vérifiées. Une recherche y trouve un pseudo. Au forum, un « J'aime » salue un message. Taper « @ » propose les pseudos, au forum comme au chat.",
+      "L'annuaire liste chaque membre de la communauté avec sa salle et ses barres publiées et vérifiées. Une recherche y trouve un pseudo. Au forum, un « J'aime » salue un message. Taper « @ » propose les pseudos, au forum comme au chat. Le chat se resserre sur deux salons, Général et Général 2.",
   },
   {
     date: '2026-11-10',

@@ -597,6 +597,47 @@
   color: var(--muted);
 }
 
+/* Une notification du membre : l'icône de sa nature, puis l'étiquette, le
+   lien et la date (lib/natures-notification.ts). */
+.liste-notifications .notification {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
+}
+
+.liste-notifications .corps-notification {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.liste-notifications .icone-nature {
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-top: var(--space-1);
+  color: var(--muted);
+}
+
+.liste-notifications .etiquette-nature {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--step--1);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* La barre vérifiée se distingue : la coche et l'étiquette en vert, un filet
+   vert à gauche. Le cadre d'une non lue reste l'accent, comme les autres. */
+.liste-notifications .nature-badge {
+  border-left: 6px solid var(--succes);
+}
+
+.liste-notifications .nature-badge .icone-nature,
+.liste-notifications .nature-badge .etiquette-nature {
+  color: var(--succes);
+}
+
 /* --- Avatars, signalements, fil, forums des membres ------------------- */
 
 .auteur-message .avatar {

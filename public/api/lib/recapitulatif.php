@@ -68,7 +68,8 @@ function reserverRecapitulatif(int $membreId, ?string $precedent): bool
 }
 
 /**
- * Les non lues depuis le précédent récapitulatif, vingt au plus, et leur nombre.
+ * Les non lues depuis le précédent récapitulatif, vingt au plus, et leur
+ * nombre. Les barres vérifiées d'abord, puis les plus récentes.
  *
  * @return array{total: int, liste: list<array<string, mixed>>}
  */
@@ -79,15 +80,16 @@ function notificationsDuRecapitulatif(int $membreId, ?string $precedent): array
 
     return [
         'total' => (int) (ligne("SELECT COUNT(*) AS n $condition", $params)['n'] ?? 0),
-        'liste' => lignes("SELECT texte, lien $condition ORDER BY id DESC LIMIT " . RECAPITULATIF_LIGNES, $params),
+        'liste' => lignes("SELECT nature, texte, lien $condition ORDER BY nature = 'badge' DESC, id DESC LIMIT " . RECAPITULATIF_LIGNES, $params),
     ];
 }
 
 /**
  * Le courriel, en texte simple : une ligne par notification et son lien,
- * puis le lien qui coupe le récapitulatif.
+ * puis le lien qui coupe le récapitulatif. Une barre vérifiée commence par
+ * une coche et le dit, comme sur /compte/notifications/.
  *
- * @param list<array<string, mixed>> $liste texte, lien
+ * @param list<array<string, mixed>> $liste nature, texte, lien
  */
 function corpsRecapitulatif(string $pseudo, array $liste, int $total, string $jeton): string
 {
@@ -99,7 +101,7 @@ function corpsRecapitulatif(string $pseudo, array $liste, int $total, string $je
         '',
     ];
     foreach ($liste as $n) {
-        $lignes[] = '- ' . $n['texte'];
+        $lignes[] = ($n['nature'] ?? '') === 'badge' ? '✓ Barre vérifiée. ' . $n['texte'] : '- ' . $n['texte'];
         if (str_starts_with((string) $n['lien'], '/')) {
             $lignes[] = '  https://sbd.re' . $n['lien'];
         }

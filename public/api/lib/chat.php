@@ -1,7 +1,7 @@
 <?php
 /**
  * Le chat revu (docs/forum.md, section 5, qui reprend la phase 7 de
- * docs/comptes.md) : cinq salons, lisibles de tous.
+ * docs/comptes.md) : deux salons généraux, lisibles de tous.
  *
  *   Membre confirmé : lit les sept derniers jours, écrit, apparaît en ligne.
  *   Visiteur        : voit arriver les nouveaux messages, sans historique.
@@ -26,13 +26,15 @@ if (!defined('SBDRE_API')) {
 require_once __DIR__ . '/bdd.php';
 require_once __DIR__ . '/notifications.php';
 
-/** Un salon donne un thème, pas une règle : la charte s'applique partout. */
+/**
+ * Deux salons généraux, choix de l'auteur du 10 novembre 2026, en attendant
+ * que la communauté grandisse. Les salons par mouvement et Compétitions
+ * sont retirés : leurs messages restent en base jusqu'à la purge d'un an,
+ * sans être lus. La charte s'applique partout.
+ */
 const SALONS = [
-    'general'          => 'Général',
-    'squat'            => 'Squat',
-    'developpe-couche' => 'Développé couché',
-    'souleve-de-terre' => 'Soulevé de terre',
-    'competitions'     => 'Compétitions',
+    'general'   => 'Général',
+    'general-2' => 'Général 2',
 ];
 
 const CHAT_MAX = 500;
