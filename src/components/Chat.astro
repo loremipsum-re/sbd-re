@@ -22,6 +22,13 @@
  * `.avertissement`, que d'autres pages emploient aussi. Les éléments écrits
  * par le script passent par `:global()`, toujours sous ce préfixe.
  *
+ * LE POINT DU BOUTON, demande de l'auteur du 9 novembre : un membre connecté
+ * le voit dès qu'un autre a écrit depuis sa dernière lecture. Il ne coûte
+ * aucune requête : la cloche, qui interroge déjà le serveur chaque minute,
+ * rend le numéro du dernier message d'un autre (`sbd:compte`), comparé au
+ * dernier lu, gardé dans le navigateur (`sbd-chat-vu`). Un visiteur, sans
+ * cloche, n'a pas de point.
+ *
  * Signaler se confirme d'un second clic, sur place : la fenêtre de
  * confirmation des comptes n'existe que sur leurs pages.
  *
@@ -43,6 +50,7 @@ const salons = [
 <button class="lanceur-chat" type="button" data-ouvrir-chat data-lanceur-chat aria-controls="chat-flottant" aria-expanded="false">
   <Icone nom="forum" />
   <span>Chat</span>
+  <span class="point-chat" data-point-chat hidden><span class="sr-only">, nouveaux messages</span></span>
 </button>
 
 <section class="chat-flottant" id="chat-flottant" aria-labelledby="titre-chat" hidden>
@@ -76,7 +84,7 @@ const salons = [
   <p class="inviter" data-inviter hidden>
     <a href="/compte/connexion/">Connectez-vous</a> pour écrire et lire les sept derniers jours.
   </p>
-  <p class="pied-chat"><a href="/communaute/charte/">La charte</a> vaut dans chaque salon.</p>
+  <p class="pied-chat">Merci de respecter les autres. <a href="/communaute/charte/">Lire la charte de la communauté</a>.</p>
 </section>
 
 <script>
@@ -120,6 +128,35 @@ const salons = [
       return false;
     }
   };
+
+  /* --- Le point des nouveaux messages ----------------------------------- */
+
+  const point = lanceur.querySelector<HTMLElement>('[data-point-chat]')!;
+  const VU = 'sbd-chat-vu';
+  let dernierAilleurs = 0;
+  const vuJusqua = () => {
+    try {
+      return Number(localStorage.getItem(VU)) || 0;
+    } catch {
+      return 0;
+    }
+  };
+  /** Retient le message le plus récent lu ; le point s'éteint s'il n'y a rien après. */
+  const retenirVu = (id: number) => {
+    try {
+      if (id > vuJusqua()) localStorage.setItem(VU, String(id));
+    } catch {
+      /* sans mémoire */
+    }
+    point.hidden = ouverte || dernierAilleurs <= vuJusqua();
+  };
+  document.addEventListener('sbd:compte', (evenement) => {
+    const donnees = (evenement as CustomEvent<{ chat_dernier?: number }>).detail;
+    dernierAilleurs = Number(donnees.chat_dernier) || 0;
+    // Première lecture sur cet appareil : rien d'ancien ne s'allume.
+    if (vuJusqua() === 0) retenirVu(dernierAilleurs);
+    point.hidden = ouverte || dernierAilleurs <= vuJusqua();
+  });
 
   let ouverte = false;
   let salon = 'general';
@@ -199,6 +236,7 @@ const salons = [
       moi = String(r.pseudo ?? '');
       form.hidden = !connecte;
       inviter.hidden = connecte;
+      retenirVu(Number(r.dernier) || 0);
       if (connecte && !branche) {
         brancherBarresSmileys(form);
         branche = true;
@@ -227,6 +265,7 @@ const salons = [
     ouverte = true;
     fenetre.hidden = false;
     lanceur.hidden = true;
+    retenirVu(dernierAilleurs);
     for (const b of declencheurs()) b.setAttribute('aria-expanded', 'true');
     retenir(true);
     document.dispatchEvent(new CustomEvent('sbd:chat', { detail: { ouverte } }));
@@ -284,6 +323,7 @@ const salons = [
     delete form.dataset.confirme;
     afficher(etat, '', true);
     champ.value = '';
+    retenirVu(Number(r.id) || 0);
     void lire();
   });
 
@@ -338,6 +378,24 @@ const salons = [
   }
 
   .lanceur-chat[hidden] {
+    display: none;
+  }
+
+  /* Le petit cercle des nouveaux messages, demandé rouge par l'auteur : le
+     jeton --danger, mesuré (tokens.css), saumon en sombre, rouge en clair,
+     détouré du fond pour se détacher du bouton jaune. */
+  .point-chat {
+    position: absolute;
+    top: -0.25rem;
+    right: -0.25rem;
+    width: 0.875rem;
+    height: 0.875rem;
+    border: 2px solid var(--bg);
+    border-radius: 50%;
+    background: var(--danger);
+  }
+
+  .point-chat[hidden] {
     display: none;
   }
 

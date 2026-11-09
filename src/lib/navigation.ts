@@ -39,6 +39,7 @@ export type NomIcone =
   /* L'engrenage des réglages du compte, toujours accompagné du mot. */
   | 'reglages'
   | 'cloche'
+  | 'compte'
   | 'forum';
 
 /**

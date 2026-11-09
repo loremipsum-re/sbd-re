@@ -1,0 +1,191 @@
+---
+/**
+ * « Nouveau sur sbd.re » : une petite carte, simple et brève, qui annonce les
+ * fonctions arrivées depuis la dernière visite. Demande de l'auteur du
+ * 9 novembre 2026 : faire savoir le forum, le chat, le compte.
+ *
+ * LA SOURCE EST LE JOURNAL, src/lib/journal.ts : chaque entrée « fonction »
+ * qui porte une version y vaut une ligne, son titre. Une correction ou un
+ * changement de présentation ne dérange personne. Rien à écrire de plus à
+ * chaque version.
+ *
+ * UNE FOIS PAR VISITEUR. Le navigateur garde la dernière version vue
+ * (`sbd-version-vue`). Sans elle, la carte part de la 1.10, l'ouverture de la
+ * communauté : ce sont les nouveautés qu'un habitué du classement n'a pas
+ * encore vues. Fermer la carte, ou lire /mises-a-jour/, la marque vue.
+ * Stockage refusé : la carte ne s'affiche pas, plutôt qu'à chaque page.
+ *
+ * Elle attend la réponse à la bannière de consentement : deux bandeaux à la
+ * fois, c'est un de trop. Elle s'efface quand le chat s'ouvre.
+ *
+ * Empilement : 8, au-dessus de la fenêtre du chat (7), sous le voile du menu.
+ */
+import { version } from '../../package.json';
+import { JOURNAL } from '../lib/journal';
+
+const annonces = JOURNAL.filter((e) => e.nature === 'fonction' && e.version).slice(0, 8);
+---
+
+<aside class="nouveautes" data-nouveautes data-version={version} aria-labelledby="titre-nouveautes" hidden>
+  <div class="entete-nouveautes">
+    <h2 id="titre-nouveautes">Nouveau sur sbd.re</h2>
+    <button type="button" class="fermer-nouveautes" data-fermer-nouveautes aria-label="Fermer">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M18 6 6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+      </svg>
+    </button>
+  </div>
+  <ul>
+    {annonces.map((a) => <li data-version-annonce={a.version} hidden>{a.titre}</li>)}
+  </ul>
+  <a href="/mises-a-jour/" data-voir-nouveautes>Toutes les mises à jour</a>
+</aside>
+
+<script>
+  const carte = document.querySelector<HTMLElement>('[data-nouveautes]')!;
+  const CLE = 'sbd-version-vue';
+  /** La version qui précède l'ouverture de la communauté. */
+  const AVANT_COMMUNAUTE = '1.9.99';
+  /** Les trois plus récentes, et la plus ancienne en dernier si la liste est plus longue : celle qui a tout ouvert. */
+  const RECENTES = 3;
+
+  const nombres = (v: string) => v.split('.').map((n) => Number(n) || 0);
+  const plusRecente = (a: string, b: string) => {
+    const [x, y] = [nombres(a), nombres(b)];
+    for (let i = 0; i < 3; i++) if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) > (y[i] ?? 0);
+    return false;
+  };
+
+  const actuelle = carte.dataset.version!;
+  let vue: string | null = null;
+  let memoire = true;
+  try {
+    vue = localStorage.getItem(CLE);
+  } catch {
+    memoire = false;
+  }
+  const marquerVue = () => {
+    try {
+      localStorage.setItem(CLE, actuelle);
+    } catch {
+      /* sans mémoire */
+    }
+  };
+
+  if (location.pathname === '/mises-a-jour/') {
+    marquerVue();
+  } else if (memoire) {
+    const depuis = vue ?? AVANT_COMMUNAUTE;
+    const toutes = [...carte.querySelectorAll<HTMLElement>('[data-version-annonce]')].filter((li) =>
+      plusRecente(li.dataset.versionAnnonce!, depuis),
+    );
+    const lignes = toutes.length > RECENTES + 1 ? [...toutes.slice(0, RECENTES), toutes[toutes.length - 1]] : toutes;
+    if (lignes.length > 0) {
+      for (const li of lignes) li.hidden = false;
+      let fermee = false;
+      const banniere = document.querySelector<HTMLElement>('[data-banniere-consentement]');
+      const chat = document.querySelector<HTMLElement>('#chat-flottant');
+      const montrer = () => {
+        carte.hidden = fermee || (banniere !== null && !banniere.hidden) || (chat !== null && !chat.hidden);
+      };
+      const fermer = () => {
+        fermee = true;
+        marquerVue();
+        montrer();
+      };
+      carte.querySelector('[data-fermer-nouveautes]')!.addEventListener('click', fermer);
+      carte.querySelector('[data-voir-nouveautes]')!.addEventListener('click', marquerVue);
+      carte.addEventListener('keydown', (evenement) => {
+        if (evenement.key === 'Escape') fermer();
+      });
+      document.addEventListener('sbd:consentement', () => setTimeout(montrer));
+      document.addEventListener('sbd:chat', montrer);
+      // Après la bannière, qui décide de son affichage au chargement.
+      setTimeout(montrer);
+    }
+  }
+</script>
+
+<style>
+  /* Une carte aux angles du système, bordure de 2 px, filet d'accent en
+     tête comme les panneaux de l'en-tête. En bas à gauche sur ordinateur ;
+     sur téléphone, au-dessus des boutons flottants du coin. */
+  .nouveautes {
+    position: fixed;
+    right: var(--space-4);
+    bottom: calc(var(--space-4) + 2 * (2.75rem + var(--space-2)));
+    left: var(--space-4);
+    z-index: 8;
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4) var(--space-4);
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--text) 7%, var(--surface));
+    color: var(--text);
+  }
+
+  @media (min-width: 40rem) {
+    .nouveautes {
+      right: auto;
+      bottom: var(--space-4);
+      width: 22rem;
+    }
+  }
+
+  .nouveautes[hidden],
+  .nouveautes li[hidden] {
+    display: none;
+  }
+
+  .entete-nouveautes {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .entete-nouveautes h2 {
+    margin: 0;
+    font-size: var(--step-0);
+  }
+
+  .fermer-nouveautes {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--cible-min);
+    min-height: var(--cible-min);
+    padding: 0;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .fermer-nouveautes:hover,
+  .fermer-nouveautes:focus-visible {
+    border-color: var(--accent);
+  }
+
+  .fermer-nouveautes svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  ul {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0 0 0 var(--space-4);
+  }
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+    font-weight: 700;
+  }
+</style>

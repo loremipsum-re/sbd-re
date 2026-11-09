@@ -739,6 +739,14 @@ if (!function_exists('SBDRE\creerSujet')) {
             ? ok('Une mention du chat prévient le cité une fois, jamais l\'auteur.')
             : ko("Mentions du chat fausses : $premiere, puis $seconde.");
 
+        // L'en-tête : le point du chat compte les messages des autres, jamais les siens.
+        $pourCite = \SBDRE\etatEntete($cite + ['role' => 'membre']);
+        $pourLecteur = \SBDRE\etatEntete($lecteur + ['role' => 'membre']);
+        ($pourCite['pseudo'] === $cite['pseudo'] && $pourCite['chat_dernier'] >= $id && !$pourCite['admin']
+            && $pourLecteur['chat_dernier'] !== $id)
+            ? ok('L\'en-tête lit le pseudo et le dernier message d\'un autre, sans compter les siens.')
+            : ko('L\'état de l\'en-tête est faux : ' . json_encode([$pourCite, $pourLecteur]));
+
         info('Fil, forums des membres, modération, avatars');
 
         $fil = \SBDRE\filActualite();
