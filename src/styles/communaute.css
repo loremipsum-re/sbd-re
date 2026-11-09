@@ -48,6 +48,15 @@
   color: var(--muted);
 }
 
+/* Chaque étape centrée sur 44 px, celle de la page comprise : les liens
+   centraient leur texte dans leur cible, le titre de la page, sans lien,
+   restait en haut de la sienne, 11 px plus haut, mesuré le 9 novembre. */
+.ariane li {
+  display: flex;
+  align-items: center;
+  min-height: var(--cible-min);
+}
+
 .ariane li + li::before {
   content: '›';
   margin-right: var(--space-2);
