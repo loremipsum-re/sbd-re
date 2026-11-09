@@ -1,0 +1,40 @@
+/*
+ * Les suggestions de pseudo après « @ » (lib/suggestions-pseudo.ts), au
+ * forum et au chat. Importé par Chat.astro, présent sur toutes les pages :
+ * la liste sert aussi aux champs du forum.
+ *
+ * L'option choisie porte l'aplat sous un filet d'accent, jamais l'aplat seul
+ * (critère 1.4.11 en thème clair, CLAUDE.md).
+ */
+.suggestions-pseudo {
+  display: grid;
+  max-width: 20rem;
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  list-style: none;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.suggestions-pseudo [role='option'] {
+  display: flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  padding: 0 var(--space-3);
+  border: 2px solid transparent;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.suggestions-pseudo [role='option']:hover {
+  color: var(--accent);
+}
+
+.suggestions-pseudo [aria-selected='true'],
+.suggestions-pseudo [aria-selected='true']:hover {
+  border-color: var(--accent);
+  background: var(--accent-fill);
+  color: var(--on-accent);
+}

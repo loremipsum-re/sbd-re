@@ -37,6 +37,7 @@
  * flottants, dont BaseLayout règle l'apparition.
  */
 import Icone from './Icone.astro';
+import '../styles/suggestions-pseudo.css';
 
 const salons = [
   ['general', 'Général'],
@@ -90,6 +91,11 @@ const salons = [
 <script>
   import { afficher, api } from '../lib/api-compte';
   import { brancherBarresSmileys, messageEnNoeuds } from '../lib/barre-smileys';
+  import { brancherSuggestionsPseudo } from '../lib/suggestions-pseudo';
+
+  // « @ » propose des pseudos dans le chat et, la fenêtre étant sur toutes
+  // les pages, dans les champs du forum aussi.
+  brancherSuggestionsPseudo();
 
   interface Message {
     id: number;
