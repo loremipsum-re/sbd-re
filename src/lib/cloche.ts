@@ -7,6 +7,11 @@
  * (lib/session.php). Sans lui, la cloche reste masquée et rien ne part vers
  * le serveur : un visiteur ne coûte aucune requête. Avec lui, une lecture
  * par minute, onglet visible seulement.
+ *
+ * La même lecture sert le reste de l'en-tête : chaque réponse part dans
+ * l'évènement `sbd:compte`, que lisent le menu du compte (pseudo, avatar,
+ * gestes de l'admin, lib/entete-compte.ts) et le point du bouton « Chat »
+ * (components/Chat.astro). Une seule requête par minute pour les trois.
  */
 
 const COOKIE = 'sbdre-connecte';
@@ -28,9 +33,12 @@ export function brancherCloche(): void {
         document.cookie = `${COOKIE}=; Max-Age=0; Path=/; Secure; SameSite=Lax`;
         cloche.hidden = true;
         clearInterval(minuterie);
+        document.dispatchEvent(new CustomEvent('sbd:compte', { detail: { deconnecte: true } }));
         return;
       }
-      const n = Number(((await reponse.json()) as { non_lues?: number }).non_lues) || 0;
+      const donnees = (await reponse.json()) as Record<string, unknown>;
+      document.dispatchEvent(new CustomEvent('sbd:compte', { detail: donnees }));
+      const n = Number(donnees.non_lues) || 0;
       compteur.textContent = n > 99 ? '99+' : String(n);
       compteur.hidden = n === 0;
       cloche.setAttribute('aria-label', n === 0 ? 'Notifications' : `Notifications, ${n} non lue${n > 1 ? 's' : ''}`);

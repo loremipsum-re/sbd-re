@@ -2,7 +2,9 @@
 /**
  * Les notifications du membre (docs/forum.md, section 4).
  *
- *   GET  ?compte   le nombre de non lues, pour la cloche de l'en-tête
+ *   GET  ?compte   le nombre de non lues, pour la cloche de l'en-tête, et ce
+ *                  que l'en-tête montre du membre (etatEntete) : son menu,
+ *                  le point du chat, les signalements pour un admin
  *   GET            les 50 dernières, pour /compte/notifications/
  *   POST           tout marquer comme lu
  *
@@ -21,7 +23,8 @@ require __DIR__ . '/lib/notifications.php';
 require __DIR__ . '/lib/recapitulatif.php';
 
 $methode = ouvrirApi(['GET', 'POST']);
-$membreId = (int) exigerActif()['id'];
+$membre = exigerActif();
+$membreId = (int) $membre['id'];
 
 if ($methode === 'POST') {
     marquerLues($membreId);
@@ -36,7 +39,7 @@ if (isset($_GET['compte'])) {
     } catch (\Throwable $e) {
         error_log('SBD.re : récapitulatif, ' . $e->getMessage());
     }
-    repondreOk('', ['non_lues' => $nonLues]);
+    repondreOk('', ['non_lues' => $nonLues] + etatEntete($membre));
 }
 
 repondreOk('', ['notifications' => listerNotifications($membreId), 'non_lues' => compterNonLues($membreId)]);

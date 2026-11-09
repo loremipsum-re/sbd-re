@@ -20,6 +20,7 @@ if (!defined('SBDRE_API')) {
 }
 
 require_once __DIR__ . '/bdd.php';
+require_once __DIR__ . '/avatar.php';
 
 const NOTIFICATIONS_LISTE = 50;
 const NOTIFICATIONS_GARDEES_JOURS = 90;
@@ -78,6 +79,37 @@ function notifierMentions(array $pseudos, int $sujetId, int $auteurId, string $t
             AND NOT EXISTS (SELECT 1 FROM abonnement a WHERE a.sujet_id = :s AND a.membre_id = m.id)",
         $params,
     );
+}
+
+/**
+ * Ce que l'en-tête montre d'un membre connecté, lu avec la cloche une fois
+ * par minute : son pseudo et son avatar pour le menu du compte, le nombre de
+ * signalements en attente pour un admin, et le numéro du dernier message du
+ * chat écrit par un autre, pour le point du bouton « Chat ».
+ *
+ * @param array<string, mixed> $membre id, pseudo, role
+ * @return array{pseudo: string, avatar: string, admin: bool, signalements: int, chat_dernier: int}
+ */
+function etatEntete(array $membre): array
+{
+    $id = (int) $membre['id'];
+    $avatar = ligne('SELECT UNIX_TIMESTAMP(date_maj) AS v FROM avatar WHERE membre_id = :m', ['m' => $id]);
+    $admin = estAdmin($membre);
+
+    return [
+        'pseudo'       => (string) $membre['pseudo'],
+        'avatar'       => $avatar !== null ? adresseAvatar((string) $membre['pseudo'], (int) $avatar['v']) : '',
+        'admin'        => $admin,
+        'signalements' => $admin
+            ? (int) (ligne('SELECT COUNT(*) AS n FROM (SELECT 1 FROM signalement WHERE traite = 0 GROUP BY type, cible_id) AS file')['n'] ?? 0)
+            : 0,
+        'chat_dernier' => (int) (ligne(
+            'SELECT MAX(id) AS n FROM message
+              WHERE masque_par IS NULL AND date_envoi > NOW() - INTERVAL 7 DAY
+                AND (membre_id IS NULL OR membre_id <> :m)',
+            ['m' => $id],
+        )['n'] ?? 0),
+    ];
 }
 
 function compterNonLues(int $membreId): int

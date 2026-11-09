@@ -299,6 +299,31 @@ const courant = (href: string) =>
           <span class="compteur-cloche" data-compteur hidden></span>
         </a>
 
+        {/* Le menu du compte, avec la cloche, pour un membre connecté
+            seulement (lib/entete-compte.ts) : son avatar ouvre l'accès à son
+            espace, son profil et ses réglages. L'admin y trouve en plus la
+            modération. Comme la cloche, un dessin sans mot à 375 px : son nom
+            est dit par `aria-label`, et le pseudo s'affiche dans le panneau. */}
+        <details class="menu-compte" data-menu-compte hidden>
+          <summary aria-label="Mon compte">
+            <img class="avatar-entete" data-avatar-entete alt="" width="32" height="32" hidden />
+            <span class="silhouette" data-silhouette><Icone nom="compte" taille={22} /></span>
+          </summary>
+          <div class="panneau-compte">
+            <p class="pseudo-entete" data-pseudo-entete></p>
+            <ul>
+              <li><a href="/compte/">Mon espace</a></li>
+              <li hidden><a href="/compte/" data-profil-entete>Mon profil public</a></li>
+              <li><a href="/compte/notifications/">Mes notifications</a></li>
+              <li><a href="/compte/reglages/">Réglages du compte</a></li>
+              <li><a href="/compte/reglages/#avatar">Changer d'avatar</a></li>
+              <li data-admin-entete hidden><a href="/compte/admin/">Modération<span data-file-entete></span></a></li>
+              <li data-admin-entete hidden><a href="/compte/a-verifier/">Barres à vérifier</a></li>
+              <li><button type="button" data-deconnexion-entete>Se déconnecter</button></li>
+            </ul>
+          </div>
+        </details>
+
         <details class="menu">
           <summary aria-label="Ouvrir le menu">
             <span class="barres-menu" aria-hidden="true"></span>
@@ -443,6 +468,9 @@ const courant = (href: string) =>
     */}
     <script>
       import { brancherCloche } from '../lib/cloche';
+      import { brancherMenuCompte } from '../lib/entete-compte';
+      // Le menu écoute d'abord : la cloche lui passe sa première lecture.
+      brancherMenuCompte();
       brancherCloche();
     </script>
 
@@ -658,8 +686,140 @@ const courant = (href: string) =>
     display: none;
   }
 
-  .cloche:not([hidden]) + .menu {
+  .cloche:not([hidden]) + .menu,
+  .menu-compte:not([hidden]) + .menu {
     margin-left: 0;
+  }
+
+  /* Le menu du compte, entre la cloche et le grand menu. Son panneau se
+     cale sur lui, à droite, sans couvrir toute la largeur. */
+  .menu-compte {
+    position: relative;
+  }
+
+  /* Cloche, compte et menu tiennent à 375 px à 8 px l'un de l'autre ;
+     à 16, le menu sortait de 10 px, mesuré le 9 novembre. */
+  .barre:has(.menu-compte:not([hidden])) {
+    gap: var(--space-2);
+  }
+
+  .menu-compte[hidden] {
+    display: none;
+  }
+
+  .menu-compte summary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--cible-min);
+    min-height: var(--cible-min);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .menu-compte summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .menu-compte summary:hover,
+  .menu-compte summary:focus-visible,
+  .menu-compte[open] summary {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .menu-compte .silhouette {
+    display: inline-flex;
+  }
+
+  .menu-compte .silhouette[hidden],
+  .menu-compte .avatar-entete[hidden],
+  .menu-compte li[hidden] {
+    display: none;
+  }
+
+  .avatar-entete {
+    display: block;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .panneau-compte {
+    position: absolute;
+    top: calc(100% + var(--space-2));
+    right: 0;
+    z-index: 10;
+    width: min(16rem, calc(100vw - 2 * var(--space-4)));
+    padding: var(--space-2) 0;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--text) 7%, var(--surface));
+  }
+
+  /* Sur un téléphone, le panneau se cale sur l'en-tête, collante et donc
+     bloc de référence, à 16 px du bord droit : calé sur l'avatar, il
+     sortait de 10 px à gauche, mesuré à 375 px. */
+  @media (max-width: 30rem) {
+    .menu-compte {
+      position: static;
+    }
+
+    .panneau-compte {
+      top: 100%;
+      right: var(--space-4);
+    }
+  }
+
+  .pseudo-entete {
+    margin: 0;
+    padding: var(--space-2) var(--space-4);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  .pseudo-entete:empty {
+    display: none;
+  }
+
+  .panneau-compte ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .panneau-compte a,
+  .panneau-compte button {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: var(--cible-min);
+    padding: var(--space-2) var(--space-4);
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .panneau-compte a:hover,
+  .panneau-compte a:focus-visible,
+  .panneau-compte button:hover,
+  .panneau-compte button:focus-visible {
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
+  .panneau-compte li:last-child {
+    margin-top: var(--space-1);
+    border-top: 1px solid var(--border);
   }
 
   .cloche:hover,
