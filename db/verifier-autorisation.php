@@ -555,6 +555,23 @@ verifie('Profil sans sujet : rien',                        \SBDRE\rendreSujetsMe
 $sesSujets = \SBDRE\rendreSujetsMembre([['lien' => '/forum/squat-technique/3/#dernier', 'titre' => '<i>Prépa</i>', 'forum' => 'Technique', 'reponses' => 1]]);
 verifie('Ses sujets au profil, titre échappé',             str_contains($sesSujets, '&lt;i&gt;Prépa') && str_contains($sesSujets, "1\u{00A0}réponse"), true);
 
+titre('Le forum au quotidien');
+
+verifie('Une seule page : un seul numéro',                 \SBDRE\numerosDePage(1, 1) === [1], true);
+verifie('Trois pages : toutes',                            \SBDRE\numerosDePage(1, 3) === [1, 2, 3], true);
+verifie('Page 5 sur 10 : 1 … 3 à 7 … 10',                  \SBDRE\numerosDePage(5, 10) === [1, 0, 3, 4, 5, 6, 7, 0, 10], true);
+verifie('Dernière page sur 10 : 1 … 8 9 10',               \SBDRE\numerosDePage(10, 10) === [1, 0, 8, 9, 10], true);
+$pages = \SBDRE\pagination('/forum/squat-technique/', 2, 3);
+verifie('La page en cours est dite au lecteur d\'écran',    str_contains($pages, '<span class="courante" aria-current="page">2</span>'), true);
+verifie('La page 1 garde son adresse sans ?page',          str_contains($pages, 'href="/forum/squat-technique/" aria-label="Page 1"'), true);
+verifie('Précédente et Suivante encadrent les numéros',    str_contains($pages, 'rel="prev"') && str_contains($pages, 'rel="next"'), true);
+$ligne = \SBDRE\ligneSujet(['id' => 3, 'titre' => 'Prépa', 'pseudo' => 'jean_93', 'reponses' => 7, 'dernier_pseudo' => 'marie', 'dernier_ts' => $le7, 'creation_ts' => $le7], 'squat-technique');
+verifie('Une ligne de sujet porte ses repères de lecture', str_contains($ligne, 'data-sujet-id="3" data-reponses="7" data-creation="' . $le7 . '" data-adresse="squat-technique"'), true);
+$page1 = $pageSujet($message, $sujetOuvert);
+verifie('Le sujet dit jusqu\'où la page mène',               str_contains($page1, 'data-sujet-id="3" data-vu="0"'), true);
+verifie('Le numéro du message est une ancre',              str_contains($page1, 'id="n1"'), true);
+verifie('L\'aide annonce Ctrl + Entrée et le brouillon',     str_contains($page1, 'Ctrl + Entrée publie'), true);
+
 titre('Le récapitulatif par courriel');
 
 $corps = \SBDRE\corpsRecapitulatif('jean_93', [

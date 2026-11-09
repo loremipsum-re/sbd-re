@@ -731,6 +731,14 @@ if (!function_exists('SBDRE\creerSujet')) {
             ? ok('Le freinage du chat mord, et qui écrit paraît en ligne.')
             : ko('Freinage ou présence en ligne en défaut.');
 
+        // Cité deux fois de suite : une seule notification non lue ; l'auteur, jamais.
+        $premiere = \SBDRE\notifierMentionsChat([$cite['pseudo'], $lecteur['pseudo']], $lecteur['id'], 'Essai de mention', 'squat');
+        $seconde = \SBDRE\notifierMentionsChat([$cite['pseudo']], $lecteur['id'], 'Essai de mention', 'squat');
+        ($premiere === 1 && $seconde === 0
+            && $nombre("SELECT COUNT(*) AS n FROM notification WHERE membre_id = :m AND lien = '/communaute/#chat=squat'", ['m' => $cite['id']]) === 1)
+            ? ok('Une mention du chat prévient le cité une fois, jamais l\'auteur.')
+            : ko("Mentions du chat fausses : $premiere, puis $seconde.");
+
         info('Fil, forums des membres, modération, avatars');
 
         $fil = \SBDRE\filActualite();
@@ -786,6 +794,13 @@ if (!function_exists('SBDRE\creerSujet')) {
         (\SBDRE\bannir($cite['id']) && $nombre('SELECT COUNT(*) AS n FROM jeton WHERE membre_id = :m', ['m' => $cite['id']]) === 0)
             ? ok('Bannir ferme aussitôt les sessions du membre.')
             : ko('Le membre banni garde une session.');
+
+        $banniListe = in_array($cite['id'], array_column(\SBDRE\membresBannis(), 'id'), true);
+        $retabli = \SBDRE\debannir($cite['id']);
+        (($banniListe && $retabli && !\SBDRE\debannir($cite['id'])
+            && (int) (\SBDRE\ligne('SELECT banni FROM membre WHERE id = :m', ['m' => $cite['id']])['banni'] ?? 1) === 0))
+            ? ok('Un compte banni se liste pour l\'admin, et se rétablit une fois.')
+            : ko('Le rétablissement d\'un compte banni est faux.');
 
         $base->prepare("UPDATE membre SET role = 'admin' WHERE id = ?")->execute([$lecteur['id']]);
         !\SBDRE\bannir($lecteur['id'])
