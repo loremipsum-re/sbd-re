@@ -274,7 +274,11 @@ des rôles typographiques : `.num` pour un chiffre isolé et grand, `.num-tab`
 pour un chiffre dans une colonne.
 
 **Tout contrôle fait au moins 44 px**, jeton `--cible-min`, règle globale dans
-`tokens.css`. Un nouveau bouton en hérite sans rien demander. Employer
+`tokens.css`. Une exception, choix de l'auteur du 10 novembre 2026 : les
+liens des listes de données (noms, compétitions, catégories, détenteurs et
+dates des records) visent 24 px, le minimum AA, jeton `--cible-aa` ; à
+44 px, le classement s'allongeait de 10 %. Un lien seul sur sa ligne garde
+44 px (`.fil a`, global). Un nouveau bouton en hérite sans rien demander. Employer
 `min-height` et jamais `height` : le texte doit rester libre de grandir. Les
 cinq exclusions sont écrites dans `tokens.css`, ne pas en ajouter sans
 mesurer. La quatrième est le terme souligné du lexique, une cible dans une
