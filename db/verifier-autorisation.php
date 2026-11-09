@@ -50,6 +50,7 @@ require_once dirname($chemin) . '/forum.php';
 require_once dirname($chemin) . '/chat.php';
 require_once dirname($chemin) . '/recapitulatif.php';
 require_once dirname($chemin) . '/revendications.php';
+require_once dirname($chemin) . '/annuaire.php';
 
 /* -------------------------------------------------------------------------
  * Affichage
@@ -607,6 +608,45 @@ verifie('Les chiffres : 3 barres publiées, 2 vérifiées',   str_contains($coup
 verifie('L\'historique se replie sous les tuiles',          str_contains($coupDOeil, '<summary>Toutes les performances, 3</summary>'), true);
 verifie('Sans barre, ni chiffres ni tuiles',               str_contains(\SBDRE\rendreProfil(['id' => 8, 'pseudo' => 'nouveau', 'bio' => '', 'salle' => '', 'instagram' => '', 'instagram_visible' => 0,
     'date_inscription' => '2026-11-09 10:00:00', 'avatar_v' => null], '%%CHIFFRES%%%%RECORDS%%', [], []), 'tuile'), false);
+
+titre('« J\'aime »');
+
+$jean = ['id' => 1, 'pseudo' => 'jean_93', 'courriel_verifie' => 1, 'banni' => 0];
+$dePaul = ['id' => 101, 'membre_id' => 7, 'aime' => '4'];
+$boutonAime = \SBDRE\boutonAime($dePaul, $jean, true);
+verifie('Sur le message d\'un autre, un bouton pressé',      str_contains($boutonAime, 'data-aimer data-message="101" aria-pressed="true"'), true);
+verifie('Le bouton porte le compte',                      str_contains($boutonAime, '<span class="nombre-aime"> · 4</span>'), true);
+verifie('Sur son propre message, le compte seul',         \SBDRE\boutonAime(['id' => 102, 'membre_id' => 1, 'aime' => '2'], $jean, false) === "<span class=\"aime\">2\u{00A0}membres aiment ce message</span>", true);
+verifie('Un visiteur lit le compte, sans bouton',         str_contains(\SBDRE\boutonAime($dePaul, null, false), 'data-aimer'), false);
+verifie('À zéro, un visiteur ne lit rien',                \SBDRE\boutonAime(['id' => 103, 'membre_id' => 7, 'aime' => '0'], null, false) === '', true);
+verifie('Un membre banni ne voit pas le bouton',          str_contains(\SBDRE\boutonAime($dePaul, ['banni' => 1] + $jean, false), 'data-aimer'), false);
+verifie('Un auteur effacé : le compte seul',              str_contains(\SBDRE\boutonAime(['id' => 104, 'membre_id' => null, 'aime' => '1'], $jean, false), 'data-aimer'), false);
+
+titre('L\'annuaire des membres');
+
+verifie('La recherche se ramène au pseudo',               \SBDRE\rechercheMembre('  Jean_93 ') === 'jean_93', true);
+verifie('Une lettre seule ne cherche rien',               \SBDRE\rechercheMembre('j') === '', true);
+verifie('Un balisage ne cherche rien',                    \SBDRE\rechercheMembre('<b>jean</b>') === '', true);
+
+$gabaritAnnuaire = '%%TITRE%%|%%ROBOTS%%|%%EFFECTIF%%|%%Q%%|%%LISTE%%|%%PAGINATION%%|<link rel="canonical" href="https://sbd.re/membres/-annuaire/">';
+$annuaire = [
+    ['id' => 7, 'pseudo' => 'paul_120', 'salle' => 'salle-essai', 'athlete_slug' => 'adrien-hoareau', 'avatar_v' => null, 'barres' => '5', 'verifiees' => 3],
+    ['id' => 3, 'pseudo' => 'marie.force', 'salle' => '', 'athlete_slug' => null, 'avatar_v' => '1700000000', 'barres' => '0', 'verifiees' => 0],
+];
+$sallesEssai = ['salle-essai' => ['nom' => 'Salle <Essai>', 'commune' => 'Saint-Paul']];
+$page1 = \SBDRE\rendreAnnuaire($gabaritAnnuaire, $annuaire, 64, 1, '', $sallesEssai);
+verifie('Une carte par membre, son pseudo en lien',       substr_count($page1, '<li class="carte-annuaire">') === 2 && str_contains($page1, 'href="/membres/paul_120/"'), true);
+verifie('Ses barres, et combien sont vérifiées',          str_contains($page1, "5\u{00A0}barres, 3\u{00A0}vérifiées"), true);
+verifie('Sans barre, la carte le dit',                    str_contains($page1, 'Aucune barre publiée'), true);
+verifie('Le nom de la salle est échappé',                 str_contains($page1, 'Salle &lt;Essai&gt;, Saint-Paul'), true);
+verifie('Sans avatar, l\'initiale',                         str_contains($page1, '<span class="avatar avatar-vide" aria-hidden="true">P</span>'), true);
+verifie('Avec avatar, l\'image du membre',                  str_contains($page1, 'src="/avatars/marie.force.webp?v=1700000000"'), true);
+verifie('La liste entière s\'indexe',                       str_contains($page1, "|index, follow|64\u{00A0}membres|"), true);
+verifie('Trois pages pour 64 membres',                    str_contains($page1, 'href="/membres/?page=3"'), true);
+verifie('La page 2 a sa propre adresse canonique',        str_contains(\SBDRE\rendreAnnuaire($gabaritAnnuaire, $annuaire, 64, 2, '', []), 'href="https://sbd.re/membres/?page=2"'), true);
+$recherche = \SBDRE\rendreAnnuaire($gabaritAnnuaire, [], 0, 1, 'zz', []);
+verifie('Une recherche reste hors index',                 str_contains($recherche, '|noindex|'), true);
+verifie('Une recherche vide le dit, avec la sortie',      str_contains($recherche, 'Aucun membre ne porte « zz » dans son pseudo') && str_contains($recherche, 'href="/membres/"'), true);
 
 titre('Le récapitulatif par courriel');
 

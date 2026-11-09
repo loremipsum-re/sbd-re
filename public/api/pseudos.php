@@ -6,7 +6,8 @@
  *   GET ?debut=<1 à 30 caractères>   huit pseudos au plus, membres actifs
  *
  * Réservé aux membres actifs : seul qui écrit en a l'usage. L'annuaire,
- * /membres/, reste la liste publique.
+ * /membres/, reste la liste publique. La requête vit dans lib/comptes.php,
+ * pseudosCommencantPar(), éprouvée par db/verifier.php.
  */
 
 declare(strict_types=1);
@@ -19,17 +20,6 @@ require __DIR__ . '/lib/comptes.php';
 ouvrirApi(['GET']);
 exigerActif();
 
-const SUGGESTIONS_MAX = 8;
-
-$debut = mb_strtolower(trim((string) ($_GET['debut'] ?? '')));
-if (preg_match('/^[a-z0-9._]{1,30}$/', $debut) !== 1) {
-    repondreOk('', ['pseudos' => []]);
-}
-
 // Une minute dans le navigateur : retaper la même lettre ne réinterroge pas.
 header('Cache-Control: private, max-age=60');
-repondreOk('', ['pseudos' => array_column(lignes(
-    'SELECT pseudo FROM membre WHERE courriel_verifie = 1 AND banni = 0 AND pseudo LIKE :d ORDER BY pseudo LIMIT ' . SUGGESTIONS_MAX,
-    // « _ » est un joker de LIKE, et il est permis dans un pseudo.
-    ['d' => addcslashes($debut, '%_\\') . '%'],
-), 'pseudo')]);
+repondreOk('', ['pseudos' => pseudosCommencantPar((string) ($_GET['debut'] ?? ''))]);
