@@ -639,6 +639,37 @@ ci-dessous restent le plan d'origine.
       le 8 novembre.
 - [x] Version 1.10.0 : nouvelle rubrique, le deuxième chiffre monte.
 
+### L'espace du membre, le 10 novembre
+
+Demande de l'auteur : un espace compte amélioré, réglages compris, et une
+notification de barre vérifiée qui se distingue. Trois chantiers validés.
+
+- **Le tableau de bord, `/compte/`.** L'avatar, « Mon profil » et
+  « Réglages » en tête ; quatre chiffres (barres publiées, vérifiées, en
+  attente d'avis, notifications non lues) ; les raccourcis en tuiles avec
+  icône, et une pastille pour les non lues et la file de l'admin. Ces deux
+  comptes viennent de la lecture de la cloche (`sbd:compte`), sans requête
+  de plus. Dès 56rem, deux colonnes : les performances, puis la position,
+  la fiche, les sujets. Une performance tient sur deux lignes, la barre en
+  gras, « Retirer » au bout. Le chat n'a pas de tuile : son bouton flotte
+  sur chaque page.
+- **Les notifications par nature** : une icône Tabler et une étiquette
+  (Barre vérifiée, Réponse, Mention, Modération), source unique
+  `lib/natures-notification.ts`. La barre vérifiée prend le vert de
+  `--succes`, sa coche et un filet à gauche. Le récapitulatif par courriel
+  la met en tête, précédée de « ✓ Barre vérifiée. ».
+- **Les réglages en cartes**, un sommaire en tête, collé à gauche dès
+  56rem sous l'en-tête. L'avatar rejoint la carte du profil ; l'ancre
+  `#avatar` reste valable.
+- **Mesuré.**
+  - Tableau de bord à 1 280 px : 2 801 px de haut contre 3 326, cinq tuiles
+    sur une rangée.
+  - À 375 px : la première barre à 736 px, au-dessus du pli, grâce aux
+    tuiles côte à côte (797 px empilées).
+  - Contrastes : 5,83:1 au moins dans les deux thèmes ; le vert des barres
+    vérifiées à 5,91:1 en clair et 10,41:1 en sombre.
+  - Aucun débordement, ni à 375 ni à 1 280 px.
+
 ### Le profil d'un coup d'œil, le 9 novembre
 
 Demande de l'auteur : un profil qui se lit d'un coup d'œil, en deux colonnes
