@@ -283,12 +283,24 @@ de `tokens.css` l'applique. Un composant qui redéclare `font` écrit
 `user-scalable=no`, qui empêcheraient aussi le zoom volontaire.
 
 **Ordre d'empilement** : bannière de consentement et infobulle du glossaire 20,
-lien d'évitement et panneau du menu 10, voile du menu 9, fenêtre du chat 7,
-en-tête 6, bulles du lexique 5, boutons flottants 4. Les trois boutons
-flottants, du bas vers le haut « Chat », retour en haut et « Proposer », sont
-réglés ensemble dans `BaseLayout.astro` : quand ils empiètent sur la colonne
-du contenu, ils se retirent à la descente et reviennent à la remontée.
-« Chat » paraît aussi en haut de page, et tous trois s'effacent chat ouvert.
+lien d'évitement, panneau du menu et panneau du compte 10, voile du menu 9,
+carte « Nouveau sur sbd.re » 8, fenêtre du chat 7, en-tête 6, bulles du
+lexique 5, boutons flottants 4. Les trois boutons flottants, du bas vers le
+haut « Chat », « Proposer » et retour en haut, sont réglés ensemble dans
+`BaseLayout.astro` : quand ils empiètent sur la colonne du contenu, ils se
+retirent à la descente et reviennent à la remontée. « Chat » et « Proposer »
+paraissent dès le haut de page, demande de l'auteur du 9 novembre ; tous
+trois s'effacent chat ouvert.
+
+**L'en-tête d'un membre connecté** porte, avec la cloche, le menu du compte
+(`lib/entete-compte.ts`) : espace, profil, notifications, réglages, avatar,
+déconnexion, et pour l'admin la modération et ses signalements en attente.
+Une seule lecture par minute les nourrit, celle de la cloche
+(`etatEntete` de `lib/notifications.php`, évènement `sbd:compte`), qui
+allume aussi le point rouge du bouton « Chat ». **La carte « Nouveau sur
+sbd.re »** (`components/Nouveautes.astro`) lit le journal : toute entrée
+`fonction` qui porte une version s'y annonce par son titre, une fois par
+visiteur. Un titre de journal doit donc se lire seul.
 
 **L'en-tête est collante, deux conséquences sur les ancres.** Une ancre de
 retour en haut ne doit jamais viser un élément collant : sa boîte étant déjà en
