@@ -2,7 +2,7 @@
 titre: "Le forum de sbd.re est ouvert, avec un chat et des barres vérifiées"
 description: "Depuis le 7 novembre 2026, sbd.re propose un forum de force athlétique, un chat et des barres de salle vérifiées sur vidéo par la communauté."
 date: 2026-11-09
-brouillon: true
+infographie: verification
 ---
 
 Le forum de sbd.re est ouvert depuis le 7 novembre 2026. Il s'accompagne d'un

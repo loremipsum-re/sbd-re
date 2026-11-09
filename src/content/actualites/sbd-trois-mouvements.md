@@ -2,7 +2,7 @@
 titre: "SBD, les trois mouvements de la force athlétique"
 description: "SBD désigne le squat, le bench press et le deadlift, les trois mouvements de la force athlétique. sbd.re en publie les classements et records à La Réunion."
 date: 2026-11-09
-brouillon: true
+infographie: total
 ---
 
 SBD désigne les trois mouvements de la force athlétique, dans leur ordre de
