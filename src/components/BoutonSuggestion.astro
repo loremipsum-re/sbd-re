@@ -101,8 +101,9 @@ import FormulaireSuggestion from './FormulaireSuggestion.astro';
   .appel {
     position: fixed;
     right: var(--space-4);
-    /* Au-dessus du retour en haut, lui-même au-dessus du bouton du chat. */
-    bottom: calc(var(--space-4) + 2 * (2.75rem + var(--space-2)));
+    /* Juste au-dessus du bouton du chat, dans le coin : tous deux paraissent
+       dès le haut de page. Le retour en haut se pose au-dessus d'eux. */
+    bottom: calc(var(--space-4) + 2.75rem + var(--space-2));
     z-index: 4;
     display: flex;
     align-items: center;

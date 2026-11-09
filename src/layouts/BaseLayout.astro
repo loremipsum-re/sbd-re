@@ -533,9 +533,10 @@ const courant = (href: string) =>
        * recouvriraient encore un coin de carte.
        */
       (() => {
-        const boutons = [...document.querySelectorAll<HTMLElement>('.haut, [data-ouvrir-suggestion]')];
-        const lanceur = document.querySelector<HTMLElement>('[data-lanceur-chat]');
-        if (!boutons.length && !lanceur) return;
+        const boutons = [...document.querySelectorAll<HTMLElement>('.haut')];
+        // Ceux qui paraissent dès le haut de page.
+        const toujours = [...document.querySelectorAll<HTMLElement>('[data-lanceur-chat], [data-ouvrir-suggestion]')];
+        if (!boutons.length && !toujours.length) return;
         // Lu sur la page à chaque fois : aucun ordre de chargement entre ce
         // script et celui du chat n'est garanti.
         const chatOuvert = () => document.querySelector<HTMLElement>('#chat-flottant')?.hidden === false;
@@ -560,7 +561,7 @@ const courant = (href: string) =>
           if (!colonne) return;
           const r = colonne.getBoundingClientRect();
           const droite = r.right - parseFloat(getComputedStyle(colonne).paddingRight);
-          empietent = [...boutons, ...(lanceur ? [lanceur] : [])].some((b) => {
+          empietent = [...boutons, ...toujours].some((b) => {
             const cache = b.hidden;
             b.hidden = false;
             b.style.visibility = 'hidden';
@@ -576,14 +577,14 @@ const courant = (href: string) =>
         const basculer = () => {
           const y = window.scrollY;
           const enBas = y + innerHeight >= document.documentElement.scrollHeight - 2;
-          const focus = [...boutons, lanceur].includes(document.activeElement as HTMLElement);
+          const focus = [...boutons, ...toujours].includes(document.activeElement as HTMLElement);
           if (y < SEUIL) visibles = false;
           else if (!empietent || enBas || focus || y < repere - PAS) visibles = true;
           else if (y > repere + PAS) visibles = false;
           if (y < SEUIL || Math.abs(y - repere) > PAS) repere = y;
           const ouvert = chatOuvert();
           for (const b of boutons) b.hidden = ouvert || !visibles;
-          if (lanceur) lanceur.hidden = ouvert || (y >= SEUIL && !visibles);
+          for (const b of toujours) b.hidden = ouvert || (y >= SEUIL && !visibles);
         };
 
         // components/Chat.astro prévient à l'ouverture et à la fermeture.
@@ -1175,8 +1176,9 @@ const courant = (href: string) =>
   .haut {
     position: fixed;
     right: var(--space-4);
-    /* Au-dessus du bouton du chat, qui occupe le coin (components/Chat.astro). */
-    bottom: calc(var(--space-4) + 2.75rem + var(--space-2));
+    /* Au-dessus de « Chat » et de « Proposer », qui paraissent dès le haut
+       de page : il prend la place la plus haute, sans laisser de trou. */
+    bottom: calc(var(--space-4) + 2 * (2.75rem + var(--space-2)));
     z-index: 4;
     display: flex;
     align-items: center;
