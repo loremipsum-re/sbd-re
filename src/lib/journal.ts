@@ -51,6 +51,14 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-09',
     nature: 'fonction',
+    version: '1.15.1',
+    titre: 'Trois articles de plus dans les actualités',
+    texte:
+      "Le premier explique SBD, les trois mouvements de la force athlétique. Le deuxième donne le calendrier 2027 de l'île, mois par mois, avec la dernière édition de chaque compétition. Le troisième présente le forum, le chat et la vérification des barres de salle.",
+  },
+  {
+    date: '2026-11-09',
+    nature: 'fonction',
     version: '1.15.0',
     titre: 'Votre compte dans l\'en-tête',
     texte:
