@@ -1,0 +1,196 @@
+---
+/**
+ * La saison 2027 de La Réunion : les douze mois en un coup d'œil, puis chaque
+ * compétition, son format et sa dernière édition.
+ *
+ * Les dates viennent du calendrier FFForce, recopiées dans
+ * lib/calendrier-2027.ts, qui en nomme la source. Les éditions passées, leur
+ * date et leur nombre d'athlètes, se lisent dans les données.
+ */
+import Infographie from './Infographie.astro';
+import { COMPETITIONS_2027, SOURCE_CALENDRIER_2027, derniereEdition } from '../../lib/calendrier-2027';
+import { dateLongue, pluriel } from '../../lib/format';
+import type { IdInfographie } from '../../lib/infographies';
+
+interface Props {
+  lienArticle?: IdInfographie;
+}
+
+const { lienArticle } = Astro.props;
+
+const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+const INITIALES = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+const FORMATS = { full: 'Full power', dc: 'Développé couché' };
+
+const competitions = COMPETITIONS_2027.map((c) => ({ ...c, mois: Number(c.debut.slice(5, 7)) - 1, edition: derniereEdition(c) }));
+const parMois = MOIS.map((_, i) => competitions.filter((c) => c.mois === i).length);
+
+/** « 16 et 17 janvier » : les deux jours d'un même mois. */
+const jours = (debut: string, fin: string) =>
+  `${Number(debut.slice(8))} et ${Number(fin.slice(8))} ${MOIS[Number(debut.slice(5, 7)) - 1]}`;
+---
+
+<Infographie titre="La saison 2027 à La Réunion" source={`${SOURCE_CALENDRIER_2027} Les dates peuvent encore changer.`} lienArticle={lienArticle}>
+  {/* La bande des mois : un repère visuel, la liste dessous dit tout en texte. */}
+  <ol class="mois" aria-hidden="true">
+    {
+      INITIALES.map((lettre, i) => (
+        <li data-plein={parMois[i] > 0 ? '' : undefined}>
+          <span class="lettre">{lettre}</span>
+          {parMois[i] > 0 && <span class="nombre num-tab">{parMois[i]}</span>}
+        </li>
+      ))
+    }
+  </ol>
+
+  <ol class="competitions">
+    {
+      competitions.map((c) => (
+        <li data-format={c.format}>
+          <p class="quand">
+            {jours(c.debut, c.fin)} <span class="lieu">· {c.lieu}</span>
+          </p>
+          <p class="nom">{c.nom}</p>
+          <p class="details">
+            <span class="format">{FORMATS[c.format]}</span>
+            {c.edition && (
+              <>
+                {' '}· dernière édition le <a href={c.edition.chemin}>{dateLongue(c.edition.date)}</a>,{' '}
+                {c.edition.athletes} {pluriel(c.edition.athletes, 'athlète')}
+              </>
+            )}
+          </p>
+        </li>
+      ))
+    }
+  </ol>
+
+  <p class="legende">
+    <span class="pastille" data-format="full"></span> Full power, trois mouvements
+    <span class="pastille" data-format="dc"></span> Développé couché seul
+  </p>
+</Infographie>
+
+<style>
+  p {
+    margin: 0;
+  }
+
+  /* Douze cases, une par mois, pleines là où l'île concourt. */
+  .mois {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--space-1);
+    margin: 0 0 var(--space-6);
+    padding: 0;
+    list-style: none;
+  }
+
+  .mois li {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    min-height: 3rem;
+    min-width: 0;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--muted);
+    font-size: var(--step--1);
+    font-weight: 600;
+  }
+
+  /* Un mois de compétition : l'aplat sous le filet d'accent (CLAUDE.md). */
+  .mois li[data-plein] {
+    border-color: var(--accent);
+    background: var(--accent-fill);
+    color: var(--on-accent);
+  }
+
+  .mois .nombre {
+    font-weight: 700;
+  }
+
+  .competitions {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 40rem) {
+    .competitions {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .competitions li {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    padding: var(--space-2) var(--space-3);
+    border: 2px solid var(--border);
+    border-left-width: 6px;
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+
+
+  .quand {
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .nom {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  .lieu {
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .details {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .format {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .legende {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    margin-top: var(--space-4);
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+
+  .pastille {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid var(--border);
+    border-left-width: 6px;
+    border-radius: 2px;
+    vertical-align: middle;
+  }
+
+  /* Le format en filet, et toujours en toutes lettres : la couleur ne porte
+     jamais l'information seule. Posé après les cartes et la légende, et aussi
+     précis qu'elles : écrit plus tôt, le filet restait gris, mesuré à 1,33:1. */
+  .competitions li[data-format='full'],
+  .pastille[data-format='full'] {
+    border-left-color: var(--accent);
+  }
+
+  .competitions li[data-format='dc'],
+  .pastille[data-format='dc'] {
+    border-left-color: var(--muted);
+  }
+</style>

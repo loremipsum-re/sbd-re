@@ -49,6 +49,8 @@ export const INFOGRAPHIES = {
   international: { libelle: "Les résultats hors de l'île", article: 'titres-internationaux' },
   donnees: { libelle: "D'où viennent les chiffres", article: 'corriger-un-resultat' },
   formats: { libelle: 'Les formats de compétition', article: 'formats-de-competition' },
+  calendrier: { libelle: 'Le calendrier 2027', article: 'competitions-2027' },
+  verification: { libelle: 'La vérification des barres', article: 'ouverture-forum' },
   competition: { libelle: 'La compétition traitée, en chiffres', exigeCompetition: true },
 } as const satisfies Record<string, FicheInfographie>;
 

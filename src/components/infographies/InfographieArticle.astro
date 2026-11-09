@@ -7,6 +7,7 @@
  * d'article la pose entre le chapeau et le texte : le lecteur voit l'image
  * avant de lire le développement.
  */
+import InfographieCalendrier from './InfographieCalendrier.astro';
 import InfographieCategories from './InfographieCategories.astro';
 import InfographieCommunes from './InfographieCommunes.astro';
 import InfographieCompetition from './InfographieCompetition.astro';
@@ -19,6 +20,7 @@ import InfographieInternational from './InfographieInternational.astro';
 import InfographieRecords from './InfographieRecords.astro';
 import InfographieSaisons from './InfographieSaisons.astro';
 import InfographieTotal from './InfographieTotal.astro';
+import InfographieVerification from './InfographieVerification.astro';
 import { INFOGRAPHIES, type FicheInfographie, type IdInfographie } from '../../lib/infographies';
 
 interface Props {
@@ -41,6 +43,8 @@ const COMPOSANTS = {
   international: InfographieInternational,
   donnees: InfographieDonnees,
   formats: InfographieFormats,
+  calendrier: InfographieCalendrier,
+  verification: InfographieVerification,
 } satisfies Record<Exclude<IdInfographie, 'competition'>, unknown>;
 
 /*

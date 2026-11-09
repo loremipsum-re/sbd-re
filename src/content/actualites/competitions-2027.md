@@ -2,7 +2,7 @@
 titre: "Les compétitions de force athlétique à La Réunion en 2027"
 description: "Six compétitions régionales prévues à La Réunion en 2027, de l'Open de la Fournaise en janvier au championnat de développé couché en octobre."
 date: 2026-11-09
-brouillon: true
+infographie: calendrier
 ---
 
 Six compétitions de force athlétique sont prévues à La Réunion en 2027. La
