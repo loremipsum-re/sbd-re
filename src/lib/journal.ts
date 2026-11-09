@@ -51,6 +51,14 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-09',
     nature: 'fonction',
+    version: '1.13.0',
+    titre: 'Le chat sur toutes les pages',
+    texte:
+      "Le chat s'ouvre désormais du bouton « Chat », en bas à droite de chaque page, et reste ouvert d'une page à l'autre. L'accueil du forum commence par les sujets récents, et le fil d'Ariane des sujets est aligné.",
+  },
+  {
+    date: '2026-11-09',
+    nature: 'fonction',
     version: '1.12.0',
     titre: 'Le confort du forum',
     texte:
