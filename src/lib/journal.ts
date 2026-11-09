@@ -54,7 +54,7 @@ export const JOURNAL: readonly EntreeJournal[] = [
     version: '1.17.0',
     titre: 'L\'annuaire des membres, et « J\'aime » au forum',
     texte:
-      "L'annuaire liste chaque membre de la communauté avec sa salle et ses barres publiées et vérifiées. Une recherche y trouve un pseudo. Au forum, un « J'aime » salue un message. Taper « @ » propose les pseudos, au forum comme au chat.",
+      "L'annuaire liste chaque membre de la communauté avec sa salle et ses barres publiées et vérifiées. Une recherche y trouve un pseudo. Au forum, un « J'aime » salue un message. Taper « @ » propose les pseudos, au forum comme au chat. Le chat se resserre sur deux salons, Général et Général 2.",
   },
   {
     date: '2026-11-10',

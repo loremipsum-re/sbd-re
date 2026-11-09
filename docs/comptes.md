@@ -238,10 +238,14 @@ ajout ──> visible sur le profil, « non vérifiée »
 
 ### 6.4 Chat
 
-- **Cinq salons fixes**, écrits dans `chat.php` : `general`, `squat`,
-  `developpe-couche`, `souleve-de-terre`, `competitions`. Un salon donne un
-  thème, pas une règle : on y parle de ce qu'on veut, la charte s'applique
-  partout.
+- **Deux salons généraux depuis le 10 novembre 2026**, `general` et
+  `general-2`, écrits dans `chat.php` (`SALONS`) et recopiés par
+  `Chat.astro`. Choix de l'auteur, « on verra la suite » : les cinq salons
+  de départ (`general`, `squat`, `developpe-couche`, `souleve-de-terre`,
+  `competitions`) dispersaient une communauté encore petite. Les messages
+  des salons retirés restent en base jusqu'à la purge d'un an, sans être
+  lus, et n'allument plus le point du chat. Un ancien lien `#chat=squat`
+  ouvre le chat sur le salon en cours. La charte s'applique partout.
 - **Lecture par interrogation** toutes les 5 secondes quand l'onglet est
   visible, arrêtée quand il est masqué. Un mutualisé ne garde pas de connexion
   ouverte, donc pas de WebSocket. À revoir au-delà d'une cinquantaine de
