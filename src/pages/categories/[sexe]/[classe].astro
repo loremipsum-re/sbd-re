@@ -290,9 +290,12 @@ const description =
     line-height: 1.1;
   }
 
+  /* 24 px chacun (--cible-aa) : empilés à 21 px, leurs cibles se touchaient. */
   .detenteur,
   .quand {
-    display: block;
+    display: flex;
+    align-items: center;
+    min-height: var(--cible-aa);
     font-size: var(--step--1);
     color: var(--muted);
   }

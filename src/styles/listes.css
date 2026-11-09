@@ -104,7 +104,12 @@
   line-height: 1.2;
 }
 
+/* 24 px au moins (--cible-aa) : le nom mesurait 23 px en carte, 17 sur
+   /exterieur/ et /competitions/. */
 .liste .nom a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-aa);
   color: var(--text);
 }
 

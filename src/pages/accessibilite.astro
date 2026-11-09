@@ -11,7 +11,8 @@
  * Elle dit donc ce qui a été mesuré, comment, quand, ce qui passe, ce qui a été
  * corrigé et ce qui reste hors de portée. Les chiffres viennent des mesures
  * faites dans le navigateur le 14 octobre 2026, complétées le 9 novembre 2026
- * pour la communauté, et sont à refaire après toute refonte.
+ * pour la communauté et le 10 pour les liens des listes, et sont à refaire
+ * après toute refonte.
  */
 import InfographieAccessibilite from '../components/infographies/InfographieAccessibilite.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -22,7 +23,7 @@ import type {
   ResultatAudit,
 } from '../lib/infographie-accessibilite';
 
-const DATE_AUDIT = '14 octobre 2026, complété le 9 novembre 2026';
+const DATE_AUDIT = '14 octobre 2026, complété les 9 et 10 novembre 2026';
 
 /** Pages passées au crible, choisies pour couvrir chaque gabarit du site. */
 const PAGES_AUDITEES: PageAuditee[] = [
@@ -91,7 +92,7 @@ const CONTROLES: ControleAudit[] = [
      * de 320 à 375 px de large, et que la phrase nomme désormais.
      */
     detail:
-      "Les en-têtes de colonne cliquables mesuraient 23 px de haut, un pixel sous le minimum de 24. Corrigé le jour de l'audit. Remesuré le 28 octobre 2026 : les autres boutons, les champs, les pastilles et les liens de l'en-tête mesurent 44 px au moins. Le niveau AA en demande 24. Sur téléphone, les points de la courbe de progression mesurent de 19 à 22 px. Les marqueurs de la carte des salles mesurent de 14 à 17 px. L'historique de chaque fiche et la liste des salles en donnent le contenu en texte. Sur la communauté, le 9 novembre 2026 : le numéro d'un message mesurait 17 px de large, le premier lien du fil d'Ariane 42 px, deux liens seuls dans leur paragraphe 19 px de haut. Les trois passent à 44 px. Les boutons de smileys gardent 32 px. Les liens de la liste des pages auditées, plus haut, mesuraient 19 px de haut : ils passent aussi à 44 px.",
+      "Les en-têtes de colonne cliquables mesuraient 23 px de haut, un pixel sous le minimum de 24. Corrigé le jour de l'audit. Remesuré le 28 octobre 2026 : les autres boutons, les champs, les pastilles et les liens de l'en-tête mesurent 44 px au moins. Le niveau AA en demande 24. Sur téléphone, les points de la courbe de progression mesurent de 19 à 22 px. Les marqueurs de la carte des salles mesurent de 14 à 17 px. L'historique de chaque fiche et la liste des salles en donnent le contenu en texte. Sur la communauté, le 9 novembre 2026 : le numéro d'un message mesurait 17 px de large, le premier lien du fil d'Ariane 42 px, deux liens seuls dans leur paragraphe 19 px de haut. Les trois passent à 44 px. Les boutons de smileys gardent 32 px. Les liens de la liste des pages auditées, plus haut, mesuraient 19 px de haut : ils passent aussi à 44 px. Le 10 novembre 2026, sur onze pages de données : les noms d'athlètes et de compétitions mesuraient de 17 à 23 px de haut sur téléphone, les catégories, les détenteurs et les dates des records 21 px. Ils passent à 24 px, le minimum du niveau AA, pour garder les listes denses : 258 px de plus sur tout le classement. Les liens de retour en tête de page, seuls sur leur ligne, passent à 44 px.",
   },
   {
     titre: 'Affichage à 320 px de large',

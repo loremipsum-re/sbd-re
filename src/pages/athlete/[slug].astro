@@ -788,6 +788,14 @@ const description =
     text-align: right;
   }
 
+  /* Seuls sur leur ligne : 44 px (23 mesurés). */
+  .liens-externes a {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-height: var(--cible-min);
+  }
+
   /*
    * Bandeau de distinction, réservé au podium et aux dix pour cent de tête.
    *
