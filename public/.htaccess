@@ -42,11 +42,13 @@ DirectoryIndex index.html
 
   # --- Profils de membres, rendus par PHP ------------------------------------
   # /membres/<pseudo>/ n'existe pas sur le disque : api/profil-page.php le rend
-  # à la demande depuis le gabarit d'Astro. Le gabarit lui-même, et /membres/
-  # sans pseudo, répondent 404. Sans barre finale, on la pose, comme Astro le
-  # fait partout (`trailingSlash: 'always'`).
+  # à la demande depuis le gabarit d'Astro. /membres/ est l'annuaire, rendu de
+  # même par api/annuaire.php. Les deux gabarits répondent 404. Sans barre
+  # finale, on la pose, comme Astro le fait partout (`trailingSlash: 'always'`).
   RewriteRule ^membres/-gabarit - [R=404,L]
-  RewriteRule ^membres/?$ - [R=404,L]
+  RewriteRule ^membres/-annuaire - [R=404,L]
+  RewriteRule ^membres$ https://%{HTTP_HOST}/membres/ [R=301,L]
+  RewriteRule ^membres/$ api/annuaire.php [QSA,L]
   # Adresse complète, comme pour HTTPS : un chemin seul faisait rediriger vers
   # « https://sbd.re:443/… », port compris, mesuré le 7 novembre 2026.
   RewriteRule ^membres/([^/]+)$ https://%{HTTP_HOST}/membres/$1/ [R=301,L]

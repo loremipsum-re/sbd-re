@@ -596,3 +596,25 @@ CREATE TABLE IF NOT EXISTS revendication (
     REGEXP_LIKE(athlete_slug, '^[a-z0-9]+(-[a-z0-9]+)*\\z', 'c')
   )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- -----------------------------------------------------------------------------
+-- appreciation
+--
+-- Un membre aime un message du forum, une fois au plus (clé primaire), jamais
+-- le sien (contrôlé par api/forum.php). Le compte écarte les membres bannis.
+-- Un message ou un compte effacé emporte ses « J'aime ».
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS appreciation (
+  membre_id       BIGINT UNSIGNED NOT NULL,
+  message_id      BIGINT UNSIGNED NOT NULL,
+  date_creation   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (membre_id, message_id),
+  KEY ix_appreciation_message (message_id),
+
+  CONSTRAINT fk_appreciation_membre FOREIGN KEY (membre_id) REFERENCES membre (id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_appreciation_message FOREIGN KEY (message_id) REFERENCES message_forum (id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

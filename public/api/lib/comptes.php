@@ -106,6 +106,27 @@ function pseudoValide(string $pseudo): bool
         && !in_array($pseudo, PSEUDOS_RESERVES, true);
 }
 
+/**
+ * Les pseudos de membres actifs qui commencent par `$debut`, huit au plus,
+ * pour les suggestions après « @ » (api/pseudos.php). Un début illisible
+ * ne rend rien.
+ *
+ * @return list<string>
+ */
+function pseudosCommencantPar(string $debut): array
+{
+    $debut = mb_strtolower(trim($debut));
+    if (preg_match('/^[a-z0-9._]{1,30}\z/', $debut) !== 1) {
+        return [];
+    }
+
+    return array_column(lignes(
+        'SELECT pseudo FROM membre WHERE courriel_verifie = 1 AND banni = 0 AND pseudo LIKE :d ORDER BY pseudo LIMIT 8',
+        // « _ » est un joker de LIKE, et il est permis dans un pseudo.
+        ['d' => addcslashes($debut, '%_\\') . '%'],
+    ), 'pseudo');
+}
+
 /** Le message à montrer si le mot de passe ne convient pas, ou ''. */
 function erreurMotDePasse(string $motDePasse): string
 {

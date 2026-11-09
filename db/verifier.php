@@ -213,6 +213,7 @@ $attendues = [
     'signalement'         => ['type', 'cible_id', 'traite'],
     'jeton'               => ['membre_id', 'type', 'jeton_hash'],
     'tentative_connexion' => ['courriel', 'ip', 'reussie'],
+    'appreciation'        => ['membre_id', 'message_id'],
 ];
 
 $lireColonnes = $bdd->prepare(
@@ -278,6 +279,7 @@ foreach ([
         require_once dirname($bibliotheque) . '/signalements.php';
         require_once dirname($bibliotheque) . '/recapitulatif.php';
         require_once dirname($bibliotheque) . '/revendications.php';
+        require_once dirname($bibliotheque) . '/annuaire.php';
         break;
     }
 }
@@ -657,6 +659,38 @@ if (!function_exists('SBDRE\creerSujet')) {
         (in_array($sujetId, $trouves, true) && !in_array($sujetId, $joker, true))
             ? ok('La recherche trouve un titre sans accents ni majuscules, et _ reste une lettre.')
             : ko('La recherche des titres est fausse.');
+
+        info('« J\'aime », annuaire, pseudos proposés');
+
+        $premier = (int) $messages[0]['id'];
+        $deuxFois = [\SBDRE\aimerMessage($lecteur['id'], $premier, true), \SBDRE\aimerMessage($lecteur['id'], $premier, true)];
+        $parDeux = \SBDRE\aimerMessage($cite['id'], $premier, true);
+        $lu = array_values(array_filter(\SBDRE\messagesDuSujet($sujetId, 1), fn (array $m): bool => (int) $m['id'] === $premier))[0];
+        ($deuxFois === [1, 1] && $parDeux === 2 && (int) $lu['aime'] === 2
+            && \SBDRE\messagesAimes($lecteur['id'], [$premier, (int) $reponse['id']]) === [$premier])
+            ? ok('Un « J\'aime » se compte une fois par membre, et la page du sujet le lit.')
+            : ko('Le compte des « J\'aime » est faux : ' . json_encode([$deuxFois, $parDeux, $lu['aime'] ?? null]));
+
+        $retire = \SBDRE\aimerMessage($lecteur['id'], $premier, false);
+        $base->prepare('UPDATE membre SET banni = 1 WHERE id = ?')->execute([$cite['id']]);
+        $sansBanni = \SBDRE\aimerMessage($lecteur['id'], $premier, true);
+        $base->prepare('UPDATE membre SET banni = 0 WHERE id = ?')->execute([$cite['id']]);
+        ($retire === 1 && $sansBanni === 1)
+            ? ok('Un « J\'aime » se retire, et celui d\'un membre banni ne compte pas.')
+            : ko("Retirer ou écarter un « J'aime » est faux : $retire, $sansBanni.");
+
+        $page = \SBDRE\membresAnnuaire(1, '');
+        $cherche = \SBDRE\membresAnnuaire(1, $lecteur['pseudo']);
+        ($page['total'] >= 3 && $cherche['total'] === 1 && $cherche['membres'][0]['pseudo'] === $lecteur['pseudo']
+            && array_key_exists('verifiees', $cherche['membres'][0]))
+            ? ok('L\'annuaire liste les membres, et la recherche trouve un pseudo.')
+            : ko('L\'annuaire est faux : ' . json_encode([$page['total'], $cherche]));
+
+        $proposes = \SBDRE\pseudosCommencantPar(substr($lecteur['pseudo'], 0, 8));
+        (in_array($lecteur['pseudo'], $proposes, true) && !in_array($auteur['pseudo'], $proposes, true) && count($proposes) <= 8
+            && \SBDRE\pseudosCommencantPar('%') === [])
+            ? ok('Les pseudos proposés commencent par ce qui est tapé, huit au plus.')
+            : ko('Les pseudos proposés sont faux : ' . json_encode($proposes));
 
         in_array($sujetId, array_column(\SBDRE\sujetsSuivis($lecteur['id']), 'id'), true)
             ? ok('« Sujets suivis » rend les sujets que le membre suit.')

@@ -1,0 +1,149 @@
+---
+/**
+ * Le gabarit de l'annuaire des membres, que public/api/annuaire.php remplit,
+ * servi à /membres/. Même principe que le gabarit des profils, à côté : les
+ * membres changent entre deux déploiements, PHP rend la page à la demande et
+ * remplace les repères « %%NOM%% » par des valeurs échappées.
+ *
+ * L'ADRESSE `/membres/-annuaire/` répond 404 (.htaccess) et sort du plan de
+ * site (astro.config.mjs) ; elle devient celle de l'annuaire, canonique
+ * comprise. L'annuaire a sa place dans /sitemap-membres.xml.
+ *
+ * Les repères : TITRE, ROBOTS (une recherche reste hors index), EFFECTIF,
+ * Q (le pseudo cherché), LISTE (les cartes, ou l'état vide), PAGINATION.
+ *
+ * LES STYLES SONT GLOBAUX, sous `.page-annuaire` : les cartes écrites par
+ * PHP ne portent pas l'attribut qu'Astro pose pour isoler les styles.
+ */
+import Icone from '../../components/Icone.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import type { NomIcone } from '../../lib/navigation';
+import '../../styles/communaute.css';
+
+/** Les icônes des cartes, en sprite : PHP écrit `<use href="#icone-…">` (lib/profil.php, fait()). */
+const ICONES_FAITS: NomIcone[] = ['salles', 'records', 'valide'];
+---
+
+<BaseLayout
+  titre="Les membres"
+  titreOnglet="%%TITRE%%"
+  description="Les membres de la communauté SBD.re, leur salle et leurs barres de force athlétique publiées et vérifiées sur vidéo, à La Réunion."
+>
+  <meta slot="tete" name="robots" content="%%ROBOTS%%" />
+
+  <svg class="sprite-mouvements" aria-hidden="true">
+    {
+      ICONES_FAITS.map((nom) => (
+        <symbol id={`icone-${nom}`} viewBox="0 0 24 24">
+          <Icone nom={nom} taille={24} />
+        </symbol>
+      ))
+    }
+  </svg>
+
+  <div class="wrap page-annuaire">
+    <h1>Les membres</h1>
+    <p class="chapeau">
+      Les membres de la communauté et leurs barres de salle. Ceux qui en publient le plus viennent en premier.
+    </p>
+
+    <form class="form-compte recherche-forum" action="/membres/" method="get" role="search">
+      <label for="recherche-membre">Chercher un pseudo</label>
+      <div class="ligne-recherche">
+        <input id="recherche-membre" name="q" type="search" minlength="2" maxlength="30" value="%%Q%%" autocomplete="off" />
+        <button type="submit">Chercher</button>
+      </div>
+    </form>
+
+    <p class="effectif-annuaire" role="status">%%EFFECTIF%%</p>
+    %%LISTE%%
+    %%PAGINATION%%
+  </div>
+</BaseLayout>
+
+<style is:global>
+  .page-annuaire {
+    padding-block: var(--space-8) var(--space-16);
+  }
+
+  .page-annuaire .effectif-annuaire {
+    margin: var(--space-4) 0 var(--space-2);
+    color: var(--muted);
+  }
+
+  /* `min(16rem, 100%)` : une carte ne déborde jamais d'un écran étroit (CLAUDE.md). */
+  .page-annuaire .annuaire {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr));
+    gap: var(--space-4);
+    margin: 0 0 var(--space-8);
+    padding: 0;
+    list-style: none;
+  }
+
+  .page-annuaire .carte-annuaire {
+    min-width: 0;
+    padding: var(--space-4);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .page-annuaire .identite-annuaire {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: var(--cible-min);
+    color: var(--text);
+    font-size: var(--step-1);
+    font-weight: 700;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+
+  .page-annuaire .identite-annuaire:hover .pseudo,
+  .page-annuaire .identite-annuaire:focus-visible .pseudo {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+
+  .page-annuaire .avatar {
+    flex: none;
+    width: 3rem;
+    height: 3rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    object-fit: cover;
+  }
+
+  /* Sans avatar, l'initiale du pseudo, sur la surface. */
+  .page-annuaire .avatar-vide {
+    display: grid;
+    place-items: center;
+    background: var(--surface);
+    color: var(--muted);
+  }
+
+  .page-annuaire .faits {
+    display: grid;
+    gap: var(--space-1);
+    margin: var(--space-3) 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--muted);
+    font-size: var(--step--1);
+  }
+
+  .page-annuaire .faits li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .page-annuaire .icone-fait {
+    flex: none;
+    width: 1rem;
+    height: 1rem;
+  }
+</style>

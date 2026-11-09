@@ -444,8 +444,9 @@ function rendreForum(array $forum, array $sujets, int $page, int $pages, ?array 
  * @param list<array<string, mixed>> $messages id, membre_id, pseudo, pseudo_actuel, banni, inscription_ts,
  *                                             texte, sensible, masque_par, date_ts
  * @param list<array{code: string, fichier: string, alt: string}> $smileys
+ * @param list<int>                  $aimes    les messages de la page que le membre aime
  */
-function rendreSujet(array $forum, array $sujet, array $messages, int $page, int $pages, ?array $membre, bool $abonne, array $smileys): string
+function rendreSujet(array $forum, array $sujet, array $messages, int $page, int $pages, ?array $membre, bool $abonne, array $smileys, array $aimes = []): string
 {
     $sujetId = (int) $sujet['id'];
     $ferme = (int) $sujet['verrouille'] === 1 || $forum['etat'] !== 'ouvert';
@@ -525,6 +526,7 @@ function rendreSujet(array $forum, array $sujet, array $messages, int $page, int
                 ? '<button type="button" class="bouton-signaler" data-signaler data-type="message_forum" data-cible="'
                     . (int) $m['id'] . '">Signaler</button>'
                 : '');
+        $gestes = boutonAime($m, $membre, in_array((int) $m['id'], $aimes, true)) . $gestes;
         if ($gestes !== '') {
             $html .= '<footer>' . $gestes . '</footer>';
         }
@@ -544,6 +546,62 @@ function rendreSujet(array $forum, array $sujet, array $messages, int $page, int
     }
 
     return $html . '</section>';
+}
+
+/**
+ * « J'aime » : un bouton pour un membre sur le message d'un autre, le compte
+ * seul pour son propre message et pour un visiteur, rien à zéro.
+ */
+function boutonAime(array $m, ?array $membre, bool $aime): string
+{
+    $n = (int) ($m['aime'] ?? 0);
+    $nombre = '<span class="nombre-aime">' . ($n > 0 ? ' · ' . $n : '') . '</span>';
+    if (estActif($membre) && ($m['membre_id'] ?? null) !== null && (int) $m['membre_id'] !== (int) $membre['id']) {
+        return '<button type="button" class="bouton-aimer" data-aimer data-message="' . (int) $m['id'] . '" aria-pressed="'
+            . ($aime ? 'true' : 'false') . '">J\'aime' . $nombre . '</button>';
+    }
+
+    return $n > 0 ? '<span class="aime">' . compte($n, 'membre aime', 'membres aiment') . ' ce message</span>' : '';
+}
+
+/** Aimer un message, ou ne plus l'aimer. Rend le nouveau compte. */
+function aimerMessage(int $membreId, int $messageId, bool $aime): int
+{
+    $aime
+        ? executer(
+            'INSERT INTO appreciation (membre_id, message_id) VALUES (:m, :id) ON DUPLICATE KEY UPDATE membre_id = membre_id',
+            ['m' => $membreId, 'id' => $messageId],
+        )
+        : executer('DELETE FROM appreciation WHERE membre_id = :m AND message_id = :id', ['m' => $membreId, 'id' => $messageId]);
+
+    return (int) (ligne(
+        'SELECT COUNT(*) AS n FROM appreciation ap JOIN membre ma ON ma.id = ap.membre_id AND ma.banni = 0 WHERE ap.message_id = :id',
+        ['id' => $messageId],
+    )['n'] ?? 0);
+}
+
+/**
+ * Parmi ces messages, ceux que le membre aime.
+ *
+ * @param list<int> $ids
+ * @return list<int>
+ */
+function messagesAimes(int $membreId, array $ids): array
+{
+    if ($ids === []) {
+        return [];
+    }
+    $params = ['m' => $membreId];
+    $noms = [];
+    foreach (array_values($ids) as $i => $id) {
+        $params["i$i"] = (int) $id;
+        $noms[] = ":i$i";
+    }
+
+    return array_map('intval', array_column(lignes(
+        'SELECT message_id FROM appreciation WHERE membre_id = :m AND message_id IN (' . implode(', ', $noms) . ')',
+        $params,
+    ), 'message_id'));
 }
 
 /** Les données structurées d'un sujet, DiscussionForumPosting, pour sa première page. */
@@ -786,7 +844,9 @@ function messagesDuSujet(int $sujetId, int $page): array
         'SELECT mf.id, mf.membre_id, mf.pseudo, mf.texte, mf.sensible, mf.masque_par,
                 UNIX_TIMESTAMP(mf.date_creation) AS date_ts, UNIX_TIMESTAMP(mf.date_modification) AS modif_ts,
                 m.pseudo AS pseudo_actuel, m.banni,
-                UNIX_TIMESTAMP(m.date_inscription) AS inscription_ts, UNIX_TIMESTAMP(a.date_maj) AS avatar_v
+                UNIX_TIMESTAMP(m.date_inscription) AS inscription_ts, UNIX_TIMESTAMP(a.date_maj) AS avatar_v,
+                (SELECT COUNT(*) FROM appreciation ap JOIN membre ma ON ma.id = ap.membre_id AND ma.banni = 0
+                  WHERE ap.message_id = mf.id) AS aime
            FROM message_forum mf
            LEFT JOIN membre m ON m.id = mf.membre_id
            LEFT JOIN avatar a ON a.membre_id = mf.membre_id

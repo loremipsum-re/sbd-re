@@ -480,6 +480,7 @@
 }
 
 .bouton-citer,
+.bouton-aimer,
 .bouton-suivre {
   min-height: var(--cible-min);
   padding: var(--space-2) var(--space-4);
@@ -494,7 +495,8 @@
 
 /* Un état choisi : l'aplat sous un filet d'accent, jamais l'aplat seul
    (critère 1.4.11 en thème clair, CLAUDE.md). */
-.bouton-suivre[aria-pressed='true'] {
+.bouton-suivre[aria-pressed='true'],
+.bouton-aimer[aria-pressed='true'] {
   border-color: var(--accent);
   background: var(--accent-fill);
   color: var(--on-accent);
@@ -606,6 +608,13 @@
 
 .corps-message footer {
   gap: var(--space-2);
+}
+
+/* Le compte des « J'aime », pour qui ne peut pas aimer ce message. */
+.corps-message footer .aime {
+  align-self: center;
+  color: var(--muted);
+  font-size: var(--step--1);
 }
 
 /* Signaler reste discret : un geste rare, qui ne doit pas tenter. */
