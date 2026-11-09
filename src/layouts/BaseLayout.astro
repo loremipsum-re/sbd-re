@@ -4,6 +4,7 @@
  */
 import BanniereConsentement from '../components/BanniereConsentement.astro';
 import BoutonSuggestion from '../components/BoutonSuggestion.astro';
+import Chat from '../components/Chat.astro';
 import EtiquetteRubrique from '../components/EtiquetteRubrique.astro';
 import Icone from '../components/Icone.astro';
 import Logo from '../components/Logo.astro';
@@ -396,6 +397,13 @@ const courant = (href: string) =>
     {Astro.url.pathname !== '/suggestions/' && <BoutonSuggestion />}
 
     {/*
+      Le chat, en fenêtre flottante sur toutes les pages, son bouton dans le
+      coin : demande de l'auteur du 9 novembre 2026. Il n'interroge le
+      serveur que fenêtre ouverte (components/Chat.astro).
+    */}
+    <Chat />
+
+    {/*
       Retour en haut. C'est un LIEN vers l'ancre du haut de page, pas un bouton :
       sans JavaScript il fonctionne quand même, et le clavier le traite
       naturellement. Le script ne fait que le montrer une fois la page
@@ -477,8 +485,12 @@ const courant = (href: string) =>
       })();
 
       /*
-       * LES DEUX BOUTONS FLOTTANTS, retour en haut et suggestion, réglés ici
-       * ensemble : ils forment une paire et doivent paraître ensemble.
+       * LES BOUTONS FLOTTANTS, retour en haut et suggestion, réglés ici
+       * ensemble : ils forment une paire et doivent paraître ensemble. Le
+       * bouton du chat, dans le coin sous eux, suit la même règle, à une
+       * différence près : il paraît aussi en haut de page, où l'on cherche à
+       * entrer en conversation. Chat ouvert, tous trois s'effacent : la
+       * fenêtre occupe leur coin.
        *
        * Ils recouvraient les chiffres. Mesuré le 27 octobre 2026 : à 375 px,
        * le total et les Dots de la carte qui passe dessous ; jusqu'à 1 280 px,
@@ -494,7 +506,11 @@ const courant = (href: string) =>
        */
       (() => {
         const boutons = [...document.querySelectorAll<HTMLElement>('.haut, [data-ouvrir-suggestion]')];
-        if (!boutons.length) return;
+        const lanceur = document.querySelector<HTMLElement>('[data-lanceur-chat]');
+        if (!boutons.length && !lanceur) return;
+        // Lu sur la page à chaque fois : aucun ordre de chargement entre ce
+        // script et celui du chat n'est garanti.
+        const chatOuvert = () => document.querySelector<HTMLElement>('#chat-flottant')?.hidden === false;
         const colonne = document.querySelector<HTMLElement>('main .wrap') ?? document.querySelector('main');
 
         // Un seuil généreux : sous 600 px de défilement, le haut de page est
@@ -516,7 +532,7 @@ const courant = (href: string) =>
           if (!colonne) return;
           const r = colonne.getBoundingClientRect();
           const droite = r.right - parseFloat(getComputedStyle(colonne).paddingRight);
-          empietent = boutons.some((b) => {
+          empietent = [...boutons, ...(lanceur ? [lanceur] : [])].some((b) => {
             const cache = b.hidden;
             b.hidden = false;
             b.style.visibility = 'hidden';
@@ -532,13 +548,18 @@ const courant = (href: string) =>
         const basculer = () => {
           const y = window.scrollY;
           const enBas = y + innerHeight >= document.documentElement.scrollHeight - 2;
-          const focus = boutons.includes(document.activeElement as HTMLElement);
+          const focus = [...boutons, lanceur].includes(document.activeElement as HTMLElement);
           if (y < SEUIL) visibles = false;
           else if (!empietent || enBas || focus || y < repere - PAS) visibles = true;
           else if (y > repere + PAS) visibles = false;
           if (y < SEUIL || Math.abs(y - repere) > PAS) repere = y;
-          for (const b of boutons) b.hidden = !visibles;
+          const ouvert = chatOuvert();
+          for (const b of boutons) b.hidden = ouvert || !visibles;
+          if (lanceur) lanceur.hidden = ouvert || (y >= SEUIL && !visibles);
         };
+
+        // components/Chat.astro prévient à l'ouverture et à la fermeture.
+        document.addEventListener('sbd:chat', basculer);
 
         // `passive` indique au navigateur que l'écouteur ne bloquera jamais le
         // défilement : sans lui, il doit attendre l'exécution du script avant
@@ -994,7 +1015,8 @@ const courant = (href: string) =>
   .haut {
     position: fixed;
     right: var(--space-4);
-    bottom: var(--space-4);
+    /* Au-dessus du bouton du chat, qui occupe le coin (components/Chat.astro). */
+    bottom: calc(var(--space-4) + 2.75rem + var(--space-2));
     z-index: 4;
     display: flex;
     align-items: center;

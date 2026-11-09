@@ -669,6 +669,10 @@ if (!function_exists('SBDRE\creerSujet')) {
             ? ok('Un sujet se déplace vers un autre forum.')
             : ko('Le sujet n\'a pas changé de forum.');
 
+        in_array($sujetId, array_map('intval', array_column(\SBDRE\sujetsRecents(), 'id')), true)
+            ? ok('Les sujets récents de l\'accueil montrent le sujet qui vient de bouger.')
+            : ko('Les sujets récents oublient le sujet le plus actif.');
+
         $stats = \SBDRE\statistiquesForum();
         ((int) ($stats['sujets'] ?? 0) >= 1 && (int) ($stats['membres'] ?? 0) >= 3 && ($stats['dernier'] ?? null) !== null)
             ? ok('Les statistiques du pied du forum passent en mode strict.')

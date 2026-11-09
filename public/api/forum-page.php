@@ -117,6 +117,7 @@ try {
             'CHAPEAU'      => '<p class="chapeau">Technique, programmation, compétitions : une catégorie par mouvement, à la manière des forums d\'autrefois.</p>',
             'CONTENU'      => '<p class="actions-forum"><a class="bouton-nouveau" href="/forum/fil/">Le fil de l\'activité</a></p>'
                 . formulaireRecherche()
+                . rendreSujetsRecents(sujetsRecents())
                 . rendreIndexForum($categories, $forums, $membre)
                 . rendrePiedForum(enLigne(), statistiquesForum()),
             'DONNEES'      => '',
