@@ -485,6 +485,90 @@
   font-size: var(--step--1);
 }
 
+/* --- Les réglages : un sommaire, puis une carte par réglage ------------- */
+
+.page-reglages .reglages {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.sommaire-reglages ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sommaire-reglages a {
+  display: flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sommaire-reglages a:hover,
+.sommaire-reglages a:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.sections-reglages {
+  display: grid;
+  gap: var(--space-6);
+  min-width: 0;
+}
+
+.carte-reglage {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.carte-reglage h2 {
+  margin: 0 0 var(--space-4);
+}
+
+.carte-reglage h3 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--step-0);
+}
+
+/* L'avatar en tête de la carte du profil, un filet avant les champs. */
+.bloc-avatar {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Dès 56rem, le sommaire se colle à gauche, sous l'en-tête collante
+   (5rem, le scroll-padding-top de tokens.css). */
+@media (min-width: 56rem) {
+  .page-reglages .reglages {
+    grid-template-columns: 13rem minmax(0, 40rem);
+    align-items: start;
+    gap: var(--space-8);
+  }
+
+  .sommaire-reglages {
+    position: sticky;
+    top: 5rem;
+  }
+
+  .sommaire-reglages ul {
+    flex-direction: column;
+  }
+}
+
 .positions {
   display: grid;
   gap: var(--space-2);
