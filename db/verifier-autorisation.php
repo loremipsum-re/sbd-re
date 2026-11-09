@@ -467,7 +467,7 @@ titre('Chat : formes');
 verifie('Message court accepté',                  \SBDRE\texteChatValide('Salut :)'), true);
 verifie('501 caractères refusés',                 \SBDRE\texteChatValide(str_repeat('a', 501)), false);
 verifie('Retour à la ligne refusé',               \SBDRE\texteChatValide("a\nb"), false);
-verifie('Cinq salons',                            count(\SBDRE\SALONS) === 5, true);
+verifie('Deux salons, Général et Général 2',      array_keys(\SBDRE\SALONS) === ['general', 'general-2'], true);
 
 titre('Forums des membres');
 

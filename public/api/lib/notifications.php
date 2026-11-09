@@ -21,6 +21,7 @@ if (!defined('SBDRE_API')) {
 
 require_once __DIR__ . '/bdd.php';
 require_once __DIR__ . '/avatar.php';
+require_once __DIR__ . '/chat.php';
 
 const NOTIFICATIONS_LISTE = 50;
 const NOTIFICATIONS_GARDEES_JOURS = 90;
@@ -105,10 +106,13 @@ function etatEntete(array $membre): array
             ? (int) (ligne('SELECT COUNT(*) AS n FROM (SELECT 1 FROM signalement WHERE traite = 0 GROUP BY type, cible_id) AS file')['n'] ?? 0)
                 + (int) (ligne("SELECT COUNT(*) AS n FROM revendication WHERE etat = 'attente'")['n'] ?? 0)
             : 0,
+        // Les salons ouverts seulement : un message d'un salon retiré, que
+        // personne ne lit plus, laisserait le point allumé sept jours.
         'chat_dernier' => (int) (ligne(
-            'SELECT MAX(id) AS n FROM message
+            "SELECT MAX(id) AS n FROM message
               WHERE masque_par IS NULL AND date_envoi > NOW() - INTERVAL 7 DAY
-                AND (membre_id IS NULL OR membre_id <> :m)',
+                AND canal IN ('" . implode("', '", array_keys(SALONS)) . "')
+                AND (membre_id IS NULL OR membre_id <> :m)",
             ['m' => $id],
         )['n'] ?? 0),
     ];

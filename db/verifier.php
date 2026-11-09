@@ -767,10 +767,10 @@ if (!function_exists('SBDRE\creerSujet')) {
             : ko('Freinage ou présence en ligne en défaut.');
 
         // Cité deux fois de suite : une seule notification non lue ; l'auteur, jamais.
-        $premiere = \SBDRE\notifierMentionsChat([$cite['pseudo'], $lecteur['pseudo']], $lecteur['id'], 'Essai de mention', 'squat');
-        $seconde = \SBDRE\notifierMentionsChat([$cite['pseudo']], $lecteur['id'], 'Essai de mention', 'squat');
+        $premiere = \SBDRE\notifierMentionsChat([$cite['pseudo'], $lecteur['pseudo']], $lecteur['id'], 'Essai de mention', 'general-2');
+        $seconde = \SBDRE\notifierMentionsChat([$cite['pseudo']], $lecteur['id'], 'Essai de mention', 'general-2');
         ($premiere === 1 && $seconde === 0
-            && $nombre("SELECT COUNT(*) AS n FROM notification WHERE membre_id = :m AND lien = '/communaute/#chat=squat'", ['m' => $cite['id']]) === 1)
+            && $nombre("SELECT COUNT(*) AS n FROM notification WHERE membre_id = :m AND lien = '/communaute/#chat=general-2'", ['m' => $cite['id']]) === 1)
             ? ok('Une mention du chat prévient le cité une fois, jamais l\'auteur.')
             : ko("Mentions du chat fausses : $premiere, puis $seconde.");
 
@@ -781,6 +781,14 @@ if (!function_exists('SBDRE\creerSujet')) {
             && $pourLecteur['chat_dernier'] !== $id)
             ? ok('L\'en-tête lit le pseudo et le dernier message d\'un autre, sans compter les siens.')
             : ko('L\'état de l\'en-tête est faux : ' . json_encode([$pourCite, $pourLecteur]));
+
+        // Un message resté dans un salon retiré n'allume plus le point du chat.
+        $base->prepare("INSERT INTO message (canal, membre_id, pseudo, texte, ip) VALUES ('squat', ?, ?, 'Ancien salon', ?)")
+             ->execute([$lecteur['id'], $lecteur['pseudo'], $ip2]);
+        $retire = (int) $base->lastInsertId();
+        \SBDRE\etatEntete($cite + ['role' => 'membre'])['chat_dernier'] < $retire
+            ? ok('Un message d\'un salon retiré n\'allume pas le point du chat.')
+            : ko('Le point du chat compte un salon retiré.');
 
         info('Fil, forums des membres, modération, avatars');
 
@@ -809,7 +817,7 @@ if (!function_exists('SBDRE\creerSujet')) {
             ? ok('Un forum de membre sans message depuis six mois passe en archive.')
             : ko('Le forum inactif n\'est pas archivé.');
 
-        $aSignaler = \SBDRE\ecrireChat($lecteur, 'squat', 'À signaler', false, $ip2);
+        $aSignaler = \SBDRE\ecrireChat($lecteur, 'general-2', 'À signaler', false, $ip2);
         $premier = \SBDRE\signaler($cite['id'], 'message', $aSignaler, 'spam');
         $second = \SBDRE\signaler($cite['id'], 'message', $aSignaler, 'encore');
         ($premier && !$second && \SBDRE\cibleExiste('message', $aSignaler) && \SBDRE\signalementsDuJour($cite['id']) === 1)
