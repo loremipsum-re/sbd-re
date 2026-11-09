@@ -7,7 +7,9 @@
  *   « lien »     sous le nom : « Profil dans la communauté : <pseudo> »,
  *                quand l'admin a relié la fiche à un membre ;
  *   « reclamer » en bas de page : « C'est votre fiche ? », pour un membre
- *                connecté, quand la fiche n'est reliée à personne.
+ *                connecté, quand la fiche n'est reliée à personne. Si son
+ *                compte est déjà relié, ou qu'une demande attend l'admin,
+ *                le bloc le dit à la place du formulaire.
  *
  * La fiche est une page statique : le lien se lit à la visite, une requête
  * gardée cinq minutes par le navigateur. Rien ne s'affiche sans JavaScript,
@@ -33,6 +35,7 @@ const { partie, slug, nom } = Astro.props;
   ) : (
     <details class="reclamer-fiche" data-reclamer-fiche data-slug={slug} hidden>
       <summary>C'est votre fiche ?</summary>
+      <p class="etat-membre" data-etat-membre hidden></p>
       <form data-form-fiche novalidate>
         <p>
           Reliez la fiche {deNom(nom)} à votre profil de membre. L'admin vérifie la
@@ -51,6 +54,34 @@ const { partie, slug, nom } = Astro.props;
 
 <script>
   import { api } from '../lib/api-compte';
+  import { deNom } from '../lib/format';
+
+  interface FicheReliee {
+    slug: string;
+    nom: string;
+  }
+
+  /**
+   * Le compte déjà relié, ou une demande en attente : le formulaire laisse
+   * place à une phrase, que le serveur aurait de toute façon opposée.
+   */
+  const montrerEtatMembre = async (bloc: HTMLDetailsElement, slug: string) => {
+    const r = await api('/api/revendication.php', 'GET');
+    const lienMembre = r.lien as FicheReliee | null | undefined;
+    const attente = r.attente as FicheReliee | null | undefined;
+    if (!r.ok || (!lienMembre && !attente)) return;
+    const phrase = bloc.querySelector<HTMLElement>('[data-etat-membre]')!;
+    const espace = Object.assign(document.createElement('a'), { href: '/compte/', textContent: 'votre espace' });
+    if (lienMembre) {
+      phrase.append(`Votre compte est déjà relié à la fiche ${deNom(lienMembre.nom)}. Le lien se retire depuis `, espace, '.');
+    } else if (attente!.slug === slug) {
+      phrase.textContent = "Votre demande pour cette fiche attend l'admin. Vous recevez une notification à sa décision.";
+    } else {
+      phrase.append(`Votre demande pour la fiche ${deNom(attente!.nom)} attend l'admin. Elle reçoit une réponse avant la suivante, à suivre depuis `, espace, '.');
+    }
+    bloc.querySelector<HTMLFormElement>('[data-form-fiche]')!.hidden = true;
+    phrase.hidden = false;
+  };
 
   const lien = document.querySelector<HTMLElement>('[data-profil-lie]');
   const reclamer = document.querySelector<HTMLDetailsElement>('[data-reclamer-fiche]');
@@ -69,6 +100,7 @@ const { partie, slug, nom } = Astro.props;
           lien.hidden = false;
         } else if (connecte && reclamer) {
           reclamer.hidden = false;
+          void montrerEtatMembre(reclamer, slug);
         }
       })
       .catch(() => {
@@ -110,8 +142,15 @@ const { partie, slug, nom } = Astro.props;
 
   .profil-lie[hidden],
   .reclamer-fiche[hidden],
-  .etat-fiche[hidden] {
+  .etat-fiche[hidden],
+  .etat-membre[hidden],
+  form[hidden] {
     display: none;
+  }
+
+  .etat-membre {
+    margin: 0;
+    padding: 0 var(--space-4) var(--space-4);
   }
 
   .reclamer-fiche {
