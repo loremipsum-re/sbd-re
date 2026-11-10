@@ -314,7 +314,8 @@ juge (le badge « Vérifiée par SBD.re »), donateur (aucun droit), membre.
 L'admin les donne depuis `/compte/admin/` ; le rang d'admin se donne à la
 main en base, nulle part ailleurs. Chaque geste de `api/admin.php` exige
 son rang. Seuls l'admin et le modérateur portent un badge, au forum et au
-chat (`.rang`, `tokens.css`).
+chat (`.badge-rang`, `tokens.css` ; jamais `.rang`, que portent déjà la
+colonne du rang des classements et quatre infographies).
 Une seule lecture par minute les nourrit, celle de la cloche
 (`etatEntete` de `lib/notifications.php`, évènement `sbd:compte`), qui
 allume aussi le point rouge du bouton « Chat ». **La carte « Nouveau sur

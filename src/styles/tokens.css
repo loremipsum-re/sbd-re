@@ -1039,8 +1039,14 @@ textarea {
  * aplat sous son filet, le modérateur au filet seul. Les autres rangs
  * s'affichent « membre », sans badge (lib/autorisation.php, BADGES_RANG).
  * Global : le chat flotte sur toutes les pages.
+ *
+ * LA CLASSE S'APPELLE .badge-rang, ET NON .rang : globale, `.rang` a aussi
+ * habillé la colonne du rang de tous les classements et le numéro des étapes
+ * de quatre infographies, qui portent ce nom. Un contour jaune en pilule
+ * entourait chaque rang, du 9 au 10 novembre 2026. Une classe globale porte
+ * un nom que rien d'autre n'emploie : le vérifier par une recherche.
  */
-.rang {
+.badge-rang {
   display: inline-block;
   margin-left: var(--space-1);
   padding: 0 var(--space-2);
@@ -1054,7 +1060,7 @@ textarea {
   white-space: nowrap;
 }
 
-.rang-admin {
+.badge-rang-admin {
   background: var(--accent-fill);
   color: var(--on-accent);
 }

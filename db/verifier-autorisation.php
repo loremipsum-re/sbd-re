@@ -683,7 +683,7 @@ verifie('Rien ne confirme rien',                         \SBDRE\adresseConfirmee
 
 titre('Le badge de rang au forum');
 
-verifie('Le modérateur porte « Modo »',                  \SBDRE\badgeRangHtml('moderateur') === '<span class="rang rang-moderateur">Modo</span>', true);
+verifie('Le modérateur porte « Modo »',                  \SBDRE\badgeRangHtml('moderateur') === '<span class="badge-rang badge-rang-moderateur">Modo</span>', true);
 verifie('Un juge ne porte rien',                         \SBDRE\badgeRangHtml('juge') === '', true);
 
 titre('Le top des membres, /communaute/');

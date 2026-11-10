@@ -557,7 +557,7 @@ function badgeRangHtml(?string $role): string
 {
     $badge = badgeRang($role);
 
-    return $badge === '' ? '' : '<span class="rang rang-' . e((string) $role) . '">' . e($badge) . '</span>';
+    return $badge === '' ? '' : '<span class="badge-rang badge-rang-' . e((string) $role) . '">' . e($badge) . '</span>';
 }
 
 /**
