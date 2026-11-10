@@ -1099,6 +1099,18 @@ textarea {
   margin-inline: auto;
 }
 
+/*
+ * UNE PAGE DE TEXTE SE CALE SUR LE BORD GAUCHE DE LA COLONNE DU SITE, choix
+ * de l'auteur du 10 novembre 2026. Plus étroite que `.wrap` pour garder une
+ * largeur de lecture, elle se centrait : à 1 280 px, le titre d'« À propos »
+ * démarrait à 280 px du bord, contre 88 px partout ailleurs. `--bord-colonne`
+ * vaut la marge gauche de `.wrap` ; le pourcentage se lit là où le jeton
+ * sert, sur la largeur de `main`.
+ */
+:root {
+  --bord-colonne: max(var(--space-4), calc((100% - var(--width-content)) / 2));
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

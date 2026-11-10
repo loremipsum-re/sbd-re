@@ -132,7 +132,10 @@ const communes = [...new Set(salles.map((s) => s.commune))].sort((a, b) =>
 
 <style>
   .page {
-    padding-block: var(--space-8) var(--space-16);
+    /* Le haut vient de `main`, 32 px, comme sur toutes les pages : ajouté
+       ici, il posait le titre à 64 px (choix de l'auteur du 10 novembre
+       2026). */
+    padding-bottom: var(--space-16);
   }
 
 

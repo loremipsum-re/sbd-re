@@ -192,6 +192,8 @@ const developpeSeul = meets.filter((m) => m.events.length === 1 && m.events[0] =
 
   .texte {
     max-width: 44rem;
+    /* Calée à gauche, sur le bord de la colonne du site : voir tokens.css. */
+    margin-inline: var(--bord-colonne) auto;
     padding-bottom: var(--space-8);
   }
 

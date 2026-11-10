@@ -184,7 +184,10 @@ const jour = article.data.date.toISOString().slice(0, 10);
 
 <style>
   .page {
-    padding-block: var(--space-8) var(--space-16);
+    /* Le haut vient de `main`, 32 px, comme sur toutes les pages : ajouté
+       ici, il posait le titre à 64 px (choix de l'auteur du 10 novembre
+       2026). */
+    padding-bottom: var(--space-16);
   }
 
   .fil {
@@ -220,6 +223,12 @@ const jour = article.data.date.toISOString().slice(0, 10);
   }
   .corps :global(p) {
     max-width: 68ch;
+  }
+  /* 24 px de retrait, comme les listes des autres pages de texte : laissé
+     au navigateur, il en valait 40. */
+  .corps :global(ul),
+  .corps :global(ol) {
+    padding-left: var(--space-6);
   }
   /*
    * TABLEAUX D'ARTICLE. Un tableau Markdown arrive sans classe et sans

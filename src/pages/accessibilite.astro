@@ -302,8 +302,11 @@ const LIMITES: LimiteAudit[] = [
     margin-bottom: var(--space-4);
   }
 
+  /* 24 px de retrait, comme les listes des autres pages de texte : la marge
+     s'ajoutait aux 40 px du navigateur, et le texte démarrait à 64 px. */
   .pages {
-    margin: 0 0 var(--space-4) var(--space-6);
+    margin: 0 0 var(--space-4);
+    padding-left: var(--space-6);
     max-width: 68ch;
   }
 
@@ -391,7 +394,8 @@ const LIMITES: LimiteAudit[] = [
   }
 
   .limites {
-    margin: 0 0 0 var(--space-6);
+    margin: 0;
+    padding-left: var(--space-6);
     max-width: 68ch;
   }
 
