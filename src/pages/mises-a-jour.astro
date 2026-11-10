@@ -141,6 +141,8 @@ const nombre = (n: number) => n.toLocaleString('fr-FR');
   }
 
   .intro {
+    /* 68 caractères au plus : à 1 280 px, la ligne en comptait 107. */
+    max-width: 68ch;
     margin-bottom: var(--space-6);
   }
 

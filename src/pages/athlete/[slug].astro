@@ -377,10 +377,12 @@ const description =
           */}
           <p class="rang-chiffre" aria-hidden="true">{rangs.global.rang}</p>
           <div>
+            {/* Chaque mention d'un seul tenant : sur téléphone, la ligne se
+                coupait après « 1er », et « chez les hommes » restait seul. */}
             <p class="rang-titre">
-              {ordinal(rangs.global.rang)} de La Réunion
+              <span class="mention">{ordinal(rangs.global.rang)} de La Réunion</span>
               <span class="separateur">·</span>
-              {ordinal(rangs.sexe.rang)} {libelleSexe}
+              <span class="mention">{ordinal(rangs.sexe.rang)} {libelleSexe}</span>
             </p>
             <p class="rang-detail">
               Classement aux points Dots, avec {points(rangs.dots)} points.
@@ -864,6 +866,13 @@ const description =
 
   .rang-titre sup {
     font-size: 0.55em;
+  }
+
+  /* `inline-block` : la ligne se coupe entre deux mentions, jamais au milieu
+     de l'une tant qu'elle tient. Astro colle les trois balises, et sans
+     boîte atomique il ne restait aucun point de coupure entre elles. */
+  .rang-titre .mention {
+    display: inline-block;
   }
 
   .rang-detail {
