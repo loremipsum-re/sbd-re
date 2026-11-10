@@ -195,7 +195,7 @@ const salons = [
     entete.append(auteur);
     if (m.rang) {
       const badge = Object.assign(document.createElement('span'), {
-        className: `rang ${m.rang === 'Admin' ? 'rang-admin' : 'rang-moderateur'}`,
+        className: `badge-rang ${m.rang === 'Admin' ? 'badge-rang-admin' : 'badge-rang-moderateur'}`,
         textContent: m.rang,
       });
       entete.append(' ', badge);

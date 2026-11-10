@@ -51,6 +51,14 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-10',
     nature: 'correction',
+    version: '1.19.3',
+    titre: 'Le rang des classements retrouve son dessin',
+    texte:
+      "Depuis la mise à jour du 9 novembre, un contour jaune entourait le numéro de rang dans les classements, et le numéro des étapes de quatre infographies. Il venait du badge des modérateurs, qui portait le même nom dans la feuille de style. Le badge a changé de nom, et les rangs retrouvent leur dessin.",
+  },
+  {
+    date: '2026-11-10',
+    nature: 'correction',
     version: '1.19.2',
     titre: 'Des noms plus faciles à toucher',
     texte:
