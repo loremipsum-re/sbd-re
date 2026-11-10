@@ -427,7 +427,11 @@ const phraseAvant = (avant: { jusquau: string; bas: number }, c: Case) =>
     list-style: none;
     border: 2px solid var(--border);
     border-radius: var(--radius);
-    overflow: hidden;
+    /* Défile plutôt que de couper : avec un texte espacé par le lecteur
+       (critère 1.4.12), la dernière case perdait de 6 à 11 px. Sans effet
+       tant que les cases tiennent. */
+    overflow-x: auto;
+    overflow-y: hidden;
     background: var(--bg);
   }
 

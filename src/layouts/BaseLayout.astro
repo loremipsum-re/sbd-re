@@ -982,6 +982,32 @@ const courant = (href: string) =>
       display: none;
     }
   }
+
+  /*
+   * DE 22,5 À 24rem, LE BLANC DES BOUTONS SE RESSERRE. À 360 px, la largeur
+   * de téléphone la plus courante, la barre d'un visiteur demandait 344 px
+   * pour 328 : le bouton du menu touchait le bord de l'écran, sans marge
+   * (mesuré le 10 novembre 2026). 24 px rendus, la barre tient avec 8 px de
+   * reste, connecté ou non.
+   */
+  @media (min-width: 22.5rem) and (max-width: 23.99rem) {
+    .menu summary,
+    .lien-connexion {
+      padding-inline: var(--space-2);
+    }
+  }
+
+  /*
+   * SOUS 48rem, LA BARRE PASSE À LA LIGNE PLUTÔT QUE DE SORTIR DE L'ÉCRAN.
+   * Un texte espacé par le lecteur (critère 1.4.12) ou agrandi faisait
+   * déborder la page de 34 px à 360 px : le menu descend alors sous le logo.
+   * Sans effet tant que la barre tient sur sa ligne.
+   */
+  @media (max-width: 47.99rem) {
+    .barre {
+      flex-wrap: wrap;
+    }
+  }
   .menu summary:hover {
     border-color: var(--accent);
     color: var(--accent);
