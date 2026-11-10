@@ -72,11 +72,17 @@ import EtatVide from './EtatVide.astro';
 interface Props {
   entries: AthleteRanking[];
   id?: string;
+  /**
+   * Le nom du tableau, lu par les lecteurs d'écran à son entrée et dans leur
+   * liste des tableaux : sans lui, deux classements d'une même page s'y
+   * confondaient (audit du 10 novembre 2026).
+   */
+  legende: string;
   /** Le chiffre qui domine chaque ligne. Le total par défaut, voir plus haut. */
   dominante?: 'total' | 'dots';
 }
 
-const { entries, id, dominante = 'total' } = Astro.props;
+const { entries, id, legende, dominante = 'total' } = Astro.props;
 const dotsDominants = dominante === 'dots';
 
 /*
@@ -89,7 +95,7 @@ const RESUME_DOTS = terme('glossaire-dots')?.resume;
 ---
 
 <div class:list={['liste', 'liste-perfs', { 'dots-dominants': dotsDominants }]}>
-  <table id={id} data-tableau>
+  <table id={id} data-tableau aria-label={legende}>
     <thead class="sr-only">
       <tr>
         <th scope="col">Rang à La Réunion</th>
@@ -337,12 +343,12 @@ const RESUME_DOTS = terme('glossaire-dots')?.resume;
 
   .nouveau {
     font-family: var(--font-body);
-    /* 0,62rem et non 0,7 : le mot doit tenir dans la colonne de rang, mesurée
-       à 52 px sur un téléphone, sans quoi il chevauche le nom. */
-    font-size: 0.62rem;
+    /* 12 px en minuscules, et non 9,9 px en capitales : sous 12 px, le mot
+       ne se lisait plus (audit du 10 novembre 2026). Il mesure 49,5 px et
+       tient dans la colonne de rang, 52 px sur un téléphone ; en capitales
+       à 12 px, il en prendrait 63 et chevaucherait le nom. */
+    font-size: 0.75rem;
     font-weight: 700;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
     color: var(--accent);
   }
 </style>

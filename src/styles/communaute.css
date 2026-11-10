@@ -15,7 +15,9 @@
 
 .page-forum,
 .page-chat {
-  padding-block: var(--space-8) var(--space-16);
+  /* Le haut vient de `main`, 32 px, comme sur toutes les pages : ajouté ici,
+     il posait le titre à 64 px (choix de l'auteur du 10 novembre 2026). */
+  padding-bottom: var(--space-16);
 }
 
 .page-forum h1,
@@ -62,10 +64,11 @@
   margin-right: var(--space-2);
 }
 
+/* Le texte reste au bord gauche de sa cible : centré dans ses 44 px,
+   « Forum » se décalait de 2,5 px du titre qu'il surmonte. */
 .ariane a {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   min-width: var(--cible-min);
   min-height: var(--cible-min);
 }
@@ -399,11 +402,12 @@
   color: var(--muted);
 }
 
-/* 44 px de large aussi : « #1 » n'en mesurait que 17 (audit du 9 novembre). */
+/* 44 px de large aussi : « #1 » n'en mesurait que 17 (audit du 9 novembre).
+   Le numéro reste au bord gauche de sa cible, à l'aplomb du message :
+   centré, il s'en écartait de 13 px. */
 .corps-message .numero {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   min-width: var(--cible-min);
   min-height: var(--cible-min);
   font-weight: 700;
@@ -636,6 +640,9 @@
    vert à gauche. Le cadre d'une non lue reste l'accent, comme les autres. */
 .liste-notifications .nature-badge {
   border-left: 6px solid var(--succes);
+  /* Le filet prend 4 px de plus que le cadre des autres : le retrait les
+     rend, et l'icône reste à l'aplomb de ses voisines. */
+  padding-left: calc(var(--space-4) - 4px);
 }
 
 .liste-notifications .nature-badge .icone-nature,

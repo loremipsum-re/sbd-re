@@ -11,8 +11,8 @@
  * Elle dit donc ce qui a été mesuré, comment, quand, ce qui passe, ce qui a été
  * corrigé et ce qui reste hors de portée. Les chiffres viennent des mesures
  * faites dans le navigateur le 14 octobre 2026, complétées le 9 novembre 2026
- * pour la communauté et le 10 pour les liens des listes, et sont à refaire
- * après toute refonte.
+ * pour la communauté, et le 10 pour les liens des listes puis la revue de
+ * 52 pages à six largeurs. Elles sont à refaire après toute refonte.
  */
 import InfographieAccessibilite from '../components/infographies/InfographieAccessibilite.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -48,23 +48,23 @@ const CONTROLES: ControleAudit[] = [
   {
     titre: 'Contraste des textes',
     critere: 'WCAG 2.2, critère 1.4.3, niveau AA',
-    resultat: 'ok',
+    resultat: 'corrige',
     detail:
-      "Chaque texte visible a été comparé à la couleur réellement composée sous lui, transparences comprises, dans les deux thèmes. Aucun texte sous son seuil, 4,5 pour un corps courant et 3 pour un grand titre. Remesuré le 9 novembre 2026 sur les pages de la communauté, badges de rang et barres vérifiées compris.",
+      "Chaque texte visible a été comparé à la couleur réellement composée sous lui, transparences comprises, dans les deux thèmes. Aucun texte sous son seuil, 4,5 pour un corps courant et 3 pour un grand titre. Remesuré le 9 novembre 2026 sur les pages de la communauté, badges de rang et barres vérifiées compris. Refait le 10 novembre 2026 sur 52 pages : aucun texte sous son seuil. Le texte d'invite des champs de recherche, lui, sortait à 3,92:1 en sombre et 4,12:1 en clair. Il prend le gris des textes secondaires, à 5,38:1 au moins.",
   },
   {
     titre: 'Structure des titres',
     critere: 'WCAG 2.2, critère 1.3.1',
-    resultat: 'ok',
+    resultat: 'corrige',
     detail:
-      "Un seul titre de premier niveau par page, et aucun niveau sauté dans la descente. Les tableaux ont leurs en-têtes de colonne et de ligne. Un lecteur d'écran annonce ainsi « Squat, 165 kg », intitulé compris.",
+      "Un seul titre de premier niveau par page, et aucun niveau sauté dans la descente. Les tableaux ont leurs en-têtes de colonne et de ligne. Un lecteur d'écran annonce ainsi « Squat, 165 kg », intitulé compris. Le 10 novembre 2026, chaque tableau a reçu un nom, annoncé à son entrée : vingt-deux tableaux, sur onze pages, n'en portaient pas.",
   },
   {
     titre: 'Nom des liens, des boutons et des images',
     critere: 'WCAG 2.2, critères 2.4.4, 1.1.1 et 2.5.3',
     resultat: 'corrige',
     detail:
-      "Chaque lien et chaque bouton porte un intitulé lisible. Une icône qui accompagne un mot est masquée aux lecteurs d'écran, qui entendent ainsi le mot une seule fois. Une icône porteuse d'information a un texte de remplacement. Le numéro d'un message du forum, « #1 », s'annonçait « Lien vers le message 1 », sans le mot affiché. Corrigé le 9 novembre 2026 : il s'annonce « Lien vers le message #1 ».",
+      "Chaque lien et chaque bouton porte un intitulé lisible. Une icône qui accompagne un mot est masquée aux lecteurs d'écran, qui entendent ainsi le mot une seule fois. Une icône porteuse d'information a un texte de remplacement. Le numéro d'un message du forum, « #1 », s'annonçait « Lien vers le message 1 », sans le mot affiché. Corrigé le 9 novembre 2026 : il s'annonce « Lien vers le message #1 ». Le 10 novembre 2026 : sur trois pages, deux liens « Lire l'article » menaient à deux articles sous le même nom. Chacun porte désormais le titre de son infographie pour les lecteurs d'écran. Le lien « En savoir plus » de la bannière de consentement devient « Lire la page Confidentialité ».",
   },
   {
     titre: 'Étiquettes de formulaire',
@@ -92,21 +92,28 @@ const CONTROLES: ControleAudit[] = [
      * de 320 à 375 px de large, et que la phrase nomme désormais.
      */
     detail:
-      "Les en-têtes de colonne cliquables mesuraient 23 px de haut, un pixel sous le minimum de 24. Corrigé le jour de l'audit. Remesuré le 28 octobre 2026 : les autres boutons, les champs, les pastilles et les liens de l'en-tête mesurent 44 px au moins. Le niveau AA en demande 24. Sur téléphone, les points de la courbe de progression mesurent de 19 à 22 px. Les marqueurs de la carte des salles mesurent de 14 à 17 px. L'historique de chaque fiche et la liste des salles en donnent le contenu en texte. Sur la communauté, le 9 novembre 2026 : le numéro d'un message mesurait 17 px de large, le premier lien du fil d'Ariane 42 px, deux liens seuls dans leur paragraphe 19 px de haut. Les trois passent à 44 px. Les boutons de smileys gardent 32 px. Les liens de la liste des pages auditées, plus haut, mesuraient 19 px de haut : ils passent aussi à 44 px. Le 10 novembre 2026, sur onze pages de données : les noms d'athlètes et de compétitions mesuraient de 17 à 23 px de haut sur téléphone, les catégories, les détenteurs et les dates des records 21 px. Ils passent à 24 px, le minimum du niveau AA, pour garder les listes denses : 258 px de plus sur tout le classement. Les liens de retour en tête de page, seuls sur leur ligne, passent à 44 px.",
+      "Les en-têtes de colonne cliquables mesuraient 23 px de haut, un pixel sous le minimum de 24. Corrigé le jour de l'audit. Remesuré le 28 octobre 2026 : les autres boutons, les champs, les pastilles et les liens de l'en-tête mesurent 44 px au moins. Le niveau AA en demande 24. Sur téléphone, les points de la courbe de progression mesurent de 19 à 22 px. Les marqueurs de la carte des salles mesurent de 14 à 17 px. L'historique de chaque fiche et la liste des salles en donnent le contenu en texte. Sur la communauté, le 9 novembre 2026 : le numéro d'un message mesurait 17 px de large, le premier lien du fil d'Ariane 42 px, deux liens seuls dans leur paragraphe 19 px de haut. Les trois passent à 44 px. Les boutons de smileys gardent 32 px. Les liens de la liste des pages auditées, plus haut, mesuraient 19 px de haut : ils passent aussi à 44 px. Le 10 novembre 2026, sur onze pages de données : les noms d'athlètes et de compétitions mesuraient de 17 à 23 px de haut sur téléphone, les catégories, les détenteurs et les dates des records 21 px. Ils passent à 24 px, le minimum du niveau AA, pour garder les listes denses : 258 px de plus sur tout le classement. Les liens de retour en tête de page, seuls sur leur ligne, passent à 44 px. Dans les mentions légales, l'adresse de contact et le site de l'hébergeur passent de 17 à 44 px.",
   },
   {
     titre: 'Affichage à 320 px de large',
     critere: 'WCAG 2.2, critère 1.4.10',
     resultat: 'corrige',
     detail:
-      "À la largeur d'un petit téléphone, ou d'un écran agrandi quatre fois, chaque page tient sans défilement horizontal. Les tableaux se replient en cartes. Le 9 novembre 2026, l'en-tête dépassait de 38 px pour un visiteur, avec le bouton « Connexion », et de 23 px pour un membre connecté. Sous 22,5rem, le bouton du menu garde ses trois traits et perd le mot, que les lecteurs d'écran entendent toujours.",
+      "À la largeur d'un petit téléphone, ou d'un écran agrandi quatre fois, chaque page tient sans défilement horizontal. Les tableaux se replient en cartes. Le 9 novembre 2026, l'en-tête dépassait de 38 px pour un visiteur, avec le bouton « Connexion », et de 23 px pour un membre connecté. Sous 22,5rem, le bouton du menu garde ses trois traits et perd le mot, que les lecteurs d'écran entendent toujours. Le 10 novembre 2026, à 360 px, la largeur de téléphone la plus courante : le bouton du menu d'un visiteur touchait le bord de l'écran, sans marge. De 360 à 384 px, les boutons de la barre resserrent leur blanc, et la marge de 16 px revient.",
+  },
+  {
+    titre: 'Espacement du texte',
+    critere: 'WCAG 2.2, critère 1.4.12, niveau AA',
+    resultat: 'corrige',
+    detail:
+      "Mesuré le 10 novembre 2026 sur 52 pages, l'interligne, l'espacement des lettres et celui des mots portés aux valeurs du critère. À 360 px, la barre d'en-tête faisait déborder chaque page de 34 px : elle passe désormais à la ligne. La règle graduée des catégories de poids perdait de 6 à 11 px, et quatre listes de 6 à 16 px à 320 px : elles défilent au lieu de couper. Une exception demeure, à 1 280 px : le tableau d'historique d'une fiche d'athlète perd alors de 59 à 69 px à droite. Sous 960 px, sa version en cartes tient.",
   },
   {
     titre: 'Navigation au clavier',
     critere: 'WCAG 2.2, critères 2.1.1, 2.4.3, 2.4.7 et 2.4.11',
     resultat: 'corrige',
     detail:
-      "Un lien d'évitement ouvre chaque page. Le focus reste visible partout, par un contour de 3 px. Les points de la courbe de progression se parcourent aux flèches. La touche Tab franchit ainsi la courbe en un seul arrêt, quel que soit le nombre de points. Sur la communauté, 371 commandes ont reçu le focus une à une, à 1 280 et 375 px : chacune montre son contour, aucune ne disparaît sous l'en-tête ou les boutons flottants. Le chat rend désormais le focus au bouton qui l'a ouvert, et la fenêtre de confirmation s'ouvre sur « Annuler » : deux appuis sur Entrée retiraient une barre.",
+      "Un lien d'évitement ouvre chaque page. Le focus reste visible partout, par un contour de 3 px. Les points de la courbe de progression se parcourent aux flèches. La touche Tab franchit ainsi la courbe en un seul arrêt, quel que soit le nombre de points. Sur la communauté, 371 commandes ont reçu le focus une à une, à 1 280 et 375 px : chacune montre son contour, aucune ne disparaît sous l'en-tête ou les boutons flottants. Le chat rend désormais le focus au bouton qui l'a ouvert, et la fenêtre de confirmation s'ouvre sur « Annuler » : deux appuis sur Entrée retiraient une barre. Le 10 novembre 2026 : sur téléphone, les en-têtes de tri masqués des tableaux restaient atteignables à la touche Tab, sans rien montrer, soit six arrêts invisibles sur le classement. Ils sortent du parcours tant qu'ils sont masqués.",
   },
   {
     titre: 'Rôles et états annoncés',
@@ -302,8 +309,11 @@ const LIMITES: LimiteAudit[] = [
     margin-bottom: var(--space-4);
   }
 
+  /* 24 px de retrait, comme les listes des autres pages de texte : la marge
+     s'ajoutait aux 40 px du navigateur, et le texte démarrait à 64 px. */
   .pages {
-    margin: 0 0 var(--space-4) var(--space-6);
+    margin: 0 0 var(--space-4);
+    padding-left: var(--space-6);
     max-width: 68ch;
   }
 
@@ -391,7 +401,8 @@ const LIMITES: LimiteAudit[] = [
   }
 
   .limites {
-    margin: 0 0 0 var(--space-6);
+    margin: 0;
+    padding-left: var(--space-6);
     max-width: 68ch;
   }
 

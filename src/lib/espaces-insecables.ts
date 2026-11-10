@@ -27,6 +27,12 @@
  *   - Les insécables déjà posées à la main dans le site, devant 10
  *     deux-points et dans 13 paires de guillemets, sont des U+00A0.
  *
+ * UN NOMBRE RESTE AVEC SON UNITÉ, depuis le 10 novembre 2026 : « 18 ans »,
+ * « 24 px », « 100 kg », « 60 % », « 8 h ». Sur un téléphone, /communaute/
+ * coupait « dès 18 » de « ans », et le journal « 24 » de « px ». La liste
+ * des unités est fermée, celles que le site écrit : un mot qui commence
+ * comme une unité, « 5 hommes », garde son espace ordinaire.
+ *
  * RIEN N'EST AJOUTÉ : seule une espace déjà écrite devient insécable. Un
  * deux-points sans espace devant reste tel quel, et c'est ce qui protège les
  * adresses (« https:// »), les heures (« 12:30 ») et les rapports de contraste
@@ -79,6 +85,8 @@ const AVANT_PONCTUATION_EN_TETE = new RegExp(`^${ESPACE}+(?=[:;!?»])`);
 const APRES_GUILLEMET = new RegExp(`«${ESPACE}+(?=[^ \\t\\n\\r\\f])`, 'g');
 /** La même, en fin de nœud : la citation continue dans une balise en ligne. */
 const APRES_GUILLEMET_EN_FIN = new RegExp(`«${ESPACE}+$`);
+/** Espace entre un nombre et son unité, quand l'unité est un mot entier. */
+const AVANT_UNITE = new RegExp(`(\\d)${ESPACE}+(?=(?:kg|px|rem|ans|h|%)(?![\\p{L}\\p{N}]))`, 'gu');
 
 /**
  * Rend insécables les espaces d'un nœud de texte.
@@ -93,6 +101,7 @@ export function insecabiliser(
   enLigneEnsuite = false,
 ): string {
   let t = texte.replace(AVANT_PONCTUATION, `$1${ESPACE_INSECABLE}`);
+  t = t.replace(AVANT_UNITE, `$1${ESPACE_INSECABLE}`);
   if (suiteEnLigne) t = t.replace(AVANT_PONCTUATION_EN_TETE, ESPACE_INSECABLE);
   t = t.replace(APRES_GUILLEMET, `«${ESPACE_INSECABLE}`);
   if (enLigneEnsuite) t = t.replace(APRES_GUILLEMET_EN_FIN, `«${ESPACE_INSECABLE}`);

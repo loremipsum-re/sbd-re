@@ -177,6 +177,12 @@ Points à ne pas casser :
   1,39:1, sous les 3:1 du critère 1.4.11 ; le filet tient 5,34:1.
 - **`.liste .intitule` n'est masqué que dans `td[data-libelle]`.** Écrit plus
   large, il a masqué SQ, DC et SDT de tous les résultats de compétition.
+- **Un en-tête de tri masqué sort du parcours du clavier**, `tabindex="-1"`,
+  tant que son `thead` est rogné : sous 60rem, et partout en `thead.sr-only`.
+  Laissés à 0, six arrêts invisibles précédaient le classement.
+- **Tout tableau porte un nom**, `aria-label` ou `<caption>` : `RankingTable`
+  exige sa prop `legende`. Vingt-deux tableaux en manquaient le 10 novembre
+  2026.
 
 ## Infographies
 
@@ -372,8 +378,12 @@ balisage : un nouveau lien externe l'obtient sans rien demander. Les adresses
 l'intérieur des guillemets devient U+00A0, dans les nœuds de texte seulement,
 jamais dans un attribut, un script, un style ou du code. Elle n'en ajoute
 aucune, ce qui protège adresses, heures et rapports comme « 4,5:1 ». Ne pas en
-écrire à la main. Seul le texte fabriqué en JavaScript y échappe, comme le
-« Total : » de `/simulateur/`. `dateLongue()` écrit « 1er » le premier du mois.
+écrire à la main. Seul le texte fabriqué en JavaScript ou en PHP y échappe,
+comme le « Total : » de `/simulateur/` : il écrit ses `\u00a0`, ce que fait
+`dateHeureFr()` au forum. `dateLongue()` écrit « 1er » le premier du mois.
+**Un nombre garde son unité**, depuis le 10 novembre 2026 : « 18 ans »,
+« 24 px », « 100 kg », « 60 % », « 8 h ». La liste des unités est fermée,
+dans le même fichier.
 
 **Tout lien sortant s'ouvre dans un nouvel onglet et s'annonce**, demande de
 l'auteur du 24 octobre 2026. `src/middleware.ts` réécrit le HTML de chaque page
@@ -429,8 +439,24 @@ nouveau champ le reprend.
 
 **L'en-tête tient à 320 px, connecté ou non.** Sous 22,5rem, le bouton du
 menu perd son mot et garde ses trois traits. Tout ajout à la barre se
-remesure à 320 px dans les deux états : « Connexion » l'a fait déborder de
-38 px, la cloche et l'avatar de 23 px.
+remesure à 320 ET à 360 px dans les deux états : « Connexion » l'a fait
+déborder de 38 px, la cloche et l'avatar de 23 px. À 360 px, la largeur de
+téléphone la plus courante, la barre d'un visiteur demandait 344 px pour
+328 : le menu touchait le bord de l'écran. De 22,5 à 24rem, les boutons
+resserrent leur blanc. Sous 48rem, la barre passe à la ligne plutôt que de
+sortir de l'écran, pour un texte agrandi ou espacé par le lecteur.
+
+**Le contenu d'une page démarre à 32 px sous l'en-tête**, choix de l'auteur
+du 10 novembre 2026 : c'est le `padding-top` de `main`, et aucune page n'en
+ajoute. Seuls l'accueil, 64 px avec son bloc d'ouverture, et la page 404 y
+dérogent. **Une page de texte se cale à gauche**, `margin-inline:
+var(--bord-colonne) auto` : étroite pour la lecture, elle se centrait, et
+son titre démarrait à 280 px du bord contre 88 ailleurs. Les listes de
+texte prennent 24 px de retrait, `--space-6`, jamais les 40 du navigateur.
+
+**Un `dd` naît avec 40 px de marge à gauche.** `.chiffres-cles dd` la
+retire ; un autre `dl` l'écrit lui-même. Oubliée, elle décalait les barres
+de la fiche d'athlète de leur intitulé.
 
 **`--accent` est un accent de TEXTE, `--accent-fill` est l'aplat.** Poser
 `--accent` en fond sous `--on-accent` donne 2,78:1 en thème clair. L'erreur a
@@ -559,7 +585,9 @@ choix de l'auteur du 27 octobre 2026.
 - Entre 60 et 80rem, la coupe d'un record déborde sur la colonne voisine de
   l'historique d'une fiche, jusqu'à 18 px. Le tableau de neuf colonnes manque
   de place : cartes jusqu'à 80rem, colonne Format compacte ou date courte,
-  la solution reste à choisir.
+  la solution reste à choisir. Le même tableau perd de 59 à 69 px à droite,
+  à 1 280 px, quand le lecteur espace le texte (critère 1.4.12) : le cadre
+  `.liste` coupe ce qui dépasse. Les cartes jusqu'à 80rem règlent les deux.
 - La carte de partenaire de `/classement/` tombe en fin de liste, à environ
   55 écrans sur téléphone. Conforme aux règles, peu vue.
 

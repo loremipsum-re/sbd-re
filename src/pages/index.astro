@@ -80,7 +80,7 @@ const stats = [
 <BaseLayout
   titre="Classement des powerlifters à La Réunion"
   titreOnglet="SBD.re - Classement des Powerlifters à La Réunion"
-  description="Site qui référence tous les athlètes officiels de force athlétique à La Réunion : records de squat, bench et deadlift, classements et résultats de compétition. Bientôt, le top des performances réunionnaises hors compétition."
+  description="Site qui référence tous les athlètes officiels de force athlétique à La Réunion : records de squat, bench et deadlift, classements et résultats de compétition. Sa communauté publie aussi ses barres de salle, vérifiées sur vidéo."
 >
   <section class="hero wrap">
     <h1>
@@ -89,8 +89,8 @@ const stats = [
     </h1>
     <p class="chapeau">
       Site qui référence tous les athlètes officiels de force athlétique à La
-      Réunion, et bientôt le top des performances réunionnaises hors
-      compétition.
+      Réunion. Sa communauté publie aussi ses barres de salle, vérifiées sur
+      vidéo.
     </p>
 
     <div class="actions">
@@ -148,7 +148,7 @@ const stats = [
     {/* Les Dots dominent chaque ligne : c'est l'ordre de la liste. Avec le
         total en grand, on lisait 807,5, puis 660, puis 790, et l'ordre
         paraissait faux. */}
-    <RankingTable entries={top} dominante="dots" />
+    <RankingTable entries={top} dominante="dots" legende="Les dix premiers aux points Dots" />
   </section>
 
   {/*
@@ -241,14 +241,18 @@ const stats = [
   <section class="wrap bloc">
     <div class="communaute">
       <div>
-        <h2>Performances hors compétition</h2>
+        {/*
+          AU PRÉSENT, depuis l'ouverture du 7 novembre 2026. Le bloc annonçait
+          un « classement communauté » à venir : la communauté est ouverte, et
+          elle n'a pas de classement. Choix de l'auteur du 10 novembre 2026.
+        */}
+        <h2>La communauté</h2>
         <p class="fin">
-          Le top des performances réunionnaises réalisées en salle et en
-          compétition non <Terme cle="homologue">homologuée</Terme>. Bientôt
-          disponible.
+          Le forum, le chat, et les barres de salle des membres, vérifiées sur
+          vidéo par la communauté.
         </p>
       </div>
-      <a class="bouton lien-nu" href="/communaute/">Voir le classement communauté</a>
+      <a class="bouton lien-nu" href="/communaute/">Entrer dans la communauté</a>
     </div>
   </section>
 </BaseLayout>

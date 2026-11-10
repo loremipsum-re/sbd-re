@@ -98,14 +98,18 @@ function lienDernier(string $adresse, int $sujetId, int $reponses): string
     return lienSujet($adresse, $sujetId, pageDuMessage($reponses)) . '#dernier';
 }
 
-/** « 7 novembre 2026 à 14 h 05 », à l'heure de La Réunion. */
+/**
+ * « 7 novembre 2026 à 14 h 05 », à l'heure de La Réunion. Les espaces de
+ * l'heure sont insécables : le site généré les pose à la génération
+ * (lib/espaces-insecables.ts), une page rendue ici doit les écrire.
+ */
 function dateHeureFr(int $moment): string
 {
     $d = (new \DateTimeImmutable('@' . $moment))->setTimezone(new \DateTimeZone('Indian/Reunion'));
     $jour = $d->format('j');
 
     return ($jour === '1' ? '1er' : $jour) . ' ' . MOIS_FR[(int) $d->format('n') - 1] . ' ' . $d->format('Y')
-        . ' à ' . $d->format('G') . ' h ' . $d->format('i');
+        . ' à ' . $d->format('G') . "\u{00A0}h\u{00A0}" . $d->format('i');
 }
 
 function balisageDate(int $moment): string
