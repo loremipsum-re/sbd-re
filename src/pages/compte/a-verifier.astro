@@ -89,7 +89,8 @@ import '../../styles/compte.css';
       textContent: [
         MOUVEMENTS[b.mouvement],
         EQUIPEMENTS[b.equipement],
-        `${Number(b.charge_kg).toLocaleString('fr-FR')} kg`,
+        // Insécable écrite à la main : ce texte naît dans le navigateur.
+        `${Number(b.charge_kg).toLocaleString('fr-FR')}\u00a0kg`,
         new Date(`${b.date_performance}T12:00:00`).toLocaleDateString('fr-FR', {
           day: 'numeric',
           month: 'long',
@@ -184,7 +185,7 @@ import '../../styles/compte.css';
     }
 
     const { votes, pourcent, jours } = lecture.seuil as { votes: number; pourcent: number; jours: number };
-    seuil.textContent = `Une barre reçoit le badge « Vérifiée par la communauté » à ${votes} avis, dont ${pourcent} % favorables. Votre avis se change tant que la barre est ici.`;
+    seuil.textContent = `Une barre reçoit le badge « Vérifiée par la communauté » à ${votes} avis, dont ${pourcent}\u00a0% favorables. Votre avis se change tant que la barre est ici.`;
 
     const peutVoter = lecture.peut_voter === true;
     if (!peutVoter) {
