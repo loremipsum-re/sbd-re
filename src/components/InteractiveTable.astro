@@ -890,6 +890,26 @@ const repliable = aFiltres && replier !== undefined;
     }
 
     /*
+     * UN EN-TÊTE SORTI DE LA VUE NE GARDE PAS D'ARRÊT AU CLAVIER. En cartes,
+     * `thead` est masqué à l'œil (`.sr-only`, ou toute `.liste` sous 60rem) et
+     * reste dans le document pour les lecteurs d'écran. Ses boutons de tri
+     * recevaient pourtant le focus : au classement, Tab passait par six
+     * commandes invisibles avant le premier nom, mesuré le 10 novembre 2026
+     * (critère 2.4.7). Ils quittent l'ordre du clavier tant que l'en-tête est
+     * masqué. Un lecteur d'écran les atteint toujours, et la barre « Trier
+     * par » donne les mêmes tris à l'écran, là où elle existe.
+     */
+    const boutonsEntete = entetes.map((e) => e.querySelector<HTMLButtonElement>('.bouton-tri')!);
+    const reglerClavierEntetes = () => {
+      for (const bouton of boutonsEntete) {
+        const tete = bouton.closest('thead');
+        bouton.tabIndex = tete !== null && getComputedStyle(tete).position === 'absolute' ? -1 : 0;
+      }
+    };
+    reglerClavierEntetes();
+    matchMedia('(max-width: 59.999rem)').addEventListener('change', reglerClavierEntetes);
+
+    /*
      * Barre « Trier par », construite à partir des mêmes en-têtes.
      *
      * Elle prend le relais quand la liste s'affiche en cartes : sans colonnes
