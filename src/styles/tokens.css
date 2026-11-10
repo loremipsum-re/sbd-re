@@ -593,6 +593,18 @@ textarea {
 }
 
 /*
+ * LE TEXTE D'INVITE PORTE --muted, À PLEINE OPACITÉ. « Nom d'un athlète »
+ * est une consigne, donc du texte à lire, tenu aux 4,5:1 du critère 1.4.3.
+ * Laissé au navigateur, il sortait à 3,92:1 en sombre et 4,12:1 en clair sur
+ * vingt pages (audit du 10 novembre 2026). `opacity: 1` : Firefox l'estompe
+ * d'office.
+ */
+::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+/*
  * L'EN-TÊTE DE COLONNE CLIQUABLE : 24 px, et non 44.
  *
  * Il échappe à la règle des 44 px, qui tasserait une rangée d'en-têtes au point

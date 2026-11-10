@@ -168,10 +168,12 @@ function tracer(L: number, H: number, MARGE: Marge) {
    * performance, la meilleure et la première sont servies d'abord : ce sont
    * elles qui racontent une progression.
    */
-  const LARGEUR_CARACTERE = 6.2;
+  // 6,8 unités par caractère à 12 unités de corps (6,2 à 11, avant le
+  // 10 novembre 2026).
+  const LARGEUR_CARACTERE = 6.8;
   const ECART_MIN = 4;
   // Hauteur d'un chiffre au-dessus de la ligne de base, et talon sous elle.
-  const MONTANT = 8;
+  const MONTANT = 9;
   const TALON = 3;
   type Boite = { g: number; d: number; h: number; b: number };
   const posees: Boite[] = [];
@@ -228,8 +230,8 @@ function tracer(L: number, H: number, MARGE: Marge) {
  * avec le dessin. La taille lisible d'une étiquette dépend donc du rapport
  * entre la largeur du repère et celle du conteneur. La colonne du site mesure
  * 1088 px au plus large, et 800 px au seuil de bascule ; un repère de 880
- * unités y tient entre 0,91 et 1,24 fois sa taille, soit un texte rendu de 10
- * à 13,6 px.
+ * unités y tient entre 0,91 et 1,24 fois sa taille, soit un texte rendu de
+ * 10,9 à 14,9 px, pour 12 unités de corps.
  *
  * Sur téléphone, la colonne tombe à 343 px. Le repère étroit mesure donc 340
  * unités, soit une échelle de 1, et son plafond de 460 px dans la feuille de
@@ -667,7 +669,7 @@ const aDeuxSeries = locaux.length > 0 && exterieurs.length > 0;
 
   .axe {
     fill: var(--muted);
-    font-size: 11px;
+    font-size: 12px;
     font-family: var(--font-body);
   }
 
@@ -750,7 +752,7 @@ const aDeuxSeries = locaux.length > 0 && exterieurs.length > 0;
 
   .valeur {
     font-family: var(--font-body);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     fill: var(--text);
   }

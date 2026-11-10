@@ -173,4 +173,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     margin: 0;
   }
 
+  /* L'adresse et le site de l'hébergeur, seuls sur leur ligne : une cible
+     de 44 px (17 mesurés sur téléphone, audit du 10 novembre 2026). */
+  .fiche dd a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+  }
+
 </style>

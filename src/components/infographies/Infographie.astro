@@ -55,7 +55,12 @@ const article = fiche?.article;
         {article && (
           <>
             {source && ' '}
-            <a href={`/actualites/${article}/`}>Lire l'article</a>
+            {/* Le titre de la figure, pour les lecteurs d'écran : deux
+                « Lire l'article » d'une même page menaient à deux adresses
+                sous le même nom (critère 2.4.4, audit du 10 novembre 2026). */}
+            <a href={`/actualites/${article}/`}>
+              Lire l'article<span class="sr-only">{`, ${titre}`}</span>
+            </a>
           </>
         )}
       </p>
