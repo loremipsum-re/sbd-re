@@ -266,7 +266,10 @@
   border-radius: 999px;
   font-size: var(--step--1);
   font-weight: 600;
-  white-space: nowrap;
+  /* Sans `nowrap` : l'étiquette tient sur une ligne tant qu'elle a sa
+     place, et se plie sinon. Insécable, « Vérifiée par la communauté »
+     faisait déborder la page de 34 px à 320 px, pour un texte espacé par
+     le lecteur (critère 1.4.12). */
 }
 
 .liste-perfs-compte .verif-oui {

@@ -51,6 +51,14 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-10',
     nature: 'correction',
+    version: '1.19.5',
+    titre: 'Sur un petit téléphone, les boutons du forum gardent leur ligne',
+    texte:
+      "À 320 px de large, « J'aime · 4 » se pliait sur deux lignes dans son bouton. Les boutons d'un message passent désormais à la ligne, et le nombre de « J'aime » se lit au-dessus d'eux sur téléphone. Avec un texte espacé par le lecteur, le forum et l'espace membre tiennent dans l'écran.",
+  },
+  {
+    date: '2026-11-10',
+    nature: 'correction',
     version: '1.19.4',
     titre: 'Le site relu de bout en bout : lisibilité, lecture, alignements',
     texte:

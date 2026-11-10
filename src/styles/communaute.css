@@ -420,8 +420,13 @@
   margin-left: auto;
 }
 
+/* Les boutons passent à la ligne plutôt que de s'écraser. À 320 px,
+   « J'aime · 4 » se pliait sur deux lignes dans son bouton, haut de 71 px ;
+   avec un texte espacé par le lecteur (critère 1.4.12), la page débordait
+   de 23 px. Mesuré le 10 novembre 2026. */
 .corps-message footer {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
 }
 
@@ -668,6 +673,24 @@
   align-self: center;
   color: var(--muted);
   font-size: var(--step--1);
+}
+
+/* Sur téléphone, ce compte prend sa ligne, au-dessus des boutons : serré à
+   côté d'eux, il se pliait sur trois lignes à 320 px. */
+@media (max-width: 47.99rem) {
+  .corps-message footer .aime {
+    flex-basis: 100%;
+    text-align: right;
+  }
+}
+
+/* Sous 22,5rem, les boutons resserrent leur blanc : à 320 px, « J'aime »,
+   « Citer » et « Signaler » demandaient 255 px pour 252, et le troisième
+   passait seul à la ligne sous chaque message. */
+@media (max-width: 22.49rem) {
+  .corps-message footer button {
+    padding-inline: var(--space-3);
+  }
 }
 
 /* Signaler reste discret : un geste rare, qui ne doit pas tenter. */
