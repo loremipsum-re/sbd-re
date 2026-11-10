@@ -51,6 +51,21 @@ export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-10',
     nature: 'correction',
+    version: '1.19.4',
+    titre: 'Le site relu de bout en bout : lisibilité, lecture, alignements',
+    texte:
+      "Cinquante-deux pages mesurées, à six largeurs d'écran et dans les deux thèmes. Les titres démarrent à la même hauteur partout, les pages de texte se calent à gauche comme les autres, et les barres d'une fiche d'athlète s'alignent sous leur intitulé. Sur un téléphone de 360 px, le bouton du menu retrouve sa marge. Chaque tableau porte un nom pour les lecteurs d'écran, et un nombre reste sur la ligne de son unité.",
+  },
+  {
+    date: '2026-11-10',
+    nature: 'correction',
+    titre: "L'accueil et la page À propos présentent la communauté ouverte",
+    texte:
+      "Les deux pages annonçaient encore un classement de la communauté « bientôt disponible ». Elles décrivent maintenant ce qui existe : le forum, le chat, et les barres de salle vérifiées sur vidéo.",
+  },
+  {
+    date: '2026-11-10',
+    nature: 'correction',
     version: '1.19.3',
     titre: 'Le rang des classements retrouve son dessin',
     texte:
