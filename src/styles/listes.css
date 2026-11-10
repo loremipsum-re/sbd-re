@@ -498,6 +498,19 @@
  * ========================================================================== */
 
 @media (max-width: 59.999rem) {
+  /*
+   * EN CARTES, LE CADRE DÉFILE PLUTÔT QUE DE COUPER. Avec un texte espacé par
+   * le lecteur (critère 1.4.12), à 320 px, quatre listes perdaient de 6 à
+   * 16 px à droite, la fin de « 519,0 Dots » sur l'accueil. Sans effet tant
+   * que les cartes tiennent, mesuré de 320 à 768 px. Au-dessus de 60rem, le
+   * tableau garde `hidden` : il y coupe encore de 4 à 8 px de rembourrage,
+   * qu'une barre de défilement montrerait.
+   */
+  .liste {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
   .liste thead {
     position: absolute;
     width: 1px;
