@@ -72,11 +72,17 @@ import EtatVide from './EtatVide.astro';
 interface Props {
   entries: AthleteRanking[];
   id?: string;
+  /**
+   * Le nom du tableau, lu par les lecteurs d'écran à son entrée et dans leur
+   * liste des tableaux : sans lui, deux classements d'une même page s'y
+   * confondaient (audit du 10 novembre 2026).
+   */
+  legende: string;
   /** Le chiffre qui domine chaque ligne. Le total par défaut, voir plus haut. */
   dominante?: 'total' | 'dots';
 }
 
-const { entries, id, dominante = 'total' } = Astro.props;
+const { entries, id, legende, dominante = 'total' } = Astro.props;
 const dotsDominants = dominante === 'dots';
 
 /*
@@ -89,7 +95,7 @@ const RESUME_DOTS = terme('glossaire-dots')?.resume;
 ---
 
 <div class:list={['liste', 'liste-perfs', { 'dots-dominants': dotsDominants }]}>
-  <table id={id} data-tableau>
+  <table id={id} data-tableau aria-label={legende}>
     <thead class="sr-only">
       <tr>
         <th scope="col">Rang à La Réunion</th>

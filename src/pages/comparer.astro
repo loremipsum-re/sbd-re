@@ -393,7 +393,7 @@ const nombreAthletes = athletes.length;
       }).join('');
 
       zoneTableau.innerHTML =
-        `<table class="comparaison"><thead><tr><th scope="col"><span class="sr-only">Mesure</span></th>${enTetes}</tr></thead><tbody>${corps}</tbody></table>`;
+        `<table class="comparaison"><caption class="sr-only">Comparaison des athlètes choisis</caption><thead><tr><th scope="col"><span class="sr-only">Mesure</span></th>${enTetes}</tr></thead><tbody>${corps}</tbody></table>`;
 
       signalerDefilement();
     }

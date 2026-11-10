@@ -128,7 +128,7 @@ const fournies = new Set(
             <h2>{label}</h2>
 
             <div class="liste liste-barres">
-              <table data-tableau>
+              <table data-tableau aria-label={`Catégories, ${label.toLowerCase()}`}>
                 <thead>
                   <tr>
                     <th scope="col" data-tri data-cle="poids" data-type="nombre">

@@ -504,7 +504,7 @@ const description =
         total={historique.length}
       >
         <div class="liste liste-barres">
-          <table data-tableau>
+          <table data-tableau aria-label={`Compétitions de ${name} à La Réunion`}>
             <thead>
               <tr>
                 <th scope="col" data-tri data-type="nombre">Date</th>
@@ -626,7 +626,7 @@ const description =
           </p>
 
           <div class="liste liste-barres">
-            <table>
+            <table aria-label={`Résultats de ${name} hors de La Réunion`}>
               <thead>
                 <tr>
                   <th scope="col">Date</th>

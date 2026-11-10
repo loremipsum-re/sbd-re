@@ -291,7 +291,7 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
             </h2>
 
             <div class="liste liste-barres records">
-              <table data-tableau>
+              <table data-tableau aria-label={`Records, ${sexe.label.toLowerCase()}, ${libelleEquipement(equipement)}`}>
                 <thead>
                   <tr>
                     <th scope="col" data-tri data-type="nombre">
