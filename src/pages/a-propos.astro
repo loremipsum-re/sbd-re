@@ -2,6 +2,7 @@
 import Terme from '../components/Terme.astro';
 import InfographieDonnees from '../components/infographies/InfographieDonnees.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { FAVORABLES_POURCENT, VOTES_MIN } from '../lib/communaute';
 import { nombreAthletes, periode, results } from '../lib/data';
 import { dateLongue } from '../lib/format';
 import { listeMeets } from '../lib/meets';
@@ -139,18 +140,31 @@ const developpeSeul = meets.filter((m) => m.events.length === 1 && m.events[0] =
     </ul>
 
     {/*
-      AU FUTUR : le classement communauté n'est pas encore ouvert, sa page
-      l'annonce. Le présent laissait croire qu'il recevait déjà des
-      performances.
+      AU PRÉSENT, depuis l'ouverture de la communauté le 7 novembre 2026. Le
+      paragraphe annonçait un « classement communauté » à venir, ouvert aux
+      compétitions non homologuées : ce projet-là n'a pas été construit. La
+      communauté a un forum, un chat, des profils et des barres de salle
+      vérifiées, sans classement. Les seuils se lisent dans lib/communaute.ts,
+      comme sur /communaute/.
     */}
     <h2>Officiel et communauté</h2>
     <p>
-      Le classement officiel présenté ici contient uniquement des résultats{' '}
-      <Terme cle="homologue">homologués</Terme>. Le{' '}
-      <a href="/communaute/">classement communauté</a> accueillera les
-      performances déclarées en salle et les compétitions non homologuées. Les
-      deux resteront séparés, et aucune performance ne passera de l'un à
-      l'autre.
+      Le classement et les records présentés ici contiennent uniquement des
+      résultats <Terme cle="homologue">homologués</Terme>, obtenus en
+      compétition.
+    </p>
+    <p>
+      La <a href="/communaute/">communauté</a> est un espace à part. Ses
+      membres y publient leurs barres de salle, chacune avec la vidéo où on la
+      voit en entier. Une barre y est vérifiée par la communauté à{' '}
+      {VOTES_MIN}&nbsp;avis, dont {FAVORABLES_POURCENT}&nbsp;% favorables, ou
+      par SBD.re. Un forum et un chat complètent l'ensemble.
+    </p>
+    <p>
+      Les deux restent séparés. Une barre de salle, même vérifiée, reste hors
+      du classement officiel et des records. Un membre qui a concouru à La
+      Réunion peut relier son profil à sa fiche d'athlète : les deux pages se
+      renvoient alors l'une à l'autre, et leurs chiffres restent distincts.
     </p>
 
     <h2>Contact</h2>
