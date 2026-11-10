@@ -1,6 +1,6 @@
 {
   "name": "sbd-re",
-  "version": "1.19.2",
+  "version": "1.19.3",
   "private": true,
   "type": "module",
   "description": "Classements et records du powerlifting réunionnais",
