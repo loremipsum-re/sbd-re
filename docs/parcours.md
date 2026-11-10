@@ -979,3 +979,64 @@ U+00A0 plutôt que l'espace fine U+202F : même largeur que l'espace remplacée,
 aucune ligne ne se resserre, seule la coupure change. Mesuré : 2 305 espaces
 converties sur 514 pages, aucun attribut ni script modifié, et plus aucune
 ponctuation en tête de ligne sur 1 542 mesures, contre 26 avant.
+
+## 13. La revue du 10 novembre 2026 : lisibilité, lecture, alignements
+
+Demande de l'auteur : un contrôle complet du site sur trois axes,
+l'accessibilité visuelle, la logique de lecture et l'alignement des contenus.
+
+### La méthode : 416 mesures, puis les yeux
+
+Cinquante-deux pages, une par gabarit, visiteur et membre : chargées dans un
+cadre de même origine à 320, 375, 640, 768, 1 024 et 1 280 px, dans les deux
+thèmes. Un script relève le contraste de chaque texte, la taille des
+caractères, la longueur des lignes, l'ordre de lecture contre l'ordre
+affiché, les noms des tableaux et des liens, les arrêts du clavier, et les
+bords gauches des blocs empilés. Vingt pages ont ensuite été relues à
+l'écran, à 375 px.
+
+Trois pièges de mesure, à ne pas refaire :
+
+- **Un cadre de 375 px avec sa barre de défilement n'est pas un téléphone.**
+  Les requêtes média y lisent 375 px, la mise en page 360. Masquer la barre
+  (`scrollbar-width: none`) rend les deux égales. La mesure hybride avait
+  pourtant du bon : c'est elle qui a montré le défaut à 360 px.
+- **La détection des « presque alignés » est bruyante.** Un texte dans une
+  boîte bordée démarre plus loin que son voisin nu, et c'est voulu. Sur 194
+  constats, une poignée étaient réels. L'œil reste le bon outil pour les
+  alignements, la mesure pour les confirmer.
+- **`requestAnimationFrame` ne se déclenche pas dans un onglet masqué.**
+  Attendre par `setTimeout`.
+
+### Ce que la mesure a trouvé
+
+- **Une régression de la veille.** La classe globale `.rang`, écrite pour le
+  badge des modérateurs, habillait aussi la colonne du rang de tous les
+  classements. Corrigée à part, en 1.19.3 : `.badge-rang`. Une classe
+  globale porte un nom que rien d'autre n'emploie, à vérifier par une
+  recherche.
+- **À 360 px, le menu touchait le bord de l'écran** pour un visiteur. La
+  barre avait été mesurée à 320 et à 375 px, jamais entre les deux.
+- **Le retrait par défaut d'un `dd`**, 40 px, décalait les barres de la
+  fiche d'athlète de leur intitulé. Trois pages laissaient leurs listes au
+  retrait du navigateur, 40 px, quand les autres en posent 24.
+- **Les titres démarraient à 32 ou à 64 px** sous l'en-tête selon la page,
+  et quatre pages de texte se centraient. L'auteur a tranché : 32 px
+  partout, et la colonne de texte calée à gauche.
+- **Six arrêts invisibles du clavier** sur le classement, les en-têtes de
+  tri masqués ; vingt-deux tableaux sans nom ; un texte d'invite à 3,92:1.
+
+### Un nombre et son unité
+
+« dès 18 / ans », « 24 / px » : la coupure tombait entre le nombre et l'unité.
+Le middleware des espaces insécables reçoit une règle de plus, sur une liste
+fermée d'unités. Dix cas éprouvés par un script, dont les faux amis
+« 5 hommes » et « 2 annonces », qui gardent leur espace ordinaire. Les pages
+rendues en PHP échappent au middleware : `dateHeureFr()` écrit ses
+insécables elle-même.
+
+### Ce qui reste
+
+Le tableau d'historique d'une fiche, à 1 280 px, perd de 59 à 69 px quand le
+lecteur espace le texte. Le remède est le même que pour le défaut connu
+entre 60 et 80rem, et il attend le même choix de l'auteur.
