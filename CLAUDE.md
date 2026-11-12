@@ -79,7 +79,9 @@ la mention « à compléter » tant que l'auteur ne les a pas fournis.
 | `/classement/` | Les athlètes classés, en cartes, filtres et tri derrière le bouton « Filtres » |
 | `/records/` | Grille par sexe et équipement, catégories en lignes, et l'année de chaque record en cours |
 | `/categories/` | Les catégories en pastilles avec leur effectif, les trois plus fournies de chaque sexe en jaune, puis `/categories/hommes/93/` et sa courbe du record |
-| `/competitions/` | Liste, puis `/competitions/<nom>/<date>/` et ses records battus ce jour-là |
+| `/competitions/` | Liste, puis `/competitions/<nom>/<date>/` et ses records battus ce jour-là. Trois médailles par compétition, aux trois meilleurs Dots du full power (choix de l'auteur du 12 novembre 2026) ; la place dans la catégorie reste en chiffres. Une compétition d'un seul mouvement n'a pas de médaille. La liste vit dans `components/ListeCompetitions.astro`, partagée avec les saisons et les communes |
+| `/saisons/`, `/saisons/<année>/` | Depuis le 12 novembre 2026. Une ligne par année, puis chaque saison : chiffres, les dix premiers aux Dots de l'année (`topDots(…, false)`, sans évolution, qui n'a pas de sens sur une seule année), records battus et toujours en cours, compétitions. Calculs dans `lib/saisons.ts` |
+| `/communes/`, `/communes/<commune>/` | Depuis le 12 novembre 2026. Les communes qui ont accueilli une compétition (champ `meetTown`), puis chaque commune : chiffres, records établis sur place et toujours en cours, compétitions, salles actives de la collection `salles`. Calculs et accord « à / au » (`aLaCommune`) dans `lib/communes.ts` |
 | `/exterieur/` | Résultats obtenus hors de La Réunion |
 | `/athlete/<slug>/` | Une fiche par athlète. Un membre connecté y réclame la sienne, « C'est votre fiche ? » en bas de page, et l'admin relie ou refuse depuis `/compte/admin/` : relié, le profil mène à la fiche et la fiche au profil (`components/FicheMembre.astro`, `api/revendication.php`, `lib/revendications.php`). `/api/athletes.json`, généré avec le site, dit au serveur quelles fiches existent |
 | `/communaute/` | L'entrée de la communauté depuis l'ouverture du 7 novembre 2026 : le forum, le fil, les barres à vérifier, le compte, puis la vitrine du 9 novembre (trois dernières actualités, top des membres en raw, dernières barres, par `api/communaute.php` et `lib/vitrine.php`), le fonctionnement, et un bouton qui ouvre le chat. `/communaute/chat/` renvoie à `/communaute/#chat`, qui l'ouvre aussi. **Le chat flotte sur toutes les pages** depuis le 9 novembre, bouton « Chat » dans le coin (`components/Chat.astro`, posé par `BaseLayout.astro`) : il n'interroge le serveur que fenêtre ouverte, et ses styles vivent sous `.chat-flottant` |
@@ -106,7 +108,9 @@ redirigent, via une table générée dans `astro.config.mjs`.
 choix de l'auteur du 27 octobre 2026. Dès 48rem, la barre porte Classement,
 Records et Catégories (champ `barre`), puis le bouton Menu. Le panneau range
 les rubriques en trois familles, Classements, Outils et Le site, sur deux
-colonnes dès 22,5rem. `/exterieur/` s'y appelle « Hors de l'île ». Communauté
+colonnes dès 22,5rem. `/exterieur/` s'y appelle « Hors de l'île ». Saisons et
+Communes suivent Compétitions dans Classements, choix de l'auteur du
+12 novembre 2026. Communauté
 et Forum ferment Le site depuis l'ouverture ; le champ `etiquette` reste
 pour une prochaine rubrique « Bientôt ». Mises à jour et pages
 légales vivent au pied de page seulement (`piedSeulement`), qui suit le même
@@ -454,6 +458,12 @@ var(--bord-colonne) auto` : étroite pour la lecture, elle se centrait, et
 son titre démarrait à 280 px du bord contre 88 ailleurs. Les listes de
 texte prennent 24 px de retrait, `--space-6`, jamais les 40 du navigateur.
 
+**Une icône dans une colonne de tableau porte `max-width: none`.** La règle
+commune `svg { max-width: 100% }` la rend compressible : le navigateur
+l'ignore en dimensionnant la colonne, et elle déborde sur la voisine. C'est
+ce qui faisait mordre la coupe d'un record dans l'historique d'une fiche,
+corrigé le 12 novembre 2026 (`.liste .coupe svg`).
+
 **Un `dd` naît avec 40 px de marge à gauche.** `.chiffres-cles dd` la
 retire ; un autre `dl` l'écrit lui-même. Oubliée, elle décalait les barres
 de la fiche d'athlète de leur intitulé.
@@ -567,18 +577,15 @@ $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";"
 - **Un essai sur un vrai iPhone** : le zoom des champs, le toucher des termes
   du lexique et la hauteur du menu n'ont été mesurés que dans Chromium.
 
-**Deux arbitrages ouverts**, sur lesquels l'auteur ne s'est pas prononcé :
+**Un arbitrage ouvert**, sur lequel l'auteur ne s'est pas prononcé :
 
-1. **Médailles de compétition.** Elles sont aujourd'hui décernées par catégorie
-   de poids, ce qui donne 41 médailles sur 54 résultats pour une compétition
-   type. Sportivement exact, visuellement chargé. L'alternative serait les trois
-   premiers toutes catégories confondues.
-2. **Buy Me a Coffee.** Le bouton est fait maison, sans script tiers. L'auteur
+1. **Buy Me a Coffee.** Le bouton est fait maison, sans script tiers. L'auteur
    avait fourni le script officiel, écarté pour la même raison que Google Fonts
    en CDN.
 
 Le nom de l'onglet Extérieur est tranché : « Hors de l'île » dans le menu,
-choix de l'auteur du 27 octobre 2026.
+choix de l'auteur du 27 octobre 2026. Les médailles aussi : le podium
+général aux Dots, le 12 novembre 2026.
 
 **Défauts connus, à reprendre**
 
@@ -587,12 +594,6 @@ choix de l'auteur du 27 octobre 2026.
   L'inscription refuse donc icloud.com, me.com et mac.com, en le disant
   (`DOMAINES_INJOIGNABLES`, `lib/comptes.php`). Voir docs/comptes.md, 6.1.
 
-- Entre 60 et 80rem, la coupe d'un record déborde sur la colonne voisine de
-  l'historique d'une fiche, jusqu'à 18 px. Le tableau de neuf colonnes manque
-  de place : cartes jusqu'à 80rem, colonne Format compacte ou date courte,
-  la solution reste à choisir. Le même tableau perd de 59 à 69 px à droite,
-  à 1 280 px, quand le lecteur espace le texte (critère 1.4.12) : le cadre
-  `.liste` coupe ce qui dépasse. Les cartes jusqu'à 80rem règlent les deux.
 - La carte de partenaire de `/classement/` tombe en fin de liste, à environ
   55 écrans sur téléphone. Conforme aux règles, peu vue.
 
