@@ -1,0 +1,164 @@
+---
+/**
+ * Une commune organisatrice : ses chiffres, les records établis sur place
+ * et qui tiennent toujours, ses compétitions, puis ses salles.
+ *
+ * LES SALLES VIENNENT DE LA COLLECTION `salles`, actives seulement, comme sur
+ * /salles/. Une commune sans salle recensée n'affiche pas le bloc.
+ */
+import { getCollection } from 'astro:content';
+import GrilleRecords from '../../components/GrilleRecords.astro';
+import ListeCompetitions from '../../components/ListeCompetitions.astro';
+import SpriteMouvements from '../../components/SpriteMouvements.astro';
+import Terme from '../../components/Terme.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { aLaCommune, listeCommunes, type Commune } from '../../lib/communes';
+import { annee, pluriel } from '../../lib/format';
+import { parAthlete, recordsEnCours } from '../../lib/records';
+import { meetKey } from '../../lib/slug';
+
+export function getStaticPaths() {
+  return listeCommunes().map((commune) => ({
+    params: { commune: commune.slug },
+    props: { commune },
+  }));
+}
+
+interface Props {
+  commune: Commune;
+}
+
+const { commune } = Astro.props;
+const { nom } = commune;
+const ici = aLaCommune(nom);
+const nb = commune.competitions.length;
+const records = parAthlete(recordsEnCours().filter((r) => commune.cles.has(meetKey(r.date, r.meetName))));
+const salles = (await getCollection('salles'))
+  .map((s) => s.data)
+  .filter((s) => s.actif && s.commune === nom)
+  .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+const depuis = annee(commune.premiere);
+---
+
+<BaseLayout
+  titre={`Compétitions ${ici}`}
+  description={`La force athlétique ${ici} : ${nb} ${pluriel(nb, 'compétition')} depuis ${depuis}, ${commune.athletes} ${pluriel(commune.athletes, 'athlète')}, les records établis sur place et les salles de la commune.`}
+>
+  <div class="wrap">
+    <p class="fil"><a href="/communes/">Toutes les communes</a></p>
+
+    <header class="entete-page">
+      <h1>{nom}</h1>
+      <p class="chapeau">
+        {nb}&nbsp;{pluriel(nb, 'compétition')} officielle{nb > 1 ? 's' : ''}{' '}
+        {ici} depuis {depuis}, pour {commune.athletes}&nbsp;{pluriel(commune.athletes, 'athlète')}.
+      </p>
+    </header>
+
+    <dl class="chiffres-cles stats">
+      <div>
+        <dt>Compétitions</dt>
+        <dd class="num">{nb}</dd>
+      </div>
+      <div>
+        <dt>Athlètes</dt>
+        <dd class="num">{commune.athletes}</dd>
+      </div>
+      <div>
+        <dt>Résultats</dt>
+        <dd class="num">{commune.resultats.toLocaleString('fr-FR')}</dd>
+      </div>
+      <div>
+        <dt>Records en cours</dt>
+        <dd class="num">{records.reduce((n, g) => n + g.records.length, 0)}</dd>
+      </div>
+    </dl>
+
+    {
+      records.length > 0 && (
+        <section class="bloc">
+          <SpriteMouvements />
+          <h2>Records établis {ici}</h2>
+          <p class="intro">
+            Les <Terme cle="record">records</Terme> de catégorie posés lors
+            d'une compétition {ici}, et qui tiennent toujours.
+          </p>
+          <GrilleRecords
+            groupes={records}
+            parCompetition
+            marquerIle
+            visibles={5}
+            legende={`Records établis ${ici} et toujours en cours, par athlète et par mouvement`}
+          />
+        </section>
+      )
+    }
+
+    <section class="bloc">
+      <h2>Les compétitions</h2>
+      <ListeCompetitions meets={commune.competitions} legende={`Compétitions ${ici}`} sansCommune />
+    </section>
+
+    {
+      salles.length > 0 && (
+        <section class="bloc">
+          <h2>Les salles</h2>
+          <ul class="salles">
+            {salles.map((s) => (
+              <li>
+                <strong>{s.nom}</strong>
+                {s.rue && <span class="rue">{s.rue}</span>}
+              </li>
+            ))}
+          </ul>
+          <p class="fil">
+            <a href="/salles/">La carte des salles de l'île</a>
+          </p>
+        </section>
+      )
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  /* Colonnes et alignement des rangées : voir `.chiffres-cles` dans
+     tokens.css. Ne restent ici que le cadre et le nombre de colonnes. */
+  .stats {
+    --colonnes: 4;
+    gap: var(--space-4);
+    margin: 0 0 var(--space-12);
+    padding: var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .intro {
+    max-width: 68ch;
+    margin-bottom: var(--space-4);
+    color: var(--muted);
+  }
+
+  .salles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr));
+    gap: var(--space-3);
+    margin: 0 0 var(--space-2);
+    padding: 0;
+    list-style: none;
+  }
+
+  .salles li {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .rue {
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+</style>

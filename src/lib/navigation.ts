@@ -25,6 +25,8 @@ export type NomIcone =
   | 'records'
   | 'categories'
   | 'competitions'
+  | 'saisons'
+  | 'communes'
   | 'exterieur'
   | 'actualites'
   | 'partenariats'
@@ -142,6 +144,21 @@ export const RUBRIQUES: readonly Rubrique[] = [
     href: '/competitions/',
     label: 'Compétitions',
     icone: 'competitions',
+    famille: 'classements',
+  },
+  /* Saisons et communes, famille Classements : choix de l'auteur du
+     12 novembre 2026. Les compétitions lues par année, puis par lieu. */
+  {
+    href: '/saisons/',
+    label: 'Saisons',
+    icone: 'saisons',
+    famille: 'classements',
+  },
+  {
+    href: '/communes/',
+    label: 'Communes',
+    labelLong: 'Communes organisatrices',
+    icone: 'communes',
     famille: 'classements',
   },
   {

@@ -1,12 +1,12 @@
 ---
 import InteractiveTable from '../components/InteractiveTable.astro';
+import ListeCompetitions from '../components/ListeCompetitions.astro';
 import Repli from '../components/Repli.astro';
 import Terme from '../components/Terme.astro';
 import InfographieCommunes from '../components/infographies/InfographieCommunes.astro';
 import InfographieFormats from '../components/infographies/InfographieFormats.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { dateCourte } from '../lib/format';
-import { libelleEvent, listeMeets } from '../lib/meets';
+import { listeMeets } from '../lib/meets';
 
 const meets = listeMeets();
 const villes = [...new Set(meets.map((m) => m.meetTown).filter(Boolean))].sort((a, b) =>
@@ -80,48 +80,7 @@ const annees = [...new Set(meets.map((m) => m.date.slice(0, 4)))].sort().reverse
         </div>
       </Fragment>
 
-      <div class="liste liste-barres">
-        <table data-tableau aria-label="Compétitions à La Réunion">
-          <thead>
-            <tr>
-              <th scope="col" data-tri data-type="nombre">Date</th>
-              <th scope="col" data-tri>Compétition</th>
-              <th scope="col" data-tri>Commune</th>
-              <th scope="col">Format</th>
-              <th scope="col" class="nombre" data-tri data-type="nombre">Athlètes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {
-              meets.map((meet) => (
-                <tr
-                  data-recherche={meet.meetName}
-                  data-annee={meet.date.slice(0, 4)}
-                  data-ville={meet.meetTown}
-                >
-                  <td class="date" data-libelle="Date" data-valeur={meet.date.replace(/-/g, '')}>
-                    {dateCourte(meet.date)}
-                  </td>
-                  <th scope="row" class="nom">
-                    <a href={`/competitions/${meet.chemin}/`}>{meet.meetName}</a>
-                  </th>
-                  <td data-libelle="Commune" class="cellule-sous">{meet.meetTown || '—'}</td>
-                  <td data-libelle="Format" class="cellule-annexe">
-                    <span class="etiquettes">
-                      {meet.events.map((e) => (
-                        <span class="etiquette">{libelleEvent(e)}</span>
-                      ))}
-                    </span>
-                  </td>
-                  <td class="nombre num-tab" data-libelle="Athlètes" data-valeur={meet.athletes}>
-                    {meet.athletes}
-                  </td>
-                </tr>
-              ))
-            }
-          </tbody>
-        </table>
-      </div>
+      <ListeCompetitions meets={meets} legende="Compétitions à La Réunion" />
     </InteractiveTable>
 
     <p class="note">

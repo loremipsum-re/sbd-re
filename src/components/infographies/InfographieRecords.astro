@@ -32,6 +32,7 @@ import type { IdInfographie } from '../../lib/infographies';
 import { TRACES_MOUVEMENTS } from '../../lib/mouvements';
 import { recordsPour, type RecordEntry } from '../../lib/records';
 import type { LiftKey, Sex } from '../../lib/types';
+import { aLaCommune } from '../../lib/communes';
 
 interface Props {
   lienArticle?: IdInfographie;
@@ -111,17 +112,6 @@ const nomCarte = (c: Carte) => `${c.label.toLowerCase()} ${c.sexe.complement}`;
 /** « Meilleure barre raw au développé couché », ou « Meilleur total raw ». */
 const intituleRaw = (c: Carte) =>
   c.lift === 'total' ? 'Meilleur total raw' : `Meilleure barre raw au ${c.label.toLowerCase()}`;
-
-/*
- * « À Saint-Joseph », mais « au Tampon » : l'article d'une commune se
- * contracte avec la préposition. Le Tampon figure dans les données.
- */
-const aLaCommune = (commune: string) =>
-  commune.startsWith('Le ')
-    ? `au ${commune.slice(3)}`
-    : commune.startsWith('Les ')
-      ? `aux ${commune.slice(4)}`
-      : `à ${commune}`;
 
 /*
  * LES RECORDS DE LA SAISON VIENNENT-ILS D'UNE SEULE COMPÉTITION ? La phrase

@@ -1040,3 +1040,43 @@ insécables elle-même.
 Le tableau d'historique d'une fiche, à 1 280 px, perd de 59 à 69 px quand le
 lecteur espace le texte. Le remède est le même que pour le défaut connu
 entre 60 et 80rem, et il attend le même choix de l'auteur.
+
+## 14. Saisons, communes et podium, 12 novembre 2026
+
+L'auteur a demandé de « tout faire » parmi les sujets en attente : le tableau
+d'historique des fiches, les médailles, et les deux pistes légères.
+
+### L'historique : la mesure a changé le remède
+
+Le remède proposé était de passer l'historique en cartes jusqu'à 80rem. Mesuré
+avant d'écrire une ligne, de 960 à 1 440 px : rien n'était coupé en lecture
+normale. Le seul défaut visible était la coupe d'un record, qui mordait de 2
+à 10 px sur la colonne voisine. Sa cause : `svg { max-width: 100% }` rend une
+icône « compressible », et le navigateur l'ignore en dimensionnant une
+colonne. Une règle la rend comptée (`.liste .coupe svg`). La colonne demande
+alors 11 à 39 px de plus à 960 px : la pastille de format passe sur deux
+lignes de 60 à 68rem. Enfin le cadre défile au lieu de couper quand le lecteur
+espace le texte.
+
+Les cartes jusqu'à 80rem auraient demandé de dupliquer les 230 lignes du
+régime en cartes de `listes.css`, aucune requête média ne pouvant viser une
+seule liste. Trois règles ciblées donnent le même résultat mesuré, sur les
+cinq listes concernées.
+
+### Le podium général
+
+Choix de l'auteur : trois médailles par compétition, aux trois meilleurs
+Dots. Le plateau est le full power, où les Dots ont un sens : une compétition
+d'un seul mouvement n'a donc pas de médaille, ce que sa note disait déjà des
+Dots. Vérifié sur les 63 pages : les 37 compétitions qui ont des Dots portent
+l'or, l'argent et le bronze sur leurs trois meilleurs, et aucune autre
+médaille.
+
+### Saisons et communes
+
+Deux rubriques de la famille Classements. Une saison réutilise le classement
+aux Dots restreint à son année, sans évolution : comparée au rang d'un an
+plus tôt, chaque ligne aurait été marquée « nouveau ». Une commune regroupe
+les compétitions par le champ `meetTown`, qui ne sert jamais à en inclure
+une. La liste des compétitions devient un composant partagé par les trois
+pages qui la montrent.

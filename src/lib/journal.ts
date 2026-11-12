@@ -50,6 +50,28 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-12',
+    nature: 'fonction',
+    version: '1.20.0',
+    titre: 'Une page par saison et par commune',
+    texte:
+      "Chaque saison depuis 2017 a sa page, avec ses dix premiers aux points Dots, ses records et ses compétitions. Chaque commune qui accueille des compétitions a aussi la sienne, avec ses records et ses salles. Les deux rubriques rejoignent le menu, après Compétitions.",
+  },
+  {
+    date: '2026-11-12',
+    nature: 'visuel',
+    titre: 'Trois médailles par compétition',
+    texte:
+      "Les médailles récompensent désormais les trois meilleurs totaux de la journée aux points Dots, toutes catégories confondues. La place dans la catégorie reste écrite en chiffres. Une compétition d'un seul mouvement n'a pas de médaille.",
+  },
+  {
+    date: '2026-11-12',
+    nature: 'correction',
+    titre: 'La coupe d\'un record reste dans sa colonne',
+    texte:
+      "Sur un écran de 960 à 1 280 px, la coupe d'un record mordait sur la colonne voisine de l'historique d'une fiche d'athlète. Elle tient désormais dans la sienne.",
+  },
+  {
+    date: '2026-11-12',
     nature: 'correction',
     version: '1.19.6',
     titre: 'Le forum rouvre',

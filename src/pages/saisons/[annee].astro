@@ -1,0 +1,165 @@
+---
+/**
+ * Une saison : ses chiffres, son classement aux points Dots, ses records
+ * toujours en cours et ses compétitions.
+ *
+ * LE CLASSEMENT DE LA SAISON NE MONTRE PAS D'ÉVOLUTION. Le classement général
+ * compare au rang d'un an plus tôt ; restreint à une seule année, ce rang
+ * n'existe pas, et chaque athlète y serait marqué « nouveau ».
+ */
+import GrilleRecords from '../../components/GrilleRecords.astro';
+import ListeCompetitions from '../../components/ListeCompetitions.astro';
+import RankingTable from '../../components/RankingTable.astro';
+import SpriteMouvements from '../../components/SpriteMouvements.astro';
+import Terme from '../../components/Terme.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { pluriel } from '../../lib/format';
+import { topDots } from '../../lib/rankings';
+import { parAthlete, recordsBattusEn } from '../../lib/records';
+import { fullPowerDe, listeSaisons, type Saison } from '../../lib/saisons';
+
+export function getStaticPaths() {
+  const saisons = listeSaisons();
+  return saisons.map((saison, i) => ({
+    params: { annee: saison.annee },
+    props: {
+      saison,
+      suivante: saisons[i - 1]?.annee ?? null,
+      precedente: saisons[i + 1]?.annee ?? null,
+    },
+  }));
+}
+
+interface Props {
+  saison: Saison;
+  suivante: string | null;
+  precedente: string | null;
+}
+
+const { saison, suivante, precedente } = Astro.props;
+const { annee } = saison;
+const top = topDots(10, fullPowerDe(annee), false);
+const records = parAthlete(recordsBattusEn(annee));
+const nbCompetitions = saison.competitions.length;
+---
+
+<BaseLayout
+  titre={`Saison ${annee}`}
+  description={`La saison ${annee} de force athlétique à La Réunion : ${nbCompetitions} ${pluriel(nbCompetitions, 'compétition')}, ${saison.athletes} ${pluriel(saison.athletes, 'athlète')}, le classement aux points Dots et les records battus.`}
+>
+  <div class="wrap">
+    <p class="fil"><a href="/saisons/">Toutes les saisons</a></p>
+
+    <header class="entete-page">
+      <h1>Saison {annee}</h1>
+      <p class="chapeau">
+        {nbCompetitions}&nbsp;{pluriel(nbCompetitions, 'compétition')} à La Réunion en{' '}
+        {annee}, pour {saison.athletes}&nbsp;{pluriel(saison.athletes, 'athlète')} et{' '}
+        {saison.resultats.toLocaleString('fr-FR')}&nbsp;résultats.
+      </p>
+    </header>
+
+    <nav class="voisines" aria-label="Autres saisons">
+      {precedente && <a href={`/saisons/${precedente}/`}>← Saison {precedente}</a>}
+      {suivante && <a class="suivante" href={`/saisons/${suivante}/`}>Saison {suivante} →</a>}
+    </nav>
+
+    <dl class="chiffres-cles stats">
+      <div>
+        <dt>Compétitions</dt>
+        <dd class="num">{nbCompetitions}</dd>
+      </div>
+      <div>
+        <dt>Athlètes</dt>
+        <dd class="num">{saison.athletes}</dd>
+      </div>
+      <div>
+        <dt>Résultats</dt>
+        <dd class="num">{saison.resultats.toLocaleString('fr-FR')}</dd>
+      </div>
+      <div>
+        <dt>Records en cours</dt>
+        <dd class="num">{saison.records}</dd>
+      </div>
+    </dl>
+
+    {
+      top.length > 0 && (
+        <section class="bloc">
+          <h2>Les dix premiers aux points Dots</h2>
+          <p class="intro">
+            Le meilleur <Terme cle="total">total</Terme> de chaque athlète en{' '}
+            <Terme cle="full-power">full power</Terme> pendant la saison, ramené
+            au poids de corps.
+          </p>
+          <RankingTable entries={top} dominante="dots" legende={`Les dix premiers aux points Dots, saison ${annee}`} />
+        </section>
+      )
+    }
+
+    {
+      records.length > 0 && (
+        <section class="bloc">
+          <SpriteMouvements />
+          <h2>Records battus en {annee}</h2>
+          <p class="intro">
+            Les records de catégorie battus cette saison et qui tiennent
+            toujours.
+          </p>
+          <GrilleRecords
+            groupes={records}
+            parCompetition
+            marquerIle
+            visibles={5}
+            legende={`Records battus en ${annee} et toujours en cours, par athlète et par mouvement`}
+          />
+        </section>
+      )
+    }
+
+    <section class="bloc">
+      <h2>Les compétitions</h2>
+      <ListeCompetitions meets={saison.competitions} legende={`Compétitions de la saison ${annee}`} />
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  /* La saison d'avant à gauche, celle d'après à droite, 44 px de cible. */
+  .voisines {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-4);
+    margin-bottom: var(--space-6);
+  }
+
+  .voisines a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+  }
+
+  /* Seule, la saison suivante garde sa place, à droite. */
+  .voisines .suivante {
+    margin-left: auto;
+  }
+
+  /* Colonnes et alignement des rangées : voir `.chiffres-cles` dans
+     tokens.css. Ne restent ici que le cadre et le nombre de colonnes. */
+  .stats {
+    --colonnes: 4;
+    gap: var(--space-4);
+    margin: 0 0 var(--space-12);
+    padding: var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .intro {
+    max-width: 68ch;
+    margin-bottom: var(--space-4);
+    color: var(--muted);
+  }
+</style>

@@ -1,0 +1,97 @@
+---
+/**
+ * Les communes organisatrices : une ligne par commune, qui mène à sa page.
+ * Rubrique ouverte le 12 novembre 2026, famille Classements (choix de
+ * l'auteur). La carte des communes vit déjà sur /competitions/ ; elle se
+ * replie ici aussi, au même titre.
+ */
+import InteractiveTable from '../../components/InteractiveTable.astro';
+import Repli from '../../components/Repli.astro';
+import InfographieCommunes from '../../components/infographies/InfographieCommunes.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { annee } from '../../lib/format';
+import { listeCommunes } from '../../lib/communes';
+
+const communes = listeCommunes();
+---
+
+<BaseLayout
+  titre="Communes organisatrices"
+  description="Les communes de La Réunion qui accueillent des compétitions de force athlétique : leurs compétitions, leurs athlètes et les records établis sur place."
+>
+  <div class="wrap">
+    <header class="entete-page">
+      <h1>Communes</h1>
+      <p class="chapeau">
+        Les {communes.length} communes de l'île qui ont accueilli une
+        compétition officielle. Ouvrez une commune pour ses compétitions, les
+        records établis sur place et ses salles.
+      </p>
+    </header>
+
+    <div class="rangee-replis">
+      <Repli titre={'Où ont-elles lieu ?'}>
+        <InfographieCommunes lienArticle="communes" />
+      </Repli>
+    </div>
+
+    <InteractiveTable
+      recherche="Nom d'une commune"
+      singulier="commune"
+      pluriel="communes"
+      feminin
+      total={communes.length}
+    >
+      <div class="liste liste-barres">
+        <table data-tableau aria-label="Communes organisatrices">
+          <thead>
+            <tr>
+              <th scope="col" data-tri>Commune</th>
+              <th scope="col" class="nombre" data-tri data-type="nombre">Compétitions</th>
+              <th scope="col" class="nombre" data-tri data-type="nombre">Athlètes</th>
+              <th scope="col" class="nombre" data-tri data-type="nombre">Depuis</th>
+              <th scope="col" class="nombre" data-tri data-type="nombre">Dernière</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              communes.map((c) => (
+                <tr data-recherche={c.nom}>
+                  <th scope="row" class="nom">
+                    <a href={`/communes/${c.slug}/`}>{c.nom}</a>
+                  </th>
+                  <td class="nombre num-tab" data-libelle="Compétitions" data-valeur={c.competitions.length}>
+                    {c.competitions.length}
+                  </td>
+                  <td class="nombre num-tab" data-libelle="Athlètes" data-valeur={c.athletes}>
+                    {c.athletes}
+                  </td>
+                  <td class="nombre num-tab" data-libelle="Depuis" data-valeur={c.premiere.replace(/-/g, '')}>
+                    {annee(c.premiere)}
+                  </td>
+                  <td class="nombre num-tab" data-libelle="Dernière" data-valeur={c.derniere.replace(/-/g, '')}>
+                    {annee(c.derniere)}
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </InteractiveTable>
+
+    <p class="note">
+      La commune est celle qu'indique OpenPowerlifting pour chaque compétition.
+      Elle range des compétitions déjà reconnues comme réunionnaises, et
+      n'en ajoute aucune : plusieurs communes de l'île portent le nom d'une
+      ville de métropole.
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  /* Quatre chiffres par carte : deux par rangée, comme sur /exterieur/. */
+  .liste.liste-barres {
+    --pas: 3;
+  }
+</style>

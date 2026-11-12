@@ -224,9 +224,13 @@ function photoIlYaUnAn(source: Result[]): {
  * Dots rapporte la performance au poids de corps : c'est ce qui permet de
  * placer un athlète de 59 kg et un athlète de 120 kg sur la même échelle. Le
  * total brut, lui, favoriserait mécaniquement les plus lourds.
+ *
+ * `avecEvolution` à faux pour une source restreinte, une saison par exemple :
+ * l'évolution compare au classement d'un an plus tôt, qui n'existe pas
+ * dans une seule saison, et chaque athlète y serait marqué « nouveau ».
  */
-export function topDots(n = 10, source?: Result[]): AthleteRanking[] {
-  return [...meilleurTotalParAthlete(source)]
+export function topDots(n = 10, source?: Result[], avecEvolution = true): AthleteRanking[] {
+  return [...meilleurTotalParAthlete(source, avecEvolution)]
     .sort((a, b) => b.dots - a.dots || b.totalKg - a.totalKg)
     .slice(0, n);
 }
