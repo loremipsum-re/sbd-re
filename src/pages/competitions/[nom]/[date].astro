@@ -73,17 +73,26 @@ const titreRecords =
   premieresMarques === 0 ? 'Records battus ce jour-là' : 'Records établis ce jour-là';
 
 /**
- * Médaille du podium, décernée par CATÉGORIE et non sur l'ensemble du plateau.
+ * LE PODIUM DU JOUR, AUX POINTS DOTS : trois médailles par compétition,
+ * toutes catégories confondues. Choix de l'auteur du 12 novembre 2026 : par
+ * catégorie, une compétition type en décernait 41 pour 54 résultats, et la
+ * médaille ne distinguait plus personne. La place dans la catégorie reste
+ * écrite en chiffres, dans sa colonne.
  *
- * Une compétition de force athlétique se dispute catégorie par catégorie : il y
- * a autant de premières places que de catégories engagées. Attribuer une seule
- * médaille d'or au meilleur total de la journée serait un contresens sportif.
+ * LE PLATEAU EST LE FULL POWER. Les Dots ramènent un total au poids de corps,
+ * et le total n'a de sens qu'en full power : une barre de développé couché
+ * seul n'entre pas au podium. Une compétition d'un seul mouvement n'a donc
+ * pas de médaille, ce que sa note dit déjà des Dots.
  */
 const METAUX: Metal[] = ['or', 'argent', 'bronze'];
-const medailleDe = (r: Result): Metal | null => {
-  const rang = Number.parseInt(r.place, 10);
-  return Number.isFinite(rang) && rang >= 1 && rang <= 3 ? METAUX[rang - 1] : null;
-};
+const podium = new Map<Result, Metal>(
+  resultats
+    .filter((r) => r.event === 'SBD' && (r.dots ?? 0) > 0)
+    .sort((a, b) => (b.dots ?? 0) - (a.dots ?? 0))
+    .slice(0, 3)
+    .map((r, i) => [r, METAUX[i]]),
+);
+const RANG_PODIUM: Record<Metal, string> = { or: '1er', argent: '2e', bronze: '3e' };
 
 /*
  * Filtres alignés sur ceux du classement : sexe, catégorie, équipement,
@@ -369,7 +378,7 @@ const description =
             {
               resultats.map((r) => {
                 const classe = parseWeightClass(r.weightClassKg);
-                const metal = medailleDe(r);
+                const metal = podium.get(r);
                 const estFullPower = r.event === 'SBD';
                 return (
                   <tr
@@ -388,14 +397,9 @@ const description =
                     data-equipement={equipmentGroup(r.equipment)}
                     data-division={r.division}
                     data-age={r.ageClass}
-                    data-podium={metal ?? undefined}
                   >
-                    <td class="place" data-metal={metal ?? undefined}>
-                      {metal ? (
-                        <Medaille metal={metal} detail={`${place(r.place)} de sa catégorie`} taille={26} />
-                      ) : (
-                        <span class="place-num">{place(r.place)}</span>
-                      )}
+                    <td class="place">
+                      <span class="place-num">{place(r.place)}</span>
                     </td>
 
                     <th scope="row" class="nom">
@@ -451,6 +455,13 @@ const description =
                       </span>
                       {estFullPower && (
                         <span class="dots">
+                          {metal && (
+                            <Medaille
+                              metal={metal}
+                              detail={`${RANG_PODIUM[metal]} aux points Dots de la compétition`}
+                              taille={18}
+                            />
+                          )}
                           <span class="num-tab">{points(r.dots)}</span>
                           <span class="unite">Dots</span>
                         </span>
@@ -468,8 +479,9 @@ const description =
     {/* « Catégorie » et « record » ne sont soulignés ici qu'en l'absence du
         bandeau, qui les emploie en premier. */}
     <p class="note">
-      Les médailles distinguent le podium <strong>de chaque{' '}{avecBandeau ? 'catégorie' : <Terme cle="categorie">catégorie</Terme>}</strong>, puisqu'une compétition
-      se dispute catégorie par catégorie. La coupe signale une{' '}
+      La place se lit dans la{' '}{avecBandeau ? 'catégorie' : <Terme cle="categorie">catégorie</Terme>}.
+      {aDuFullPower && <>{' '}Les trois médailles distinguent les trois meilleurs totaux de la journée aux points Dots, toutes catégories confondues.</>}
+      {' '}La coupe signale une{' '}
       <Terme cle="barre">barre</Terme> qui constitue aujourd'hui un{' '}{avecBandeau ? 'record' : <Terme cle="record">record</Terme>} à La Réunion.
       {
         aDuFullPower ? (
