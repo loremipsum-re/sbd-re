@@ -16,7 +16,7 @@ declare(strict_types=1);
 namespace SBDRE;
 
 define('SBDRE_API', true);
-require __DIR__ . '/lib/bdd.php';
+require_once __DIR__ . '/lib/bdd.php';
 
 header('X-Content-Type-Options: nosniff');
 

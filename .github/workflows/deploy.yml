@@ -43,6 +43,13 @@ jobs:
       - name: Vérifier les types et les composants
         run: npm run check
 
+      # Le PHP ne passe par aucune génération : une fonction déclarée deux
+      # fois ne se voit qu'à l'exécution. Ce contrôle charge chaque point
+      # d'entrée, sans base. Le 9 novembre 2026, le forum et la modération
+      # ont répondu 500 trois jours faute de lui. PHP est fourni par l'image.
+      - name: Charger chaque point d'entrée PHP
+        run: php db/verifier-chargement.php
+
       # Aucune variable d'environnement n'est nécessaire ici, y compris pour la
       # partie communauté. Son API PHP vivant sur la MÊME ORIGINE que le site,
       # le navigateur n'a besoin d'aucune clé ni identifiant : un cookie de

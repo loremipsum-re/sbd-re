@@ -527,11 +527,16 @@ chaleur et l'élément d'un clic mort ne passent pas par l'API : captures d'écr
 Pour la partie communauté, **PHP 8.4 est installé en local** et disponible dans
 le PATH utilisateur. Aucun PHP ne doit être livré sans être passé par le
 contrôle de syntaxe : deux allers-retours ont été perdus le 30 juillet 2026
-faute de l'avoir fait.
+faute de l'avoir fait. **Un point d'entrée charge ses bibliothèques par
+`require_once`, jamais `require`** : une bibliothèque en charge d'autres, et
+un second chargement est une erreur fatale que `php -l` ne voit pas. Le
+forum et la modération ont répondu 500 du 9 au 12 novembre 2026 pour
+cette raison.
 
 ```bash
 php -l <fichier>                    # contrôle de syntaxe
 php -d extension=gd db/verifier-autorisation.php  # règles sans base ; GD pour les avatars
+php db/verifier-chargement.php     # chaque point d'entrée se charge, aussi en CI
 node scripts/verifier-smileys.mjs   # autotest des smileys d'époque du chat
 ```
 

@@ -49,6 +49,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 
 export const JOURNAL: readonly EntreeJournal[] = [
   {
+    date: '2026-11-12',
+    nature: 'correction',
+    version: '1.19.6',
+    titre: 'Le forum rouvre',
+    texte:
+      "Depuis la mise à jour du 9 novembre au soir, les pages du forum et l'espace de modération affichaient une erreur. Une partie du code se chargeait deux fois. Les deux répondent de nouveau, et un contrôle automatique vérifie désormais ce point avant chaque mise en ligne.",
+  },
+  {
     date: '2026-11-10',
     nature: 'correction',
     version: '1.19.5',
