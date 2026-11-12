@@ -20,7 +20,7 @@ declare(strict_types=1);
 namespace SBDRE;
 
 define('SBDRE_API', true);
-require __DIR__ . '/lib/comptes.php';
+require_once __DIR__ . '/lib/comptes.php';
 
 ouvrirApi(['GET']);
 

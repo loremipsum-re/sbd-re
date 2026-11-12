@@ -34,12 +34,12 @@ declare(strict_types=1);
 namespace SBDRE;
 
 define('SBDRE_API', true);
-require __DIR__ . '/lib/comptes.php';
-require __DIR__ . '/lib/performances.php';
-require __DIR__ . '/lib/notifications.php';
-require __DIR__ . '/lib/signalements.php';
-require __DIR__ . '/lib/avatar.php';
-require __DIR__ . '/lib/revendications.php';
+require_once __DIR__ . '/lib/comptes.php';
+require_once __DIR__ . '/lib/performances.php';
+require_once __DIR__ . '/lib/notifications.php';
+require_once __DIR__ . '/lib/signalements.php';
+require_once __DIR__ . '/lib/avatar.php';
+require_once __DIR__ . '/lib/revendications.php';
 
 $methode = ouvrirApi(['GET', 'POST']);
 $equipe = exigerEquipe();

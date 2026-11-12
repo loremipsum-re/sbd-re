@@ -48,7 +48,7 @@ const DESTINATAIRE = 'hello@loremipsum.re';
 // L'expéditeur, les en-têtes et l'encodage vivent dans lib/courriel.php,
 // partagés avec la boîte à suggestions et les comptes.
 define('SBDRE_API', true);
-require __DIR__ . '/lib/courriel.php';
+require_once __DIR__ . '/lib/courriel.php';
 
 /** Sujets proposés. Une liste FERMÉE : rien d'autre n'entre dans l'en-tête. */
 const SUJETS = [
