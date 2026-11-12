@@ -1,0 +1,91 @@
+---
+/**
+ * Les saisons, de la plus récente à la plus ancienne : une ligne par année,
+ * qui mène à sa page. Rubrique ouverte le 12 novembre 2026, famille
+ * Classements (choix de l'auteur).
+ */
+import InteractiveTable from '../../components/InteractiveTable.astro';
+import Repli from '../../components/Repli.astro';
+import Terme from '../../components/Terme.astro';
+import InfographieSaisons from '../../components/infographies/InfographieSaisons.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { listeSaisons } from '../../lib/saisons';
+
+const saisons = listeSaisons();
+const premiere = saisons[saisons.length - 1]?.annee;
+---
+
+<BaseLayout
+  titre="Saisons"
+  description={`La force athlétique à La Réunion saison par saison : compétitions, athlètes, résultats et records battus chaque année depuis ${premiere}.`}
+>
+  <div class="wrap">
+    <header class="entete-page">
+      <h1>Saisons</h1>
+      <p class="chapeau">
+        Les {saisons.length} saisons de compétition présentes dans les données
+        officielles, depuis {premiere}. Ouvrez une saison pour son classement
+        aux points <Terme cle="dots">Dots</Terme>, ses{' '}
+        <Terme cle="record">records</Terme> et ses compétitions.
+      </p>
+    </header>
+
+    <div class="rangee-replis">
+      <Repli titre="Les saisons en images">
+        <InfographieSaisons lienArticle="saisons" />
+      </Repli>
+    </div>
+
+    <InteractiveTable singulier="saison" pluriel="saisons" feminin total={saisons.length}>
+      <div class="liste liste-barres">
+        <table data-tableau aria-label="Saisons de compétition à La Réunion">
+          <thead>
+            <tr>
+              <th scope="col" data-tri data-type="nombre">Saison</th>
+              <th scope="col" class="nombre" data-tri data-type="nombre">Compétitions</th>
+              <th scope="col" class="nombre" data-tri data-type="nombre">Athlètes</th>
+              <th scope="col" class="nombre" data-tri data-type="nombre">Résultats</th>
+              <th scope="col" class="nombre" data-tri data-type="nombre">Records en cours</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              saisons.map((s) => (
+                <tr data-recherche={s.annee}>
+                  <th scope="row" class="nom" data-valeur={s.annee}>
+                    <a href={`/saisons/${s.annee}/`}>Saison {s.annee}</a>
+                  </th>
+                  <td class="nombre num-tab" data-libelle="Compétitions" data-valeur={s.competitions.length}>
+                    {s.competitions.length}
+                  </td>
+                  <td class="nombre num-tab" data-libelle="Athlètes" data-valeur={s.athletes}>
+                    {s.athletes}
+                  </td>
+                  <td class="nombre num-tab" data-libelle="Résultats" data-valeur={s.resultats}>
+                    {s.resultats.toLocaleString('fr-FR')}
+                  </td>
+                  <td class="nombre num-tab" data-libelle="Records" data-valeur={s.records}>
+                    {s.records}
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </InteractiveTable>
+
+    <p class="note">
+      Une saison suit l'année civile. Les records en cours sont ceux battus
+      cette année-là et qui tiennent toujours : une saison ancienne en compte
+      moins, ses marques ayant été dépassées depuis.
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  /* Quatre chiffres par carte : deux par rangée, comme sur /exterieur/. */
+  .liste.liste-barres {
+    --pas: 3;
+  }
+</style>
