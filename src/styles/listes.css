@@ -58,6 +58,18 @@
   white-space: nowrap;
 }
 
+/*
+ * LA COUPE D'UN RECORD COMPTE DANS LA LARGEUR DE SA COLONNE. La règle
+ * commune `svg { max-width: 100% }` rend une icône compressible : le
+ * navigateur l'ignore en dimensionnant les colonnes, et la coupe mordait
+ * de 2 à 10 px sur la colonne voisine de l'historique d'une fiche, entre
+ * 960 et 1 024 px, et de 3 px à 1 280 (mesuré le 12 novembre 2026). Même
+ * remède que les barres d'une compétition.
+ */
+.liste .coupe svg {
+  max-width: none;
+}
+
 /* ---------- Les rangées ---------- */
 
 .liste tbody tr {
@@ -284,6 +296,30 @@
  * soulevé de terre touchait la flèche de tri de la colonne voisine. Le
  * libellé dit déjà le mouvement, l'icône le doublait.
  */
+/*
+ * EN TABLEAU, UNE LISTE « BARRES » DÉFILE PLUTÔT QUE DE COUPER. L'historique
+ * d'une fiche compte neuf colonnes : avec un texte espacé par le lecteur
+ * (critère 1.4.12), il perdait de 59 à 107 px à droite, de 960 à 1 280 px.
+ * Sans effet tant que le tableau tient, mesuré sur cinq listes.
+ */
+@media (min-width: 60rem) {
+  .liste.liste-barres {
+    overflow-x: auto;
+  }
+}
+
+/*
+ * DE 60 À 68rem, LA PASTILLE DE FORMAT PEUT PASSER À LA LIGNE. Une fois la
+ * coupe comptée, l'historique demandait 11 à 39 px de plus que la colonne
+ * du site à 960 px : « Développé couché » sur deux lignes les rend. Au-delà
+ * de 68rem, le tableau tient avec ses pastilles sur une ligne.
+ */
+@media (min-width: 60rem) and (max-width: 67.999rem) {
+  .liste.liste-barres tbody .cellule-annexe .etiquette {
+    white-space: normal;
+  }
+}
+
 @media (min-width: 60rem) and (max-width: 79.999rem) {
   .liste thead th,
   .liste:not(.liste-perfs) tbody td,
