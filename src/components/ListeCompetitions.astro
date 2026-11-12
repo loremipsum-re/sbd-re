@@ -1,0 +1,70 @@
+---
+/**
+ * La liste des compétitions, en tableau : date, nom, commune, format,
+ * effectif. Écrite une fois pour trois pages, /competitions/, une saison et
+ * une commune, qui la montrent à l'identique.
+ *
+ * Chaque ligne porte ce que lit `InteractiveTable` (recherche, année,
+ * commune) : sur /competitions/, le composant l'enveloppe et filtre ; ailleurs
+ * la liste est servie telle quelle, déjà triée par date.
+ */
+import { dateCourte } from '../lib/format';
+import { libelleEvent, type Meet } from '../lib/meets';
+
+interface Props {
+  meets: Meet[];
+  /** Le nom du tableau, annoncé par les lecteurs d'écran. */
+  legende: string;
+  /** Sur la page d'une commune, la colonne Commune ne dirait rien. */
+  sansCommune?: boolean;
+}
+
+const { meets, legende, sansCommune = false } = Astro.props;
+---
+
+<div class="liste liste-barres">
+  <table data-tableau aria-label={legende}>
+    <thead>
+      <tr>
+        <th scope="col" data-tri data-type="nombre">Date</th>
+        <th scope="col" data-tri>Compétition</th>
+        {!sansCommune && <th scope="col" data-tri>Commune</th>}
+        <th scope="col">Format</th>
+        <th scope="col" class="nombre" data-tri data-type="nombre">Athlètes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        meets.map((meet) => (
+          <tr
+            data-recherche={meet.meetName}
+            data-annee={meet.date.slice(0, 4)}
+            data-ville={meet.meetTown}
+          >
+            <td class="date" data-libelle="Date" data-valeur={meet.date.replace(/-/g, '')}>
+              {dateCourte(meet.date)}
+            </td>
+            <th scope="row" class="nom">
+              <a href={`/competitions/${meet.chemin}/`}>{meet.meetName}</a>
+            </th>
+            {!sansCommune && (
+              <td data-libelle="Commune" class="cellule-sous">
+                {meet.meetTown || '—'}
+              </td>
+            )}
+            <td data-libelle="Format" class="cellule-annexe">
+              <span class="etiquettes">
+                {meet.events.map((e) => (
+                  <span class="etiquette">{libelleEvent(e)}</span>
+                ))}
+              </span>
+            </td>
+            <td class="nombre num-tab" data-libelle="Athlètes" data-valeur={meet.athletes}>
+              {meet.athletes}
+            </td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>
