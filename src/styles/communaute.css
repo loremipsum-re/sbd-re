@@ -75,8 +75,9 @@
 
 /* --- Tableaux : accueil et liste des sujets --------------------------- */
 
+/* 48 px entre deux catégories : à 24, les tableaux se lisaient d'un bloc. */
 .tableau-forum {
-  margin-block: var(--space-6);
+  margin-block: var(--space-12);
   border: 2px solid var(--border);
   border-radius: var(--radius);
 }
@@ -353,8 +354,8 @@
 
 .messages-forum {
   display: grid;
-  gap: var(--space-4);
-  margin: var(--space-4) 0;
+  gap: var(--space-8);
+  margin: var(--space-6) 0;
   padding: 0;
   list-style: none;
 }
@@ -580,8 +581,8 @@
 
 .liste-notifications {
   display: grid;
-  gap: var(--space-3);
-  margin: var(--space-4) 0;
+  gap: var(--space-4);
+  margin: var(--space-4) 0 var(--space-6);
   padding: 0;
   list-style: none;
 }
@@ -723,7 +724,7 @@
 
 .fil-actualite .evenement {
   min-width: 0;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-4);
 }
 
 .fil-actualite .evenement + .evenement {

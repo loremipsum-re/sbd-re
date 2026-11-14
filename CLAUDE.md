@@ -458,6 +458,14 @@ var(--bord-colonne) auto` : étroite pour la lecture, elle se centrait, et
 son titre démarrait à 280 px du bord contre 88 ailleurs. Les listes de
 texte prennent 24 px de retrait, `--space-6`, jamais les 40 du navigateur.
 
+**Deux sections se séparent de `--ecart-section`**, 64 px sur téléphone et
+80 px dès 1 200 px, demande de l'auteur du 14 novembre 2026 qui trouvait les
+pages trop serrées : `.bloc` le porte, une page qui écrit sa propre marge
+de section le reprend. Un `h2` laisse 24 px sous lui, l'en-tête de page
+48 px. Les cadres serrés (chat, confirmation, nouveautés, forum) fixent la
+marge de leur titre eux-mêmes. L'accueil garde son rythme, ses blocs ayant
+leur propre rembourrage. Les lignes des listes de données restent denses.
+
 **Une icône dans une colonne de tableau porte `max-width: none`.** La règle
 commune `svg { max-width: 100% }` la rend compressible : le navigateur
 l'ignore en dimensionnant la colonne, et elle déborde sur la voisine. C'est
