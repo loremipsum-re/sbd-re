@@ -77,7 +77,7 @@ la mention « à compléter » tant que l'auteur ne les a pas fournis.
 |---|---|
 | `/` | Accueil : top 10 aux Dots, les Dots en chiffre dominant ; records battus dans l'année ; compétitions récentes |
 | `/classement/` | Les athlètes classés, en cartes, filtres et tri derrière le bouton « Filtres » |
-| `/records/` | Grille par sexe et équipement, catégories en lignes, et l'année de chaque record en cours |
+| `/records/` | Grille par sexe et équipement, catégories en lignes, et l'année de chaque record en cours. Sur téléphone, un mouvement à la fois (choix de l'auteur du 14 novembre 2026) : la commande Squat, DC, SDT, Total, collée sous l'en-tête, montre une ligne par catégorie ; boutons radio et `:has()`, sans script pour l'affichage, le choix lu et écrit dans l'adresse (`?mouvement=bench`). Dès 60rem, le tableau garde ses quatre colonnes |
 | `/categories/` | Les catégories en pastilles avec leur effectif, les trois plus fournies de chaque sexe en jaune, puis `/categories/hommes/93/` et sa courbe du record |
 | `/competitions/` | Liste, puis `/competitions/<nom>/<date>/` et ses records battus ce jour-là. Trois médailles par compétition, aux trois meilleurs Dots du full power (choix de l'auteur du 12 novembre 2026) ; la place dans la catégorie reste en chiffres. Une compétition d'un seul mouvement n'a pas de médaille. La liste vit dans `components/ListeCompetitions.astro`, partagée avec les saisons et les communes |
 | `/saisons/`, `/saisons/<année>/` | Depuis le 12 novembre 2026. Une ligne par année, puis chaque saison : chiffres, les dix premiers aux Dots de l'année (`topDots(…, false)`, sans évolution, qui n'a pas de sens sur une seule année), records battus et toujours en cours, compétitions. Calculs dans `lib/saisons.ts` |
@@ -150,7 +150,8 @@ Points à ne pas casser :
   cartes. Les deux mécanismes partagent la même logique.
 - Les filtres se lisent et s'écrivent dans l'adresse, ce qui rend un état
   partageable et permet aux badges d'une fiche de pointer vers un classement
-  déjà filtré.
+  déjà filtré. Le composant garde les paramètres qu'il ne pilote pas, comme
+  le mouvement choisi sur `/records/`.
 - **Une seule barre de filtres pour tout le site**, `src/styles/filtres.css`,
   partagée par `InteractiveTable`, la carte des salles, `/comparer/` et
   `/simulateur/`. Dans l'ordre : la recherche sur toute la largeur, le bouton
@@ -303,7 +304,7 @@ de `tokens.css` l'applique. Un composant qui redéclare `font` écrit
 **Ordre d'empilement** : bannière de consentement et infobulle du glossaire 20,
 lien d'évitement, panneau du menu et panneau du compte 10, voile du menu 9,
 carte « Nouveau sur sbd.re » 8, fenêtre du chat 7, en-tête 6, bulles du
-lexique 5, boutons flottants 4. Les trois boutons flottants, du bas vers le
+lexique 5, boutons flottants et choix du mouvement des records 4. Les trois boutons flottants, du bas vers le
 haut « Chat », « Proposer » et retour en haut, sont réglés ensemble dans
 `BaseLayout.astro` : quand ils empiètent sur la colonne du contenu, ils se
 retirent à la descente et reviennent à la remontée. « Chat » et « Proposer »

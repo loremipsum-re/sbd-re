@@ -516,7 +516,12 @@ const repliable = aFiltres && replier !== undefined;
     }
 
     function ecrireAdresse() {
-      const params = new URLSearchParams();
+      // Les paramètres que le composant ne pilote pas restent dans l'adresse :
+      // le mouvement choisi sur /records/, par exemple.
+      const params = new URLSearchParams(location.search);
+      for (const cle of ['q', 'tri', 'sens', ...Array.from(selects, (s) => s.dataset.filtre!)]) {
+        params.delete(cle);
+      }
       for (const select of selects) {
         if (select.value) params.set(select.dataset.filtre!, select.value);
       }

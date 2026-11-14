@@ -127,7 +127,7 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
   description="Records officiels de force athlétique à La Réunion, par mouvement, sexe, catégorie de poids et équipement. Squat, développé couché, soulevé de terre et total."
 >
   <SpriteMouvements />
-    <div class="wrap">
+    <div class="wrap page-records">
     {/*
       L'EN-TÊTE PORTE L'ÂGE DES RECORDS, à droite du chapeau sur ordinateur,
       dessous sur téléphone. Il dit d'un regard lesquels tiennent depuis
@@ -283,6 +283,33 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
           </select>
         </div>
       </Fragment>
+
+      {/*
+        UN MOUVEMENT À LA FOIS SUR TÉLÉPHONE, choix de l'auteur du 14 novembre
+        2026. Une carte par catégorie empilait ses quatre records, soit douze
+        informations et huit liens sur 270 px. Une ligne par catégorie, pour le
+        mouvement choisi ici, se compare d'un coup d'œil. Sur ordinateur, le
+        tableau garde ses quatre colonnes et la commande disparaît.
+
+        DES BOUTONS RADIO ET `:has()`, SANS SCRIPT POUR L'AFFICHAGE : le
+        squat est coché dans le HTML. Le script ne fait que lire et écrire le
+        choix dans l'adresse. Un navigateur sans `:has()` montre les quatre
+        records de chaque catégorie, l'un sous l'autre.
+      */}
+      <fieldset class="choix-mouvement" data-choix-mouvement>
+        <legend class="sr-only">Mouvement affiché</legend>
+        <div class="segments">
+          {
+            LIFTS.map((l, i) => (
+              <label>
+                <input type="radio" name="mouvement" value={l.id} checked={i === 0} />
+                <span>{COURT[l.id]}</span>
+              </label>
+            ))
+          }
+        </div>
+      </fieldset>
+
       {
         grilles.map(({ equipement, sexe, categories }) => (
           <section class="section" data-section-tableau>
@@ -326,7 +353,7 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
                       {LIFTS.map((l) => {
                         const rec = recordDe(l.id, sexe.id, cat.id, equipement);
                         return (
-                          <td class="nombre" data-libelle={l.label} data-valeur={rec?.valueKg ?? ''}>
+                          <td class="nombre" data-libelle={l.label} data-mouvement={l.id} data-valeur={rec?.valueKg ?? ''}>
                             <span class="intitule">
                               <IconeMouvement mouvement={l.id} taille={18} />
                               {COURT[l.id]}
@@ -409,6 +436,38 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
     groupe.closest('[data-tableau-interactif]')?.addEventListener('sbd:filtres', () => {
       for (const bouton of boutons) bouton.checked = bouton.value === menu.value;
     });
+  }
+
+  /*
+   * LE MOUVEMENT CHOISI SE LIT ET S'ÉCRIT DANS L'ADRESSE, `?mouvement=bench`,
+   * comme les filtres : une grille se partage telle qu'on la voit. Le squat,
+   * coché par défaut, n'y figure pas.
+   */
+  const choix = document.querySelector<HTMLFieldSetElement>('[data-choix-mouvement]');
+  if (choix) {
+    const radios = choix.querySelectorAll<HTMLInputElement>('input[name="mouvement"]');
+    const demande = new URLSearchParams(location.search).get('mouvement');
+    for (const r of radios) if (demande && r.value === demande) r.checked = true;
+    for (const r of radios) {
+      r.addEventListener('change', () => {
+        if (!r.checked) return;
+        const params = new URLSearchParams(location.search);
+        if (r.value === radios[0].value) params.delete('mouvement');
+        else params.set('mouvement', r.value);
+        const requete = params.toString();
+        history.replaceState(null, '', requete ? `?${requete}` : location.pathname);
+      });
+    }
+
+    /* La commande se colle sous l'en-tête, qui passe à la ligne quand le
+       texte est agrandi : sa hauteur réelle, et non une valeur supposée. */
+    const entete = document.querySelector<HTMLElement>('.entete');
+    if (entete) {
+      const regler = () =>
+        choix.style.setProperty('--sous-entete', `${entete.getBoundingClientRect().height}px`);
+      new ResizeObserver(regler).observe(entete);
+      regler();
+    }
   }
 </script>
 
@@ -555,12 +614,76 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
     --pas: 3;
   }
 
+  /*
+   * LE CHOIX DU MOUVEMENT, sur téléphone seulement, collé sous l'en-tête :
+   * on change de mouvement sans remonter au haut de la page. Au-dessus des
+   * lignes, sous l'en-tête (6) et les bulles du lexique (5), au rang des
+   * boutons flottants (4), qu'il ne croise pas : eux vivent en bas.
+   */
+  .choix-mouvement {
+    position: sticky;
+    top: var(--sous-entete, 4.4rem);
+    z-index: 4;
+    margin: 0 0 var(--space-6);
+    padding: var(--space-2) 0;
+    border: 0;
+    background: var(--bg);
+  }
+
+  @media (min-width: 60rem) {
+    .choix-mouvement {
+      display: none;
+    }
+  }
+
   @media (max-width: 59.999rem) {
-    /* La catégorie ouvre la carte sur toute sa largeur, comme la date ouvre
-       celle d'un historique. */
+    /*
+     * UNE LIGNE PAR CATÉGORIE : son nom à gauche, le record du mouvement
+     * choisi à droite, la charge en grand puis le détenteur et l'année.
+     */
+    .liste.liste-barres.records tbody tr {
+      grid-template-columns: minmax(5.5rem, auto) minmax(0, 1fr);
+      align-items: center;
+      gap: 0 var(--space-4);
+      padding: var(--space-3) var(--space-4);
+    }
+
     .liste.records tbody .categorie {
-      grid-column: 1 / -1;
+      grid-column: 1;
       font-size: var(--step-1);
+    }
+
+    .liste.liste-barres.records tbody td[data-mouvement].nombre {
+      grid-column: 2;
+      display: grid;
+      grid-template-columns: auto auto;
+      justify-content: start;
+      align-items: baseline;
+      column-gap: var(--space-2);
+    }
+
+    .liste.records tbody td[data-mouvement] .valeur,
+    .liste.records tbody td[data-mouvement] .absent {
+      grid-column: 1 / -1;
+    }
+
+    /* Le mouvement se lit dans la commande : son intitulé se tait à l'œil,
+       et reste dit aux lecteurs d'écran. */
+    .liste.liste-barres.records tbody td[data-mouvement] .intitule {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    /* Seul le mouvement coché reste. Sans `:has()`, les quatre s'empilent. */
+    .page-records:has(input[name='mouvement'][value='squat']:checked) .liste.records td[data-mouvement]:not([data-mouvement='squat']),
+    .page-records:has(input[name='mouvement'][value='bench']:checked) .liste.records td[data-mouvement]:not([data-mouvement='bench']),
+    .page-records:has(input[name='mouvement'][value='deadlift']:checked) .liste.records td[data-mouvement]:not([data-mouvement='deadlift']),
+    .page-records:has(input[name='mouvement'][value='total']:checked) .liste.records td[data-mouvement]:not([data-mouvement='total']) {
+      display: none;
     }
 
     /* Les trois éléments d'une marque s'empilent dans leur colonne. */
@@ -568,13 +691,10 @@ const recordDe = (lift: LiftKey, sex: Sex, categorie: string, equipement: Equipm
       display: block;
     }
 
+    /* Le détenteur et l'année, côte à côte sous la charge. */
     .liste.records tbody td[data-libelle] .detenteur,
     .liste.records tbody td[data-libelle] .quand {
-      display: flex;
-    }
-
-    .liste.records tbody td[data-libelle] .quand {
-      margin-top: 2px;
+      display: inline-flex;
     }
   }
 

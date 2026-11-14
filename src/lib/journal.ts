@@ -50,6 +50,14 @@ export const LIBELLES_NATURE: Record<NatureEntree, string> = {
 export const JOURNAL: readonly EntreeJournal[] = [
   {
     date: '2026-11-14',
+    nature: 'fonction',
+    version: '1.21.0',
+    titre: 'Les records, un mouvement à la fois',
+    texte:
+      "Sur un téléphone, la page des records se lit désormais mouvement par mouvement : squat, développé couché, soulevé de terre ou total. Une ligne par catégorie, la charge en grand puis son détenteur et son année. La page est deux fois plus courte, et le choix se partage par un lien. Sur ordinateur, le tableau garde ses quatre colonnes.",
+  },
+  {
+    date: '2026-11-14',
     nature: 'visuel',
     version: '1.20.1',
     titre: "Plus d'air entre les sections",
