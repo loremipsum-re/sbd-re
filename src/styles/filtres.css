@@ -227,13 +227,16 @@
  * signale un état, et le texte du segment choisi a la couleur des autres.
  * Le filet d'accent tient 5,34:1 contre le voisin et 4,93:1 contre la barre,
  * comme celui d'un menu actif. En thème sombre, les deux jetons ont la même
- * couleur : le rendu ne change pas. */
+ * couleur : le rendu ne change pas.
+ *
+ * LE CHOIX DU MOUVEMENT DES RECORDS (`.choix-mouvement`) reprend la même
+ * commande, hors de la barre : `:is()` garde la spécificité d'origine. */
 
-.barre-filtres .segments {
+:is(.barre-filtres, .choix-mouvement) .segments {
   display: flex;
 }
 
-.barre-filtres .segments label {
+:is(.barre-filtres, .choix-mouvement) .segments label {
   position: relative;
   display: flex;
   flex: 1 1 0;
@@ -242,11 +245,11 @@
 }
 
 /* Les filets de deux segments voisins se superposent : un seul trait. */
-.barre-filtres .segments label + label {
+:is(.barre-filtres, .choix-mouvement) .segments label + label {
   margin-left: -1px;
 }
 
-.barre-filtres .segments input {
+:is(.barre-filtres, .choix-mouvement) .segments input {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -255,7 +258,7 @@
   pointer-events: none;
 }
 
-.barre-filtres .segments span {
+:is(.barre-filtres, .choix-mouvement) .segments span {
   display: flex;
   flex: 1 1 auto;
   align-items: center;
@@ -270,40 +273,40 @@
   text-align: center;
 }
 
-.barre-filtres .segments label:first-child span {
+:is(.barre-filtres, .choix-mouvement) .segments label:first-child span {
   border-radius: var(--radius) 0 0 var(--radius);
 }
 
-.barre-filtres .segments label:last-child span {
+:is(.barre-filtres, .choix-mouvement) .segments label:last-child span {
   border-radius: 0 var(--radius) var(--radius) 0;
 }
 
 /* Le segment survolé ou choisi passe devant ses voisins : son filet entier
    reste visible au lieu d'être recouvert à moitié. */
-.barre-filtres .segments label:hover span,
-.barre-filtres .segments input:checked + span {
+:is(.barre-filtres, .choix-mouvement) .segments label:hover span,
+:is(.barre-filtres, .choix-mouvement) .segments input:checked + span {
   position: relative;
   z-index: 1;
 }
 
-.barre-filtres .segments label:hover span {
+:is(.barre-filtres, .choix-mouvement) .segments label:hover span {
   border-color: var(--accent);
   color: var(--accent);
 }
 
-.barre-filtres .segments input:checked + span {
+:is(.barre-filtres, .choix-mouvement) .segments input:checked + span {
   border-color: var(--accent);
   background: var(--accent-fill);
   color: var(--on-accent);
 }
 
-.barre-filtres .segments label:hover input:checked + span {
+:is(.barre-filtres, .choix-mouvement) .segments label:hover input:checked + span {
   border-color: var(--accent-hover);
   background: var(--accent-fill-hover);
   color: var(--on-accent);
 }
 
-.barre-filtres .segments input:focus-visible + span {
+:is(.barre-filtres, .choix-mouvement) .segments input:focus-visible + span {
   z-index: 2;
   outline: 3px solid var(--accent);
   outline-offset: 2px;
