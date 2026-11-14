@@ -232,7 +232,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2) var(--space-3);
-  padding: var(--space-2) 0;
+  padding: var(--space-3) 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -386,7 +386,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
   gap: var(--space-2);
-  margin: 0 0 var(--space-8);
+  margin: 0 0 var(--space-12);
   padding: 0;
   list-style: none;
 }
@@ -444,7 +444,7 @@
 /* Deux colonnes dès 56rem : les performances, puis le reste à côté. */
 .tableau-espace {
   display: grid;
-  gap: var(--space-8);
+  gap: var(--space-12);
 }
 
 @media (min-width: 56rem) {
@@ -456,12 +456,22 @@
 }
 
 .tableau-espace h2 {
-  margin: 0 0 var(--space-2);
+  margin: 0 0 var(--space-4);
+}
+
+/* La modération empile cinq listes sous leurs titres : 48 px entre elles,
+   et non les 16 d'un paragraphe. */
+[data-admin] h2 {
+  margin-top: var(--space-12);
+}
+
+[data-admin] > h2:first-of-type {
+  margin-top: 0;
 }
 
 .colonne-cote {
   display: grid;
-  gap: var(--space-8);
+  gap: var(--space-12);
   min-width: 0;
 }
 
@@ -630,7 +640,7 @@
 
 .sections-reglages {
   display: grid;
-  gap: var(--space-6);
+  gap: var(--space-8);
   min-width: 0;
 }
 
