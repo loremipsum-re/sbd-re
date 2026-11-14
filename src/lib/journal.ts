@@ -52,7 +52,7 @@ export const JOURNAL: readonly EntreeJournal[] = [
     date: '2026-11-14',
     nature: 'visuel',
     version: '1.20.1',
-    titre: 'Plus d'air entre les sections',
+    titre: "Plus d'air entre les sections",
     texte:
       "Les pages chargées de texte respirent : 64 à 80 px séparent désormais deux sections, contre 48, et chaque titre se détache mieux de ce qui le précède. La communauté, le forum, les profils, l'espace membre, le journal et les pages de texte en profitent.",
   },
