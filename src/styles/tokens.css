@@ -288,6 +288,15 @@
   --space-16: 4rem; /*   64 px */
 
   /*
+   * L'ÉCART ENTRE DEUX SECTIONS D'UNE PAGE : 64 px sur un téléphone, 80 px
+   * dès 1 200 px de large, en glissant entre les deux. Demande de l'auteur du
+   * 14 novembre 2026, qui trouvait les pages trop serrées, /communaute/ en
+   * tête : 48 px séparaient deux sections, 32 sous les boutons d'accès.
+   * Une page ajoute ses sections avec `.bloc`, ou reprend ce jeton.
+   */
+  --ecart-section: clamp(4rem, 2.857rem + 2.857vw, 5rem);
+
+  /*
    * TAILLE MINIMALE D'UNE CIBLE TACTILE.
    *
    * 44 px, soit les 44 points qu'Apple tient depuis l'iPhone d'origine : c'est
@@ -415,9 +424,12 @@ h1 {
   font-size: var(--step-4);
   font-weight: 800;
 }
+/* 24 px sous un titre de section, et non 16 : le titre appartient à ce qui
+   suit, l'écart au-dessus étant trois fois plus grand. */
 h2 {
   font-size: var(--step-2);
   font-weight: 800;
+  margin-bottom: var(--space-6);
 }
 h3 {
   font-size: var(--step-1);
@@ -726,12 +738,12 @@ textarea {
  */
 
 .entete-page {
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-12);
 }
 
 /* Une section de page, séparée de la suivante. */
 .bloc {
-  margin-bottom: var(--space-12);
+  margin-bottom: var(--ecart-section);
 }
 
 /* La précision qui suit un tableau ou une liste, et qu'on lit après. */
